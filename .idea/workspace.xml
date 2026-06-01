@@ -4,16 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e385f690-86be-40f2-ba9f-76934f236906" name="Changes" comment="" />
+    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 3
-}</component>
-  <component name="ProjectId" id="3EXSy9m8lXCgdyElDLaWBeei5kI" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 3
+}]]></component>
+  <component name="ProjectId" id="3EXxKiw2kZD90gkh83k4jPQR7Td" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -25,12 +32,11 @@
     "RequestMappingsPanelWidth0": "75",
     "RequestMappingsPanelWidth1": "75",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "Spring Boot.CakeshopApplication (1).executor": "Run",
-    "Spring Boot.CakeshopApplication.executor": "Run",
+    "RunOnceActivity.git.unshallow": "true",
     "Spring Boot.CinemaApplication.executor": "Run",
+    "git-widget-placeholder": "DuongND",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/New folder/swp/iter1_SWP",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -70,13 +76,12 @@
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="e385f690-86be-40f2-ba9f-76934f236906" name="Changes" comment="" />
-      <created>1780323673186</created>
+      <changelist id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="" />
+      <created>1780338655074</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1780323673186</updated>
-      <workItem from="1780323674395" duration="4720000" />
-      <workItem from="1780331453019" duration="1729000" />
+      <updated>1780338655074</updated>
+      <workItem from="1780338657416" duration="463000" />
     </task>
     <servers />
   </component>

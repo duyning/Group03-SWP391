@@ -1,0 +1,6 @@
+example\entity\Role.class
+example\repository\AccountRepository.class
+example\entity\MembershipLevel.class
+example\service\AccountService.class
+example\controller\RegisterController.class
+example\entity\Account.class

@@ -1,0 +1,106 @@
+:root {
+    --primary-pink: #ffc1cc;
+    --dark-pink: #333; /* Màu text tiêu đề theo mockup */
+    --accent-pink: #ff8fa3;
+}
+
+body {
+    font-family: 'Quicksand', sans-serif;
+    color: #333;
+}
+
+/* Ảnh sản phẩm */
+.product-image-container {
+    position: relative;
+    background-color: #fcfcfc;
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.badge-sale {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: #333;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.product-main-img {
+    max-height: 350px;
+    object-fit: contain;
+}
+
+.product-title-detail {
+    color: var(--dark-pink);
+    margin-top: 15px;
+}
+
+/* Giá & Nút bấm */
+.old-price { color: #999; font-size: 1.2rem; }
+.current-price {
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.quantity-selector .btn-qty {
+    border: 1px solid #ddd;
+    width: 40px;
+    height: 40px;
+    background: white;
+}
+
+.input-qty {
+    border: 1px solid #ddd;
+    border-left: none;
+    border-right: none;
+    width: 60px;
+    height: 40px;
+}
+
+.btn-buy-now {
+    background-color: #333;
+    color: white;
+    padding: 12px 60px;
+    font-weight: bold;
+    border-radius: 5px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.btn-buy-now:hover {
+    background-color: var(--accent-pink);
+    color: white;
+}
+
+/* Perks */
+.service-perks {
+    font-size: 0.9rem;
+    color: #444;
+}
+
+.service-perks i {
+    font-size: 10px;
+    color: #666;
+    vertical-align: middle;
+}
+
+/* Tabs & Rating */
+.active-pink {
+    border-bottom: 3px solid #333 !important;
+    font-weight: bold;
+    color: #333 !important;
+}
+
+.bg-pink-light {
+    background-color: #eee;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    padding-left: 0;
+    padding-right: 30px;
+}

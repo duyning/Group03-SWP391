@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - CinemaBook</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/register.css}">
+</head>
+<body>
+
+<div class="register-wrapper">
+    <!-- Decorative background elements -->
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+    <div class="bg-shape bg-shape-3"></div>
+
+    <div class="register-card">
+        <!-- Header -->
+        <div class="register-header">
+            <div class="logo-icon">
+                <i class="fas fa-film"></i>
+            </div>
+            <h1>Tạo tài khoản</h1>
+            <p>Đăng ký để đặt vé xem phim nhanh chóng và tiện lợi</p>
+        </div>
+
+        <!-- Success message -->
+        <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show animate-slide-in" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${successMessage != null ? successMessage : 'Đăng ký thành công! Vui lòng đăng nhập.'}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Registration Form -->
+        <form th:action="@{/register}" th:object="${account}" method="POST" class="register-form" novalidate>
+
+            <!-- Name -->
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" th:field="*{name}"
+                           class="form-input"
+                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                           placeholder="Họ và tên"
+                           id="name" required>
+                    <label for="name">Họ và tên <span class="required">*</span></label>
+                </div>
+                <div th:if="${#fields.hasErrors('name')}" class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:errors="*{name}"></span>
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" th:field="*{email}"
+                           class="form-input"
+                           th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                           placeholder="Email"
+                           id="email" required>
+                    <label for="email">Email <span class="required">*</span></label>
+                </div>
+                <div th:if="${#fields.hasErrors('email')}" class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:errors="*{email}"></span>
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" th:field="*{password}"
+                           class="form-input"
+                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                           placeholder="Mật khẩu"
+                           id="password" required>
+                    <label for="password">Mật khẩu <span class="required">*</span></label>
+                    <button type="button" class="toggle-password" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </button>
+                </div>
+                <div th:if="${#fields.hasErrors('password')}" class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:errors="*{password}"></span>
+                </div>
+                <div class="password-strength" id="passwordStrength">
+                    <div class="strength-bar" id="strengthBar"></div>
+                </div>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-phone input-icon"></i>
+                    <input type="tel" th:field="*{phoneNum}"
+                           class="form-input"
+                           th:classappend="${#fields.hasErrors('phoneNum')} ? 'is-invalid' : ''"
+                           placeholder="Số điện thoại"
+                           id="phoneNum" required>
+                    <label for="phoneNum">Số điện thoại <span class="required">*</span></label>
+                </div>
+                <div th:if="${#fields.hasErrors('phoneNum')}" class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:errors="*{phoneNum}"></span>
+                </div>
+            </div>
+
+            <!-- Two columns: Age & Gender -->
+            <div class="form-row">
+                <div class="form-floating-group">
+                    <div class="input-icon-wrapper">
+                        <i class="fas fa-calendar input-icon"></i>
+                        <input type="number" th:field="*{age}"
+                               class="form-input"
+                               th:classappend="${#fields.hasErrors('age')} ? 'is-invalid' : ''"
+                               placeholder="Tuổi"
+                               id="age" min="17" required>
+                        <label for="age">Tuổi <span class="required">*</span></label>
+                    </div>
+                    <div th:if="${#fields.hasErrors('age')}" class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span th:errors="*{age}"></span>
+                    </div>
+                </div>
+
+                <div class="form-floating-group">
+                    <div class="input-icon-wrapper">
+                        <i class="fas fa-venus-mars input-icon"></i>
+                        <select th:field="*{gender}" class="form-input select-input" id="gender">
+                            <option value="" disabled selected>Chọn giới tính</option>
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                        <label for="gender">Giới tính</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper textarea-wrapper">
+                    <i class="fas fa-map-marker-alt input-icon"></i>
+                    <textarea th:field="*{address}"
+                              class="form-input textarea-input"
+                              placeholder="Địa chỉ"
+                              id="address" rows="2"></textarea>
+                    <label for="address">Địa chỉ</label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-register" id="btnRegister">
+                <span class="btn-text">Đăng ký</span>
+                <span class="btn-loader" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
+                <i class="fas fa-arrow-right btn-arrow"></i>
+            </button>
+        </form>
+
+        <!-- Footer -->
+        <div class="register-footer">
+            <p>Đã có tài khoản? <a href="/cinema/login" class="login-link">Đăng nhập ngay</a></p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Toggle password visibility
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+
+    // Password strength indicator
+    document.getElementById('password').addEventListener('input', function () {
+        const password = this.value;
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthContainer = document.getElementById('passwordStrength');
+        let strength = 0;
+
+        if (password.length >= 8) strength++;
+        if (password.length >= 12) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+        strengthContainer.style.display = password.length > 0 ? 'block' : 'none';
+
+        const widths = ['0%', '20%', '40%', '60%', '80%', '100%'];
+        const colors = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'];
+
+        strengthBar.style.width = widths[strength];
+        strengthBar.style.backgroundColor = colors[Math.min(strength - 1, 4)] || '#ef4444';
+    });
+
+    // Form submit animation
+    document.querySelector('.register-form').addEventListener('submit', function () {
+        const btn = document.getElementById('btnRegister');
+        btn.querySelector('.btn-text').style.display = 'none';
+        btn.querySelector('.btn-arrow').style.display = 'none';
+        btn.querySelector('.btn-loader').style.display = 'inline-block';
+    });
+
+    // Input focus animation
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.addEventListener('focus', function () {
+            this.closest('.input-icon-wrapper').classList.add('focused');
+        });
+        input.addEventListener('blur', function () {
+            this.closest('.input-icon-wrapper').classList.remove('focused');
+        });
+    });
+</script>
+
+</body>
+</html>
