@@ -89,9 +89,6 @@
                     <i class="fas fa-exclamation-circle"></i>
                     <span th:errors="*{password}"></span>
                 </div>
-                <div class="password-strength" id="passwordStrength">
-                    <div class="strength-bar" id="strengthBar"></div>
-                </div>
             </div>
 
             <!-- Phone Number -->
@@ -188,28 +185,6 @@
             toggleIcon.classList.add('fa-eye');
         }
     }
-
-    // Password strength indicator
-    document.getElementById('password').addEventListener('input', function () {
-        const password = this.value;
-        const strengthBar = document.getElementById('strengthBar');
-        const strengthContainer = document.getElementById('passwordStrength');
-        let strength = 0;
-
-        if (password.length >= 8) strength++;
-        if (password.length >= 12) strength++;
-        if (/[A-Z]/.test(password)) strength++;
-        if (/[0-9]/.test(password)) strength++;
-        if (/[^A-Za-z0-9]/.test(password)) strength++;
-
-        strengthContainer.style.display = password.length > 0 ? 'block' : 'none';
-
-        const widths = ['0%', '20%', '40%', '60%', '80%', '100%'];
-        const colors = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'];
-
-        strengthBar.style.width = widths[strength];
-        strengthBar.style.backgroundColor = colors[Math.min(strength - 1, 4)] || '#ef4444';
-    });
 
     // Form submit animation
     document.querySelector('.register-form').addEventListener('submit', function () {

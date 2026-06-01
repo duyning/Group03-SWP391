@@ -10,7 +10,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             min-height: 100vh;
@@ -20,10 +25,10 @@
 
         /* ===== Navbar ===== */
         .nav-bar {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             padding: 14px 40px;
             display: flex;
             justify-content: space-between;
@@ -32,6 +37,7 @@
             top: 0;
             z-index: 100;
         }
+
         .nav-brand {
             font-size: 1.4rem;
             font-weight: 700;
@@ -41,22 +47,25 @@
             align-items: center;
             gap: 8px;
         }
+
         .nav-right {
             display: flex;
             align-items: center;
             gap: 16px;
         }
+
         .user-chip {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(167,139,250,0.12);
-            border: 1px solid rgba(167,139,250,0.25);
+            background: rgba(167, 139, 250, 0.12);
+            border: 1px solid rgba(167, 139, 250, 0.25);
             border-radius: 50px;
             padding: 6px 14px;
             font-size: 0.88rem;
             color: #c4b5fd;
         }
+
         .user-chip .avatar {
             width: 28px;
             height: 28px;
@@ -69,9 +78,10 @@
             font-weight: 700;
             color: white;
         }
+
         .btn-logout {
-            background: rgba(239,68,68,0.12);
-            border: 1px solid rgba(239,68,68,0.25);
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.25);
             color: #fca5a5;
             padding: 7px 16px;
             border-radius: 50px;
@@ -82,8 +92,9 @@
             align-items: center;
             gap: 6px;
         }
+
         .btn-logout:hover {
-            background: rgba(239,68,68,0.22);
+            background: rgba(239, 68, 68, 0.22);
             color: #fca5a5;
             transform: translateY(-1px);
         }
@@ -93,6 +104,7 @@
             text-align: center;
             padding: 70px 20px 50px;
         }
+
         .hero-section h1 {
             font-size: 2.8rem;
             font-weight: 700;
@@ -101,6 +113,7 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 12px;
         }
+
         .hero-section p {
             color: #b0b0c8;
             font-size: 1.05rem;
@@ -110,8 +123,8 @@
 
         /* ===== Welcome Card ===== */
         .welcome-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 20px;
             padding: 28px 32px;
             max-width: 720px;
@@ -122,10 +135,19 @@
             gap: 20px;
             animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .welcome-avatar {
             width: 56px;
             height: 56px;
@@ -138,21 +160,24 @@
             font-size: 1.4rem;
             font-weight: 700;
             color: white;
-            box-shadow: 0 8px 24px rgba(167,139,250,0.35);
+            box-shadow: 0 8px 24px rgba(167, 139, 250, 0.35);
         }
+
         .welcome-text h2 {
             font-size: 1.15rem;
             font-weight: 600;
             margin-bottom: 4px;
         }
+
         .welcome-text p {
-            color: rgba(255,255,255,0.45);
+            color: rgba(255, 255, 255, 0.45);
             font-size: 0.85rem;
         }
+
         .badge-role {
             margin-left: auto;
-            background: rgba(64,196,255,0.12);
-            border: 1px solid rgba(64,196,255,0.25);
+            background: rgba(64, 196, 255, 0.12);
+            border: 1px solid rgba(64, 196, 255, 0.25);
             color: #7dd3fc;
             padding: 5px 14px;
             border-radius: 50px;
@@ -170,9 +195,10 @@
             margin: 0 auto;
             padding: 0 20px 60px;
         }
+
         .feature-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 18px;
             padding: 28px 20px;
             text-align: center;
@@ -181,25 +207,29 @@
             text-decoration: none;
             color: inherit;
         }
+
         .feature-card:hover {
-            background: rgba(167,139,250,0.08);
-            border-color: rgba(167,139,250,0.3);
+            background: rgba(167, 139, 250, 0.08);
+            border-color: rgba(167, 139, 250, 0.3);
             transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(167,139,250,0.15);
+            box-shadow: 0 12px 30px rgba(167, 139, 250, 0.15);
             color: inherit;
         }
+
         .feature-icon {
             font-size: 2rem;
             margin-bottom: 12px;
         }
+
         .feature-card h3 {
             font-size: 0.95rem;
             font-weight: 600;
             margin-bottom: 6px;
         }
+
         .feature-card p {
             font-size: 0.8rem;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255, 255, 255, 0.4);
         }
     </style>
 </head>
@@ -208,25 +238,32 @@
     <!-- Navigation -->
     <nav class="nav-bar">
         <a class="nav-brand" href="/cinema/home">
-            <i class="fas fa-film"></i> CinemaBook
+            <i class="fas fa-film"></i> Demo
         </a>
         <div class="nav-right">
             <!-- Đã đăng nhập -->
             <th:block th:if="${user != null}">
                 <div class="user-chip">
-                    <div class="avatar" th:text="${user.name != null && !user.name.isEmpty() ? user.name.substring(0,1).toUpperCase() : 'U'}">U</div>
+                    <div class="avatar"
+                        th:text="${user.name != null && !user.name.isEmpty() ? user.name.substring(0,1).toUpperCase() : 'U'}">
+                        U</div>
                     <span th:text="${user.name}">Người dùng</span>
                 </div>
+                <a href="/cinema/reset-password" class="btn-logout" style="background: rgba(167, 139, 250, 0.12); border-color: rgba(167, 139, 250, 0.25); color: #c4b5fd; margin-right: 8px;">
+                    <i class="fas fa-key"></i> Đổi mật khẩu
+                </a>
                 <a href="/cinema/logout" class="btn-logout">
                     <i class="fas fa-sign-out-alt"></i> Đăng xuất
                 </a>
             </th:block>
             <!-- Chưa đăng nhập -->
             <th:block th:if="${user == null}">
-                <a href="/cinema/login" class="btn-logout" style="background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.25); color: #c4b5fd;">
+                <a href="/cinema/login" class="btn-logout"
+                    style="background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.25); color: #c4b5fd;">
                     <i class="fas fa-sign-in-alt"></i> Đăng nhập
                 </a>
-                <a href="/cinema/register" class="btn-logout" style="background: linear-gradient(135deg, #a78bfa, #ec4899); border: none; color: white;">
+                <a href="/cinema/register" class="btn-logout"
+                    style="background: linear-gradient(135deg, #a78bfa, #ec4899); border: none; color: white;">
                     <i class="fas fa-user-plus"></i> Đăng ký
                 </a>
             </th:block>
@@ -243,7 +280,9 @@
     <div style="padding: 0 20px; margin-bottom: 30px;">
         <!-- Đã đăng nhập -->
         <div th:if="${user != null}" class="welcome-card">
-            <div class="welcome-avatar" th:text="${user.name != null && !user.name.isEmpty() ? user.name.substring(0,1).toUpperCase() : 'U'}">U</div>
+            <div class="welcome-avatar"
+                th:text="${user.name != null && !user.name.isEmpty() ? user.name.substring(0,1).toUpperCase() : 'U'}">U
+            </div>
             <div class="welcome-text">
                 <h2>Xin chào, <span th:text="${user.name}">Người dùng</span>! 👋</h2>
                 <p th:text="'Email: ' + ${user.email}">email@example.com</p>
@@ -254,16 +293,20 @@
             </div>
         </div>
         <!-- Chưa đăng nhập -->
-        <div th:if="${user == null}" class="welcome-card" style="justify-content: center; text-align: center; flex-direction: column; padding: 35px 20px; gap: 12px;">
+        <div th:if="${user == null}" class="welcome-card"
+            style="justify-content: center; text-align: center; flex-direction: column; padding: 35px 20px; gap: 12px;">
             <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Chào mừng bạn đến với CinemaBook! 👋</h2>
             <p style="color: #b0b0c8; font-size: 0.9rem; max-width: 500px; margin: 0 auto;">
-                Trải nghiệm hệ thống đặt vé phim trực tuyến hàng đầu. Đăng nhập hoặc tạo tài khoản mới để nhận nhiều ưu đãi!
+                Trải nghiệm hệ thống đặt vé phim trực tuyến hàng đầu. Đăng nhập hoặc tạo tài khoản mới để nhận nhiều ưu
+                đãi!
             </p>
             <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
-                <a href="/cinema/login" class="btn-logout" style="background: linear-gradient(135deg, #a78bfa, #ec4899); border: none; color: white; padding: 8px 24px;">
+                <a href="/cinema/login" class="btn-logout"
+                    style="background: linear-gradient(135deg, #a78bfa, #ec4899); border: none; color: white; padding: 8px 24px;">
                     Đăng nhập
                 </a>
-                <a href="/cinema/register" class="btn-logout" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 24px;">
+                <a href="/cinema/register" class="btn-logout"
+                    style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 24px;">
                     Đăng ký
                 </a>
             </div>
