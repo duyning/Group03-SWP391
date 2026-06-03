@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: Group03_SWP391_Summer26
+
+  # =============================================
+  # DATABASE CONFIG - SQL Server
+  # =============================================
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=Group3_SWP391;encrypt=false;trustServerCertificate=true
+    username: sa
+    password: 123
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      pool-name: HikariPool-Group03
+
+  # =============================================
+  # JPA / HIBERNATE CONFIG
+  # =============================================
+  jpa:
+    hibernate:
+      ddl-auto: update           # update: tự tạo bảng nếu chưa có, không xóa dữ liệu
+                                 # create-drop: xóa & tạo lại khi restart (mất data)
+                                 # validate: chỉ kiểm tra, không thay đổi schema
+                                 # none: không làm gì với schema
+    show-sql: true             # In SQL ra console (tắt khi production)
+    properties:
+      hibernate:
+        format_sql: true       # SQL đẹp hơn (có indent)
+        dialect: org.hibernate.dialect.SQLServerDialect
+    open-in-view: false        # Tắt OSIV để tránh N+1 query
+    defer-datasource-initialization: true  # Chạy data.sql SAU khi Hibernate tạo bảng
+
+  # data.sql đã được thay bằng DataInitializer.java (dùng BCrypt encode trực tiếp)
+  sql:
+    init:
+      mode: never
+
+
+  # =============================================
+  # THYMELEAF CONFIG
+  # =============================================
+  thymeleaf:
+    cache: false               # Tắt cache để reload template ngay (dev)
+    mode: HTML
+    encoding: UTF-8
+
+server:
+  port: 8080
+
