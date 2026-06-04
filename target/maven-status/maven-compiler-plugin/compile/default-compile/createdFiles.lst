@@ -1,0 +1,16 @@
+example\controller\HomeController.class
+example\entity\Movie$MovieStatus.class
+example\entity\Movie.class
+example\controller\LoginController.class
+example\controller\ForgotPasswordController.class
+example\repository\MovieRepository.class
+example\service\AccountService.class
+example\entity\Account.class
+example\controller\MovieController.class
+example\entity\Role.class
+example\CinemaApplication.class
+example\controller\ResetPasswordController.class
+example\service\MovieService.class
+example\repository\AccountRepository.class
+example\entity\MembershipLevel.class
+example\controller\RegisterController.class
