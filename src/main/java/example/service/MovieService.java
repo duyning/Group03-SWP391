@@ -2,6 +2,8 @@ package example.service;
 
 /*
  * Added on 2026-06-04: Service logic for movie banners, status lists, detail, and search.
+ * Updated on 2026-06-04: Added UC-G03 searchMovies(keyword, genre, status)
+ * limited to movie title, genre, and status.
  * Created by: HuyPB - HE191335
  */
 
@@ -12,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,31 +75,47 @@ public class MovieService {
     }
 
     /**
-     * Search flow:
-     * - Empty keyword means show all active movies.
-     * - Non-empty keyword is normalized to lowercase and trimmed.
-     * - Search checks common visible fields customers may remember:
-     *   title, genre, director, cast, and language.
+     * UC-G03 Search Movies:
+     * Search active movies by title keyword, genre, and movie status only.
      */
-    public List<Movie> searchMovies(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return movieRepository.findByActiveTrue();
+    public List<Movie> searchMovies(String keyword, String genre, String status) {
+        Movie.MovieStatus movieStatus = parseStatus(status);
+        if (trimToNull(status) != null && movieStatus == null) {
+            return Collections.emptyList();
         }
 
-        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT).trim();
-        return movieRepository.findByActiveTrue().stream()
-                .filter(movie -> containsIgnoreCase(movie.getTitle(), normalizedKeyword)
-                        || containsIgnoreCase(movie.getGenre(), normalizedKeyword)
-                        || containsIgnoreCase(movie.getDirector(), normalizedKeyword)
-                        || containsIgnoreCase(movie.getCast(), normalizedKeyword)
-                        || containsIgnoreCase(movie.getLanguage(), normalizedKeyword))
-                .collect(Collectors.toList());
+        return movieRepository.searchActiveMovies(
+                trimToNull(keyword),
+                trimToNull(genre),
+                movieStatus
+        );
     }
 
-    /**
-     * Null-safe case-insensitive string matching helper for searchMovies().
-     */
-    private boolean containsIgnoreCase(String value, String keyword) {
-        return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
+    public List<String> getActiveGenres() {
+        return movieRepository.findDistinctActiveGenres();
+    }
+
+    public Movie.MovieStatus[] getMovieStatuses() {
+        return Movie.MovieStatus.values();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private Movie.MovieStatus parseStatus(String status) {
+        String normalizedStatus = trimToNull(status);
+        if (normalizedStatus == null) {
+            return null;
+        }
+
+        try {
+            return Movie.MovieStatus.valueOf(normalizedStatus);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 }

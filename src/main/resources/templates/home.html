@@ -1,6 +1,8 @@
 <!doctype html>
 <!--
   Updated on 2026-06-04: Home page follows the provided Beta Cinemas UI style.
+  Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
+  Updated on 2026-06-04: Removed English visible text from movie status and image alt text.
   Created by: HuyPB - HE191335
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
@@ -12,9 +14,10 @@
     <style>
         body {
             margin: 0;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-family: "Be Vietnam Pro", Arial, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             background: #fdfdfd;
             color: #333;
+            text-rendering: optimizeLegibility;
         }
 
         .top-bar {
@@ -358,7 +361,7 @@
                 <span style="opacity: 0.5">|</span>
                 <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
             </th:block>
-            <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="English">
+            <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
         </div>
     </div>
 
@@ -369,7 +372,7 @@
             </a>
 
             <nav class="nav-menu">
-                <a th:href="@{/}" class="active">LỊCH CHIẾU THEO RẠP</a>
+                <a th:href="@{/}" class="active">TRANG CHỦ</a>
                 <a th:href="@{/movies}">PHIM</a>
                 <a href="#">RẠP</a>
                 <a href="#">GIÁ VÉ</a>
@@ -378,7 +381,7 @@
                 <a href="#">CỘNG ĐỒNG</a>
             </nav>
 
-            <form class="search-form" th:action="@{/movies/search}" method="get">
+            <form class="search-form" th:action="@{/search}" method="get">
                 <input type="search" name="keyword" placeholder="Tìm phim">
                 <button type="submit">Tìm</button>
             </form>
@@ -387,7 +390,7 @@
 
     <!--
       Banner flow:
-      - bannerMovies comes from HomeController.
+      - bannerMovies comes from HomeController and contains about 5 hot movies.
       - Each active movie banner becomes one slide.
       - If bannerUrl is missing, posterUrl is used as fallback.
     -->
@@ -397,7 +400,7 @@
                  th:each="banner : ${bannerMovies}"
                  th:style="'background-image: url(' + ${banner.bannerUrl != null && !banner.bannerUrl.isEmpty() ? banner.bannerUrl : banner.posterUrl} + ')'">
                 <div class="banner-content">
-                    <span th:text="${banner.status}">NOW_SHOWING</span>
+                    <span th:text="${banner.status.name() == 'NOW_SHOWING' ? 'Đang chiếu' : (banner.status.name() == 'COMING_SOON' ? 'Sắp chiếu' : 'Suất chiếu đặc biệt')}">Đang chiếu</span>
                     <h1 th:text="${banner.title}">Tên phim</h1>
                     <p th:text="${banner.description}">Mô tả phim</p>
                     <a class="outline-btn" th:href="@{/movies/{id}(id=${banner.id})}">Xem chi tiết</a>
@@ -418,12 +421,15 @@
     <main class="content-container">
         <!-- Movie tabs follow the visual style of the provided UI page. -->
         <div class="tabs">
-            <span class="active">PHIM ĐANG CHIẾU</span>
+            <span class="active">PHIM ĐANG HOT</span>
         </div>
 
-        <!-- NOW_SHOWING movies from HomeController. -->
+        <!--
+          Home page only shows about 5 hot movies.
+          Full now-showing, coming-soon, and special-screening lists are on /movies.
+        -->
         <section class="movies">
-            <article class="movie-card" th:each="movie : ${nowShowingMovies}">
+            <article class="movie-card" th:each="movie : ${hotMovies}">
                 <a th:href="@{/movies/{id}(id=${movie.id})}">
                     <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
                 </a>
@@ -435,21 +441,9 @@
             </article>
         </section>
 
-        <!-- COMING_SOON movies from HomeController. -->
-        <div class="tabs">
-            <span class="active">SẮP CHIẾU</span>
+        <div style="text-align: center; margin: -20px 0 55px;">
+            <a class="outline-btn" th:href="@{/movies}">Xem tất cả phim</a>
         </div>
-        <section class="movies">
-            <article class="movie-card" th:each="movie : ${comingSoonMovies}">
-                <a th:href="@{/movies/{id}(id=${movie.id})}">
-                    <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
-                </a>
-                <h3 th:text="${movie.title}">Tên phim</h3>
-                <p><b>Thể loại:</b> <span th:text="${movie.genre}">Tâm lý</span></p>
-                <p><b>Khởi chiếu:</b> <span class="date-blue" th:text="${movie.releaseDate}">04/06/2026</span></p>
-                <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Chi tiết</a>
-            </article>
-        </section>
     </main>
 
     <footer class="footer">

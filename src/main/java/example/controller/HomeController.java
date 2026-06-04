@@ -6,12 +6,15 @@ package example.controller;
  */
 
 import example.entity.Account;
+import example.model.Movie;
 import example.service.MovieService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.List;
 
 @Controller
 public class HomeController {
@@ -25,8 +28,9 @@ public class HomeController {
      * Business flow:
      * - Load logged-in user from session when available, so the header can show
      *   account actions and user information.
-     * - Load active movies for homepage presentation:
-     *   bannerMovies for the hero area, then movie groups by status.
+     * - Load about 5 active movies as hotMovies for homepage presentation.
+     * - Reuse hotMovies as bannerMovies so the home page stays focused.
+     * - Customers who want the full movie catalog are sent to GET /movies.
      * - Return home.html for Thymeleaf rendering.
      */
     @GetMapping({"/", "/home"})
@@ -35,10 +39,9 @@ public class HomeController {
         if (loggedInUser != null) {
             model.addAttribute("user", loggedInUser);
         }
-        model.addAttribute("bannerMovies", movieService.getRandomBannerMovies());
-        model.addAttribute("nowShowingMovies", movieService.getNowShowingMovies());
-        model.addAttribute("comingSoonMovies", movieService.getComingSoonMovies());
-        model.addAttribute("specialScreeningMovies", movieService.getSpecialScreeningMovies());
+        List<Movie> hotMovies = movieService.getRandomBannerMovies();
+        model.addAttribute("bannerMovies", hotMovies);
+        model.addAttribute("hotMovies", hotMovies);
         return "home";
     }
 }

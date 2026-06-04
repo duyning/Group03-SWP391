@@ -2,11 +2,15 @@ package example.controller;
 
 /*
  * Added on 2026-06-04: Movie routes for listing, detail, and search.
+ * Updated on 2026-06-04: Added GET /search for UC-G03 Search Movies.
+ * Updated on 2026-06-04: Passed logged-in user to search page header.
  * Created by: HuyPB - HE191335
  */
 
+import example.entity.Account;
 import example.model.Movie;
 import example.service.MovieService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -56,19 +60,22 @@ public class MovieController {
         return "movie-detail";
     }
 
-    /**
-     * GET /movies/search?keyword=...
-     *
-     * Business flow:
-     * - Customer submits the search form from home/list/detail pages.
-     * - Controller keeps the keyword in the model so the input can show it back.
-     * - Search results are passed as "movies"; movie-list.html switches to
-     *   result mode when this attribute exists.
-     */
-    @GetMapping("/movies/search")
-    public String searchMovies(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
+    @GetMapping("/search")
+    public String searchMovies(@RequestParam(value = "keyword", required = false) String keyword,
+                               @RequestParam(value = "genre", required = false) String genre,
+                               @RequestParam(value = "status", required = false) String status,
+                               HttpSession session,
+                               Model model) {
+        Account loggedInUser = (Account) session.getAttribute("loggedInUser");
+        if (loggedInUser != null) {
+            model.addAttribute("user", loggedInUser);
+        }
+        model.addAttribute("movies", movieService.searchMovies(keyword, genre, status));
         model.addAttribute("keyword", keyword);
-        model.addAttribute("movies", movieService.searchMovies(keyword));
-        return "movie-list";
+        model.addAttribute("genre", genre);
+        model.addAttribute("status", status);
+        model.addAttribute("genres", movieService.getActiveGenres());
+        model.addAttribute("statuses", movieService.getMovieStatuses());
+        return "search-result";
     }
 }
