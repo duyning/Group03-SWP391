@@ -1,3 +1,7 @@
+/*
+ * Updated on 2026-06-04: Added project file ownership metadata.
+ * Created by: NinhDD - HE186113
+ */
 package example.config;
 
 import example.service.CatalogService;
