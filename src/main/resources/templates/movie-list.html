@@ -1,0 +1,367 @@
+<!doctype html>
+<!--
+  Updated on 2026-06-04: Movie list page follows the provided Beta Cinemas UI style.
+  Created by: HuyPB - HE191335
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beta Cinemas | Phim</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #fdfdfd;
+            color: #333;
+        }
+
+        .top-bar {
+            background: #0054a6;
+            color: white;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .top-container,
+        .header-container,
+        .content-container,
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .top-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .top-link {
+            color: white;
+            text-decoration: none;
+        }
+
+        .header-main {
+            background: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .logo {
+            height: 55px;
+        }
+
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            flex-grow: 1;
+            gap: 25px;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 700;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: #0054a6;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-form input {
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 8px 14px;
+            min-width: 210px;
+            outline: none;
+        }
+
+        .search-form button,
+        .buy-btn {
+            background: #0054a6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 800;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-form button {
+            padding: 8px 14px;
+            border-radius: 20px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin: 40px 0 20px;
+        }
+
+        .page-title h1 {
+            color: #0054a6;
+            font-size: 30px;
+            margin: 0 0 8px;
+            text-transform: uppercase;
+        }
+
+        .page-title p {
+            color: #64748b;
+            margin: 0;
+        }
+
+        .tabs {
+            text-align: center;
+            margin: 35px 0 30px;
+        }
+
+        .tabs span {
+            margin: 0 15px;
+            font-size: 20px;
+            font-weight: 800;
+            color: #333;
+            padding-bottom: 5px;
+        }
+
+        .tabs span.active {
+            color: #0054a6;
+            border-bottom: 3px solid #0054a6;
+        }
+
+        .movies {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 35px;
+            margin-bottom: 50px;
+        }
+
+        .movie-card {
+            background: white;
+        }
+
+        .movie-poster {
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            background: #eef2f7;
+            transition: 0.3s;
+        }
+
+        .movie-poster:hover {
+            transform: scale(1.02);
+        }
+
+        .movie-card h3 {
+            font-size: 18px;
+            color: #0054a6;
+            margin: 0 0 10px;
+            font-weight: 800;
+        }
+
+        .movie-card p {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .date-blue {
+            color: #0054a6;
+            font-weight: 800;
+        }
+
+        .buy-btn {
+            width: 100%;
+            padding: 10px 0;
+            margin-top: 15px;
+            text-transform: uppercase;
+        }
+
+        .empty-state {
+            padding: 35px 15px 55px;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .footer {
+            background: #0054a6;
+            color: white;
+            padding: 45px 0;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 45px;
+        }
+
+        @media (max-width: 900px) {
+            .header-container,
+            .nav-menu {
+                flex-wrap: wrap;
+            }
+
+            .search-form {
+                width: 100%;
+            }
+
+            .search-form input {
+                flex: 1;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header copied in structure from the provided Beta Cinemas UI. -->
+    <div class="top-bar">
+        <div class="top-container">
+            <a th:href="@{/login}" class="top-link">Đăng nhập</a>
+            <span style="opacity: 0.5">|</span>
+            <a th:href="@{/register}" class="top-link">Đăng ký</a>
+            <img src="https://flagcdn.com/w40/gb.png" style="height: 14px; margin-left: 15px" alt="English">
+        </div>
+    </div>
+
+    <header class="header-main">
+        <div class="header-container">
+            <a th:href="@{/}">
+                <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
+            </a>
+            <nav class="nav-menu">
+                <a th:href="@{/}">LỊCH CHIẾU THEO RẠP</a>
+                <a th:href="@{/movies}" class="active">PHIM</a>
+                <a href="#">RẠP</a>
+                <a href="#">GIÁ VÉ</a>
+                <a href="#">KHO VOUCHER</a>
+                <a href="#">TIN TỨC</a>
+                <a href="#">CỘNG ĐỒNG</a>
+            </nav>
+            <form class="search-form" th:action="@{/movies/search}" method="get">
+                <input type="search" name="keyword" placeholder="Tìm phim" th:value="${keyword}">
+                <button type="submit">Tìm</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="content-container">
+        <div class="page-title">
+            <h1>Phim</h1>
+            <p th:if="${keyword == null || keyword == ''}">Khám phá danh sách phim tại Beta Cinemas</p>
+            <p th:if="${keyword != null && keyword != ''}" th:text="'Kết quả tìm kiếm cho: ' + ${keyword}">Kết quả tìm kiếm</p>
+        </div>
+
+        <!-- Search result mode: MovieController passes movies when keyword search is used. -->
+        <th:block th:if="${movies != null}">
+            <div class="tabs">
+                <span class="active">KẾT QUẢ TÌM KIẾM</span>
+            </div>
+            <section class="movies" th:if="${!#lists.isEmpty(movies)}">
+                <article class="movie-card" th:each="movie : ${movies}">
+                    <a th:href="@{/movies/{id}(id=${movie.id})}">
+                        <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
+                    </a>
+                    <h3 th:text="${movie.title}">Tên phim</h3>
+                    <p><b>Thể loại:</b> <span th:text="${movie.genre}">Hành động</span></p>
+                    <p><b>Trạng thái:</b> <span class="date-blue" th:text="${movie.status}">NOW_SHOWING</span></p>
+                    <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Mua vé</a>
+                </article>
+            </section>
+            <div class="empty-state" th:if="${#lists.isEmpty(movies)}">Không tìm thấy phim phù hợp.</div>
+        </th:block>
+
+        <!-- Default listing mode: grouped by movie status. -->
+        <th:block th:if="${movies == null}">
+            <div class="tabs">
+                <span class="active">PHIM ĐANG CHIẾU</span>
+            </div>
+            <section class="movies">
+                <article class="movie-card" th:each="movie : ${nowShowingMovies}">
+                    <a th:href="@{/movies/{id}(id=${movie.id})}">
+                        <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
+                    </a>
+                    <h3 th:text="${movie.title}">Tên phim</h3>
+                    <p><b>Thể loại:</b> <span th:text="${movie.genre}">Hành động</span></p>
+                    <p><b>Thời lượng:</b> <span th:text="${movie.duration} + ' phút'">120 phút</span></p>
+                    <p><b>Khởi chiếu:</b> <span class="date-blue" th:text="${movie.releaseDate}">04/06/2026</span></p>
+                    <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Mua vé</a>
+                </article>
+            </section>
+
+            <div class="tabs">
+                <span class="active">SẮP CHIẾU</span>
+            </div>
+            <section class="movies">
+                <article class="movie-card" th:each="movie : ${comingSoonMovies}">
+                    <a th:href="@{/movies/{id}(id=${movie.id})}">
+                        <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
+                    </a>
+                    <h3 th:text="${movie.title}">Tên phim</h3>
+                    <p><b>Thể loại:</b> <span th:text="${movie.genre}">Tâm lý</span></p>
+                    <p><b>Khởi chiếu:</b> <span class="date-blue" th:text="${movie.releaseDate}">04/06/2026</span></p>
+                    <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Chi tiết</a>
+                </article>
+            </section>
+
+            <div class="tabs">
+                <span class="active">SUẤT CHIẾU ĐẶC BIỆT</span>
+            </div>
+            <section class="movies">
+                <article class="movie-card" th:each="movie : ${specialScreeningMovies}">
+                    <a th:href="@{/movies/{id}(id=${movie.id})}">
+                        <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
+                    </a>
+                    <h3 th:text="${movie.title}">Tên phim</h3>
+                    <p><b>Thể loại:</b> <span th:text="${movie.genre}">Đặc biệt</span></p>
+                    <p><b>Khởi chiếu:</b> <span class="date-blue" th:text="${movie.releaseDate}">04/06/2026</span></p>
+                    <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Chi tiết</a>
+                </article>
+            </section>
+        </th:block>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div>
+                <h4>BETA CINEMAS</h4>
+                <p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p>
+            </div>
+            <div>
+                <h4>LIÊN HỆ</h4>
+                <p>Hotline: 1900 636807</p>
+            </div>
+            <div>
+                <h4>KẾT NỐI</h4>
+                <p>Facebook | Youtube | TikTok</p>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
