@@ -33,7 +33,7 @@ public class CatalogController {
             RedirectAttributes redirectAttributes) {
         try {
             catalogService.addRoomType(name, description);
-            redirectAttributes.addFlashAttribute("successMessage", "ÄÃ£ thÃªm loáº¡i phÃ²ng \"" + name + "\".");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã thêm loại phòng \"" + name + "\".");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
@@ -49,7 +49,7 @@ public class CatalogController {
             RedirectAttributes redirectAttributes) {
         try {
             catalogService.updateRoomType(id, name, description, active);
-            redirectAttributes.addFlashAttribute("successMessage", "ÄÃ£ cáº­p nháº­t loáº¡i phÃ²ng \"" + name + "\".");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật loại phòng \"" + name + "\".");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
@@ -63,7 +63,7 @@ public class CatalogController {
             RedirectAttributes redirectAttributes) {
         try {
             catalogService.addAudioTechnology(name, description);
-            redirectAttributes.addFlashAttribute("successMessage", "ÄÃ£ thÃªm Ã¢m thanh \"" + name + "\".");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã thêm âm thanh \"" + name + "\".");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
@@ -79,7 +79,7 @@ public class CatalogController {
             RedirectAttributes redirectAttributes) {
         try {
             catalogService.updateAudioTechnology(id, name, description, active);
-            redirectAttributes.addFlashAttribute("successMessage", "ÄÃ£ cáº­p nháº­t Ã¢m thanh \"" + name + "\".");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật âm thanh \"" + name + "\".");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
@@ -96,7 +96,7 @@ public class CatalogController {
             RedirectAttributes redirectAttributes) {
         try {
             catalogService.updateSeatType(id, color, capacity, sellable, active);
-            redirectAttributes.addFlashAttribute("successMessage", "ÄÃ£ cáº­p nháº­t cáº¥u hÃ¬nh loáº¡i gháº¿.");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật cấu hình loại ghế.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
@@ -112,7 +112,7 @@ public class CatalogController {
             RedirectAttributes redirectAttributes) {
         try {
             catalogService.addSeatType(displayName, color, capacity, sellable);
-            redirectAttributes.addFlashAttribute("successMessage", "ÄÃ£ thÃªm loáº¡i gháº¿ \"" + displayName + "\".");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã thêm loại ghế \"" + displayName + "\".");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }

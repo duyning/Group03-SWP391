@@ -47,13 +47,13 @@ public class RegisterController {
 
         // Check for duplicate email
         if (accountService.isEmailExist(account.getEmail())) {
-            bindingResult.rejectValue("email", "error.account", "Email Ä‘Ã£ Ä‘Æ°á»£c sá»­ dá»¥ng");
+            bindingResult.rejectValue("email", "error.account", "Email đã được sử dụng");
         }
 
         // Check for duplicate phone number
         if (account.getPhoneNum() != null && !account.getPhoneNum().isEmpty()
                 && accountService.isPhoneNumExist(account.getPhoneNum())) {
-            bindingResult.rejectValue("phoneNum", "error.account", "Sá»‘ Ä‘iá»‡n thoáº¡i Ä‘Ã£ Ä‘Æ°á»£c sá»­ dá»¥ng");
+            bindingResult.rejectValue("phoneNum", "error.account", "Số điện thoại đã được sử dụng");
         }
 
         // If validation errors exist, return back to the form
@@ -64,7 +64,7 @@ public class RegisterController {
         // Register the account
         accountService.register(account);
 
-        redirectAttributes.addFlashAttribute("successMessage", "ÄÄƒng kÃ½ thÃ nh cÃ´ng! Vui lÃ²ng Ä‘Äƒng nháº­p.");
+        redirectAttributes.addFlashAttribute("successMessage", "Đăng ký thành công! Vui lòng đăng nhập.");
         return "redirect:/register?success";
     }
 }

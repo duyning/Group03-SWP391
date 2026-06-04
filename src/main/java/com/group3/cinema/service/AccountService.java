@@ -95,13 +95,13 @@ public class AccountService {
 
         // Case 5: Empty / null fields
         if (oldPassword == null || oldPassword.isBlank()) {
-            throw new IllegalArgumentException("Máº­t kháº©u cÅ© khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng");
+            throw new IllegalArgumentException("Mật khẩu cũ không được để trống");
         }
         if (newPassword == null || newPassword.isBlank()) {
-            throw new IllegalArgumentException("Máº­t kháº©u má»›i khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng");
+            throw new IllegalArgumentException("Mật khẩu mới không được để trống");
         }
         if (confirmPassword == null || confirmPassword.isBlank()) {
-            throw new IllegalArgumentException("XÃ¡c nháº­n máº­t kháº©u khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng");
+            throw new IllegalArgumentException("Xác nhận mật khẩu không được để trống");
         }
 
         // Case 1: Old password incorrect
@@ -134,16 +134,16 @@ public class AccountService {
      */
     public void updatePassword(Account account, String newPassword, String confirmPassword) {
         if (newPassword == null || newPassword.isBlank()) {
-            throw new IllegalArgumentException("Máº­t kháº©u má»›i khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng");
+            throw new IllegalArgumentException("Mật khẩu mới không được để trống");
         }
         if (confirmPassword == null || confirmPassword.isBlank()) {
-            throw new IllegalArgumentException("XÃ¡c nháº­n máº­t kháº©u khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng");
+            throw new IllegalArgumentException("Xác nhận mật khẩu không được để trống");
         }
         if (newPassword.length() < 8 || newPassword.length() > 20) {
-            throw new IllegalArgumentException("Máº­t kháº©u má»›i pháº£i tá»« 8 Ä‘áº¿n 20 kÃ½ tá»±");
+            throw new IllegalArgumentException("Mật khẩu mới phải từ 8 đến 20 ký tự");
         }
         if (!newPassword.equals(confirmPassword)) {
-            throw new IllegalArgumentException("Máº­t kháº©u xÃ¡c nháº­n khÃ´ng khá»›p");
+            throw new IllegalArgumentException("Mật khẩu xác nhận không khớp");
         }
 
         account.setPassword(newPassword);
@@ -160,15 +160,15 @@ public class AccountService {
         try {
             org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
             message.setTo(email);
-            message.setSubject("MÃ£ xÃ¡c nháº­n khÃ´i phá»¥c máº­t kháº©u - CinemaBook");
-            message.setText("ChÃ o báº¡n,\n\nMÃ£ OTP Ä‘á»ƒ khÃ´i phá»¥c máº­t kháº©u cá»§a báº¡n lÃ : " + otp + "\n\nMÃ£ nÃ y sáº½ háº¿t háº¡n trong 5 phÃºt. Vui lÃ²ng khÃ´ng chia sáº» mÃ£ nÃ y cho báº¥t ká»³ ai.\n\nTrÃ¢n trá»ng,\nÄá»™i ngÅ© CinemaBook.");
+            message.setSubject("Mã xác nhận khôi phục mật khẩu - CinemaBook");
+            message.setText("Chào bạn,\n\nMã OTP để khôi phục mật khẩu của bạn là: " + otp + "\n\nMã này sẽ hết hạn trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nĐội ngũ CinemaBook.");
             
             mailSender.send(message);
-            System.out.println("ÄÃ£ gá»­i OTP " + otp + " tá»›i email " + email);
+            System.out.println("Đã gửi OTP " + otp + " tới email " + email);
         } catch (Exception e) {
-            System.err.println("Lá»—i khi gá»­i email: " + e.getMessage());
+            System.err.println("Lỗi khi gửi email: " + e.getMessage());
             // Fallback for testing when email fails
-            System.out.println("FALLBACK OTP (do lá»—i gá»­i email): " + otp);
+            System.out.println("FALLBACK OTP (do lỗi gửi email): " + otp);
         }
 
         return otp;

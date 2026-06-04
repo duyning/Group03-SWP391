@@ -71,14 +71,14 @@ public class RoomService {
     public long countActive(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId).stream()
                 .peek(this::normalizeRoomStatus)
-                .filter(room -> "Hoáº¡t Ä‘á»™ng".equals(room.getStatus()))
+                .filter(room -> "Hoạt động".equals(room.getStatus()))
                 .count();
     }
 
     public long countMaintenance(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId).stream()
                 .peek(this::normalizeRoomStatus)
-                .filter(room -> "Báº£o trÃ¬".equals(room.getStatus()))
+                .filter(room -> "Bảo trì".equals(room.getStatus()))
                 .count();
     }
 
@@ -131,7 +131,7 @@ public class RoomService {
     public Room updateRoom(Long id, String roomName, String roomType,
                            String audioTech, String status) {
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y phÃ²ng id=" + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng id=" + id));
         room.setRoomName(roomName.trim());
         room.setRoomType(roomType.trim());
         room.setAudioTech(audioTech.trim());
@@ -154,9 +154,9 @@ public class RoomService {
         }
         String trimmed = status.trim();
         return switch (trimmed) {
-            case "Ho?t d?ng", "Ho?t ??ng", "Hoat dong", "Hoáº¡t Ä‘á»™ng" -> "Hoáº¡t Ä‘á»™ng";
-            case "B?o tr?", "Bao tri", "Báº£o trÃ¬" -> "Báº£o trÃ¬";
-            case "T?m ng?ng", "Tam ngung", "Táº¡m ngÆ°ng" -> "Táº¡m ngÆ°ng";
+            case "Ho?t d?ng", "Ho?t ??ng", "Hoat dong", "Hoáº¡t Ä‘á»™ng", "Hoạt động" -> "Hoạt động";
+            case "B?o tr?", "Bao tri", "Báº£o trÃ¬", "Bảo trì" -> "Bảo trì";
+            case "T?m ng?ng", "Tam ngung", "Táº¡m ngÆ°ng", "Tạm ngưng" -> "Tạm ngưng";
             default -> trimmed;
         };
     }

@@ -93,9 +93,9 @@ public class ShowtimeService {
     public Map<String, Long> getShowtimeStats() {
         Map<String, Long> stats = new HashMap<>();
         stats.put("total", showtimeRepository.count());
-        stats.put("weekday", showtimeRepository.countByDayType("Trong tuáº§n"));
-        stats.put("weekend", showtimeRepository.countByDayType("Cuá»‘i tuáº§n"));
-        stats.put("holiday", showtimeRepository.countByDayType("NgÃ y lá»…"));
+        stats.put("weekday", showtimeRepository.countByDayType("Trong tuần"));
+        stats.put("weekend", showtimeRepository.countByDayType("Cuối tuần"));
+        stats.put("holiday", showtimeRepository.countByDayType("Ngày lễ"));
         return stats;
     }
 
@@ -109,17 +109,17 @@ public class ShowtimeService {
             (month == 4 && day == 30) ||   // NgÃ y Giáº£i PhÃ³ng Miá»n Nam 30/4
             (month == 5 && day == 1) ||    // NgÃ y Quá»‘c Táº¿ Lao Äá»™ng 1/5
             (month == 9 && day == 2)) {    // NgÃ y Quá»‘c KhÃ¡nh 2/9
-            return "NgÃ y lá»…";
+            return "Ngày lễ";
         }
 
         // 2. Kiá»ƒm tra náº¿u ngÃ y thuá»™c Thá»© 7 hoáº·c Chá»§ Nháº­t (Cuá»‘i tuáº§n)
         DayOfWeek dow = date.getDayOfWeek();
         if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
-            return "Cuá»‘i tuáº§n";
+            return "Cuối tuần";
         }
 
         // 3. NgÃ y thÆ°á»ng (Trong tuáº§n: Thá»© 2 Ä‘áº¿n Thá»© 6)
-        return "Trong tuáº§n";
+        return "Trong tuần";
     }
 
 //    // Táº¡o 40 vÃ© cho sÆ¡ Ä‘á»“ gháº¿ cá»§a lá»‹ch chiáº¿u (A1-A8, B1-B8, C1-C8 lÃ  Gháº¿ thÆ°á»ng; D1-D8, E1-E8 lÃ  Gháº¿ VIP)

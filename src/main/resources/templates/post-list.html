@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -100,9 +100,13 @@
             font-size: 0.85rem;
         }
     </style>
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
 </head>
 
-<body>
+<body class="admin-page">
+<div class="admin-layout">
+    <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('posts')}"></aside>
+    <main class="admin-main">
 
 <div class="container py-5">
 
@@ -259,5 +263,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    </main>
+</div>
 </body>
 </html>
+

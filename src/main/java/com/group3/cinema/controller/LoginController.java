@@ -50,12 +50,12 @@ public class LoginController {
         Account account = accountService.login(email, password);
 
         if (account == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Email hoáº·c máº­t kháº©u khÃ´ng Ä‘Ãºng");
+            redirectAttributes.addFlashAttribute("errorMessage", "Email hoặc mật khẩu không đúng");
             return "redirect:/login?error";
         }
 
         if (!account.isStatus()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "TÃ i khoáº£n cá»§a báº¡n Ä‘Ã£ bá»‹ khÃ³a");
+            redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản của bạn đã bị khóa");
             return "redirect:/login?error";
         }
 
@@ -70,7 +70,7 @@ public class LoginController {
     @GetMapping("/logout")
     public String logout(HttpSession session, RedirectAttributes redirectAttributes) {
         session.invalidate();
-        redirectAttributes.addFlashAttribute("successMessage", "ÄÄƒng xuáº¥t thÃ nh cÃ´ng!");
+        redirectAttributes.addFlashAttribute("successMessage", "Đăng xuất thành công!");
         return "redirect:/login?logout";
     }
 }

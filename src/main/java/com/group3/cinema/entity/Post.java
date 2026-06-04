@@ -12,36 +12,36 @@ public class Post {
     private Long id;
 
     // TiÃªu Ä‘á» bÃ i viáº¿t
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     // Danh má»¥c
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(100)")
     private String category;
 
     // TÃ¡c giáº£
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(100)")
     private String author;
 
     // Sapo / mÃ´ táº£ ngáº¯n
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(1000)")
     private String summary;
 
     // Ná»™i dung bÃ i viáº¿t
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
     // ÄÆ°á»ng dáº«n áº£nh Ä‘áº¡i diá»‡n
-    @Column(length = 500)
+    @Column(columnDefinition = "NVARCHAR(500)")
     private String thumbnail;
 
     // Tags, phÃ¢n tÃ¡ch báº±ng dáº¥u pháº©y
-    @Column(length = 500)
+    @Column(columnDefinition = "NVARCHAR(500)")
     private String tags;
 
     // DRAFT | PUBLISHED | SCHEDULED
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
     private String status;
 
     private LocalDateTime publishedAt;

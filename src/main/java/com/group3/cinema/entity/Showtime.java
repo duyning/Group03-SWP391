@@ -31,9 +31,10 @@ public class Showtime {
     @Column(nullable = false)
     private LocalTime showTime;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(100)")
     private String room;
 
+    @Column(columnDefinition = "NVARCHAR(20)")
     private String dayType;
 
     public Showtime() {

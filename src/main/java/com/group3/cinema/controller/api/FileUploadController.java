@@ -47,21 +47,21 @@ public class FileUploadController {
 
         // Kiá»ƒm tra file khÃ´ng Ä‘Æ°á»£c rá»—ng
         if (file.isEmpty()) {
-            response.put("error", "Vui lÃ²ng chá»n file video.");
+            response.put("error", "Vui lòng chọn file video.");
             return ResponseEntity.badRequest().body(response);
         }
 
         // Kiá»ƒm tra Ä‘á»‹nh dáº¡ng file â€” chá»‰ cháº¥p nháº­n cÃ¡c Ä‘á»‹nh dáº¡ng video phá»• biáº¿n
         String originalName = file.getOriginalFilename();
         if (originalName == null) {
-            response.put("error", "TÃªn file khÃ´ng há»£p lá»‡.");
+            response.put("error", "Tên file không hợp lệ.");
             return ResponseEntity.badRequest().body(response);
         }
 
         String ext = originalName.toLowerCase();
         if (!ext.endsWith(".mp4") && !ext.endsWith(".webm") &&
             !ext.endsWith(".mkv") && !ext.endsWith(".avi") && !ext.endsWith(".mov")) {
-            response.put("error", "Äá»‹nh dáº¡ng video khÃ´ng Ä‘Æ°á»£c há»— trá»£. Vui lÃ²ng dÃ¹ng MP4, WebM, MKV, AVI hoáº·c MOV.");
+            response.put("error", "Định dạng video không được hỗ trợ. Vui lòng dùng MP4, WebM, MKV, AVI hoặc MOV.");
             return ResponseEntity.badRequest().body(response);
         }
 
@@ -84,12 +84,12 @@ public class FileUploadController {
             response.put("url",          publicUrl);
             response.put("originalName", originalName);
             response.put("size",         String.valueOf(file.getSize()));
-            response.put("message",      "Upload thÃ nh cÃ´ng!");
+            response.put("message",      "Upload thành công!");
 
             return ResponseEntity.ok(response);
 
         } catch (IOException e) {
-            response.put("error", "Lá»—i khi lÆ°u file: " + e.getMessage());
+            response.put("error", "Lỗi khi lưu file: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -106,13 +106,13 @@ public class FileUploadController {
 
             if (Files.exists(target)) {
                 Files.delete(target);
-                response.put("message", "ÄÃ£ xÃ³a file: " + safeName);
+                response.put("message", "Đã xóa file: " + safeName);
             } else {
-                response.put("message", "File khÃ´ng tá»“n táº¡i.");
+                response.put("message", "File không tồn tại.");
             }
             return ResponseEntity.ok(response);
         } catch (IOException e) {
-            response.put("error", "Lá»—i khi xÃ³a file: " + e.getMessage());
+            response.put("error", "Lỗi khi xóa file: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }

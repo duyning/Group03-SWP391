@@ -75,9 +75,9 @@ public class CatalogService {
 
     @Transactional
     public void addRoomType(String name, String description) {
-        String cleanName = requireName(name, "TÃªn loáº¡i phÃ²ng khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        String cleanName = requireName(name, "Tên loại phòng không được để trống.");
         if (roomTypeRepository.existsByNameIgnoreCase(cleanName)) {
-            throw new RuntimeException("Loáº¡i phÃ²ng Ä‘Ã£ tá»“n táº¡i: " + cleanName);
+            throw new RuntimeException("Loại phòng đã tồn tại: " + cleanName);
         }
         roomTypeRepository.save(RoomType.builder()
                 .name(cleanName)
@@ -89,12 +89,12 @@ public class CatalogService {
     @Transactional
     public void updateRoomType(Long id, String name, String description, boolean active) {
         RoomType roomType = roomTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y loáº¡i phÃ²ng id=" + id));
-        String cleanName = requireName(name, "TÃªn loáº¡i phÃ²ng khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy loại phòng id=" + id));
+        String cleanName = requireName(name, "Tên loại phòng không được để trống.");
         roomTypeRepository.findByNameIgnoreCase(cleanName)
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
-                    throw new RuntimeException("Loáº¡i phÃ²ng Ä‘Ã£ tá»“n táº¡i: " + cleanName);
+                    throw new RuntimeException("Loại phòng đã tồn tại: " + cleanName);
                 });
         roomType.setName(cleanName);
         roomType.setDescription(cleanDescription(description));
@@ -104,9 +104,9 @@ public class CatalogService {
 
     @Transactional
     public void addAudioTechnology(String name, String description) {
-        String cleanName = requireName(name, "TÃªn cÃ´ng nghá»‡ Ã¢m thanh khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        String cleanName = requireName(name, "Tên công nghệ âm thanh không được để trống.");
         if (audioTechnologyRepository.existsByNameIgnoreCase(cleanName)) {
-            throw new RuntimeException("CÃ´ng nghá»‡ Ã¢m thanh Ä‘Ã£ tá»“n táº¡i: " + cleanName);
+            throw new RuntimeException("Công nghệ âm thanh đã tồn tại: " + cleanName);
         }
         audioTechnologyRepository.save(AudioTechnology.builder()
                 .name(cleanName)
@@ -118,12 +118,12 @@ public class CatalogService {
     @Transactional
     public void updateAudioTechnology(Long id, String name, String description, boolean active) {
         AudioTechnology audioTechnology = audioTechnologyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y cÃ´ng nghá»‡ Ã¢m thanh id=" + id));
-        String cleanName = requireName(name, "TÃªn cÃ´ng nghá»‡ Ã¢m thanh khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy công nghệ âm thanh id=" + id));
+        String cleanName = requireName(name, "Tên công nghệ âm thanh không được để trống.");
         audioTechnologyRepository.findByNameIgnoreCase(cleanName)
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
-                    throw new RuntimeException("CÃ´ng nghá»‡ Ã¢m thanh Ä‘Ã£ tá»“n táº¡i: " + cleanName);
+                    throw new RuntimeException("Công nghệ âm thanh đã tồn tại: " + cleanName);
                 });
         audioTechnology.setName(cleanName);
         audioTechnology.setDescription(cleanDescription(description));
@@ -133,7 +133,7 @@ public class CatalogService {
 
     @Transactional
     public void addSeatType(String displayName, String color, int capacity, boolean sellable) {
-        String cleanName = requireName(displayName, "TÃªn loáº¡i gháº¿ khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        String cleanName = requireName(displayName, "Tên loại ghế không được để trống.");
         String code = uniqueSeatTypeCode(cleanName);
         seatTypeRepository.save(SeatType.builder()
                 .code(code)
@@ -148,7 +148,7 @@ public class CatalogService {
     @Transactional
     public void updateSeatType(Long id, String color, int capacity, boolean sellable, boolean active) {
         SeatType seatType = seatTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y loáº¡i gháº¿ id=" + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy loại ghế id=" + id));
         seatType.setColor(requireColor(color));
         seatType.setCapacity(Math.max(0, capacity));
         seatType.setSellable(sellable);
@@ -164,11 +164,11 @@ public class CatalogService {
         }
         ensureRoomType("2D");
         ensureAudioTechnology("Dolby 7.1");
-        ensureSeatType("std", "Gháº¿ thÆ°á»ng", "#e2e8f0", 1, true);
-        ensureSeatType("vip", "Gháº¿ VIP", "#fef08a", 1, true);
-        ensureSeatType("couple", "Gháº¿ Couple", "#fbcfe8", 2, true);
-        ensureSeatType("broken", "Gháº¿ há»ng", "#fca5a5", 0, false);
-        ensureSeatType("empty", "Lá»‘i Ä‘i / Trá»‘ng", "#ffffff", 0, false);
+        ensureSeatType("std", "Ghế thường", "#e2e8f0", 1, true);
+        ensureSeatType("vip", "Ghế VIP", "#fef08a", 1, true);
+        ensureSeatType("couple", "Ghế Couple", "#fbcfe8", 2, true);
+        ensureSeatType("broken", "Ghế hỏng", "#fca5a5", 0, false);
+        ensureSeatType("empty", "Lối đi / Trống", "#ffffff", 0, false);
     }
 
     private void ensureRoomType(String name) {
@@ -209,7 +209,7 @@ public class CatalogService {
 
     private String requireColor(String color) {
         if (!StringUtils.hasText(color) || !color.trim().matches("^#[0-9a-fA-F]{6}$")) {
-            throw new RuntimeException("MÃ u loáº¡i gháº¿ pháº£i cÃ³ Ä‘á»‹nh dáº¡ng #RRGGBB.");
+            throw new RuntimeException("Màu loại ghế phải có định dạng #RRGGBB.");
         }
         return color.trim();
     }

@@ -19,7 +19,7 @@ public class SeatType {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "code", nullable = false, unique = true, length = 20)
+    @Column(name = "code", nullable = false, unique = true, columnDefinition = "NVARCHAR(20)")
     private String code;
 
     @Column(name = "display_name", nullable = false, columnDefinition = "NVARCHAR(80)")

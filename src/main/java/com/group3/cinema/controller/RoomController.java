@@ -83,10 +83,10 @@ public class RoomController {
         try {
             roomService.addRoom(DEFAULT_CINEMA_ID, roomName, roomType, audioTech, status);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "ÄÃ£ thÃªm phÃ²ng \"" + roomName + "\" thÃ nh cÃ´ng!");
+                    "Đã thêm phòng \"" + roomName + "\" thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Lá»—i khi thÃªm phÃ²ng: " + e.getMessage());
+                    "Lỗi khi thêm phòng: " + e.getMessage());
         }
         return "redirect:/admin/rooms";
     }
@@ -105,10 +105,10 @@ public class RoomController {
         try {
             roomService.updateRoom(id, roomName, roomType, audioTech, status);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "ÄÃ£ cáº­p nháº­t phÃ²ng \"" + roomName + "\" thÃ nh cÃ´ng!");
+                    "Đã cập nhật phòng \"" + roomName + "\" thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Lá»—i khi cáº­p nháº­t: " + e.getMessage());
+                    "Lỗi khi cập nhật: " + e.getMessage());
         }
         return "redirect:/admin/rooms";
     }
@@ -123,10 +123,10 @@ public class RoomController {
         try {
             roomService.deleteRoom(id);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "ÄÃ£ xÃ³a phÃ²ng thÃ nh cÃ´ng!");
+                    "Đã xóa phòng thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Lá»—i khi xÃ³a phÃ²ng: " + e.getMessage());
+                    "Lỗi khi xóa phòng: " + e.getMessage());
         }
         return "redirect:/admin/rooms";
     }

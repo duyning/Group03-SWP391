@@ -152,20 +152,20 @@ public class SeatService {
     public List<String> validateMatrix(String[][] matrix) {
         List<String> errors = new ArrayList<>();
         if (matrix == null || matrix.length == 0) {
-            errors.add("SÆ¡ Ä‘á»“ gháº¿ pháº£i cÃ³ Ã­t nháº¥t 1 hÃ ng.");
+            errors.add("Sơ đồ ghế phải có ít nhất 1 hàng.");
             return errors;
         }
         if (matrix.length > 26) {
-            errors.add("SÆ¡ Ä‘á»“ gháº¿ khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 26 hÃ ng.");
+            errors.add("Sơ đồ ghế không được vượt quá 26 hàng.");
         }
 
         int cols = matrix[0] == null ? 0 : matrix[0].length;
         if (cols == 0) {
-            errors.add("SÆ¡ Ä‘á»“ gháº¿ pháº£i cÃ³ Ã­t nháº¥t 1 cá»™t.");
+            errors.add("Sơ đồ ghế phải có ít nhất 1 cột.");
             return errors;
         }
         if (cols > 50) {
-            errors.add("SÆ¡ Ä‘á»“ gháº¿ khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 50 cá»™t.");
+            errors.add("Sơ đồ ghế không được vượt quá 50 cột.");
         }
 
         Set<String> allowedTypes = seatTypeRepository.findByActiveTrueOrderByIdAsc().stream()
@@ -176,20 +176,20 @@ public class SeatService {
 
         for (int r = 0; r < matrix.length; r++) {
             if (matrix[r] == null || matrix[r].length != cols) {
-                errors.add("CÃ¡c hÃ ng trong sÆ¡ Ä‘á»“ gháº¿ pháº£i cÃ³ cÃ¹ng sá»‘ cá»™t.");
+                errors.add("Các hàng trong sơ đồ ghế phải có cùng số cột.");
                 break;
             }
             for (int c = 0; c < cols; c++) {
                 String type = matrix[r][c];
                 if (type == null || !allowedTypes.contains(type)) {
-                    errors.add("Loáº¡i gháº¿ khÃ´ng há»£p lá»‡ táº¡i hÃ ng " + rowName(r) + ", cá»™t " + (c + 1) + ".");
+                    errors.add("Loại ghế không hợp lệ tại hàng " + rowName(r) + ", cột " + (c + 1) + ".");
                     continue;
                 }
                 if ("couple".equals(type)) {
                     if (c >= cols - 1) {
-                        errors.add("Gháº¿ couple khÃ´ng Ä‘Æ°á»£c náº±m á»Ÿ cá»™t cuá»‘i hÃ ng " + rowName(r) + ".");
+                        errors.add("Ghế couple không được nằm ở cột cuối hàng " + rowName(r) + ".");
                     } else if (!"skip".equals(matrix[r][c + 1])) {
-                        errors.add("Gháº¿ couple táº¡i " + rowName(r) + (c + 1) + " pháº£i chiáº¿m Ã´ bÃªn pháº£i.");
+                        errors.add("Ghế couple tại " + rowName(r) + (c + 1) + " phải chiếm ô bên phải.");
                     }
                 }
                 if ("skip".equals(type) && (c == 0 || !"couple".equals(matrix[r][c - 1]))) {
@@ -199,7 +199,7 @@ public class SeatService {
         }
 
         orphanSkipByRow.forEach((row, count) ->
-                errors.add("HÃ ng " + row + " cÃ³ Ã´ skip láº», khÃ´ng thuá»™c gháº¿ couple."));
+                errors.add("Hàng " + row + " có ô skip lẻ, không thuộc ghế couple."));
         return errors;
     }
 
@@ -232,9 +232,9 @@ public class SeatService {
             return status;
         }
         return switch (status.trim()) {
-            case "Ho?t d?ng", "Ho?t ??ng", "Hoat dong", "Hoáº¡t Ä‘á»™ng" -> "Hoáº¡t Ä‘á»™ng";
-            case "B?o tr?", "Bao tri", "Báº£o trÃ¬" -> "Báº£o trÃ¬";
-            case "T?m ng?ng", "Tam ngung", "Táº¡m ngÆ°ng" -> "Táº¡m ngÆ°ng";
+            case "Ho?t d?ng", "Ho?t ??ng", "Hoat dong", "Hoáº¡t Ä‘á»™ng", "Hoạt động" -> "Hoạt động";
+            case "B?o tr?", "Bao tri", "Báº£o trÃ¬", "Bảo trì" -> "Bảo trì";
+            case "T?m ng?ng", "Tam ngung", "Táº¡m ngÆ°ng", "Tạm ngưng" -> "Tạm ngưng";
             default -> status.trim();
         };
     }

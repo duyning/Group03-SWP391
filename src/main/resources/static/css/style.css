@@ -50,6 +50,75 @@ body {
     padding: 2rem 1.5rem;
 }
 
+body[data-page] {
+    padding: 0;
+}
+
+.admin-layout {
+    min-height: 100vh;
+    display: flex;
+    background: var(--bg-app);
+}
+
+.admin-sidebar {
+    width: 260px;
+    min-height: 100vh;
+    flex-shrink: 0;
+    background: #1e293b;
+    color: #f8fafc;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+}
+
+.sidebar-header {
+    padding: 25px;
+    font-size: 20px;
+    font-weight: 800;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 15px 0;
+    margin: 0;
+}
+
+.sidebar-nav a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.sidebar-nav li {
+    padding: 12px 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #94a3b8;
+    transition: 0.2s;
+}
+
+.sidebar-nav li:hover,
+.sidebar-nav li.active {
+    background: #334155;
+    color: #fff;
+}
+
+.sidebar-nav li.active {
+    border-left: 4px solid var(--primary-color);
+}
+
+.admin-main {
+    min-width: 0;
+    flex: 1;
+    padding: 2rem 1.5rem;
+}
+
 /* Khối bao phủ trung tâm co giãn theo chiều rộng tối đa */
 .app-container {
     max-width: 1200px;

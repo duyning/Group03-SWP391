@@ -41,7 +41,7 @@ public class Seat {
      * NhÃ£n gháº¿ hiá»ƒn thá»‹, vÃ­ dá»¥ "A1", "B12", "C3-C4" (couple).
      * ÄÆ°á»£c tÃ­nh tá»± Ä‘á»™ng, khÃ´ng pháº£i ngÆ°á»i dÃ¹ng nháº­p.
      */
-    @Column(name = "seat_label", length = 20)
+    @Column(name = "seat_label", columnDefinition = "NVARCHAR(20)")
     private String seatLabel;
 
     /**
@@ -53,7 +53,7 @@ public class Seat {
      * - "empty"  : Lá»‘i Ä‘i / Ã´ trá»‘ng
      * - "skip"   : Ã” bá»‹ chiáº¿m bá»Ÿi couple bÃªn trÃ¡i (khÃ´ng render)
      */
-    @Column(name = "seat_type", nullable = false, length = 10)
+    @Column(name = "seat_type", nullable = false, columnDefinition = "NVARCHAR(30)")
     @Builder.Default
     private String seatType = "std";
 }

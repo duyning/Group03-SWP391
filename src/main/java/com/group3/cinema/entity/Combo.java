@@ -11,21 +11,21 @@ public class Combo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 150)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(150)")
     private String name;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "NVARCHAR(500)")
     private String description;
 
     // DÃ¹ng BigDecimal hoáº·c Double Ä‘á»ƒ lÆ°u giÃ¡ tiá»n cho chuáº©n cáº¥u trÃºc sá»‘
     @Column(nullable = false)
     private BigDecimal price;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String image;
 
     // ACTIVE (Äang bÃ¡n) | INACTIVE (Ngá»«ng bÃ¡n)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
     private String status = "ACTIVE";
 
     // ===== Getters and Setters =====

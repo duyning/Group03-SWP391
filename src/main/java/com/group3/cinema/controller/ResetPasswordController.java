@@ -64,7 +64,7 @@ public class ResetPasswordController {
         // Reload account fresh from DB to get current password
         Account account = accountService.findById(loggedInUser.getAccountID());
         if (account == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "TÃ i khoáº£n khÃ´ng tá»“n táº¡i.");
+            redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản không tồn tại.");
             return "redirect:/reset-password?error";
         }
 
@@ -74,7 +74,7 @@ public class ResetPasswordController {
             // Update session with new account info
             session.setAttribute("loggedInUser", account);
 
-            redirectAttributes.addFlashAttribute("successMessage", "Äá»•i máº­t kháº©u thÃ nh cÃ´ng!");
+            redirectAttributes.addFlashAttribute("successMessage", "Đổi mật khẩu thành công!");
             return "redirect:/reset-password?success";
 
         } catch (IllegalArgumentException e) {

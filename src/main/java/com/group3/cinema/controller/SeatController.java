@@ -42,7 +42,7 @@ public class SeatController {
     public String seatDesignPage(@PathVariable Long roomId, Model model) {
 
         Room room = roomService.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y phÃ²ng id=" + roomId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng id=" + roomId));
 
         // XÃ¢y dá»±ng ma tráº­n kiá»ƒu gháº¿ 2D (láº¥y tá»« DB hoáº·c máº·c Ä‘á»‹nh "std")
         String[][] matrix    = seatService.buildMatrix(roomId);
@@ -90,7 +90,7 @@ public class SeatController {
 
             if (rawMatrix == null || rawMatrix.isEmpty()) {
                 result.put("success", false);
-                result.put("message", "Dá»¯ liá»‡u matrix khÃ´ng há»£p lá»‡.");
+                result.put("message", "Dữ liệu matrix không hợp lệ.");
                 return ResponseEntity.badRequest().body(result);
             }
 
@@ -108,13 +108,13 @@ public class SeatController {
             seatService.saveMatrix(roomId, matrix);
 
             result.put("success", true);
-            result.put("message", "LÆ°u sÆ¡ Ä‘á»“ gháº¿ thÃ nh cÃ´ng!");
+            result.put("message", "Lưu sơ đồ ghế thành công!");
             return ResponseEntity.ok(result);
 
         } catch (Exception e) {
-            log.error("Lá»—i lÆ°u sÆ¡ Ä‘á»“ gháº¿ roomId={}", roomId, e);
+            log.error("Lỗi lưu sơ đồ ghế roomId={}", roomId, e);
             result.put("success", false);
-            result.put("message", "Lá»—i: " + e.getMessage());
+            result.put("message", "Lỗi: " + e.getMessage());
             return ResponseEntity.internalServerError().body(result);
         }
     }
@@ -130,9 +130,9 @@ public class SeatController {
             String[][] defaultMatrix = new String[room.getRows()][room.getCols()];
             for (String[] row : defaultMatrix) Arrays.fill(row, "std");
             seatService.saveMatrix(roomId, defaultMatrix);
-            redirectAttributes.addFlashAttribute("successMessage", "ÄÃ£ reset sÆ¡ Ä‘á»“ gháº¿ vá» máº·c Ä‘á»‹nh!");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã reset sơ đồ ghế về mặc định!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Lá»—i reset: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi reset: " + e.getMessage());
         }
         return "redirect:/admin/rooms/" + roomId + "/seats";
     }

@@ -52,7 +52,10 @@ public class Account {
 
     @Min(value = 17, message = "Age must be greater than 16")
     private int age;
+    @Column(columnDefinition = "NVARCHAR(20)")
     private String gender;
+
+    @Column(columnDefinition = "NVARCHAR(500)")
     private String avatar;
     private int loyaltyPoint;
 

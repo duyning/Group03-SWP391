@@ -51,10 +51,10 @@ public class Room {
     @Builder.Default
     private int totalSeats = 0;
 
-    /** Tráº¡ng thÃ¡i: "Hoáº¡t Ä‘á»™ng", "Báº£o trÃ¬", "Táº¡m ngÆ°ng" */
+    /** Trạng thái: "Hoạt động", "Bảo trì", "Tạm ngưng" */
     @Column(name = "status", columnDefinition = "NVARCHAR(20)")
     @Builder.Default
-    private String status = "Hoáº¡t Ä‘á»™ng";
+    private String status = "Hoạt động";
 
     /** ID ráº¡p chiáº¿u phim (foreign key, dÃ¹ng Ä‘Æ¡n giáº£n lÃ  Long) */
     @Column(name = "cinema_id")

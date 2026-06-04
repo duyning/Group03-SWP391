@@ -43,7 +43,7 @@ public class ForgotPasswordController {
     public String processEmail(@RequestParam("email") String email, HttpSession session, RedirectAttributes redirectAttributes) {
         Account account = accountService.findByEmail(email);
         if (account == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Email khÃ´ng tá»“n táº¡i trong há»‡ thá»‘ng.");
+            redirectAttributes.addFlashAttribute("errorMessage", "Email không tồn tại trong hệ thống.");
             return "redirect:/forgot-password";
         }
 
@@ -54,7 +54,7 @@ public class ForgotPasswordController {
         session.setAttribute("forgotEmail", email);
         session.setAttribute("forgotOtp", otp);
         
-        redirectAttributes.addFlashAttribute("successMessage", "MÃ£ xÃ¡c nháº­n Ä‘Ã£ Ä‘Æ°á»£c gá»­i Ä‘áº¿n email " + email);
+        redirectAttributes.addFlashAttribute("successMessage", "Mã xác nhận đã được gửi đến email " + email);
         return "redirect:/forgot-password/otp";
     }
 
@@ -74,7 +74,7 @@ public class ForgotPasswordController {
         String sessionOtp = (String) session.getAttribute("forgotOtp");
         
         if (sessionOtp == null || !sessionOtp.equals(userOtp)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "MÃ£ xÃ¡c nháº­n khÃ´ng Ä‘Ãºng hoáº·c Ä‘Ã£ háº¿t háº¡n.");
+            redirectAttributes.addFlashAttribute("errorMessage", "Mã xác nhận không đúng hoặc đã hết hạn.");
             return "redirect:/forgot-password/otp";
         }
 
@@ -116,7 +116,7 @@ public class ForgotPasswordController {
             session.removeAttribute("forgotOtp");
             session.removeAttribute("otpVerified");
 
-            redirectAttributes.addFlashAttribute("successMessage", "Äá»•i máº­t kháº©u thÃ nh cÃ´ng! Vui lÃ²ng Ä‘Äƒng nháº­p.");
+            redirectAttributes.addFlashAttribute("successMessage", "Đổi mật khẩu thành công! Vui lòng đăng nhập.");
             return "redirect:/login";
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
