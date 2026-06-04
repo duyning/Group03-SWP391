@@ -6,7 +6,7 @@ package example.controller;
  */
 
 import example.entity.Account;
-import example.model.Movie;
+import example.entity.Movie;
 import example.service.MovieService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;

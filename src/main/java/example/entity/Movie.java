@@ -1,4 +1,4 @@
-package example.model;
+package example.entity;
 
 /*
  * Added on 2026-06-04: Movie entity for cinema movie data.

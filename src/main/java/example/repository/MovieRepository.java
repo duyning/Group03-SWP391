@@ -7,7 +7,7 @@ package example.repository;
  * Created by: HuyPB - HE191335
  */
 
-import example.model.Movie;
+import example.entity.Movie;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

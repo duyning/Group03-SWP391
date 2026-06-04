@@ -7,7 +7,7 @@ package example.service;
  * Created by: HuyPB - HE191335
  */
 
-import example.model.Movie;
+import example.entity.Movie;
 import example.repository.MovieRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
