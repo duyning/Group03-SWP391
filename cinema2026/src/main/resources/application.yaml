@@ -1,0 +1,35 @@
+# ============================================================
+# Dự án: Cinema 2026 — SWP391 Group 03
+# File: application.yaml
+# Chức năng: Tập tin cấu hình chính của ứng dụng Spring Boot.
+#            Cấu hình kết nối cơ sở dữ liệu SQL Server, thuộc tính JPA Hibernate,
+#            cài đặt giới hạn dung lượng tải lên file Multipart, và đường dẫn thư mục lưu trữ video.
+# Người viết: TrienLX - HE182285
+# Ngày tạo: 2026-06-04
+# ============================================================
+spring:
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=swp392;encrypt=true;trustServerCertificate=true;
+    username: swp392
+    password: 123
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+
+  # Cấu hình giới hạn kích thước file upload (500MB mỗi file, 1GB mỗi request)
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 1024MB
+
+# Thư mục lưu video upload trên máy chủ (dùng đường dẫn tuyệt đối hoặc tương đối)
+app:
+  upload:
+    video-dir: src/main/resources/static/uploads/videos/
