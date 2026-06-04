@@ -1,0 +1,280 @@
+<!--
+  Trang Hồ sơ cá nhân (Profile Page).
+  Giao diện hiển thị các trường thông tin chi tiết của người dùng đã đăng nhập dưới dạng lưới.
+  
+  Ngày thực hiện: 04/06/2026
+  Tạo bởi: DuongND_HE186619
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ sơ cá nhân - CinemaBook</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .profile-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 40px;
+            width: 100%;
+            max-width: 760px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa, #ec4899);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 8px 24px rgba(167, 139, 250, 0.35);
+        }
+
+        .info-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 576px) {
+            .info-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 14px;
+            padding: 14px 18px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .info-item:hover {
+            background: rgba(167, 139, 250, 0.08);
+            border-color: rgba(167, 139, 250, 0.25);
+        }
+
+        .info-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(167, 139, 250, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            color: #c4b5fd;
+            flex-shrink: 0;
+        }
+
+        .info-content {
+            flex: 1;
+        }
+
+        .info-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 2px;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #e0e0f0;
+        }
+
+        .info-value.empty {
+            color: rgba(255, 255, 255, 0.25);
+            font-style: italic;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 28px;
+        }
+
+        .btn-action {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #a78bfa, #ec4899);
+            color: white;
+        }
+
+        .btn-edit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(167, 139, 250, 0.35);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="profile-card">
+    <div class="profile-header">
+        <div class="profile-avatar" th:text="${account.name != null && !account.name.isEmpty() ? account.name.substring(0,1).toUpperCase() : 'U'}">U</div>
+    </div>
+
+    <div class="info-list">
+        <!-- Họ và tên -->
+        <div class="info-item">
+            <div class="info-icon"><i class="fas fa-user"></i></div>
+            <div class="info-content">
+                <div class="info-label">Họ và tên</div>
+                <div class="info-value" th:text="${account.name}" th:classappend="${account.name == null || account.name.isEmpty()} ? 'empty' : ''">
+                    Chưa cập nhật
+                </div>
+            </div>
+        </div>
+
+        <!-- Số điện thoại -->
+        <div class="info-item">
+            <div class="info-icon"><i class="fas fa-phone"></i></div>
+            <div class="info-content">
+                <div class="info-label">Số điện thoại</div>
+                <div class="info-value" th:if="${account.phoneNum != null && !account.phoneNum.isEmpty()}" th:text="${account.phoneNum}">0123456789</div>
+                <div class="info-value empty" th:if="${account.phoneNum == null || account.phoneNum.isEmpty()}">Chưa cập nhật</div>
+            </div>
+        </div>
+
+        <!-- Email -->
+        <div class="info-item">
+            <div class="info-icon"><i class="fas fa-envelope"></i></div>
+            <div class="info-content">
+                <div class="info-label">Email</div>
+                <div class="info-value" th:text="${account.email}" th:classappend="${account.email == null || account.email.isEmpty()} ? 'empty' : ''">
+                    Chưa cập nhật
+                </div>
+            </div>
+        </div>
+
+        <!-- Tuổi -->
+        <div class="info-item">
+            <div class="info-icon"><i class="fas fa-birthday-cake"></i></div>
+            <div class="info-content">
+                <div class="info-label">Tuổi</div>
+                <div class="info-value" th:if="${account.age > 0}" th:text="${account.age}">0</div>
+                <div class="info-value empty" th:if="${account.age == 0}">Chưa cập nhật</div>
+            </div>
+        </div>
+
+        <!-- Giới tính -->
+        <div class="info-item">
+            <div class="info-icon"><i class="fas fa-venus-mars"></i></div>
+            <div class="info-content">
+                <div class="info-label">Giới tính</div>
+                <div class="info-value" th:if="${account.gender != null && !account.gender.isEmpty()}" th:text="${account.gender}">Nam</div>
+                <div class="info-value empty" th:if="${account.gender == null || account.gender.isEmpty()}">Chưa cập nhật</div>
+            </div>
+        </div>
+
+        <!-- Vai trò -->
+        <div class="info-item">
+            <div class="info-icon"><i class="fas fa-user-shield"></i></div>
+            <div class="info-content">
+                <div class="info-label">Vai trò</div>
+                <div class="info-value">
+                    <span th:if="${account.role != null}" th:text="${account.role.name() == 'ADMIN' ? 'Quản trị viên' : (account.role.name() == 'MANAGER' ? 'Quản lý' : 'Khách hàng')}">Khách hàng</span>
+                    <span th:if="${account.role == null}" class="empty">Chưa cập nhật</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Điểm tích lũy -->
+        <div class="info-item">
+            <div class="info-icon"><i class="fas fa-star"></i></div>
+            <div class="info-content">
+                <div class="info-label">Điểm tích lũy</div>
+                <div class="info-value" th:text="${account.loyaltyPoint} + ' điểm'">0 điểm</div>
+            </div>
+        </div>
+
+        <!-- Địa chỉ -->
+        <div class="info-item">
+            <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <div class="info-content">
+                <div class="info-label">Địa chỉ</div>
+                <div class="info-value" th:if="${account.address != null && !account.address.isEmpty()}" th:text="${account.address}">Hà Nội</div>
+                <div class="info-value empty" th:if="${account.address == null || account.address.isEmpty()}">Chưa cập nhật</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-actions">
+        <a th:href="@{/home}" class="btn-action btn-back">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+        <a th:href="@{/reset-password}" class="btn-action btn-edit">
+            <i class="fas fa-key"></i> Đổi mật khẩu
+        </a>
+    </div>
+</div>
+
+</body>
+</html>

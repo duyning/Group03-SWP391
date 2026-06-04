@@ -12,6 +12,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+/**
+ * Controller xử lý tính năng quên mật khẩu (Forgot Password) bằng OTP gửi qua email.
+ * Cho phép người dùng xác thực email, nhập mã OTP để xác nhận và thiết lập lại mật khẩu mới.
+ * 
+ * Ngày thực hiện: 04/06/2026
+ * Tạo bởi: DuongND_HE186619
+ */
 @Controller
 @RequestMapping("/forgot-password")
 public class ForgotPasswordController {

@@ -6,24 +6,24 @@
   <component name="ChangeListManager">
     <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/controller/ForgotPasswordController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/controller/ForgotPasswordController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/controller/HomeController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/controller/HomeController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/controller/LoginController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/controller/LoginController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/controller/RegisterController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/controller/RegisterController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/controller/ResetPasswordController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/controller/ResetPasswordController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/entity/Account.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/entity/Account.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/entity/MembershipLevel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/entity/MembershipLevel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/entity/Role.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/entity/Role.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/repository/AccountRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/repository/AccountRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/example/service/AccountService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/example/service/AccountService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/forgot-password.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/forgot-password.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/home.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/login.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/templates/register.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/register.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/example/CinemaApplication.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/CinemaApplication.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/example/controller/HomeController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/controller/HomeController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/example/controller/LoginController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/controller/LoginController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/example/controller/RegisterController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/controller/RegisterController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/reset-password.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/reset-password.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/example/entity/Account.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/entity/Account.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/example/entity/MembershipLevel.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/entity/MembershipLevel.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/example/entity/Role.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/entity/Role.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/example/repository/AccountRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/repository/AccountRepository.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/example/service/AccountService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/service/AccountService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/register.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/register.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,6 +91,9 @@
     </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="StructureViewState">
+    <option name="selectedTab" value="Logical" />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="" />
@@ -100,6 +103,8 @@
       <updated>1780338655074</updated>
       <workItem from="1780338657416" duration="463000" />
       <workItem from="1780342970779" duration="6060000" />
+      <workItem from="1780370983436" duration="959000" />
+      <workItem from="1780582537570" duration="6873000" />
     </task>
     <servers />
   </component>

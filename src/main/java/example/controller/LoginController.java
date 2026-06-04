@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+/**
+ * Controller xử lý tính năng đăng nhập và đăng xuất (Login/Logout).
+ * Xác thực thông tin người dùng từ cơ sở dữ liệu và quản lý trạng thái phiên làm việc (Session).
+ * 
+ * Ngày thực hiện: 04/06/2026
+ * Tạo bởi: DuongND_HE186619
+ */
 @Controller
 public class LoginController {
 

@@ -1,3 +1,10 @@
+<!--
+  Trang chủ (Home Page).
+  Giao diện chính sau khi đăng nhập thành công, hiển thị các thông tin tổng quan của rạp phim.
+  
+  Ngày thực hiện: 04/06/2026
+  Tạo bởi: DuongND_HE186619
+-->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
@@ -243,12 +250,12 @@
         <div class="nav-right">
             <!-- Đã đăng nhập -->
             <th:block th:if="${user != null}">
-                <div class="user-chip">
+                <a href="/cinema/profile" class="user-chip" style="text-decoration: none; color: inherit;">
                     <div class="avatar"
                         th:text="${user.name != null && !user.name.isEmpty() ? user.name.substring(0,1).toUpperCase() : 'U'}">
                         U</div>
                     <span th:text="${user.name}">Người dùng</span>
-                </div>
+                </a>
                 <a href="/cinema/reset-password" class="btn-logout" style="background: rgba(167, 139, 250, 0.12); border-color: rgba(167, 139, 250, 0.25); color: #c4b5fd; margin-right: 8px;">
                     <i class="fas fa-key"></i> Đổi mật khẩu
                 </a>

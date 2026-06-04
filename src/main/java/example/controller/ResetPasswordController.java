@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+/**
+ * Controller xử lý tính năng đổi mật khẩu (Reset Password).
+ * Yêu cầu người dùng đăng nhập và kiểm tra mật khẩu cũ, mật khẩu mới, xác nhận mật khẩu trước khi cập nhật.
+ * 
+ * Ngày thực hiện: 04/06/2026
+ * Tạo bởi: DuongND_HE186619
+ */
 @Controller
 public class ResetPasswordController {
 
