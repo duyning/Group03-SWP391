@@ -1,37 +1,45 @@
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\com\group3\Group03Swp391Summer26Application.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\CinemaApplication.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\config\CatalogInitializer.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\config\RoomUnicodeMigration.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\config\SecurityConfig.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\CatalogController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\ForgotPasswordController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\HomeController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\LoginController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\MovieController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\ProfileController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\RegisterController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\ResetPasswordController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\RoomController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\controller\SeatController.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\Account.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\AudioTechnology.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\MembershipLevel.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\Movie.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\Role.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\Room.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\RoomType.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\Seat.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\entity\SeatType.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\Group03Application.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\repository\AccountRepository.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\repository\AudioTechnologyRepository.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\repository\MovieRepository.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\repository\RoomRepository.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\repository\RoomTypeRepository.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\repository\SeatRepository.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\repository\SeatTypeRepository.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\service\AccountService.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\service\CatalogService.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\service\MovieService.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\service\RoomService.java
-C:\Users\ADMIN\IdeaProjects\Group03_SWP391_Summer26\src\main\java\example\service\SeatService.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\Group03Swp391Summer26Application.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\CinemaApplication.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\config\CatalogInitializer.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\config\RoomUnicodeMigration.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\config\SecurityConfig.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\CatalogController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\ForgotPasswordController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\HomeController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\LoginController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\MovieController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\ProfileController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\RegisterController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\ResetPasswordController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\RoomController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\controller\SeatController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\Account.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\AudioTechnology.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\MembershipLevel.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\Movie.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\Role.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\Room.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\RoomType.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\Seat.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\entity\SeatType.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\Group03Application.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\repository\AccountRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\repository\AudioTechnologyRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\repository\MovieRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\repository\RoomRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\repository\RoomTypeRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\repository\SeatRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\repository\SeatTypeRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\service\AccountService.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\service\CatalogService.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\service\MovieService.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\service\RoomService.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\service\SeatService.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\org\example\group03\config\WebConfig.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\org\example\group03\controller\ComboController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\org\example\group03\controller\PostController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\org\example\group03\entity\Combo.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\org\example\group03\entity\Post.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\org\example\group03\Group03Application.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\org\example\group03\repository\ComboRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\org\example\group03\repository\PostRepository.java
