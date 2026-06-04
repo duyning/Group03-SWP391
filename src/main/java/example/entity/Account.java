@@ -1,20 +1,26 @@
 package example.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Entity đại diện cho bảng tài khoản (Account) trong hệ thống.
+ * Lưu trữ thông tin cá nhân của người dùng bao gồm họ tên, email, mật khẩu, số điện thoại, địa chỉ, tuổi, giới tính, vai trò và điểm tích lũy.
+ * 
+ * Ngày thực hiện: 04/06/2026
+ * Tạo bởi: DuongND_HE186619
+ */
 @Entity
 @Table(name = "account")
 public class Account {
@@ -57,8 +63,6 @@ public class Account {
 
     @Enumerated(EnumType.STRING)
     private Role role;
-
-
 
     public Account() {
     }
@@ -166,7 +170,6 @@ public class Account {
     public void setRole(Role role) {
         this.role = role;
     }
-
 
     @Override
     public String toString() {

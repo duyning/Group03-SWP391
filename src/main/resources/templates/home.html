@@ -3,6 +3,7 @@
   Updated on 2026-06-04: Home page follows the provided Beta Cinemas UI style.
   Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
   Updated on 2026-06-04: Removed English visible text from movie status and image alt text.
+  Updated on 2026-06-04: Added logged-in user profile actions from DuongND.
   Created by: HuyPB - HE191335
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
@@ -357,7 +358,9 @@
             </th:block>
             <th:block th:if="${user != null}">
                 <span>Xin chào,</span>
-                <a th:href="@{/reset-password}" class="top-link" th:text="${user.name}">Tên User</a>
+                <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
+                <span style="opacity: 0.5">|</span>
+                <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
                 <span style="opacity: 0.5">|</span>
                 <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
             </th:block>

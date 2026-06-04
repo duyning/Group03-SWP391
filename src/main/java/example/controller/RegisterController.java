@@ -12,6 +12,13 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+/**
+ * Controller xử lý tính năng đăng ký tài khoản (Register).
+ * Kiểm tra tính hợp lệ dữ liệu đầu vào và kiểm tra trùng lặp email/số điện thoại trước khi đăng ký.
+ * 
+ * Ngày thực hiện: 04/06/2026
+ * Tạo bởi: DuongND_HE186619
+ */
 @Controller
 public class RegisterController {
 
