@@ -1,6 +1,8 @@
 package example.controller;
 
 import example.entity.Room;
+import example.entity.SeatType;
+import example.service.CatalogService;
 import example.service.RoomService;
 import example.service.SeatService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class SeatController {
 
     private final SeatService seatService;
     private final RoomService  roomService;
+    private final CatalogService catalogService;
 
     // ─── GET: Trang thiết kế sơ đồ ───────────────────────────────────────────
 
@@ -40,6 +43,7 @@ public class SeatController {
         // Xây dựng ma trận kiểu ghế 2D (lấy từ DB hoặc mặc định "std")
         String[][] matrix    = seatService.buildMatrix(roomId);
         String     matrixJson = seatService.matrixToJson(matrix);
+        List<SeatType> seatTypes = catalogService.getActiveSeatTypes();
 
         // Thống kê
         long countStd      = seatService.countByType(roomId, "std");
@@ -56,6 +60,8 @@ public class SeatController {
         model.addAttribute("countBroken",   countBroken);
         model.addAttribute("totalCapacity", totalCapacity);
         model.addAttribute("hasExisting",   seatService.hasSeats(roomId));
+        model.addAttribute("seatTypes",     seatTypes);
+        model.addAttribute("seatTypesJson", catalogService.seatTypesToJson(seatTypes));
 
         return "manager_seat";
     }

@@ -18,6 +18,7 @@ public class CatalogController {
     public String catalogPage(Model model) {
         model.addAttribute("roomTypes", catalogService.getAllRoomTypes());
         model.addAttribute("audioTechnologies", catalogService.getAllAudioTechnologies());
+        model.addAttribute("seatTypes", catalogService.getAllSeatTypes());
         return "manager_catalog";
     }
 
@@ -75,6 +76,39 @@ public class CatalogController {
         try {
             catalogService.updateAudioTechnology(id, name, description, active);
             redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật âm thanh \"" + name + "\".");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/catalogs";
+    }
+
+    @PostMapping("/seat-types/edit")
+    public String editSeatType(
+            @RequestParam Long id,
+            @RequestParam String color,
+            @RequestParam int capacity,
+            @RequestParam(defaultValue = "false") boolean sellable,
+            @RequestParam(defaultValue = "false") boolean active,
+            RedirectAttributes redirectAttributes) {
+        try {
+            catalogService.updateSeatType(id, color, capacity, sellable, active);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật cấu hình loại ghế.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/catalogs";
+    }
+
+    @PostMapping("/seat-types/add")
+    public String addSeatType(
+            @RequestParam String displayName,
+            @RequestParam String color,
+            @RequestParam int capacity,
+            @RequestParam(defaultValue = "false") boolean sellable,
+            RedirectAttributes redirectAttributes) {
+        try {
+            catalogService.addSeatType(displayName, color, capacity, sellable);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã thêm loại ghế \"" + displayName + "\".");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }

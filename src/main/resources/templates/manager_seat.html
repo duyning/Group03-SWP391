@@ -228,25 +228,19 @@
             </div>
 
             <!-- Tool buttons -->
-            <button class="tool-btn active type-std" data-type="std" id="tool-std">
-                <div class="seat-sample"></div>
-                <span>Ghế thường</span>
-            </button>
-            <button class="tool-btn type-vip" data-type="vip" id="tool-vip">
-                <div class="seat-sample"></div>
-                <span>Ghế VIP</span>
-            </button>
-            <button class="tool-btn type-couple" data-type="couple" id="tool-couple">
-                <div class="seat-sample"><i class="fas fa-heart"></i></div>
-                <span>Ghế Couple (Sweetbox)</span>
-            </button>
-            <button class="tool-btn type-broken" data-type="broken" id="tool-broken">
-                <div class="seat-sample"><i class="fas fa-times"></i></div>
-                <span>Ghế hỏng (Bảo trì)</span>
-            </button>
-            <button class="tool-btn type-empty" data-type="empty" id="tool-empty">
-                <div class="seat-sample"></div>
-                <span>Lối đi / Trống</span>
+            <button th:each="seatType, stat : ${seatTypes}"
+                    class="tool-btn"
+                    th:classappend="${stat.first} ? ' active'"
+                    th:data-type="${seatType.code}"
+                    th:id="'tool-' + ${seatType.code}">
+                <div class="seat-sample"
+                     th:style="${seatType.code == 'empty'
+                        ? 'background:transparent; border: 2px dashed #cbd5e1; border-bottom: 2px dashed #cbd5e1;'
+                        : 'background:' + seatType.color}">
+                    <i th:if="${seatType.code == 'couple'}" class="fas fa-heart"></i>
+                    <i th:if="${seatType.code == 'broken'}" class="fas fa-times"></i>
+                </div>
+                <span th:text="${seatType.displayName}">Ghế thường</span>
             </button>
 
             <!-- Stats real-time -->
@@ -308,11 +302,13 @@
 
                 <!-- Legend -->
                 <div class="legend">
-                    <div class="legend-item"><div class="legend-dot" style="background:var(--seat-std)"></div> Thường</div>
-                    <div class="legend-item"><div class="legend-dot" style="background:var(--seat-vip)"></div> VIP</div>
-                    <div class="legend-item"><div class="legend-dot" style="background:var(--seat-couple)"></div> Couple</div>
-                    <div class="legend-item"><div class="legend-dot" style="background:var(--seat-broken)"></div> Hỏng</div>
-                    <div class="legend-item"><div class="legend-dot" style="background:transparent; border: 2px dashed #cbd5e1;"></div> Trống</div>
+                    <div class="legend-item" th:each="seatType : ${seatTypes}">
+                        <div class="legend-dot"
+                             th:style="${seatType.code == 'empty'
+                                ? 'background:transparent; border: 2px dashed #cbd5e1;'
+                                : 'background:' + seatType.color}"></div>
+                        <span th:text="${seatType.displayName}">Thường</span>
+                    </div>
                 </div>
 
                 <div class="instruction">
@@ -341,6 +337,7 @@
     const SERVER_ROOM_ID = /*[[${room.id}]]*/ 0;
     // matrixJson: mảng 2D type string (từ DB), rỗng [] nếu chưa có
     const SERVER_MATRIX = /*[[${matrixJson}]]*/ null;
+    const SERVER_SEAT_TYPES = /*[[${seatTypesJson}]]*/ null;
     /*]]>*/
 </script>
 
@@ -362,7 +359,32 @@
     const colInput = document.getElementById('colInput');
     const gridSizeText = document.getElementById('gridSizeText');
     const roomGridInfo = document.getElementById('roomGridInfo');
-    const VALID_SEAT_TYPES = new Set(['std', 'vip', 'couple', 'broken', 'empty', 'skip']);
+    const seatTypeList = parseSeatTypes();
+    const seatTypeByCode = new Map(seatTypeList.map(type => [type.code, type]));
+    const VALID_SEAT_TYPES = new Set([...seatTypeByCode.keys(), 'skip']);
+
+    function parseSeatTypes() {
+        if (!SERVER_SEAT_TYPES) return [];
+        if (Array.isArray(SERVER_SEAT_TYPES)) return SERVER_SEAT_TYPES;
+        if (typeof SERVER_SEAT_TYPES === 'string' && SERVER_SEAT_TYPES.trim().length > 0) {
+            try {
+                return JSON.parse(SERVER_SEAT_TYPES);
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    }
+
+    function getSeatTypeMeta(type) {
+        return seatTypeByCode.get(type) || seatTypeByCode.get('std') || {
+            code: 'std',
+            displayName: 'Ghế thường',
+            color: '#e2e8f0',
+            capacity: 1,
+            sellable: true
+        };
+    }
 
     function normalizeSeatType(type) {
         return VALID_SEAT_TYPES.has(type) ? type : 'std';
@@ -485,6 +507,7 @@
                 div.className = `seat ${sd.type}`;
                 div.dataset.r = r;
                 div.dataset.c = c;
+                applySeatStyle(div, sd.type);
 
                 // Nội dung hiển thị
                 if (sd.type === 'couple') {
@@ -511,6 +534,17 @@
             matrixEl.appendChild(rowDiv);
         }
         updateStats();
+    }
+
+    function applySeatStyle(el, type) {
+        const meta = getSeatTypeMeta(type);
+        if (type === 'empty') {
+            el.style.background = 'transparent';
+            return;
+        }
+        if (type !== 'skip') {
+            el.style.background = meta.color;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -550,7 +584,7 @@
     //  STATS
     // ═══════════════════════════════════════════════════════════════
     function updateStats() {
-        let std = 0, vip = 0, couple = 0, broken = 0;
+        let std = 0, vip = 0, couple = 0, broken = 0, total = 0;
         for (let r = 0; r < ROWS; r++) {
             for (let c = 0; c < COLS; c++) {
                 const t = matrixData[r][c].type;
@@ -558,13 +592,16 @@
                 else if (t === 'vip')    vip++;
                 else if (t === 'couple') couple++;
                 else if (t === 'broken') broken++;
+                if (t !== 'skip') {
+                    total += getSeatTypeMeta(t).capacity || 0;
+                }
             }
         }
         document.getElementById('count-std').textContent    = std;
         document.getElementById('count-vip').textContent    = vip;
         document.getElementById('count-couple').textContent = couple;
         document.getElementById('count-broken').textContent = broken;
-        document.getElementById('count-total').textContent  = std + vip + (couple * 2);
+        document.getElementById('count-total').textContent  = total;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -655,6 +692,8 @@
     //  BOOTSTRAP
     // ═══════════════════════════════════════════════════════════════
     window.onload = () => {
+        const activeTool = document.querySelector('.tool-btn.active');
+        if (activeTool) currentTool = activeTool.dataset.type;
         initData();
         renderMatrix();
     };

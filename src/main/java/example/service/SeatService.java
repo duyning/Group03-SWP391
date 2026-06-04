@@ -2,14 +2,20 @@ package example.service;
 
 import example.entity.Room;
 import example.entity.Seat;
+import example.entity.SeatType;
 import example.repository.RoomRepository;
 import example.repository.SeatRepository;
+import example.repository.SeatTypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +23,7 @@ public class SeatService {
 
     private final SeatRepository seatRepository;
     private final RoomRepository  roomRepository;
+    private final SeatTypeRepository seatTypeRepository;
 
     private static final String ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -94,6 +101,10 @@ public class SeatService {
     public void saveMatrix(Long roomId, String[][] matrixJson) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        List<String> errors = validateMatrix(matrixJson);
+        if (!errors.isEmpty()) {
+            throw new RuntimeException(String.join(" ", errors));
+        }
 
         // Xóa sơ đồ cũ
         seatRepository.deleteAllByRoomId(roomId);
@@ -121,21 +132,75 @@ public class SeatService {
 
         seatRepository.saveAll(newSeats);
 
-        // Cập nhật lại totalSeats trên Room (chỉ đếm ghế có thể đặt)
-        long usable = newSeats.stream()
-                .filter(s -> s.getSeatType().equals("std")
-                        || s.getSeatType().equals("vip")
-                        || s.getSeatType().equals("couple"))
-                .count();
-        // couple = 1 ô nhưng chứa 2 người
-        long coupleCount = newSeats.stream()
-                .filter(s -> s.getSeatType().equals("couple"))
-                .count();
+        Map<String, Integer> capacityByType = seatTypeRepository.findAll().stream()
+                .collect(Collectors.toMap(SeatType::getCode, SeatType::getCapacity, (a, b) -> a));
+        int totalCapacity = newSeats.stream()
+                .filter(seat -> !"skip".equals(seat.getSeatType()))
+                .mapToInt(seat -> capacityByType.getOrDefault(seat.getSeatType(), 0))
+                .sum();
         room.setRows(rows);
         room.setCols(rows > 0 ? matrixJson[0].length : 0);
-        room.setTotalSeats((int)(usable - coupleCount + coupleCount * 2));
+        room.setTotalSeats(totalCapacity);
         room.setStatus(normalizeStatus(room.getStatus()));
         roomRepository.save(room);
+    }
+
+    public List<String> validateMatrix(String[][] matrix) {
+        List<String> errors = new ArrayList<>();
+        if (matrix == null || matrix.length == 0) {
+            errors.add("Sơ đồ ghế phải có ít nhất 1 hàng.");
+            return errors;
+        }
+        if (matrix.length > 26) {
+            errors.add("Sơ đồ ghế không được vượt quá 26 hàng.");
+        }
+
+        int cols = matrix[0] == null ? 0 : matrix[0].length;
+        if (cols == 0) {
+            errors.add("Sơ đồ ghế phải có ít nhất 1 cột.");
+            return errors;
+        }
+        if (cols > 50) {
+            errors.add("Sơ đồ ghế không được vượt quá 50 cột.");
+        }
+
+        Set<String> allowedTypes = seatTypeRepository.findByActiveTrueOrderByIdAsc().stream()
+                .map(SeatType::getCode)
+                .collect(Collectors.toSet());
+        allowedTypes.add("skip");
+        Map<String, Integer> orphanSkipByRow = new HashMap<>();
+
+        for (int r = 0; r < matrix.length; r++) {
+            if (matrix[r] == null || matrix[r].length != cols) {
+                errors.add("Các hàng trong sơ đồ ghế phải có cùng số cột.");
+                break;
+            }
+            for (int c = 0; c < cols; c++) {
+                String type = matrix[r][c];
+                if (type == null || !allowedTypes.contains(type)) {
+                    errors.add("Loại ghế không hợp lệ tại hàng " + rowName(r) + ", cột " + (c + 1) + ".");
+                    continue;
+                }
+                if ("couple".equals(type)) {
+                    if (c >= cols - 1) {
+                        errors.add("Ghế couple không được nằm ở cột cuối hàng " + rowName(r) + ".");
+                    } else if (!"skip".equals(matrix[r][c + 1])) {
+                        errors.add("Ghế couple tại " + rowName(r) + (c + 1) + " phải chiếm ô bên phải.");
+                    }
+                }
+                if ("skip".equals(type) && (c == 0 || !"couple".equals(matrix[r][c - 1]))) {
+                    orphanSkipByRow.put(rowName(r), orphanSkipByRow.getOrDefault(rowName(r), 0) + 1);
+                }
+            }
+        }
+
+        orphanSkipByRow.forEach((row, count) ->
+                errors.add("Hàng " + row + " có ô skip lẻ, không thuộc ghế couple."));
+        return errors;
+    }
+
+    private String rowName(int rowIndex) {
+        return rowIndex < ALPHABET.length() ? String.valueOf(ALPHABET.charAt(rowIndex)) : "?";
     }
 
     /** Sinh nhãn ghế dựa theo loại */

@@ -3,15 +3,19 @@ package example.service;
 import example.entity.AudioTechnology;
 import example.entity.Room;
 import example.entity.RoomType;
+import example.entity.SeatType;
 import example.repository.AudioTechnologyRepository;
 import example.repository.RoomRepository;
 import example.repository.RoomTypeRepository;
+import example.repository.SeatTypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +23,7 @@ public class CatalogService {
 
     private final RoomTypeRepository roomTypeRepository;
     private final AudioTechnologyRepository audioTechnologyRepository;
+    private final SeatTypeRepository seatTypeRepository;
     private final RoomRepository roomRepository;
 
     public List<RoomType> getAllRoomTypes() {
@@ -35,6 +40,33 @@ public class CatalogService {
 
     public List<AudioTechnology> getActiveAudioTechnologies() {
         return audioTechnologyRepository.findByActiveTrueOrderByNameAsc();
+    }
+
+    public List<SeatType> getAllSeatTypes() {
+        return seatTypeRepository.findAllByOrderByIdAsc();
+    }
+
+    public List<SeatType> getActiveSeatTypes() {
+        return seatTypeRepository.findByActiveTrueOrderByIdAsc();
+    }
+
+    public String seatTypesToJson(List<SeatType> seatTypes) {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < seatTypes.size(); i++) {
+            SeatType type = seatTypes.get(i);
+            json.append("{")
+                    .append("\"code\":\"").append(escapeJson(type.getCode())).append("\",")
+                    .append("\"displayName\":\"").append(escapeJson(type.getDisplayName())).append("\",")
+                    .append("\"color\":\"").append(escapeJson(type.getColor())).append("\",")
+                    .append("\"capacity\":").append(type.getCapacity()).append(",")
+                    .append("\"sellable\":").append(type.isSellable())
+                    .append("}");
+            if (i < seatTypes.size() - 1) {
+                json.append(",");
+            }
+        }
+        json.append("]");
+        return json.toString();
     }
 
     @Transactional
@@ -96,6 +128,31 @@ public class CatalogService {
     }
 
     @Transactional
+    public void addSeatType(String displayName, String color, int capacity, boolean sellable) {
+        String cleanName = requireName(displayName, "Tên loại ghế không được để trống.");
+        String code = uniqueSeatTypeCode(cleanName);
+        seatTypeRepository.save(SeatType.builder()
+                .code(code)
+                .displayName(cleanName)
+                .color(requireColor(color))
+                .capacity(Math.max(0, capacity))
+                .sellable(sellable)
+                .active(true)
+                .build());
+    }
+
+    @Transactional
+    public void updateSeatType(Long id, String color, int capacity, boolean sellable, boolean active) {
+        SeatType seatType = seatTypeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy loại ghế id=" + id));
+        seatType.setColor(requireColor(color));
+        seatType.setCapacity(Math.max(0, capacity));
+        seatType.setSellable(sellable);
+        seatType.setActive(active);
+        seatTypeRepository.save(seatType);
+    }
+
+    @Transactional
     public void seedFromExistingRooms() {
         for (Room room : roomRepository.findAll()) {
             ensureRoomType(room.getRoomType());
@@ -103,6 +160,11 @@ public class CatalogService {
         }
         ensureRoomType("2D");
         ensureAudioTechnology("Dolby 7.1");
+        ensureSeatType("std", "Ghế thường", "#e2e8f0", 1, true);
+        ensureSeatType("vip", "Ghế VIP", "#fef08a", 1, true);
+        ensureSeatType("couple", "Ghế Couple", "#fbcfe8", 2, true);
+        ensureSeatType("broken", "Ghế hỏng", "#fca5a5", 0, false);
+        ensureSeatType("empty", "Lối đi / Trống", "#ffffff", 0, false);
     }
 
     private void ensureRoomType(String name) {
@@ -117,6 +179,19 @@ public class CatalogService {
         }
     }
 
+    private void ensureSeatType(String code, String displayName, String color, int capacity, boolean sellable) {
+        if (!seatTypeRepository.existsByCodeIgnoreCase(code)) {
+            seatTypeRepository.save(SeatType.builder()
+                    .code(code)
+                    .displayName(displayName)
+                    .color(color)
+                    .capacity(capacity)
+                    .sellable(sellable)
+                    .active(true)
+                    .build());
+        }
+    }
+
     private String requireName(String name, String message) {
         if (!StringUtils.hasText(name)) {
             throw new RuntimeException(message);
@@ -126,5 +201,41 @@ public class CatalogService {
 
     private String cleanDescription(String description) {
         return StringUtils.hasText(description) ? description.trim() : "";
+    }
+
+    private String requireColor(String color) {
+        if (!StringUtils.hasText(color) || !color.trim().matches("^#[0-9a-fA-F]{6}$")) {
+            throw new RuntimeException("Màu loại ghế phải có định dạng #RRGGBB.");
+        }
+        return color.trim();
+    }
+
+    private String uniqueSeatTypeCode(String displayName) {
+        String base = Normalizer.normalize(displayName, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "_")
+                .replaceAll("^_+|_+$", "");
+        if (!StringUtils.hasText(base)) {
+            base = "seat";
+        }
+
+        String code = base;
+        int index = 2;
+        while (seatTypeRepository.existsByCodeIgnoreCase(code)) {
+            code = base + "_" + index++;
+        }
+        return code;
+    }
+
+    private String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
     }
 }
