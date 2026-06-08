@@ -356,7 +356,7 @@
             </div>
 
             <section class="tab-panel" id="coming-soon">
-                <div class="movies">
+                <div class="movies" th:if="${comingSoonMovies != null && !#lists.isEmpty(comingSoonMovies)}">
                     <article class="movie-card" th:each="movie : ${comingSoonMovies}">
                         <a th:href="@{/movies/{id}(id=${movie.id})}">
                             <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
@@ -367,10 +367,13 @@
                         <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Chi tiết</a>
                     </article>
                 </div>
+                <div class="empty-state" th:if="${comingSoonMovies == null || #lists.isEmpty(comingSoonMovies)}">
+                    Chưa có phim sắp chiếu.
+                </div>
             </section>
 
             <section class="tab-panel active" id="now-showing">
-                <div class="movies">
+                <div class="movies" th:if="${nowShowingMovies != null && !#lists.isEmpty(nowShowingMovies)}">
                     <article class="movie-card" th:each="movie : ${nowShowingMovies}">
                         <a th:href="@{/movies/{id}(id=${movie.id})}">
                             <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
@@ -382,10 +385,13 @@
                         <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Mua vé</a>
                     </article>
                 </div>
+                <div class="empty-state" th:if="${nowShowingMovies == null || #lists.isEmpty(nowShowingMovies)}">
+                    Chưa có phim đang chiếu.
+                </div>
             </section>
 
             <section class="tab-panel" id="special-screening">
-                <div class="movies">
+                <div class="movies" th:if="${specialScreeningMovies != null && !#lists.isEmpty(specialScreeningMovies)}">
                     <article class="movie-card" th:each="movie : ${specialScreeningMovies}">
                         <a th:href="@{/movies/{id}(id=${movie.id})}">
                             <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
@@ -395,6 +401,9 @@
                         <p><b>Khởi chiếu:</b> <span class="date-blue" th:text="${movie.releaseDate}">04/06/2026</span></p>
                         <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Chi tiết</a>
                     </article>
+                </div>
+                <div class="empty-state" th:if="${specialScreeningMovies == null || #lists.isEmpty(specialScreeningMovies)}">
+                    Chưa có suất chiếu đặc biệt.
                 </div>
             </section>
         </th:block>

@@ -21,6 +21,7 @@
 const API_MOVIES    = '/api/movies';
 const API_SHOWTIMES = '/api/showtimes';
 const API_TICKETS   = '/api/tickets';
+const API_ROOMS     = '/api/rooms';
 
 // ==================== TRẠNG THÁI TOÀN CỤC ====================
 let moviesData      = [];   // Toàn bộ phim sau khi lọc
@@ -36,46 +37,63 @@ let activeShowtimeId = null; // ID suất chiếu đang mở sơ đồ ghế
 
 // ==================== KHỞI TẠO ====================
 document.addEventListener('DOMContentLoaded', () => {
+    const page = document.body.dataset.page || 'movies';
     initTabs();
-    initMovieEvents();
-    initShowtimeEvents();
-    initTicketEvents();
 
-    // Tải dữ liệu mặc định cho tab Phim
-    loadMovieStats();
-    loadMovies({});
+    if (page === 'movies') {
+        initMovieEvents();
+        loadMovieStats();
+        loadMovies({});
+    }
+
+    if (page === 'showtimes') {
+        initShowtimeEvents();
+        loadShowtimeStats();
+        populateMovieDropdowns();
+        populateRoomDropdown();
+        loadShowtimes({});
+    }
+
+    if (page === 'tickets') {
+        initTicketEvents();
+        populateShowtimeDropdown();
+    }
 });
 
 // ==================== ĐIỀU KHIỂN TABS ====================
 function initTabs() {
-    document.getElementById('tabMoviesBtn').addEventListener('click', () => switchTab('movies'));
-    document.getElementById('tabShowtimesBtn').addEventListener('click', () => switchTab('showtimes'));
-    document.getElementById('tabTicketsBtn').addEventListener('click', () => switchTab('tickets'));
+    const tabMoviesBtn = document.getElementById('tabMoviesBtn');
+    const tabShowtimesBtn = document.getElementById('tabShowtimesBtn');
+    const tabTicketsBtn = document.getElementById('tabTicketsBtn');
+
+    if (tabMoviesBtn) tabMoviesBtn.addEventListener('click', () => window.location.href = '/manage_movies.html');
+    if (tabShowtimesBtn) tabShowtimesBtn.addEventListener('click', () => window.location.href = '/manage_showtime.html');
+    if (tabTicketsBtn) tabTicketsBtn.addEventListener('click', () => window.location.href = '/manage_ticket.html');
 }
 
 function switchTab(tab) {
     // Ẩn tất cả section, bỏ active tất cả tabs
     ['moviesSection', 'showtimesSection', 'ticketsSection'].forEach(id => {
-        document.getElementById(id).classList.remove('active');
+        document.getElementById(id)?.classList.remove('active');
     });
     ['tabMoviesBtn', 'tabShowtimesBtn', 'tabTicketsBtn'].forEach(id => {
-        document.getElementById(id).classList.remove('active');
+        document.getElementById(id)?.classList.remove('active');
     });
 
     if (tab === 'movies') {
-        document.getElementById('moviesSection').classList.add('active');
-        document.getElementById('tabMoviesBtn').classList.add('active');
+        document.getElementById('moviesSection')?.classList.add('active');
+        document.getElementById('tabMoviesBtn')?.classList.add('active');
         loadMovieStats();
         loadMovies({});
     } else if (tab === 'showtimes') {
-        document.getElementById('showtimesSection').classList.add('active');
-        document.getElementById('tabShowtimesBtn').classList.add('active');
+        document.getElementById('showtimesSection')?.classList.add('active');
+        document.getElementById('tabShowtimesBtn')?.classList.add('active');
         loadShowtimeStats();
         populateMovieDropdowns();
         loadShowtimes({});
     } else if (tab === 'tickets') {
-        document.getElementById('ticketsSection').classList.add('active');
-        document.getElementById('tabTicketsBtn').classList.add('active');
+        document.getElementById('ticketsSection')?.classList.add('active');
+        document.getElementById('tabTicketsBtn')?.classList.add('active');
         populateShowtimeDropdown();
     }
 }
@@ -630,6 +648,36 @@ async function populateMovieDropdowns() {
     } catch(e) { console.error('Lỗi nạp dropdown phim:', e); }
 }
 
+// --- Nạp phòng chiếu từ danh mục phòng vào select lịch chiếu ---
+async function populateRoomDropdown(selectedRoomName = '') {
+    const roomSel = document.getElementById('showtimeRoomInput');
+    if (!roomSel) return;
+
+    roomSel.innerHTML = '<option value="">-- Chọn phòng từ danh mục phòng --</option>';
+    try {
+        const r = await fetch(API_ROOMS);
+        if (!r.ok) throw new Error();
+        const rooms = await r.json();
+
+        rooms.forEach(room => {
+            const opt = document.createElement('option');
+            opt.value = room.roomName || '';
+            const details = [room.roomType, room.audioTech, room.totalSeats ? `${room.totalSeats} ghế` : '']
+                .filter(Boolean)
+                .join(' · ');
+            opt.textContent = details ? `${room.roomName} (${details})` : room.roomName;
+            roomSel.appendChild(opt);
+        });
+
+        if (selectedRoomName && [...roomSel.options].some(option => option.value === selectedRoomName)) {
+            roomSel.value = selectedRoomName;
+        }
+    } catch (e) {
+        console.error('Lỗi nạp danh sách phòng chiếu:', e);
+        roomSel.innerHTML = '<option value="">Không thể tải danh sách phòng</option>';
+    }
+}
+
 // --- Tải lịch chiếu ---
 async function loadShowtimes(filters) {
     const qs = new URLSearchParams();
@@ -759,6 +807,7 @@ function openShowtimeModal(isEdit) {
         document.getElementById('showtimeDayTypeDisplay').value = 'Chưa xác định ngày';
     }
     populateMovieDropdowns();
+    populateRoomDropdown();
     document.getElementById('showtimeModal').classList.add('show');
 }
 function closeShowtimeModal() { document.getElementById('showtimeModal').classList.remove('show'); }
@@ -804,6 +853,7 @@ async function editShowtime(id) {
         const st = await r.json();
 
         await populateMovieDropdowns();
+        await populateRoomDropdown(st.room || '');
 
         document.getElementById('showtimeParamId').value         = st.id;
         document.getElementById('showtimeMovieSelect').value     = st.movie?.id || '';
