@@ -6,12 +6,15 @@
   Tạo bởi: DuongND_HE186619
 -->
 <!DOCTYPE html>
+<!--
+  Updated on 2026-06-04: Translated visible frontend title, metadata, and email wording to Vietnamese.
+-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập - CinemaBook</title>
-    <meta name="description" content="Đăng nhập vào CinemaBook để đặt vé xem phim">
+    <title>Đăng nhập | Beta Cinemas</title>
+    <meta name="description" content="Đăng nhập vào Beta Cinemas để đặt vé xem phim">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -98,7 +101,7 @@
                 <i class="fas fa-film"></i>
             </div>
             <div class="welcome-badge">
-                <i class="fas fa-star"></i> CinemaBook
+                <i class="fas fa-star"></i> Beta Cinemas
             </div>
             <h1>Chào mừng trở lại</h1>
             <p>Đăng nhập để tiếp tục đặt vé xem phim</p>
@@ -108,7 +111,7 @@
         <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show animate-slide-in" role="alert"
              style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; border-radius: 14px; font-size: 0.9rem; backdrop-filter: blur(10px);">
             <i class="fas fa-exclamation-circle me-2"></i>
-            <span th:text="${errorMessage != null ? errorMessage : 'Email hoặc mật khẩu không đúng'}"></span>
+            <span th:text="${errorMessage != null ? errorMessage : 'Thư điện tử hoặc mật khẩu không đúng'}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert" style="filter: invert(1); opacity: 0.5;"></button>
         </div>
 
@@ -129,15 +132,15 @@
                     <input type="email"
                            name="email"
                            class="form-input"
-                           placeholder="Email của bạn"
+                           placeholder="Thư điện tử của bạn"
                            id="loginEmail"
                            required
                            autocomplete="email">
-                    <label for="loginEmail">Email <span class="required">*</span></label>
+                    <label for="loginEmail">Thư điện tử <span class="required">*</span></label>
                 </div>
                 <div class="error-message" id="emailError" style="display: none;">
                     <i class="fas fa-exclamation-circle"></i>
-                    <span>Vui lòng nhập email hợp lệ</span>
+                    <span>Vui lòng nhập thư điện tử hợp lệ</span>
                 </div>
             </div>
 

@@ -1,0 +1,215 @@
+﻿<!DOCTYPE html>
+<!--
+    Updated on 2026-06-05: Split admin Quản lý lịch chiếu from the original static index page.
+    Created by: NinhDD - HE186113
+-->
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý lịch chiếu - Cinema 2026</title>
+    <meta name="description" content="Quản lý lịch chiếu của Cinema 2026.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-page="showtimes">
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" height="35" style="filter: brightness(0) invert(1);" alt="Beta Cinemas">
+                <span>ADMIN</span>
+            </div>
+            <ul class="sidebar-nav">
+                <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
+                <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
+                <a href="/manage_showtime.html"><li class="active"><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
+                <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
+                <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
+                <a href="/admin/rooms"><li><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
+                <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
+                <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
+                <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
+            </ul>
+        </aside>
+        <main class="admin-main">
+            <div class="app-container">
+        <!-- ================= TAB 2: QUẢN LÝ LỊCH CHIẾU ================= -->
+        <div id="showtimesSection" class="tab-section active">
+            <header class="app-header">
+                <h1 class="page-title">Quản lý lịch chiếu phim</h1>
+                <button class="btn btn-primary" id="btnOpenAddShowtimeModal">
+                    <i class="fa-solid fa-plus"></i> Thêm lịch chiếu mới
+                </button>
+            </header>
+
+            <section class="stats-grid">
+                <div class="stat-card stat-blue">
+                    <div class="stat-info">
+                        <span class="stat-label">Tổng lịch chiếu</span>
+                        <strong class="stat-value" id="statShowtimeTotal">0</strong>
+                    </div>
+                </div>
+                <div class="stat-card stat-green">
+                    <div class="stat-info">
+                        <span class="stat-label">Trong tuần (T2–T6)</span>
+                        <strong class="stat-value" id="statShowtimeWeekday">0</strong>
+                    </div>
+                </div>
+                <div class="stat-card stat-orange">
+                    <div class="stat-info">
+                        <span class="stat-label">Cuối tuần (T7–CN)</span>
+                        <strong class="stat-value" id="statShowtimeWeekend">0</strong>
+                    </div>
+                </div>
+                <div class="stat-card stat-red">
+                    <div class="stat-info">
+                        <span class="stat-label">Ngày lễ</span>
+                        <strong class="stat-value" id="statShowtimeHoliday">0</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="filter-card">
+                <form id="showtimeFilterForm" class="filter-grid" onsubmit="event.preventDefault();">
+                    <div class="form-group">
+                        <label for="filterShowtimeMovie"><i class="fa-solid fa-film"></i> CHỌN PHIM</label>
+                        <select id="filterShowtimeMovie">
+                            <option value="">-- Tất cả phim --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterShowtimeViewMode"><i class="fa-solid fa-calendar-week"></i> CHẾ ĐỘ XEM</label>
+                        <select id="filterShowtimeViewMode">
+                            <option value="all">Xem tất cả thời gian</option>
+                            <option value="week">Lịch chiếu tuần này</option>
+                            <option value="month">Lịch chiếu tháng này</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterShowtimeDayType"><i class="fa-solid fa-calendar-day"></i> LOẠI NGÀY CHIẾU</label>
+                        <select id="filterShowtimeDayType">
+                            <option value="">-- Tất cả loại ngày --</option>
+                            <option value="Trong tuần">Trong tuần</option>
+                            <option value="Cuối tuần">Cuối tuần</option>
+                            <option value="Ngày lễ">Ngày lễ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterShowtimeDate">NGÀY CHIẾU CỤ THỂ</label>
+                        <input type="date" id="filterShowtimeDate">
+                    </div>
+                </form>
+                <div class="filter-actions">
+                    <span class="results-count" id="showtimeResultsCount">Tìm thấy 0 lịch chiếu</span>
+                    <div class="action-buttons">
+                        <button class="btn btn-outline" id="btnResetShowtimeFilter">
+                            <i class="fa-solid fa-rotate-left"></i> Làm mới bộ lọc
+                        </button>
+                        <button class="btn btn-primary" id="btnApplyShowtimeFilter">
+                            <i class="fa-solid fa-magnifying-glass"></i> Áp dụng bộ lọc
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <main class="table-card">
+                <div class="table-responsive">
+                    <table class="movie-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">PHIM</th>
+                                <th scope="col">NGÀY CHIẾU</th>
+                                <th scope="col">GIỜ CHIẾU</th>
+                                <th scope="col">PHÒNG CHIẾU</th>
+                                <th scope="col">LOẠI NGÀY</th>
+                                <th scope="col">GHẾ TRỐNG / TỔNG</th>
+                                <th scope="col" class="text-center">HÀNH ĐỘNG</th>
+                            </tr>
+                        </thead>
+                        <tbody id="showtimeTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="table-footer">
+                    <span class="pagination-info" id="showtimePaginationInfo">Hiển thị trang 1 / 1</span>
+                    <div class="pagination-controls" id="showtimePaginationControls"></div>
+                </div>
+            </main>
+        </div>
+
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal 2: Thêm / Sửa lịch chiếu (KHÔNG có trường giá vé) -->
+    <div class="modal-overlay" id="showtimeModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="showtimeModalTitle">Thêm lịch chiếu mới</h2>
+                <button class="btn-close-modal" id="btnCloseShowtimeModal">&times;</button>
+            </div>
+            <form id="showtimeForm" class="modal-body">
+                <input type="hidden" id="showtimeParamId">
+
+                <!-- Chọn phim -->
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="showtimeMovieSelect">Chọn phim chiếu <span class="required">*</span></label>
+                        <select id="showtimeMovieSelect" required>
+                            <option value="">-- Chọn bộ phim --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Ngày chiếu & Giờ chiếu -->
+                <div class="form-row split-2">
+                    <div class="form-group">
+                        <label for="showtimeDateInput">Ngày chiếu <span class="required">*</span></label>
+                        <input type="date" id="showtimeDateInput" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="showtimeTimeInput">Giờ chiếu <span class="required">*</span></label>
+                        <input type="time" id="showtimeTimeInput" required>
+                    </div>
+                </div>
+
+                <!-- Phòng chiếu -->
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="showtimeRoomInput">Phòng chiếu <span class="required">*</span></label>
+                        <select id="showtimeRoomInput" required>
+                            <option value="">-- Chọn phòng từ danh mục phòng --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Loại ngày (chỉ đọc, tự phát hiện) -->
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>Loại ngày chiếu (tự động phát hiện)</label>
+                        <input type="text" id="showtimeDayTypeDisplay" readonly
+                               style="background:#f1f5f9; cursor:not-allowed; font-weight:600;" value="Chưa xác định ngày">
+                        <span class="helper-text">
+                            Hệ thống tự động phân loại và sinh giá vé theo loại ngày:
+                            Trong tuần (Thường 80k / VIP 100k) &bull;
+                            Cuối tuần (Thường 100k / VIP 120k) &bull;
+                            Ngày lễ (Thường 120k / VIP 140k)
+                        </span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" id="btnSaveShowtime">Lưu lịch chiếu</button>
+                    <button type="button" class="btn btn-secondary" id="btnCancelShowtimeModal">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
