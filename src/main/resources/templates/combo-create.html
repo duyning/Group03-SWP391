@@ -135,7 +135,9 @@
                 <input type="number"
                        class="form-control"
                        th:field="*{price}"
-                       placeholder="Nhập giá tiền ví dụ: 85000" required>
+                       min="0"
+                       max="1000000"
+                       placeholder="Nhập giá tiền từ 0 đến 1.000.000" required>
             </div>
 
             <div class="mb-4">

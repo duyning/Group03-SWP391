@@ -142,7 +142,10 @@
                 <label class="form-label">Giá bán (VNĐ) <span class="required">*</span></label>
                 <input type="number"
                        class="form-control"
-                       th:field="*{price}" required>
+                       th:field="*{price}"
+                       min="0"
+                       max="1000000"
+                       placeholder="Nhập giá tiền từ 0 đến 1.000.000" required>
             </div>
 
             <div class="mb-4">
