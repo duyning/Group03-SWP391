@@ -1,12 +1,11 @@
 package example;
 
+import com.group3.cinema.Group03Swp391Summer26Application;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
 public class CinemaApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(CinemaApplication.class, args);
+        SpringApplication.run(Group03Swp391Summer26Application.class, args);
     }
 }

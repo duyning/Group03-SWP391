@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<!--
+    Updated on 2026-06-05: Split admin Quản lý phim from the original static index page.
+    Created by: NinhDD - HE186113
+-->
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý phim - Cinema 2026</title>
+    <meta name="description" content="Quản lý phim của Cinema 2026.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-page="movies">
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" height="35" style="filter: brightness(0) invert(1);" alt="Beta Cinemas">
+                <span>ADMIN</span>
+            </div>
+            <ul class="sidebar-nav">
+                <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
+                <a href="/manage_movies.html"><li class="active"><i class="fas fa-film"></i> Quản lý phim</li></a>
+                <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
+                <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
+                <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
+                <a href="/admin/rooms"><li><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
+                <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
+                <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
+                <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
+            </ul>
+        </aside>
+        <main class="admin-main">
+            <div class="app-container">
+        <!-- ================= TAB 1: QUẢN LÝ PHIM ================= -->
+        <div id="moviesSection" class="tab-section active">
+            <header class="app-header">
+                <h1 class="page-title">Quản lý danh sách phim</h1>
+                <button class="btn btn-primary" id="btnOpenAddModal">
+                    <i class="fa-solid fa-plus"></i> Thêm phim mới
+                </button>
+            </header>
+
+            <section class="stats-grid">
+                <div class="stat-card stat-blue">
+                    <div class="stat-info">
+                        <span class="stat-label">Tổng phim</span>
+                        <strong class="stat-value" id="statTotal">0</strong>
+                    </div>
+                </div>
+                <div class="stat-card stat-green">
+                    <div class="stat-info">
+                        <span class="stat-label">Đang chiếu</span>
+                        <strong class="stat-value" id="statNowShowing">0</strong>
+                    </div>
+                </div>
+                <div class="stat-card stat-orange">
+                    <div class="stat-info">
+                        <span class="stat-label">Sắp chiếu</span>
+                        <strong class="stat-value" id="statUpcoming">0</strong>
+                    </div>
+                </div>
+                <div class="stat-card stat-red">
+                    <div class="stat-info">
+                        <span class="stat-label">Suất chiếu đặc biệt</span>
+                        <strong class="stat-value" id="statSpecialShow">0</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="filter-card">
+                <form id="filterForm" class="filter-grid" onsubmit="event.preventDefault();">
+                    <div class="form-group">
+                        <label for="filterTitle"><i class="fa-solid fa-film"></i> TÊN PHIM</label>
+                        <input type="text" id="filterTitle" placeholder="Nhập tên phim cần tìm...">
+                    </div>
+                    <div class="form-group">
+                        <label for="filterGenre">THỂ LOẠI</label>
+                        <input type="text" id="filterGenre" placeholder="Hành động, Tình cảm...">
+                    </div>
+                    <div class="form-group">
+                        <label for="filterDirector">ĐẠO DIỄN / TÁC GIẢ</label>
+                        <input type="text" id="filterDirector" placeholder="Tên người thực hiện...">
+                    </div>
+                    <div class="form-group">
+                        <label for="filterDuration">THỜI LƯỢNG</label>
+                        <input type="text" id="filterDuration" placeholder="Ví dụ: 120">
+                    </div>
+                    <div class="form-group">
+                        <label for="filterStatus">TRẠNG THÁI HIỂN THỊ</label>
+                        <select id="filterStatus">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="Đang chiếu">Đang chiếu</option>
+                            <option value="Sắp chiếu">Sắp chiếu</option>
+                            <option value="Suất chiếu đặc biệt">Suất chiếu đặc biệt</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterReleaseDate">NGÀY KHỞI CHIẾU</label>
+                        <input type="date" id="filterReleaseDate">
+                    </div>
+                </form>
+                <div class="filter-actions">
+                    <span class="results-count" id="resultsCount">Tìm thấy 0 kết quả</span>
+                    <div class="action-buttons">
+                        <button class="btn btn-outline" id="btnResetFilter">
+                            <i class="fa-solid fa-rotate-left"></i> Làm mới bộ lọc
+                        </button>
+                        <button class="btn btn-primary" id="btnApplyFilter">
+                            <i class="fa-solid fa-magnifying-glass"></i> Áp dụng bộ lọc
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <main class="table-card">
+                <div class="table-responsive">
+                    <table class="movie-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">PHIM</th>
+                                <th scope="col">THỂ LOẠI</th>
+                                <th scope="col">THỜI LƯỢNG</th>
+                                <th scope="col">TRẠNG THÁI</th>
+                                <th scope="col">KHỞI CHIẾU</th>
+                                <th scope="col" class="text-center">HÀNH ĐỘNG</th>
+                            </tr>
+                        </thead>
+                        <tbody id="movieTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="table-footer">
+                    <span class="pagination-info" id="paginationInfo">Hiển thị trang 1 / 1</span>
+                    <div class="pagination-controls" id="paginationControls"></div>
+                </div>
+            </main>
+        </div>
+
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal 1: Thêm / Sửa phim -->
+    <div class="modal-overlay" id="movieModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="modalTitle">Thêm phim mới</h2>
+                <button class="btn-close-modal" id="btnCloseModal">&times;</button>
+            </div>
+            <form id="movieForm" class="modal-body">
+                <input type="hidden" id="movieParamId">
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="movieTitle">Tên phim (Tiếng Việt) <span class="required">*</span></label>
+                        <input type="text" id="movieTitle" placeholder="Ví dụ: Thiên Đường Máu" required>
+                    </div>
+                </div>
+                <!-- Khu vực upload file video Trailer từ máy tính -->  
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>Video Trailer</label>
+                        <!-- Input ẩn lưu URL video sau khi upload xong -->
+                        <input type="hidden" id="movieTrailerUrl">
+                        <!-- Vùng kéo thả / chọn file video -->
+                        <div class="upload-zone" id="videoUploadZone">
+                            <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/x-matroska,video/avi,video/quicktime" style="display:none;">
+                            <div class="upload-zone-content" id="uploadZoneContent">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <p class="upload-hint-main">Kéo thả file video vào đây hoặc</p>
+                                <button type="button" class="btn btn-outline" id="btnSelectVideo">
+                                    <i class="fa-solid fa-folder-open"></i> Chọn file video
+                                </button>
+                                <p class="upload-hint-sub">MP4, WebM, MKV, AVI, MOV — Tối đa 500MB</p>
+                            </div>
+                            <!-- Thanh tiến trình upload (ẩn ban đầu) -->
+                            <div class="upload-progress" id="uploadProgress" style="display:none;">
+                                <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                                <span class="upload-progress-text" id="uploadProgressText">Đang tải lên...</span>
+                            </div>
+                            <!-- Hiển thị file đã chọn (ẩn ban đầu) -->
+                            <div class="upload-preview" id="uploadPreview" style="display:none;">
+                                <i class="fa-solid fa-circle-check" style="color:var(--stat-green);"></i>
+                                <span id="uploadPreviewName">video.mp4</span>
+                                <button type="button" class="btn-remove-video" id="btnRemoveVideo" title="Xóa video này">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="movieSummary">Tóm tắt / Title gốc</label>
+                        <textarea id="movieSummary" rows="3" placeholder="Nội dung tóm tắt phim..."></textarea>
+                    </div>
+                </div>
+                <div class="form-row split-2">
+                    <div class="form-group">
+                        <label for="movieGenre">Thể loại</label>
+                        <input type="text" id="movieGenre" placeholder="Hành động, Kinh dị...">
+                    </div>
+                    <div class="form-group">
+                        <label for="movieDuration">Thời lượng (phút)</label>
+                        <input type="number" id="movieDuration" placeholder="Ví dụ: 113">
+                    </div>
+                </div>
+                <div class="form-row split-2">
+                    <div class="form-group">
+                        <label for="movieDirector">Đạo diễn</label>
+                        <input type="text" id="movieDirector" placeholder="Ví dụ: Nguyễn Văn A">
+                    </div>
+                    <div class="form-group">
+                        <label for="movieLanguage">Ngôn ngữ</label>
+                        <input type="text" id="movieLanguage" placeholder="2D Phụ đề">
+                    </div>
+                </div>
+                <div class="form-row full-width">
+                    <div class="form-group full-width">
+                        <label for="movieActors">Diễn viên</label>
+                        <input type="text" id="movieActors" placeholder="Tên các diễn viên...">
+                    </div>
+                </div>
+                <div class="form-row split-3">
+                    <div class="form-group">
+                        <label for="moviePosterUrl">Ảnh Poster (URL)</label>
+                        <input type="url" id="moviePosterUrl" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label for="movieReleaseDate">Ngày khởi chiếu <span class="required">*</span></label>
+                        <input type="date" id="movieReleaseDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieStatus">Trạng thái <span class="required">*</span></label>
+                        <select id="movieStatus" required>
+                            <option value="Đang chiếu">Đang chiếu</option>
+                            <option value="Sắp chiếu">Sắp chiếu</option>
+                            <option value="Suất chiếu đặc biệt">Suất chiếu đặc biệt</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" id="btnSaveMovie">Lưu phim</button>
+                    <button type="button" class="btn btn-secondary" id="btnCancelModal">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Modal 3: Xem Trailer — tự động chọn YouTube Iframe hoặc HTML5 Video -->
+    <div class="modal-overlay" id="trailerModal">
+        <div class="modal-box trailer-box">
+            <div class="modal-header">
+                <h3 id="trailerModalTitle">Xem Trailer</h3>
+                <button class="btn-close-modal" id="btnCloseTrailerModal">&times;</button>
+            </div>
+            <div class="modal-body trailer-body" id="trailerBody">
+                <!-- YouTube iframe (dùng khi link là YouTube) -->
+                <div class="youtube-container" id="youtubeContainer" style="display:none;">
+                    <iframe id="trailerIframe" src="" title="YouTube video player" frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen></iframe>
+                </div>
+                <!-- HTML5 video player (dùng khi file video upload từ máy) -->
+                <div class="local-video-container" id="localVideoContainer" style="display:none;">
+                    <video id="localVideoPlayer" controls autoplay
+                           style="width:100%;max-height:75vh;background:#000;border-radius:0 0 8px 8px;">
+                        <source id="localVideoSource" src="" type="video/mp4">
+                        Trình duyệt của bạn không hỗ trợ thẻ video HTML5.
+                    </video>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

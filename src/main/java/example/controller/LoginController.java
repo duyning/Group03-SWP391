@@ -1,6 +1,7 @@
 package example.controller;
 
 import example.entity.Account;
+import example.entity.Role;
 import example.service.AccountService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,11 @@ public class LoginController {
 
         // Save logged-in user to session
         session.setAttribute("loggedInUser", account);
+
+        // Phân luồng redirect theo vai trò
+        if (account.getRole() == Role.ADMIN || account.getRole() == Role.MANAGER) {
+            return "redirect:/admin/dashboard";
+        }
         return "redirect:/home";
     }
 
