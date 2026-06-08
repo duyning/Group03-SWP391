@@ -6,8 +6,11 @@ package com.group3.cinema.controller;
  */
 
 import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.Banner;
 import com.group3.cinema.entity.Movie;
+import com.group3.cinema.service.BannerService;
 import com.group3.cinema.service.MovieService;
+import com.group3.cinema.service.PostService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -29,6 +32,12 @@ public class HomeController {
     @Autowired
     private MovieService movieService;
 
+    @Autowired
+    private PostService postService;
+
+    @Autowired
+    private BannerService bannerService;
+
     /**
      * Show home page.
      *
@@ -36,7 +45,7 @@ public class HomeController {
      * - Load logged-in user from session when available, so the header can show
      *   account actions and user information.
      * - Load about 5 active movies as hotMovies for homepage presentation.
-     * - Reuse hotMovies as bannerMovies so the home page stays focused.
+     * - Load homepage banners from banner management.
      * - Customers who want the full movie catalog are sent to GET /movies.
      * - Return home.html for Thymeleaf rendering.
      */
@@ -47,8 +56,10 @@ public class HomeController {
             model.addAttribute("user", loggedInUser);
         }
         List<Movie> hotMovies = movieService.getRandomBannerMovies();
-        model.addAttribute("bannerMovies", hotMovies);
+        List<Banner> homeBanners = bannerService.getActiveBanners(Banner.BannerPage.HOME);
+        model.addAttribute("homeBanners", homeBanners);
         model.addAttribute("hotMovies", hotMovies);
+        model.addAttribute("latestPosts", postService.getLatestPublishedPosts());
         return "home";
     }
 }

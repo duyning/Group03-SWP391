@@ -231,6 +231,20 @@
                         <input type="url" id="moviePosterUrl" placeholder="https://...">
                     </div>
                     <div class="form-group">
+                        <label for="moviePosterFile">Chọn ảnh từ máy</label>
+                        <input type="file" id="moviePosterFile" accept="image/png,image/jpeg,image/webp">
+                        <small class="field-hint">JPG, PNG, WebP. Nếu chọn file, hệ thống sẽ tự upload và điền URL.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Xem trước poster</label>
+                        <div class="poster-preview-box">
+                            <img id="moviePosterPreview" alt="Poster preview" style="display:none;">
+                            <span id="moviePosterPlaceholder">Chưa chọn ảnh</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row split-2">
+                    <div class="form-group">
                         <label for="movieReleaseDate">Ngày khởi chiếu <span class="required">*</span></label>
                         <input type="date" id="movieReleaseDate" required>
                     </div>

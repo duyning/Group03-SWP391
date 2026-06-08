@@ -34,6 +34,19 @@ public class PostService {
                 .orElseThrow(() -> new RuntimeException("Khong tim thay bai viet"));
     }
 
+    public List<Post> getPublishedPosts() {
+        return postRepository.findByStatusOrderByPublishedAtDescCreatedAtDesc("PUBLISHED");
+    }
+
+    public List<Post> getLatestPublishedPosts() {
+        return postRepository.findTop3ByStatusOrderByPublishedAtDescCreatedAtDesc("PUBLISHED");
+    }
+
+    public Post getPublishedPost(Long id) {
+        return postRepository.findByIdAndStatus(id, "PUBLISHED")
+                .orElseThrow(() -> new RuntimeException("Khong tim thay bai viet"));
+    }
+
     @Transactional
     public void createPost(Post post, MultipartFile file) throws IOException {
         updateThumbnailIfPresent(post, file);

@@ -17,12 +17,11 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.SQLServerDialect
     open-in-view: false
     defer-datasource-initialization: true
 
@@ -63,3 +62,4 @@ server:
 app:
   upload:
     video-dir: src/main/resources/static/uploads/videos/
+    image-dir: uploads/images/

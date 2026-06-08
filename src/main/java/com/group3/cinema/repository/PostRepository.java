@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE " +
@@ -15,4 +16,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> searchPosts(@Param("keyword") String keyword,
                            @Param("category") String category,
                            @Param("status") String status);
+
+    List<Post> findByStatusOrderByPublishedAtDescCreatedAtDesc(String status);
+
+    List<Post> findTop3ByStatusOrderByPublishedAtDescCreatedAtDesc(String status);
+
+    Optional<Post> findByIdAndStatus(Long id, String status);
 }

@@ -12,6 +12,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kết quả tìm kiếm | Beta Cinemas</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
     <style>
         body {
             margin: 0;
@@ -306,6 +307,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
 </head>
 
 <body>
@@ -318,7 +320,9 @@
             </th:block>
             <th:block th:if="${user != null}">
                 <span>Xin chào,</span>
-                <a th:href="@{/reset-password}" class="top-link" th:text="${user.name}">Tên User</a>
+                <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
+                <span style="opacity: 0.5">|</span>
+                <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
                 <span style="opacity: 0.5">|</span>
                 <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
             </th:block>
@@ -337,7 +341,7 @@
                 <a href="#">RẠP</a>
                 <a href="#">GIÁ VÉ</a>
                 <a href="#">KHO VOUCHER</a>
-                <a href="#">TIN TỨC</a>
+                <a th:href="@{/posts}">TIN TỨC</a>
                 <a href="#">CỘNG ĐỒNG</a>
             </nav>
 

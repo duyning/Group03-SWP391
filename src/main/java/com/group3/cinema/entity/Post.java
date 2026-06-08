@@ -57,6 +57,9 @@ public class Post {
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.publishedAt == null && "PUBLISHED".equalsIgnoreCase(this.status)) {
+            this.publishedAt = this.createdAt;
+        }
 
     }
 

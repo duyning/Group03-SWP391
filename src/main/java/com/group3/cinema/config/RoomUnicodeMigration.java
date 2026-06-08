@@ -24,11 +24,32 @@ public class RoomUnicodeMigration {
     @PostConstruct
     public void migrateRoomUnicodeColumns() {
         try {
+            createBannerTableIfMissing();
             migrateTextColumns();
             normalizeVietnameseValues();
         } catch (Exception e) {
             log.warn("Không thể tự động chuyển cột tiếng Việt sang NVARCHAR: {}", e.getMessage());
         }
+    }
+
+    private void createBannerTableIfMissing() {
+        if (tableExists("banners")) {
+            return;
+        }
+        jdbcTemplate.execute("""
+                CREATE TABLE banners (
+                    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+                    title NVARCHAR(150) NOT NULL,
+                    subtitle NVARCHAR(500) NULL,
+                    image_url NVARCHAR(500) NOT NULL,
+                    link_url NVARCHAR(500) NULL,
+                    page NVARCHAR(20) NOT NULL,
+                    display_order INT NOT NULL DEFAULT 1,
+                    active BIT NOT NULL DEFAULT 1,
+                    created_at DATETIME2 NULL,
+                    updated_at DATETIME2 NULL
+                )
+                """);
     }
 
     private void migrateTextColumns() {
@@ -79,6 +100,12 @@ public class RoomUnicodeMigration {
 
         alterColumn("showtimes", "room", "NVARCHAR(100) NOT NULL");
         alterColumn("showtimes", "day_type", "NVARCHAR(20) NULL");
+
+        alterColumn("banners", "title", "NVARCHAR(150) NOT NULL");
+        alterColumn("banners", "subtitle", "NVARCHAR(500) NULL");
+        alterColumn("banners", "image_url", "NVARCHAR(500) NOT NULL");
+        alterColumn("banners", "link_url", "NVARCHAR(500) NULL");
+        alterColumn("banners", "page", "NVARCHAR(20) NOT NULL");
     }
 
     private void normalizeVietnameseValues() {

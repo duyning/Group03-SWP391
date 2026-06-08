@@ -12,6 +12,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beta Cinemas | Trang chủ</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
     <style>
         body {
             margin: 0;
@@ -156,7 +157,8 @@
             position: relative;
             width: 100%;
             overflow: hidden;
-            background: #e5eef7;
+            background: #fff;
+            border-bottom: 1px solid rgba(0, 84, 166, 0.14);
         }
 
         .banner-slider {
@@ -166,43 +168,37 @@
 
         .banner-item {
             min-width: 100%;
-            height: 430px;
             position: relative;
-            background-size: cover;
-            background-position: center;
+            aspect-ratio: 1920 / 700;
+            max-height: 720px;
+            overflow: hidden;
+            background: #fff;
         }
 
         .banner-item::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, rgba(0, 36, 74, 0.78), rgba(0, 84, 166, 0.15));
+            display: none;
         }
 
         .banner-content {
-            position: relative;
-            z-index: 1;
+            display: none;
+        }
+
+        .banner-image {
+            width: 100%;
             height: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            color: white;
+            display: block;
+            object-fit: cover;
+            object-position: center;
+            image-rendering: auto;
         }
 
-        .banner-content h1 {
-            max-width: 650px;
-            font-size: 42px;
-            line-height: 1.15;
-            margin: 10px 0;
-        }
-
-        .banner-content p {
-            max-width: 580px;
-            font-size: 16px;
-            line-height: 1.6;
+        .banner-click-area {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            display: block;
+            overflow: hidden;
+            text-indent: -9999px;
         }
 
         .banner-dots {
@@ -328,19 +324,12 @@
                 flex: 1;
             }
 
-            .banner-item {
-                height: 350px;
-            }
-
-            .banner-content h1 {
-                font-size: 32px;
-            }
-
             .footer-container {
                 grid-template-columns: 1fr;
             }
         }
     </style>
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
 </head>
 
 <body>
@@ -380,7 +369,7 @@
                 <a href="#">RẠP</a>
                 <a href="#">GIÁ VÉ</a>
                 <a href="#">KHO VOUCHER</a>
-                <a href="#">TIN TỨC</a>
+                <a th:href="@{/posts}">TIN TỨC</a>
                 <a href="#">CỘNG ĐỒNG</a>
             </nav>
 
@@ -393,32 +382,28 @@
 
     <!--
       Banner flow:
-      - bannerMovies comes from HomeController and contains about 5 hot movies.
-      - Each active movie banner becomes one slide.
-      - If bannerUrl is missing, posterUrl is used as fallback.
+      - homeBanners comes from admin banner management.
+      - Homepage banners are no longer coupled to movie images.
     -->
-    <div class="banner-container" th:if="${bannerMovies != null && !bannerMovies.isEmpty()}">
+    <div class="banner-container" th:if="${homeBanners != null && !homeBanners.isEmpty()}">
         <div class="banner-slider" id="bannerSlider">
-            <div class="banner-item"
-                 th:each="banner : ${bannerMovies}"
-                 th:style="'background-image: url(' + ${banner.bannerUrl != null && !banner.bannerUrl.isEmpty() ? banner.bannerUrl : banner.posterUrl} + ')'">
-                <div class="banner-content">
-                    <span th:text="${banner.status.name() == 'NOW_SHOWING' ? 'Đang chiếu' : (banner.status.name() == 'COMING_SOON' ? 'Sắp chiếu' : 'Suất chiếu đặc biệt')}">Đang chiếu</span>
-                    <h1 th:text="${banner.title}">Tên phim</h1>
-                    <p th:text="${banner.description}">Mô tả phim</p>
-                    <a class="outline-btn" th:href="@{/movies/{id}(id=${banner.id})}">Xem chi tiết</a>
-                </div>
+            <div class="banner-item" th:each="banner : ${homeBanners}">
+                <img class="banner-image" th:src="${banner.imageUrl}" th:alt="${banner.title}">
+                <a class="banner-click-area"
+                   th:if="${banner.linkUrl != null && !banner.linkUrl.isEmpty()}"
+                   th:href="${banner.linkUrl}"
+                   th:aria-label="${banner.title}">Xem banner</a>
             </div>
         </div>
         <div class="banner-dots">
-            <span th:each="banner, iter : ${bannerMovies}"
+            <span th:each="banner, iter : ${homeBanners}"
                   th:class="${iter.index == 0} ? 'dot active' : 'dot'"
                   th:onclick="'currentSlide(' + ${iter.index} + ')'"></span>
         </div>
     </div>
 
-    <div class="empty-state" th:if="${bannerMovies == null || bannerMovies.isEmpty()}">
-        Chưa có dữ liệu phim để hiển thị.
+    <div class="empty-state" th:if="${homeBanners == null || homeBanners.isEmpty()}">
+        Chưa có banner trang chủ. Vui lòng thêm trong mục Quản lý banner.
     </div>
 
     <main class="content-container">
@@ -448,8 +433,28 @@
             Hiện chưa có phim nổi bật.
         </div>
 
-        <div style="text-align: center; margin: -20px 0 55px;" th:if="${hotMovies != null && !#lists.isEmpty(hotMovies)}">
+        <div style="text-align: center; margin: 0px 0 55px;" th:if="${hotMovies != null && !#lists.isEmpty(hotMovies)}">
             <a class="outline-btn" th:href="@{/movies}">Xem tất cả phim</a>
+        </div>
+
+        <div class="tabs" th:if="${latestPosts != null && !#lists.isEmpty(latestPosts)}">
+            <span class="active">TIN TỨC MỚI</span>
+        </div>
+
+        <section class="movies" th:if="${latestPosts != null && !#lists.isEmpty(latestPosts)}">
+            <article class="movie-card" th:each="post : ${latestPosts}">
+                <a th:href="@{/posts/{id}(id=${post.id})}">
+                    <img class="movie-poster" th:src="${post.thumbnail}" th:alt="${post.title}">
+                </a>
+                <h3 th:text="${post.title}">Tin tức điện ảnh</h3>
+                <p><b>Chuyên mục:</b> <span th:text="${post.category}">Tin tức</span></p>
+                <p th:text="${post.summary}">Tóm tắt bài viết</p>
+                <a class="buy-btn" th:href="@{/posts/{id}(id=${post.id})}">Xem tin</a>
+            </article>
+        </section>
+
+        <div style="text-align: center; margin: 0px 0 55px;" th:if="${latestPosts != null && !#lists.isEmpty(latestPosts)}">
+            <a class="outline-btn" th:href="@{/posts}">Xem tất cả tin tức</a>
         </div>
     </main>
 

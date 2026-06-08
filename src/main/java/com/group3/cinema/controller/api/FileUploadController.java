@@ -37,6 +37,9 @@ public class FileUploadController {
     @Value("${app.upload.video-dir:src/main/resources/static/uploads/videos/}")
     private String videoUploadDir;
 
+    @Value("${app.upload.image-dir:uploads/images/}")
+    private String imageUploadDir;
+
     // Endpoint: POST /api/upload/video
     // Nháº­n file video tá»« form multipart, lÆ°u vÃ o thÆ° má»¥c static vÃ  tráº£ vá» URL truy cáº­p
     @PostMapping("/video")
@@ -90,6 +93,48 @@ public class FileUploadController {
 
         } catch (IOException e) {
             response.put("error", "Lỗi khi lưu file: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @PostMapping("/image")
+    public ResponseEntity<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
+        Map<String, String> response = new HashMap<>();
+
+        if (file.isEmpty()) {
+            response.put("error", "Vui lòng chọn file ảnh.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String originalName = file.getOriginalFilename();
+        if (originalName == null) {
+            response.put("error", "Tên file không hợp lệ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String ext = originalName.toLowerCase();
+        if (!ext.endsWith(".jpg") && !ext.endsWith(".jpeg")
+                && !ext.endsWith(".png") && !ext.endsWith(".webp")) {
+            response.put("error", "Định dạng ảnh không được hỗ trợ. Vui lòng dùng JPG, PNG hoặc WebP.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        try {
+            Path uploadPath = Paths.get(imageUploadDir);
+            Files.createDirectories(uploadPath);
+
+            String suffix = originalName.substring(originalName.lastIndexOf('.'));
+            String uniqueName = UUID.randomUUID().toString() + suffix;
+            Path targetPath = uploadPath.resolve(uniqueName);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            response.put("url", "/uploads/images/" + uniqueName);
+            response.put("originalName", originalName);
+            response.put("size", String.valueOf(file.getSize()));
+            response.put("message", "Upload ảnh thành công!");
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            response.put("error", "Lỗi khi lưu file ảnh: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }

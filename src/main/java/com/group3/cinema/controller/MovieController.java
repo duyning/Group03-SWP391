@@ -24,6 +24,13 @@ public class MovieController {
     @Autowired
     private MovieService movieService;
 
+    private void addLoggedInUser(HttpSession session, Model model) {
+        Account loggedInUser = (Account) session.getAttribute("loggedInUser");
+        if (loggedInUser != null) {
+            model.addAttribute("user", loggedInUser);
+        }
+    }
+
     /**
      * GET /movies
      *
@@ -33,7 +40,8 @@ public class MovieController {
      * - Thymeleaf renders each group in its own section.
      */
     @GetMapping("/movies")
-    public String showMovies(Model model) {
+    public String showMovies(HttpSession session, Model model) {
+        addLoggedInUser(session, model);
         model.addAttribute("nowShowingMovies", movieService.getNowShowingMovies());
         model.addAttribute("comingSoonMovies", movieService.getComingSoonMovies());
         model.addAttribute("specialScreeningMovies", movieService.getSpecialScreeningMovies());
@@ -50,12 +58,13 @@ public class MovieController {
      * - If found, pass the movie object to movie-detail.html.
      */
     @GetMapping("/movies/{id}")
-    public String showMovieDetail(@PathVariable("id") int id, Model model) {
+    public String showMovieDetail(@PathVariable("id") int id, HttpSession session, Model model) {
         Movie movie = movieService.getMovieDetail(id);
         if (movie == null) {
             return "redirect:/movies";
         }
 
+        addLoggedInUser(session, model);
         model.addAttribute("movie", movie);
         return "movie-detail";
     }
@@ -66,10 +75,7 @@ public class MovieController {
                                @RequestParam(value = "status", required = false) String status,
                                HttpSession session,
                                Model model) {
-        Account loggedInUser = (Account) session.getAttribute("loggedInUser");
-        if (loggedInUser != null) {
-            model.addAttribute("user", loggedInUser);
-        }
+        addLoggedInUser(session, model);
         model.addAttribute("movies", movieService.searchMovies(keyword, genre, status));
         model.addAttribute("keyword", keyword);
         model.addAttribute("genre", genre);
