@@ -9,8 +9,8 @@ import com.group3.cinema.entity.SeatType;
 import com.group3.cinema.service.CatalogService;
 import com.group3.cinema.service.RoomService;
 import com.group3.cinema.service.SeatService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,18 +28,24 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/admin/rooms/{roomId}/seats")
-@RequiredArgsConstructor
-@Slf4j
 public class SeatController {
+
+    private static final Logger log = LoggerFactory.getLogger(SeatController.class);
 
     private final SeatService seatService;
     private final RoomService  roomService;
     private final CatalogService catalogService;
 
+    public SeatController(SeatService seatService, RoomService roomService, CatalogService catalogService) {
+        this.seatService = seatService;
+        this.roomService = roomService;
+        this.catalogService = catalogService;
+    }
+
     // â”€â”€â”€ GET: Trang thiáº¿t káº¿ sÆ¡ Ä‘á»“ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @GetMapping
-    public String seatDesignPage(@PathVariable Long roomId, Model model) {
+    public String seatDesignPage(@PathVariable("roomId") Long roomId, Model model) {
 
         Room room = roomService.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng id=" + roomId));
@@ -79,31 +85,12 @@ public class SeatController {
     @PostMapping("/save")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> saveMatrix(
-            @PathVariable Long roomId,
+            @PathVariable("roomId") Long roomId,
             @RequestBody Map<String, Object> body) {
 
         Map<String, Object> result = new HashMap<>();
         try {
-            // body.get("matrix") â†’ List<List<String>> (Jackson tá»± cast)
-            @SuppressWarnings("unchecked")
-            List<List<String>> rawMatrix = (List<List<String>>) body.get("matrix");
-
-            if (rawMatrix == null || rawMatrix.isEmpty()) {
-                result.put("success", false);
-                result.put("message", "Dữ liệu matrix không hợp lệ.");
-                return ResponseEntity.badRequest().body(result);
-            }
-
-            // Chuyá»ƒn List<List<String>> â†’ String[][]
-            int rows = rawMatrix.size();
-            int cols = rawMatrix.get(0).size();
-            String[][] matrix = new String[rows][cols];
-            for (int r = 0; r < rows; r++) {
-                List<String> rowList = rawMatrix.get(r);
-                for (int c = 0; c < cols; c++) {
-                    matrix[r][c] = rowList.get(c);
-                }
-            }
+            String[][] matrix = parseMatrixBody(body);
 
             seatService.saveMatrix(roomId, matrix);
 
@@ -115,14 +102,46 @@ public class SeatController {
             log.error("Lỗi lưu sơ đồ ghế roomId={}", roomId, e);
             result.put("success", false);
             result.put("message", "Lỗi: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(result);
+            return ResponseEntity.badRequest().body(result);
         }
+    }
+
+    private String[][] parseMatrixBody(Map<String, Object> body) {
+        if (body == null || !(body.get("matrix") instanceof List<?> rawMatrix) || rawMatrix.isEmpty()) {
+            throw new IllegalArgumentException("Dữ liệu sơ đồ ghế không hợp lệ.");
+        }
+
+        int rows = rawMatrix.size();
+        Object firstRow = rawMatrix.get(0);
+        if (!(firstRow instanceof List<?> firstRowList) || firstRowList.isEmpty()) {
+            throw new IllegalArgumentException("Sơ đồ ghế phải có ít nhất 1 cột.");
+        }
+
+        int cols = firstRowList.size();
+        String[][] matrix = new String[rows][cols];
+        for (int r = 0; r < rows; r++) {
+            Object row = rawMatrix.get(r);
+            if (!(row instanceof List<?> rowList)) {
+                throw new IllegalArgumentException("Hàng " + (r + 1) + " của sơ đồ ghế không hợp lệ.");
+            }
+            if (rowList.size() != cols) {
+                throw new IllegalArgumentException("Các hàng trong sơ đồ ghế phải có cùng số cột.");
+            }
+            for (int c = 0; c < cols; c++) {
+                Object cell = rowList.get(c);
+                if (!(cell instanceof String type)) {
+                    throw new IllegalArgumentException("Loại ghế tại hàng " + (r + 1) + ", cột " + (c + 1) + " không hợp lệ.");
+                }
+                matrix[r][c] = type.trim();
+            }
+        }
+        return matrix;
     }
 
     // â”€â”€â”€ POST: Reset vá» máº·c Ä‘á»‹nh (server-side) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @PostMapping("/reset")
-    public String resetMatrix(@PathVariable Long roomId,
+    public String resetMatrix(@PathVariable("roomId") Long roomId,
                               RedirectAttributes redirectAttributes) {
         try {
             Room room = roomService.findById(roomId)

@@ -58,7 +58,7 @@ public class ShowtimeController {
     // Endpoint: GET /api/showtimes/{id}
     // Láº¥y chi tiáº¿t lá»‹ch chiáº¿u phim theo mÃ£ ID
     @GetMapping("/{id}")
-    public ResponseEntity<Showtime> getShowtimeById(@PathVariable Long id) {
+    public ResponseEntity<Showtime> getShowtimeById(@PathVariable("id") Long id) {
         return showtimeService.getShowtimeById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -75,7 +75,7 @@ public class ShowtimeController {
     // Endpoint: PUT /api/showtimes/{id}
     // Cáº­p nháº­t thÃ´ng tin lá»‹ch chiáº¿u phim
     @PutMapping("/{id}")
-    public ResponseEntity<Showtime> updateShowtime(@PathVariable Long id, @RequestBody Showtime showtime) {
+    public ResponseEntity<Showtime> updateShowtime(@PathVariable("id") Long id, @RequestBody Showtime showtime) {
         try {
             Showtime updated = showtimeService.updateShowtime(id, showtime);
             return ResponseEntity.ok(updated);
@@ -87,7 +87,7 @@ public class ShowtimeController {
     // Endpoint: DELETE /api/showtimes/{id}
     // XÃ³a lá»‹ch chiáº¿u phim khá»i há»‡ thá»‘ng
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteShowtime(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteShowtime(@PathVariable("id") Long id) {
         try {
             showtimeService.deleteShowtime(id);
             return ResponseEntity.noContent().build();

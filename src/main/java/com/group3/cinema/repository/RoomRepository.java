@@ -21,6 +21,10 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     /** Kiá»ƒm tra tÃªn phÃ²ng Ä‘Ã£ tá»“n táº¡i trong ráº¡p chÆ°a */
     boolean existsByRoomNameAndCinemaId(String roomName, Long cinemaId);
 
+    boolean existsByRoomNameIgnoreCaseAndCinemaId(String roomName, Long cinemaId);
+
+    boolean existsByRoomNameIgnoreCaseAndCinemaIdAndIdNot(String roomName, Long cinemaId, Long id);
+
     /** Äáº¿m sá»‘ phÃ²ng Ä‘ang hoáº¡t Ä‘á»™ng */
     long countByCinemaIdAndStatus(Long cinemaId, String status);
 

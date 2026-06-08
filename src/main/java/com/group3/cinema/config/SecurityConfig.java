@@ -13,15 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * Security táº¡m thá»i: táº¯t toÃ n bá»™ xÃ¡c thá»±c Ä‘á»ƒ phÃ¡t triá»ƒn frontend.
- * Má»i URL Ä‘á»u Ä‘Æ°á»£c truy cáº­p tá»± do, khÃ´ng cáº§n Ä‘Äƒng nháº­p.
- */
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // Giá»¯ láº¡i PasswordEncoder Ä‘á»ƒ DataInitializer khÃ´ng bá»‹ lá»—i
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

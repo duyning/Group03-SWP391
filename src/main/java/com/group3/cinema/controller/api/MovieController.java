@@ -64,7 +64,7 @@ public class MovieController {
     // Endpoint: GET /api/movies/{id}
     // Láº¥y thÃ´ng tin chi tiáº¿t cá»§a má»™t bá»™ phim theo mÃ£ ID truyá»n vÃ o tá»« Ä‘Æ°á»ng dáº«n (Path Variable)
     @GetMapping("/{id}")
-    public ResponseEntity<Movie> getMovieById(@PathVariable Integer id) {
+    public ResponseEntity<Movie> getMovieById(@PathVariable("id") Integer id) {
         return movieService.getMovieById(id)
                 .map(ResponseEntity::ok) // Náº¿u tÃ¬m tháº¥y, tráº£ vá» HTTP 200 OK kÃ¨m dá»¯ liá»‡u phim
                 .orElse(ResponseEntity.notFound().build()); // Náº¿u khÃ´ng tÃ¬m tháº¥y, tráº£ vá» HTTP 404 Not Found
@@ -81,7 +81,7 @@ public class MovieController {
     // Endpoint: PUT /api/movies/{id}
     // Cáº­p nháº­t thÃ´ng tin phim Ä‘Ã£ tá»“n táº¡i theo mÃ£ ID
     @PutMapping("/{id}")
-    public ResponseEntity<Movie> updateMovie(@PathVariable Integer id, @RequestBody Movie movie) {
+    public ResponseEntity<Movie> updateMovie(@PathVariable("id") Integer id, @RequestBody Movie movie) {
         try {
             Movie updated = movieService.updateMovie(id, movie);
             return ResponseEntity.ok(updated); // Tráº£ vá» HTTP 200 OK kÃ¨m thÃ´ng tin phim sau khi sá»­a Ä‘á»•i thÃ nh cÃ´ng
@@ -93,7 +93,7 @@ public class MovieController {
     // Endpoint: DELETE /api/movies/{id}
     // XÃ³a bá»™ phim khá»i há»‡ thá»‘ng theo mÃ£ ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMovie(@PathVariable Integer id) {
+    public ResponseEntity<Void> deleteMovie(@PathVariable("id") Integer id) {
         try {
             movieService.deleteMovie(id);
             return ResponseEntity.noContent().build(); // Tráº£ vá» HTTP 204 No Content náº¿u xÃ³a thÃ nh cÃ´ng

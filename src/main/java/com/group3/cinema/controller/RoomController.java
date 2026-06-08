@@ -7,7 +7,6 @@ package com.group3.cinema.controller;
 import com.group3.cinema.entity.Room;
 import com.group3.cinema.service.CatalogService;
 import com.group3.cinema.service.RoomService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +20,15 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/admin/rooms")
-@RequiredArgsConstructor
 public class RoomController {
 
     private final RoomService roomService;
     private final CatalogService catalogService;
+
+    public RoomController(RoomService roomService, CatalogService catalogService) {
+        this.roomService = roomService;
+        this.catalogService = catalogService;
+    }
 
     // ID ráº¡p máº·c Ä‘á»‹nh (Beta Cinemas ThÃ¡i NguyÃªn = 1)
     private static final Long DEFAULT_CINEMA_ID = 1L;
@@ -44,7 +47,14 @@ public class RoomController {
         Long cinemaId = DEFAULT_CINEMA_ID;
 
         // Láº¥y danh sÃ¡ch phÃ²ng (cÃ³ Ã¡p dá»¥ng filter náº¿u cÃ³ tham sá»‘)
-        List<Room> rooms = roomService.filterRooms(cinemaId, roomName, roomType, audioTech, status, minSeats);
+        List<Room> rooms;
+        try {
+            rooms = roomService.filterRooms(cinemaId, roomName, roomType, audioTech, status, minSeats);
+        } catch (Exception e) {
+            rooms = roomService.getAllRooms(cinemaId);
+            model.addAttribute("errorMessage", "Bộ lọc không hợp lệ: " + e.getMessage());
+            minSeats = null;
+        }
 
         // Thá»‘ng kÃª cho stat cards
         model.addAttribute("totalRooms",      roomService.countTotal(cinemaId));

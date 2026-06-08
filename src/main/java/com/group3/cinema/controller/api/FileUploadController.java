@@ -97,7 +97,7 @@ public class FileUploadController {
     // Endpoint: DELETE /api/upload/video/{filename}
     // XÃ³a file video khá»i mÃ¡y chá»§ khi khÃ´ng cÃ²n sá»­ dá»¥ng
     @DeleteMapping("/video/{filename}")
-    public ResponseEntity<Map<String, String>> deleteVideo(@PathVariable String filename) {
+    public ResponseEntity<Map<String, String>> deleteVideo(@PathVariable("filename") String filename) {
         Map<String, String> response = new HashMap<>();
         try {
             // NgÄƒn cháº·n path traversal attack báº±ng cÃ¡ch chá»‰ láº¥y tÃªn file thuáº§n tÃºy

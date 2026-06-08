@@ -39,4 +39,8 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
 
     // Truy váº¥n tá»± Ä‘á»™ng cá»§a JPA Ä‘áº¿m sá»‘ lÆ°á»£ng lá»‹ch chiáº¿u theo loáº¡i ngÃ y cá»¥ thá»ƒ
     long countByDayType(String dayType);
+
+    boolean existsByRoomIgnoreCaseAndShowDateGreaterThanEqual(String room, LocalDate showDate);
+
+    long countByRoomIgnoreCase(String room);
 }

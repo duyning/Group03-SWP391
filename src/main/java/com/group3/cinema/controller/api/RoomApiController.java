@@ -6,7 +6,6 @@ package com.group3.cinema.controller.api;
 
 import com.group3.cinema.entity.Room;
 import com.group3.cinema.service.RoomService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,12 +14,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/rooms")
-@RequiredArgsConstructor
 public class RoomApiController {
 
     private static final Long DEFAULT_CINEMA_ID = 1L;
 
     private final RoomService roomService;
+
+    public RoomApiController(RoomService roomService) {
+        this.roomService = roomService;
+    }
 
     @GetMapping
     public List<RoomOption> listRooms() {

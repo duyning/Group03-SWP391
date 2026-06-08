@@ -2,7 +2,6 @@ package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Post;
 import com.group3.cinema.service.PostService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +16,13 @@ import java.io.IOException;
 
 @Controller
 @RequestMapping("/admin/posts")
-@RequiredArgsConstructor
 public class PostController {
 
     private final PostService postService;
+
+    public PostController(PostService postService) {
+        this.postService = postService;
+    }
 
     @GetMapping
     public String listPosts(
@@ -47,7 +49,7 @@ public class PostController {
     }
 
     @GetMapping("/edit/{id}")
-    public String editForm(@PathVariable Long id, Model model) {
+    public String editForm(@PathVariable("id") Long id, Model model) {
         model.addAttribute("post", postService.getPost(id));
         return "post-edit";
     }
@@ -59,13 +61,13 @@ public class PostController {
     }
 
     @GetMapping("/delete/{id}")
-    public String deletePost(@PathVariable Long id) {
+    public String deletePost(@PathVariable("id") Long id) {
         postService.deletePost(id);
         return "redirect:/admin/posts";
     }
 
     @GetMapping("/{id}")
-    public String viewPost(@PathVariable Long id, Model model) {
+    public String viewPost(@PathVariable("id") Long id, Model model) {
         model.addAttribute("post", postService.getPost(id));
         return "post-detail";
     }

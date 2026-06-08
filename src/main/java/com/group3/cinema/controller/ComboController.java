@@ -2,7 +2,6 @@ package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Combo;
 import com.group3.cinema.service.ComboService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +16,13 @@ import java.io.IOException;
 
 @Controller
 @RequestMapping("/admin/combos")
-@RequiredArgsConstructor
 public class ComboController {
 
     private final ComboService comboService;
+
+    public ComboController(ComboService comboService) {
+        this.comboService = comboService;
+    }
 
     @GetMapping
     public String listCombos(
@@ -46,13 +48,13 @@ public class ComboController {
     }
 
     @GetMapping("/delete/{id}")
-    public String deleteCombo(@PathVariable Long id) {
+    public String deleteCombo(@PathVariable("id") Long id) {
         comboService.deleteCombo(id);
         return "redirect:/admin/combos";
     }
 
     @GetMapping("/edit/{id}")
-    public String editForm(@PathVariable Long id, Model model) {
+    public String editForm(@PathVariable("id") Long id, Model model) {
         model.addAttribute("combo", comboService.getCombo(id));
         return "combo-edit";
     }

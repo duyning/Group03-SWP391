@@ -6,14 +6,16 @@ package com.group3.cinema.config;
 
 import com.group3.cinema.service.CatalogService;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class CatalogInitializer {
 
     private final CatalogService catalogService;
+
+    public CatalogInitializer(CatalogService catalogService) {
+        this.catalogService = catalogService;
+    }
 
     @PostConstruct
     public void initializeCatalogs() {

@@ -5,7 +5,6 @@
 package com.group3.cinema.controller;
 
 import com.group3.cinema.service.CatalogService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -13,10 +12,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin/catalogs")
-@RequiredArgsConstructor
 public class CatalogController {
 
     private final CatalogService catalogService;
+
+    public CatalogController(CatalogService catalogService) {
+        this.catalogService = catalogService;
+    }
 
     @GetMapping
     public String catalogPage(Model model) {
@@ -28,7 +30,7 @@ public class CatalogController {
 
     @PostMapping("/room-types/add")
     public String addRoomType(
-            @RequestParam String name,
+            @RequestParam("name") String name,
             @RequestParam(required = false) String description,
             RedirectAttributes redirectAttributes) {
         try {
@@ -42,8 +44,8 @@ public class CatalogController {
 
     @PostMapping("/room-types/edit")
     public String editRoomType(
-            @RequestParam Long id,
-            @RequestParam String name,
+            @RequestParam("id") Long id,
+            @RequestParam("name") String name,
             @RequestParam(required = false) String description,
             @RequestParam(defaultValue = "false") boolean active,
             RedirectAttributes redirectAttributes) {
@@ -58,7 +60,7 @@ public class CatalogController {
 
     @PostMapping("/audio/add")
     public String addAudioTechnology(
-            @RequestParam String name,
+            @RequestParam("name") String name,
             @RequestParam(required = false) String description,
             RedirectAttributes redirectAttributes) {
         try {
@@ -72,8 +74,8 @@ public class CatalogController {
 
     @PostMapping("/audio/edit")
     public String editAudioTechnology(
-            @RequestParam Long id,
-            @RequestParam String name,
+            @RequestParam("id") Long id,
+            @RequestParam("name") String name,
             @RequestParam(required = false) String description,
             @RequestParam(defaultValue = "false") boolean active,
             RedirectAttributes redirectAttributes) {
@@ -88,9 +90,9 @@ public class CatalogController {
 
     @PostMapping("/seat-types/edit")
     public String editSeatType(
-            @RequestParam Long id,
-            @RequestParam String color,
-            @RequestParam int capacity,
+            @RequestParam("id") Long id,
+            @RequestParam("color") String color,
+            @RequestParam("capacity") int capacity,
             @RequestParam(defaultValue = "false") boolean sellable,
             @RequestParam(defaultValue = "false") boolean active,
             RedirectAttributes redirectAttributes) {
@@ -105,9 +107,9 @@ public class CatalogController {
 
     @PostMapping("/seat-types/add")
     public String addSeatType(
-            @RequestParam String displayName,
-            @RequestParam String color,
-            @RequestParam int capacity,
+            @RequestParam("displayName") String displayName,
+            @RequestParam("color") String color,
+            @RequestParam("capacity") int capacity,
             @RequestParam(defaultValue = "false") boolean sellable,
             RedirectAttributes redirectAttributes) {
         try {

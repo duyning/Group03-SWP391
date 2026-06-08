@@ -85,7 +85,7 @@
     </div>
     <ul class="sidebar-nav">
         <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
-        <a href="/manage_movies.html"><li class="active"><i class="fas fa-film"></i> Quản lý phim</li></a>
+        <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
         <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
         <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
         <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
@@ -122,8 +122,11 @@
             <div class="catalog-body">
                 <form class="create-form" th:action="@{/admin/catalogs/room-types/add}" method="POST">
                     <div class="form-row">
-                        <input class="input" type="text" name="name" required placeholder="Tên loại phòng">
-                        <input class="input" type="text" name="description" placeholder="Mô tả">
+                        <input class="input" type="text" name="name" required minlength="1" maxlength="50"
+                               pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/+:-]*"
+                               title="Tên chỉ được chứa chữ, số, khoảng trắng và các ký tự . _ / + : -"
+                               placeholder="Tên loại phòng">
+                        <input class="input" type="text" name="description" maxlength="255" placeholder="Mô tả">
                     </div>
                     <button class="btn btn-primary" type="submit"><i class="fas fa-plus"></i> Thêm loại phòng</button>
                 </form>
@@ -152,8 +155,11 @@
                         <td>
                             <form class="edit-form" th:action="@{/admin/catalogs/room-types/edit}" method="POST">
                                 <input type="hidden" name="id" th:value="${type.id}">
-                                <input class="input" type="text" name="name" required th:value="${type.name}">
-                                <input class="input" type="text" name="description" th:value="${type.description}">
+                                <input class="input" type="text" name="name" required minlength="1" maxlength="50"
+                                       pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/+:-]*"
+                                       title="Tên chỉ được chứa chữ, số, khoảng trắng và các ký tự . _ / + : -"
+                                       th:value="${type.name}">
+                                <input class="input" type="text" name="description" maxlength="255" th:value="${type.description}">
                                 <label class="check-label">
                                     <input type="checkbox" name="active" value="true" th:checked="${type.active}">
                                     Dùng
@@ -174,8 +180,11 @@
             <div class="catalog-body">
                 <form class="create-form" th:action="@{/admin/catalogs/audio/add}" method="POST">
                     <div class="form-row">
-                        <input class="input" type="text" name="name" required placeholder="Tên công nghệ âm thanh">
-                        <input class="input" type="text" name="description" placeholder="Mô tả">
+                        <input class="input" type="text" name="name" required minlength="1" maxlength="80"
+                               pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/+:-]*"
+                               title="Tên chỉ được chứa chữ, số, khoảng trắng và các ký tự . _ / + : -"
+                               placeholder="Tên công nghệ âm thanh">
+                        <input class="input" type="text" name="description" maxlength="255" placeholder="Mô tả">
                     </div>
                     <button class="btn btn-primary" type="submit"><i class="fas fa-plus"></i> Thêm âm thanh</button>
                 </form>
@@ -204,8 +213,11 @@
                         <td>
                             <form class="edit-form" th:action="@{/admin/catalogs/audio/edit}" method="POST">
                                 <input type="hidden" name="id" th:value="${audio.id}">
-                                <input class="input" type="text" name="name" required th:value="${audio.name}">
-                                <input class="input" type="text" name="description" th:value="${audio.description}">
+                                <input class="input" type="text" name="name" required minlength="1" maxlength="80"
+                                       pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/+:-]*"
+                                       title="Tên chỉ được chứa chữ, số, khoảng trắng và các ký tự . _ / + : -"
+                                       th:value="${audio.name}">
+                                <input class="input" type="text" name="description" maxlength="255" th:value="${audio.description}">
                                 <label class="check-label">
                                     <input type="checkbox" name="active" value="true" th:checked="${audio.active}">
                                     Dùng
@@ -227,15 +239,18 @@
                 <form class="seat-create-form" th:action="@{/admin/catalogs/seat-types/add}" method="POST">
                     <div class="field-stack">
                         <label>Tên loại ghế</label>
-                        <input class="input" type="text" name="displayName" required placeholder="Ví dụ: Premium">
+                        <input class="input" type="text" name="displayName" required minlength="1" maxlength="80"
+                               pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/+:-]*"
+                               title="Tên chỉ được chứa chữ, số, khoảng trắng và các ký tự . _ / + : -"
+                               placeholder="Ví dụ: Premium">
                     </div>
                     <div class="field-stack">
                         <label>Màu</label>
-                        <input class="color-input" type="color" name="color" value="#bfdbfe">
+                        <input class="color-input" type="color" name="color" value="#bfdbfe" required>
                     </div>
                     <div class="field-stack">
                         <label>Sức chứa</label>
-                        <input class="input capacity-input" type="number" min="0" max="4" name="capacity" value="1">
+                        <input class="input capacity-input" type="number" min="0" max="10" step="1" name="capacity" value="1" required>
                     </div>
                     <label class="check-label">
                         <input type="checkbox" name="sellable" value="true" checked>
@@ -278,14 +293,17 @@
                                    type="color"
                                    name="color"
                                    th:value="${seatType.color}"
+                                   required
                                    th:attr="form='seatTypeForm-' + ${seatType.id}">
                         </td>
                         <td>
                             <input class="input capacity-input"
                                    type="number"
                                    min="0"
-                                   max="4"
+                                   max="10"
+                                   step="1"
                                    name="capacity"
+                                   required
                                    th:value="${seatType.capacity}"
                                    th:attr="form='seatTypeForm-' + ${seatType.id}">
                         </td>

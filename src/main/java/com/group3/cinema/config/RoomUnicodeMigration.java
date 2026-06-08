@@ -5,17 +5,21 @@
 package com.group3.cinema.config;
 
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class RoomUnicodeMigration {
 
+    private static final Logger log = LoggerFactory.getLogger(RoomUnicodeMigration.class);
+
     private final JdbcTemplate jdbcTemplate;
+
+    public RoomUnicodeMigration(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @PostConstruct
     public void migrateRoomUnicodeColumns() {
