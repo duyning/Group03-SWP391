@@ -1,6 +1,7 @@
 package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.Role;
 import com.group3.cinema.service.AccountService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,11 @@ public class LoginController {
 
         // Save logged-in user to session
         session.setAttribute("loggedInUser", account);
+
+        // Phân luồng redirect theo vai trò
+        if (account.getRole() == Role.ADMIN || account.getRole() == Role.MANAGER) {
+            return "redirect:/admin/dashboard";
+        }
         return "redirect:/home";
     }
 
