@@ -431,7 +431,7 @@
           Home page only shows about 5 hot movies.
           Full now-showing, coming-soon, and special-screening lists are on /movies.
         -->
-        <section class="movies">
+        <section class="movies" th:if="${hotMovies != null && !#lists.isEmpty(hotMovies)}">
             <article class="movie-card" th:each="movie : ${hotMovies}">
                 <a th:href="@{/movies/{id}(id=${movie.id})}">
                     <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
@@ -444,7 +444,11 @@
             </article>
         </section>
 
-        <div style="text-align: center; margin: -20px 0 55px;">
+        <div class="empty-state" th:if="${hotMovies == null || #lists.isEmpty(hotMovies)}">
+            Hiện chưa có phim nổi bật.
+        </div>
+
+        <div style="text-align: center; margin: -20px 0 55px;" th:if="${hotMovies != null && !#lists.isEmpty(hotMovies)}">
             <a class="outline-btn" th:href="@{/movies}">Xem tất cả phim</a>
         </div>
     </main>

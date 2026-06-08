@@ -101,7 +101,8 @@
 
         .search-form button,
         .buy-btn,
-        .outline-btn {
+        .outline-btn,
+        .trailer-btn {
             border: none;
             border-radius: 10px;
             font-weight: 800;
@@ -123,11 +124,14 @@
             border-radius: 20px;
         }
 
-        .outline-btn {
+        .outline-btn,
+        .trailer-btn {
             color: #0054a6;
             background: white;
             border: 1px solid #0054a6;
             padding: 11px 18px;
+            font-family: inherit;
+            font-size: 14px;
         }
 
         .detail-hero {
@@ -213,6 +217,26 @@
         .buy-btn {
             padding: 12px 28px;
             text-transform: uppercase;
+        }
+
+        .trailer-section {
+            margin-top: 30px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 24px;
+        }
+
+        .trailer-section h3 {
+            color: #0054a6;
+            margin: 0 0 14px;
+            text-transform: uppercase;
+        }
+
+        .trailer-player {
+            width: 100%;
+            max-height: 480px;
+            border-radius: 12px;
+            background: #0f172a;
+            display: block;
         }
 
         .footer {
@@ -328,10 +352,22 @@
 
             <div class="actions">
                 <a class="buy-btn" href="#">Mua vé</a>
-                <a class="outline-btn" th:if="${movie.trailerUrl != null && !movie.trailerUrl.isEmpty()}"
-                   th:href="${movie.trailerUrl}" target="_blank">Xem trailer</a>
+                <button class="trailer-btn" type="button"
+                        th:if="${movie.trailerUrl != null && !movie.trailerUrl.isEmpty()}"
+                        onclick="document.getElementById('movieTrailer').scrollIntoView({ behavior: 'smooth', block: 'center' }); document.getElementById('movieTrailerPlayer').play();">
+                    Xem trailer
+                </button>
                 <a class="outline-btn" th:href="@{/movies}">Quay lại</a>
             </div>
+
+            <section class="trailer-section" id="movieTrailer"
+                     th:if="${movie.trailerUrl != null && !movie.trailerUrl.isEmpty()}">
+                <h3>Trailer</h3>
+                <video class="trailer-player" id="movieTrailerPlayer" controls preload="metadata"
+                       th:src="${movie.trailerUrl}">
+                    Trinh duyet cua ban khong ho tro phat video.
+                </video>
+            </section>
         </section>
     </main>
 
