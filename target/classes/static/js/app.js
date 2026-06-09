@@ -219,6 +219,8 @@ function initMovieEvents() {
     document.getElementById('btnResetFilter').addEventListener('click',    resetMovieFilter);
     document.getElementById('movieForm').addEventListener('submit',        handleMovieSave);
     document.getElementById('btnCloseTrailerModal').addEventListener('click', closeTrailer);
+    document.getElementById('moviePosterFile').addEventListener('change', handlePosterFilePreview);
+    document.getElementById('moviePosterUrl').addEventListener('input', e => showPosterPreview(e.target.value.trim()));
 
     // Sự kiện upload video: nút chọn file
     document.getElementById('btnSelectVideo').addEventListener('click', () => {
@@ -372,6 +374,7 @@ function openMovieModal(isEdit) {
     if (!isEdit) {
         document.getElementById('movieForm').reset();
         document.getElementById('movieParamId').value = '';
+        showPosterPreview('');
     }
     document.getElementById('movieModal').classList.add('show');
 }
@@ -403,6 +406,7 @@ async function handleMovieSave(e) {
         return;
     }
     try {
+        body.posterUrl = await resolvePosterUrl() || null;
         const url    = id ? `${API_MOVIES}/${id}` : API_MOVIES;
         const method = id ? 'PUT' : 'POST';
         const r = await fetch(url, {
@@ -414,7 +418,7 @@ async function handleMovieSave(e) {
         closeMovieModal();
         loadMovieStats();
         applyMovieFilter();
-    } catch(err) { alert('Lỗi khi lưu phim. Vui lòng thử lại.'); }
+    } catch(err) { alert(err.message || 'Lỗi khi lưu phim. Vui lòng thử lại.'); }
 }
 
 // --- Sửa phim (khôi phục trạng thái upload nếu có video) ---
@@ -431,6 +435,7 @@ async function editMovie(id) {
         document.getElementById('movieLanguage').value  = mv.language    || '';
         document.getElementById('movieActors').value    = mv.actors      || '';
         document.getElementById('moviePosterUrl').value = mv.posterUrl   || '';
+        showPosterPreview(mv.posterUrl || '');
         document.getElementById('movieReleaseDate').value = mv.releaseDate || '';
         document.getElementById('movieStatus').value    = mv.status      || 'Đang chiếu';
 
@@ -446,6 +451,56 @@ async function editMovie(id) {
 
         openMovieModal(true);
     } catch(e) { alert('Không thể tải thông tin phim.'); }
+}
+
+function handlePosterFilePreview(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh hợp lệ.');
+        e.target.value = '';
+        return;
+    }
+    showPosterPreview(URL.createObjectURL(file));
+}
+
+function showPosterPreview(src) {
+    const img = document.getElementById('moviePosterPreview');
+    const placeholder = document.getElementById('moviePosterPlaceholder');
+    if (!img || !placeholder) return;
+
+    if (src) {
+        img.src = src;
+        img.style.display = '';
+        placeholder.style.display = 'none';
+    } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        placeholder.style.display = '';
+    }
+}
+
+async function resolvePosterUrl() {
+    const fileInput = document.getElementById('moviePosterFile');
+    const posterUrlInput = document.getElementById('moviePosterUrl');
+    const file = fileInput.files && fileInput.files[0];
+
+    if (!file) {
+        return posterUrlInput.value.trim();
+    }
+
+    const data = new FormData();
+    data.append('file', file);
+    const response = await fetch('/api/upload/image', { method: 'POST', body: data });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload.error || 'Không thể upload ảnh poster.');
+    }
+
+    posterUrlInput.value = payload.url;
+    fileInput.value = '';
+    showPosterPreview(payload.url);
+    return payload.url;
 }
 
 // --- Xóa phim ---

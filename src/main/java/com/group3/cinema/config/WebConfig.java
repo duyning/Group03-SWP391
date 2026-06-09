@@ -25,6 +25,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/home",
                         "/login",
                         "/register",
+                        "/register/otp",
+                        "/register/resend-otp",
                         "/forgot-password",
                         "/forgot-password/**",
                         "/reset-password",

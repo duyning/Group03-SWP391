@@ -151,17 +151,36 @@ public class AccountService {
     }
 
     /**
-     * Generate a 6-digit OTP and send it via email.
+     * Generate a 6-digit OTP and send it via email for forgot password flow.
      */
     public String generateAndSendOTP(String email) {
+        return generateAndSendOTP(
+                email,
+                "Mã xác nhận khôi phục mật khẩu",
+                "Chào bạn,\n\nMã OTP để khôi phục mật khẩu của bạn là: %s\n\nMã này sẽ hết hạn trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng"
+        );
+    }
+
+    /**
+     * Generate a 6-digit OTP and send it via email for register flow.
+     */
+    public String generateAndSendRegisterOTP(String email) {
+        return generateAndSendOTP(
+                email,
+                "Mã xác nhận đăng ký tài khoản",
+                "Chào bạn,\n\nMã OTP để xác thực đăng ký tài khoản của bạn là: %s\n\nMã này sẽ hết hạn trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng"
+        );
+    }
+
+    private String generateAndSendOTP(String email, String subject, String textTemplate) {
         // Generate 6-digit OTP
         String otp = String.format("%06d", new java.util.Random().nextInt(999999));
         
         try {
             org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
             message.setTo(email);
-            message.setSubject("Mã xác nhận khôi phục mật khẩu - CinemaBook");
-            message.setText("Chào bạn,\n\nMã OTP để khôi phục mật khẩu của bạn là: " + otp + "\n\nMã này sẽ hết hạn trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nĐội ngũ CinemaBook.");
+            message.setSubject(subject);
+            message.setText(String.format(textTemplate, otp));
             
             mailSender.send(message);
             System.out.println("Đã gửi OTP " + otp + " tới email " + email);

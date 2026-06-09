@@ -12,11 +12,12 @@
         <span>ADMIN</span>
     </div>
     <ul class="sidebar-nav">
-        <a th:href="@{/home}"><li th:classappend="${active == 'dashboard'} ? 'active' : ''"><i class="fas fa-chart-line"></i> Dashboard</li></a>
+        <a th:href="@{/admin/dashboard}"><li th:classappend="${active == 'dashboard'} ? 'active' : ''"><i class="fas fa-chart-line"></i> Dashboard</li></a>
         <a href="/manage_movies.html"><li th:classappend="${active == 'movies'} ? 'active' : ''"><i class="fas fa-film"></i> Quản lý phim</li></a>
         <a href="/manage_showtime.html"><li th:classappend="${active == 'showtimes'} ? 'active' : ''"><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
         <a href="/manage_ticket.html"><li th:classappend="${active == 'tickets'} ? 'active' : ''"><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
         <a th:href="@{/admin/combos}"><li th:classappend="${active == 'combos'} ? 'active' : ''"><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
+        <a th:href="@{/admin/banners}"><li th:classappend="${active == 'banners'} ? 'active' : ''"><i class="fas fa-images"></i> Quản lý banner</li></a>
         <a th:href="@{/admin/rooms}"><li th:classappend="${active == 'rooms'} ? 'active' : ''"><i class="fas fa-theater-masks"></i> Rạp &amp; Phòng</li></a>
         <a th:href="@{/admin/catalogs}"><li th:classappend="${active == 'catalogs'} ? 'active' : ''"><i class="fas fa-list"></i> Danh mục phòng</li></a>
         <a th:href="@{/admin/posts}"><li th:classappend="${active == 'posts'} ? 'active' : ''"><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>

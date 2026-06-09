@@ -11,6 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beta Cinemas | Phim</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
     <style>
         body {
             margin: 0;
@@ -45,6 +46,11 @@
         .top-link {
             color: white;
             text-decoration: none;
+        }
+
+        .lang-icon {
+            height: 14px;
+            margin-left: 15px;
         }
 
         .header-main {
@@ -283,16 +289,27 @@
             }
         }
     </style>
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
 </head>
 
 <body>
     <!-- Header copied in structure from the provided Beta Cinemas UI. -->
     <div class="top-bar">
         <div class="top-container">
-            <a th:href="@{/login}" class="top-link">Đăng nhập</a>
-            <span style="opacity: 0.5">|</span>
-            <a th:href="@{/register}" class="top-link">Đăng ký</a>
-            <img src="https://flagcdn.com/w40/gb.png" style="height: 14px; margin-left: 15px" alt="Tiếng Anh">
+            <th:block th:if="${user == null}">
+                <a th:href="@{/login}" class="top-link">Đăng nhập</a>
+                <span style="opacity: 0.5">|</span>
+                <a th:href="@{/register}" class="top-link">Đăng ký</a>
+            </th:block>
+            <th:block th:if="${user != null}">
+                <span>Xin chào,</span>
+                <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
+                <span style="opacity: 0.5">|</span>
+                <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
+                <span style="opacity: 0.5">|</span>
+                <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
+            </th:block>
+            <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
         </div>
     </div>
 
@@ -307,7 +324,7 @@
                 <a href="#">RẠP</a>
                 <a href="#">GIÁ VÉ</a>
                 <a href="#">KHO VOUCHER</a>
-                <a href="#">TIN TỨC</a>
+                <a th:href="@{/posts}">TIN TỨC</a>
                 <a href="#">CỘNG ĐỒNG</a>
             </nav>
             <form class="search-form" th:action="@{/search}" method="get">
