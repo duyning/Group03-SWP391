@@ -100,9 +100,17 @@
                                       placeholder="Không hiển thị ngoài website, chỉ dùng để ghi chú trong quản trị"></textarea>
                         </div>
                         <div>
-                            <label class="form-label">Link điều hướng</label>
-                            <input class="form-control" th:field="*{linkUrl}" maxlength="500"
-                                   placeholder="/movies hoặc /posts">
+                            <label class="form-label">Phim điều hướng</label>
+                            <select class="form-select" name="movieId">
+                                <option value="">Không gắn phim</option>
+                                <option th:each="movie : ${movies}"
+                                        th:value="${movie.id}"
+                                        th:text="${movie.title}"
+                                        th:selected="${selectedMovieId != null && selectedMovieId == movie.id}">
+                                    Tên phim
+                                </option>
+                            </select>
+                            <small class="text-secondary d-block mt-2">Khi chọn phim, banner sẽ tự trỏ tới trang chi tiết phim.</small>
                         </div>
                         <div>
                             <label class="form-label">Thứ tự</label>

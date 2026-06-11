@@ -8,6 +8,12 @@ import java.util.List;
 
 public interface ComboRepository extends JpaRepository<Combo, Long> {
 
+    // 1. Kiểm tra xem tên combo đã tồn tại chưa (phục vụ lúc tạo mới)
+    boolean existsByName(String name);
+
+    // 2. Kiểm tra xem tên combo đã tồn tại ở một bản ghi khác chưa (phục vụ lúc edit)
+    boolean existsByNameAndIdNot(String name, Long id);
+
     @Query("SELECT c FROM Combo c WHERE " +
             "(:keyword IS NULL OR c.name LIKE %:keyword%) AND " +
             "(:status IS NULL OR :status = '' OR c.status = :status)")
