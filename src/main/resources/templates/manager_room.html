@@ -1,0 +1,546 @@
+<!--
+  Updated on 2026-06-04: Added project file ownership metadata.
+  Created by: NinhDD - HE186113
+-->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Beta Cinemas | Quản lý Phòng chiếu</title>
+    <meta name="description" content="Trang quản trị phòng chiếu - Beta Cinemas Thái Nguyên">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --sidebar-bg: #1e293b;
+            --sidebar-hover: #334155;
+            --primary: #0054a6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-body: #f1f5f9;
+            --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); display: flex; color: #1e293b; }
+
+        /* Sidebar & Layout */
+        .sidebar { width: 260px; background: var(--sidebar-bg); height: 100vh; color: #f8fafc; position: fixed; top: 0; left: 0; overflow-y: auto; }
+        .sidebar-header { padding: 25px; font-size: 20px; font-weight: 800; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 10px; }
+        .sidebar-nav { list-style: none; padding: 15px 0; margin: 0; }
+        .sidebar-nav a { text-decoration: none; color: inherit; display: block; }
+        .sidebar-nav li { padding: 12px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #94a3b8; transition: 0.2s; }
+        .sidebar-nav li:hover, .sidebar-nav li.active { background: var(--sidebar-hover); color: white; }
+        .sidebar-nav li.active { border-left: 4px solid var(--primary); }
+
+        .main { margin-left: 260px; flex: 1; padding: 30px; min-height: 100vh; }
+
+        /* Header & Buttons */
+        .header-content { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .page-title { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+        .breadcrumb { color: #64748b; margin: 5px 0 0 0; font-size: 14px; }
+        .breadcrumb i { font-size: 12px; margin: 0 5px; }
+
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s ease; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-action { padding: 6px 12px; font-size: 12px; background: #f1f5f9; color: #475569; }
+        .btn-action:hover { background: #e2e8f0; color: #1e293b; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-delete:hover { background: #fecaca; color: #b91c1c; }
+        .btn-seat { background-color: #f5f3ff; color: #7c3aed; }
+        .btn-seat:hover { background-color: #ede9fe; }
+        .btn-reset { background: white; border: 1.5px solid #e2e8f0; color: #64748b; }
+        .btn-secondary { background: white; border: 1.5px solid #cbd5e1; color: #475569; }
+        .action-buttons { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; min-width: 250px; }
+        .action-buttons .btn { white-space: nowrap; }
+
+        /* Stat Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 15px; border-left: 4px solid var(--primary); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .stat-info h3 { margin: 0; font-size: 24px; color: #1e293b; font-weight: 800; }
+        .stat-info p { margin: 5px 0 0 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Table & Filter */
+        .table-card { background: white; border-radius: 12px; overflow-x: auto; box-shadow: var(--card-shadow); }
+        .table-filter { padding: 25px; border-bottom: 1px solid #edf2f7; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-group label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .filter-input { padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; outline: none; font-family: inherit; font-size: 14px; transition: border-color 0.2s; width: 100%; box-sizing: border-box; }
+        .filter-input:focus { border-color: var(--primary); }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 15px; text-align: left; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        tbody tr { transition: background-color 0.2s; }
+        tbody tr:hover { background-color: #f8fafc; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+        .empty-state i { font-size: 48px; margin-bottom: 15px; display: block; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 600px; border-radius: 12px; overflow: hidden; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; position: sticky; top: 0; }
+        .modal-body { padding: 25px; }
+        .modal-footer { padding: 15px 25px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; background: white; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 700; color: #334155; font-size: 13px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .required-star { color: #ef4444; }
+
+        /* Status Pill */
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .status-on    { background: #dcfce7; color: #15803d; }
+        .status-off   { background: #fee2e2; color: #dc2626; }
+        .status-pause { background: #f3f4f6; color: #6b7280; }
+        .type-pill    { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #e2e8f0; color: #475569; }
+
+        /* Alert message */
+        .alert { padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+        .alert-success { background: #dcfce7; color: #15803d; }
+        .alert-error   { background: #fee2e2; color: #dc2626; }
+
+        /* Info box */
+        .info-box { padding: 15px; border-radius: 8px; display: flex; gap: 12px; align-items: flex-start; }
+        .info-box p { margin: 0; font-size: 13px; line-height: 1.6; }
+        .info-box-green { background: #f0fdf4; border: 1px dashed #86efac; }
+        .info-box-green i { color: #16a34a; }
+        .info-box-green p { color: #166534; }
+        .info-box-yellow { background: #fffbeb; border: 1px dashed #fcd34d; }
+        .info-box-yellow i { color: #d97706; }
+        .info-box-yellow p { color: #b45309; }
+
+        /* Close button */
+        .btn-close { background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; transition: color 0.2s; padding: 0; line-height: 1; }
+        .btn-close:hover { color: #ef4444; }
+
+        /* Header modal icon */
+        .modal-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .modal-icon-add  { background: #eff6ff; color: var(--primary); }
+        .modal-icon-edit { background: #fffbeb; color: var(--warning); }
+    </style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" height="35"
+             style="filter: brightness(0) invert(1);" alt="Beta Cinemas Logo">
+        <span>ADMIN</span>
+    </div>
+    <ul class="sidebar-nav">
+        <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
+        <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
+        <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
+        <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
+        <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
+        <a href="/admin/rooms"><li class="active"><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
+        <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
+        <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
+        <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
+    </ul>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main">
+
+    <!-- Flash messages -->
+    <div th:if="${successMessage}" id="alertSuccess"
+         class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span th:text="${successMessage}"></span>
+    </div>
+    <div th:if="${errorMessage}" id="alertError"
+         class="alert alert-error">
+        <i class="fas fa-times-circle"></i>
+        <span th:text="${errorMessage}"></span>
+    </div>
+
+    <!-- Header -->
+    <div class="header-content">
+        <div>
+            <h1 class="page-title">Quản lý Phòng chiếu</h1>
+            <p class="breadcrumb">Rạp &amp; Phòng <i class="fas fa-chevron-right"></i> <strong>Beta Cinemas Thái Nguyên</strong></p>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <i class="fas fa-plus"></i> Thêm phòng mới
+            </button>
+            <a th:href="@{/admin/catalogs}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> Danh mục
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-door-open"></i></div>
+            <div class="stat-info">
+                <h3 th:text="${totalRooms}">0</h3>
+                <p>Tổng số phòng</p>
+            </div>
+        </div>
+        <div class="stat-card" style="border-left-color: var(--success);">
+            <div class="stat-icon" style="background: #ecfdf5; color: var(--success);"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info">
+                <h3 th:text="${activeRooms}">0</h3>
+                <p>Đang hoạt động</p>
+            </div>
+        </div>
+        <div class="stat-card" style="border-left-color: var(--warning);">
+            <div class="stat-icon" style="background: #fffbeb; color: var(--warning);"><i class="fas fa-tools"></i></div>
+            <div class="stat-info">
+                <h3 th:text="${maintenanceRooms}">0</h3>
+                <p>Đang bảo trì</p>
+            </div>
+        </div>
+        <div class="stat-card" style="border-left-color: #8b5cf6;">
+            <div class="stat-icon" style="background: #f5f3ff; color: #8b5cf6;"><i class="fas fa-chair"></i></div>
+            <div class="stat-info">
+                <h3 th:text="${#numbers.formatInteger(totalSeats, 0, 'COMMA')}">0</h3>
+                <p>Tổng sức chứa (Ghế)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="table-card">
+
+        <!-- Filter Form -->
+        <form id="filterForm" th:action="@{/admin/rooms}" method="GET" class="table-filter">
+            <div class="filter-group">
+                <label>Tên phòng</label>
+                <input type="text" name="roomName" class="filter-input"
+                       placeholder="Phòng số..."
+                       maxlength="100"
+                       pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/-]*"
+                       title="Tên phòng chỉ được chứa chữ, số, khoảng trắng và các ký tự . _ / -"
+                       th:value="${filterRoomName}">
+            </div>
+            <div class="filter-group">
+                <label>Loại phòng</label>
+                <select name="roomType" class="filter-input">
+                    <option value="">-- Tất cả --</option>
+                    <option th:each="type : ${roomTypeOptions}"
+                            th:value="${type.name}"
+                            th:text="${type.name}"
+                            th:selected="${filterRoomType == type.name}"></option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Âm thanh</label>
+                <input type="text" name="audioTech" class="filter-input"
+                       list="audioTechOptions"
+                       placeholder="Tìm công nghệ âm thanh..."
+                       th:value="${filterAudioTech}">
+            </div>
+            <div class="filter-group">
+                <label>Số ghế tối thiểu</label>
+                <input type="number" name="minSeats" class="filter-input"
+                       placeholder="Ví dụ: 50"
+                       min="0"
+                       max="5000"
+                       th:value="${filterMinSeats}">
+            </div>
+            <div class="filter-group">
+                <label>Trạng thái</label>
+                <select name="status" class="filter-input">
+                    <option value="">-- Tất cả --</option>
+                    <option value="Hoạt động"  th:selected="${filterStatus == 'Hoạt động'}">Hoạt động</option>
+                    <option value="Bảo trì"    th:selected="${filterStatus == 'Bảo trì'}">Bảo trì</option>
+                    <option value="Tạm ngưng"  th:selected="${filterStatus == 'Tạm ngưng'}">Tạm ngưng</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Lọc</button>
+                <a th:href="@{/admin/rooms}" class="btn btn-reset">Reset</a>
+            </div>
+        </form>
+
+        <!-- Table -->
+        <table>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>TÊN PHÒNG</th>
+                <th>LOẠI PHÒNG</th>
+                <th>ÂM THANH</th>
+                <th>SỐ GHẾ</th>
+                <th>TRẠNG THÁI</th>
+                <th style="text-align: right;">HÀNH ĐỘNG</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            <!-- Empty state -->
+            <tr th:if="${rooms == null or rooms.isEmpty()}">
+                <td colspan="7" class="empty-state">
+                    <i class="fas fa-door-open"></i>
+                    <strong>Không có phòng nào</strong>
+                    <p style="margin: 5px 0 0; font-size: 13px;">Nhấn "Thêm phòng mới" để bắt đầu.</p>
+                </td>
+            </tr>
+
+            <!-- Room rows -->
+            <tr th:each="room, stat : ${rooms}">
+                <td style="color: #94a3b8; font-size: 13px;" th:text="${stat.index + 1}">1</td>
+                <td style="font-weight: 700;" th:text="${room.roomName}">Phòng 01</td>
+                <td><span class="type-pill" th:text="${room.roomType}">2D</span></td>
+                <td style="font-size: 13px; color: #64748b;" th:text="${room.audioTech}">Dolby 7.1</td>
+                <td>
+                    <span th:if="${room.totalSeats > 0}" th:text="${room.totalSeats + ' Ghế'}">0 Ghế</span>
+                    <span th:unless="${room.totalSeats > 0}" style="color:#94a3b8;">Chưa thiết kế</span>
+                </td>
+                <td>
+                    <span th:switch="${room.status}">
+                        <span th:case="'Hoạt động'" class="status-pill status-on">Hoạt động</span>
+                        <span th:case="'Bảo trì'"   class="status-pill status-off">Bảo trì</span>
+                        <span th:case="*"            class="status-pill status-pause" th:text="${room.status}">Tạm ngưng</span>
+                    </span>
+                </td>
+                <td style="text-align: right;">
+                    <div class="action-buttons">
+                        <a th:href="@{/admin/rooms/{id}/seats(id=${room.id})}"
+                           class="btn btn-action btn-seat" title="Thiết kế sơ đồ ghế">
+                            <i class="fas fa-th"></i> Thiết kế ghế
+                        </a>
+                        <button type="button" class="btn btn-action edit-room-btn"
+                                th:attr="data-id=${room.id},
+                                         data-room-name=${room.roomName},
+                                         data-room-type=${room.roomType},
+                                         data-audio-tech=${room.audioTech},
+                                         data-status=${room.status}">
+                            <i class="fas fa-edit"></i> Sửa
+                        </button>
+                        <!-- Delete form -->
+                        <form th:action="@{/admin/rooms/delete}" method="POST" style="display:inline;"
+                              onsubmit="return confirm('Chỉ xóa được phòng chưa có lịch chiếu hiện tại/tương lai. Nếu xóa, toàn bộ sơ đồ ghế của phòng cũng sẽ bị xóa. Tiếp tục?')">
+                            <input type="hidden" name="id" th:value="${room.id}">
+                            <button type="submit" class="btn btn-action btn-delete">
+                                <i class="fas fa-trash"></i> Xóa
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+
+            </tbody>
+        </table>
+
+        <!-- Footer count -->
+        <div style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #f1f5f9; font-size: 13px; color: #64748b;">
+            Hiển thị <strong th:text="${rooms != null ? rooms.size() : 0}">0</strong> phòng chiếu
+        </div>
+    </div>
+
+</main>
+
+<datalist id="audioTechOptions">
+    <option th:each="audio : ${audioTechOptions}" th:value="${audio.name}"></option>
+</datalist>
+
+<!-- ===== MODAL THÊM PHÒNG ===== -->
+<div class="modal-overlay" id="addRoomModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="modal-icon modal-icon-add"><i class="fas fa-plus-circle"></i></div>
+                <div>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 800;">Thêm phòng chiếu mới</h2>
+                    <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Thiết lập thông tin cơ bản của phòng chiếu</p>
+                </div>
+            </div>
+            <button class="btn-close" onclick="closeModal('addRoomModal')"><i class="fas fa-times"></i></button>
+        </div>
+
+        <form th:action="@{/admin/rooms/add}" method="POST">
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label>Tên phòng chiếu <span class="required-star">*</span></label>
+                    <input type="text" name="roomName" class="filter-input" required
+                           minlength="2" maxlength="100"
+                           pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/-]*"
+                           title="Tên phòng từ 2-100 ký tự, chỉ gồm chữ, số, khoảng trắng và các ký tự . _ / -"
+                           placeholder="Ví dụ: Cinema 01">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Loại phòng <span class="required-star">*</span></label>
+                        <select name="roomType" class="filter-input" required>
+                            <option value="">-- Chọn loại phòng --</option>
+                            <option th:each="type : ${roomTypeOptions}"
+                                    th:value="${type.name}"
+                                    th:text="${type.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Công nghệ âm thanh <span class="required-star">*</span></label>
+                        <select name="audioTech" class="filter-input" required>
+                            <option value="">-- Chọn âm thanh --</option>
+                            <option th:each="audio : ${audioTechOptions}"
+                                    th:value="${audio.name}"
+                                    th:text="${audio.name}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Trạng thái khởi tạo</label>
+                    <select name="status" class="filter-input" required>
+                        <option value="Bảo trì">Đang setup / Bảo trì</option>
+                        <option value="Tạm ngưng">Tạm ngưng</option>
+                    </select>
+                </div>
+
+                <div class="info-box info-box-green">
+                    <i class="fas fa-info-circle" style="margin-top: 2px; font-size: 18px;"></i>
+                    <p><strong>Số ghế sẽ được cập nhật sau:</strong> Sau khi tạo phòng, vào phần <strong>Thiết kế ghế</strong> để thiết lập sơ đồ. Phòng chỉ được bật <strong>Hoạt động</strong> khi đã có sơ đồ ghế và sức chứa hợp lệ.</p>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" style="background: white; border: 1px solid #e2e8f0; color: #475569;" onclick="closeModal('addRoomModal')">Hủy bỏ</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Tạo phòng chiếu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== MODAL SỬA PHÒNG ===== -->
+<div class="modal-overlay" id="editRoomModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="modal-icon modal-icon-edit"><i class="fas fa-edit"></i></div>
+                <div>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 800;">Chỉnh sửa phòng chiếu</h2>
+                    <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Cập nhật thông tin cơ bản của phòng chiếu</p>
+                </div>
+            </div>
+            <button class="btn-close" onclick="closeModal('editRoomModal')"><i class="fas fa-times"></i></button>
+        </div>
+
+        <form th:action="@{/admin/rooms/edit}" method="POST" id="editRoomForm">
+            <input type="hidden" name="id" id="editRoomId">
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label>Tên phòng chiếu <span class="required-star">*</span></label>
+                    <input type="text" name="roomName" id="editRoomName" class="filter-input" required
+                           minlength="2" maxlength="100"
+                           pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/-]*"
+                           title="Tên phòng từ 2-100 ký tự, chỉ gồm chữ, số, khoảng trắng và các ký tự . _ / -">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Loại phòng <span class="required-star">*</span></label>
+                        <select name="roomType" id="editRoomType" class="filter-input" required>
+                            <option value="">-- Chọn loại phòng --</option>
+                            <option th:each="type : ${roomTypeOptions}"
+                                    th:value="${type.name}"
+                                    th:text="${type.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Công nghệ âm thanh <span class="required-star">*</span></label>
+                        <select name="audioTech" id="editAudioTech" class="filter-input" required>
+                            <option value="">-- Chọn âm thanh --</option>
+                            <option th:each="audio : ${audioTechOptions}"
+                                    th:value="${audio.name}"
+                                    th:text="${audio.name}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Trạng thái</label>
+                    <select name="status" id="editStatus" class="filter-input" required>
+                        <option value="Hoạt động">Hoạt động</option>
+                        <option value="Bảo trì">Bảo trì</option>
+                        <option value="Tạm ngưng">Tạm ngưng</option>
+                    </select>
+                </div>
+
+                <div class="info-box info-box-yellow">
+                    <i class="fas fa-exclamation-triangle" style="margin-top: 2px; font-size: 18px;"></i>
+                    <p><strong>Lưu ý:</strong> Không thể đổi tên hoặc xóa phòng đang có lịch chiếu hiện tại/tương lai. Số hàng ghế và số ghế không thể thay đổi ở đây, vui lòng dùng chức năng <strong>Thiết kế ghế</strong>.</p>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" style="background: white; border: 1px solid #e2e8f0; color: #475569;" onclick="closeModal('editRoomModal')">Hủy bỏ</button>
+                <button type="submit" class="btn" style="background: var(--warning); color: white;"><i class="fas fa-save"></i> Cập nhật</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ─── Modal helpers ────────────────────────────────────────────────────────
+    function openAddModal() {
+        document.getElementById('addRoomModal').style.display = 'flex';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function openEditModal(id, roomName, roomType, audioTech, status) {
+        document.getElementById('editRoomId').value    = id;
+        document.getElementById('editRoomName').value  = roomName;
+        setSelectValue('editRoomType',  roomType);
+        setSelectValue('editAudioTech', audioTech);
+        setSelectValue('editStatus',    status);
+        document.getElementById('editRoomModal').style.display = 'flex';
+    }
+
+    document.querySelectorAll('.edit-room-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+            openEditModal(
+                button.dataset.id,
+                button.dataset.roomName,
+                button.dataset.roomType,
+                button.dataset.audioTech,
+                button.dataset.status
+            );
+        });
+    });
+
+    function setSelectValue(selectId, value) {
+        const sel = document.getElementById(selectId);
+        for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === value) {
+                sel.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // Đóng modal khi click vùng tối bên ngoài
+    window.addEventListener('click', function (e) {
+        const addModal  = document.getElementById('addRoomModal');
+        const editModal = document.getElementById('editRoomModal');
+        if (e.target === addModal)  closeModal('addRoomModal');
+        if (e.target === editModal) closeModal('editRoomModal');
+    });
+
+    // ─── Tự động ẩn flash message sau 4 giây ─────────────────────────────────
+    ['alertSuccess', 'alertError'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        setTimeout(() => {
+            el.style.transition = 'opacity 0.5s ease';
+            el.style.opacity = '0';
+            setTimeout(() => el.style.display = 'none', 500);
+        }, 4000);
+    });
+</script>
+</body>
+</html>

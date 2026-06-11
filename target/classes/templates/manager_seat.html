@@ -1,0 +1,703 @@
+<!--
+  Updated on 2026-06-04: Added project file ownership metadata.
+  Created by: NinhDD - HE186113
+-->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Beta Cinemas | Thiết kế ghế - ' + ${room.roomName}">Beta Cinemas | Thiết kế sơ đồ ghế</title>
+    <meta name="description" content="Thiết kế sơ đồ ghế phòng chiếu - Beta Cinemas Admin">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --sidebar-bg: #1e293b;
+            --sidebar-hover: #334155;
+            --primary: #0054a6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-body: #f1f5f9;
+            --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+
+            /* Màu ghế */
+            --seat-std: #e2e8f0;        --seat-std-text: #475569;
+            --seat-vip: #fef08a;        --seat-vip-text: #b45309;
+            --seat-couple: #fbcfe8;     --seat-couple-text: #be185d;
+            --seat-broken: #fca5a5;     --seat-broken-text: #991b1b;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); display: flex; color: #1e293b; height: 100vh; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--sidebar-bg); height: 100vh; color: #f8fafc; flex-shrink: 0; overflow-y: auto; }
+        .sidebar-header { padding: 25px; font-size: 20px; font-weight: 800; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 10px; }
+        .sidebar-nav { list-style: none; padding: 15px 0; margin: 0; }
+        .sidebar-nav a { text-decoration: none; color: inherit; display: block; }
+        .sidebar-nav li { padding: 12px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #94a3b8; transition: 0.2s; }
+        .sidebar-nav li:hover, .sidebar-nav li.active { background: var(--sidebar-hover); color: white; }
+        .sidebar-nav li.active { border-left: 4px solid var(--primary); }
+
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Topbar */
+        .topbar { padding: 16px 30px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--card-shadow); z-index: 10; flex-shrink: 0; }
+        .page-title { margin: 0; font-size: 20px; font-weight: 800; }
+        .breadcrumb { color: #64748b; margin: 4px 0 0; font-size: 13px; }
+        .breadcrumb i { font-size: 10px; margin: 0 5px; }
+
+        /* Buttons */
+        .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; transition: all 0.2s; font-family: inherit; }
+        .btn-primary  { background: var(--primary); color: white; }
+        .btn-primary:hover  { background: #004282; box-shadow: 0 4px 6px -1px rgba(0,84,166,0.25); }
+        .btn-success  { background: var(--success); color: white; }
+        .btn-success:hover  { background: #059669; }
+        .btn-outline  { background: white; border: 1.5px solid #cbd5e1; color: #475569; }
+        .btn-outline:hover  { background: #f8fafc; }
+        .btn-danger   { background: #fee2e2; color: #dc2626; border: none; }
+        .btn-danger:hover   { background: #fecaca; }
+
+        /* Alert */
+        .topbar-alert { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .alert-success { background: #dcfce7; color: #15803d; }
+        .alert-error   { background: #fee2e2; color: #dc2626; }
+
+        /* Content Layout */
+        .content-area { flex: 1; padding: 20px 25px; overflow: hidden; display: flex; gap: 20px; }
+
+        /* ─── Palette (Left Panel) ─── */
+        .palette-card { background: white; border-radius: 12px; padding: 18px; box-shadow: var(--card-shadow); width: 270px; flex-shrink: 0; overflow-y: auto; }
+        .palette-title { font-size: 14px; font-weight: 700; margin: 0 0 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; color: #1e293b; }
+
+        .tool-btn { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 12px; border-radius: 8px; border: 2px solid transparent; background: white; cursor: pointer; transition: 0.15s; font-family: inherit; font-size: 13px; font-weight: 600; color: #475569; text-align: left; margin-bottom: 7px; }
+        .tool-btn:hover  { background: #f8fafc; }
+        .tool-btn.active { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+
+        .seat-sample { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border-bottom: 4px solid rgba(0,0,0,0.1); flex-shrink: 0; }
+        .type-std    .seat-sample { background: var(--seat-std);    color: var(--seat-std-text); }
+        .type-vip    .seat-sample { background: var(--seat-vip);    color: var(--seat-vip-text); }
+        .type-couple .seat-sample { background: var(--seat-couple); color: var(--seat-couple-text); width: 56px; }
+        .type-broken .seat-sample { background: var(--seat-broken); color: var(--seat-broken-text); }
+        .type-empty  .seat-sample { background: transparent; border: 2px dashed #cbd5e1; color: #cbd5e1; border-bottom: 2px dashed #cbd5e1; }
+
+        /* Stats box */
+        .stats-box { margin-top: 16px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #475569; }
+        .stat-row:last-child { margin-bottom: 0; padding-top: 8px; border-top: 1px solid #cbd5e1; color: #1e293b; font-weight: 800; font-size: 14px; }
+        .stat-badge { background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1px 8px; font-size: 12px; }
+
+        /* Room Info box */
+        .room-info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 12px; color: #1d4ed8; }
+        .room-info strong { display: block; font-size: 13px; margin-bottom: 4px; }
+        .grid-size-panel { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 14px; }
+        .grid-size-title { margin: 0 0 10px; font-size: 12px; font-weight: 800; color: #334155; text-transform: uppercase; }
+        .grid-size-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .grid-size-field label { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 700; color: #64748b; }
+        .grid-size-field input { width: 100%; height: 34px; border: 1.5px solid #cbd5e1; border-radius: 7px; padding: 6px 8px; font-family: inherit; font-size: 13px; font-weight: 700; color: #1e293b; outline: none; }
+        .grid-size-field input:focus { border-color: var(--primary); }
+
+        /* ─── Canvas (Right Panel) ─── */
+        .canvas-card { flex: 1; background: white; border-radius: 12px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; overflow: hidden; }
+        .canvas-header { padding: 12px 18px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; font-size: 13px; font-weight: 600; color: #475569; flex-shrink: 0; }
+        .canvas-header span strong { color: #1e293b; }
+
+        .canvas-body { flex: 1; padding: 30px 20px 20px; overflow: auto; display: flex; flex-direction: column; align-items: center; background: #f1f5f9; user-select: none; }
+
+        /* Screen arc */
+        .screen-arc { width: 75%; max-width: 560px; height: 38px; background: linear-gradient(to bottom, #cbd5e1, transparent); border-top: 5px solid #94a3b8; border-radius: 50% 50% 0 0 / 100% 100% 0 0; display: flex; justify-content: center; align-items: center; margin-bottom: 50px; color: #64748b; font-weight: 800; letter-spacing: 5px; font-size: 13px; text-shadow: 0 1px 0 white; flex-shrink: 0; }
+
+        /* Seat grid */
+        .seat-matrix { display: flex; flex-direction: column; gap: 10px; }
+        .seat-row { display: flex; align-items: center; gap: 8px; justify-content: center; }
+        .row-label { width: 26px; text-align: center; font-weight: 800; color: #64748b; font-size: 14px; flex-shrink: 0; }
+
+        .seat-container { display: flex; gap: 8px; }
+        .seat { width: 36px; height: 36px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; cursor: pointer; transition: transform 0.1s, filter 0.1s, box-shadow 0.1s; border-bottom: 4px solid rgba(0,0,0,0.12); position: relative; flex-shrink: 0; }
+        .seat:hover  { transform: scale(1.12); filter: brightness(0.92); z-index: 2; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .seat:active { transform: scale(0.93); border-bottom-width: 2px; margin-top: 2px; }
+
+        .seat.std    { background: var(--seat-std);    color: var(--seat-std-text); }
+        .seat.vip    { background: var(--seat-vip);    color: var(--seat-vip-text); }
+        .seat.couple { background: var(--seat-couple); color: var(--seat-couple-text); width: 80px; }
+        .seat.broken { background: var(--seat-broken); color: var(--seat-broken-text); }
+        .seat.broken::after { content: '\f00d'; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+        .seat.empty  { background: transparent; border: 2px dashed #cbd5e1; color: transparent; border-bottom: 2px dashed #cbd5e1; }
+        .seat.empty:hover { border-color: var(--primary); }
+
+        /* Instruction */
+        .instruction { font-size: 12px; color: #64748b; margin-top: 25px; text-align: center; background: #e2e8f0; padding: 9px 18px; border-radius: 20px; flex-shrink: 0; }
+
+        /* Legend */
+        .legend { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #64748b; }
+        .legend-dot { width: 16px; height: 16px; border-radius: 4px; border-bottom: 3px solid rgba(0,0,0,0.1); }
+
+        /* Save status toast */
+        #saveToast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; display: none; align-items: center; gap: 10px; z-index: 9999; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .toast-success { background: #dcfce7; color: #15803d; }
+        .toast-error   { background: #fee2e2; color: #dc2626; }
+        .toast-loading { background: #e0f2fe; color: #0369a1; }
+    </style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" height="35"
+             style="filter: brightness(0) invert(1);" alt="Beta Cinemas">
+        <span>ADMIN</span>
+    </div>
+    <ul class="sidebar-nav">
+        <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
+        <a href="/manage_movies.html"><li class="active"><i class="fas fa-film"></i> Quản lý phim</li></a>
+        <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
+        <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
+        <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
+        <a href="/admin/rooms"><li class="active"><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
+        <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
+        <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
+        <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
+    </ul>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div>
+            <h1 class="page-title">Thiết kế sơ đồ ghế</h1>
+            <p class="breadcrumb">
+                Rạp &amp; Phòng
+                <i class="fas fa-chevron-right"></i>
+                <a th:href="@{/admin/rooms}" style="color:#64748b; text-decoration:none;">Beta Cinemas Thái Nguyên</a>
+                <i class="fas fa-chevron-right"></i>
+                <strong th:text="${room.roomName}">Phòng 01</strong>
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <!-- Flash alerts từ redirect -->
+            <div th:if="${successMessage}" class="topbar-alert alert-success" id="flashAlert">
+                <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="topbar-alert alert-error" id="flashAlert">
+                <i class="fas fa-times-circle"></i> <span th:text="${errorMessage}"></span>
+            </div>
+
+            <a th:href="@{/admin/rooms}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+            <button class="btn btn-primary" id="btnSave" onclick="saveMatrix()">
+                <i class="fas fa-save"></i> Lưu sơ đồ
+            </button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-area">
+
+        <!-- ─── LEFT: Palette ─── -->
+        <div class="palette-card">
+            <h3 class="palette-title"><i class="fas fa-paint-brush"></i> Bảng công cụ vẽ</h3>
+
+            <!-- Room info -->
+            <div class="room-info">
+                <strong th:text="${room.roomName}">Phòng 01</strong>
+                <span id="roomGridInfo" th:text="${room.roomType} + ' · ' + ${room.rows} + ' hàng × ' + ${room.cols} + ' cột'"></span><br>
+                <span th:text="'Trạng thái: ' + ${room.status}"></span>
+            </div>
+
+            <div class="grid-size-panel">
+                <p class="grid-size-title"><i class="fas fa-expand-arrows-alt"></i> Kích thước sơ đồ</p>
+                <div class="grid-size-row">
+                    <div class="grid-size-field">
+                        <label>Số hàng</label>
+                        <input type="number" id="rowInput" min="1" max="26" th:value="${room.rows}">
+                    </div>
+                    <div class="grid-size-field">
+                        <label>Số cột</label>
+                        <input type="number" id="colInput" min="1" max="50" th:value="${room.cols}">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline" style="width: 100%; justify-content: center;"
+                        onclick="applyGridSize()">
+                    <i class="fas fa-check"></i> Áp dụng kích thước
+                </button>
+            </div>
+
+            <!-- Tool buttons -->
+            <button th:each="seatType, stat : ${seatTypes}"
+                    class="tool-btn"
+                    th:classappend="${stat.first} ? ' active'"
+                    th:data-type="${seatType.code}"
+                    th:id="'tool-' + ${seatType.code}">
+                <div class="seat-sample"
+                     th:style="${seatType.code == 'empty'
+                        ? 'background:transparent; border: 2px dashed #cbd5e1; border-bottom: 2px dashed #cbd5e1;'
+                        : 'background:' + seatType.color}">
+                    <i th:if="${seatType.code == 'couple'}" class="fas fa-heart"></i>
+                    <i th:if="${seatType.code == 'broken'}" class="fas fa-times"></i>
+                </div>
+                <span th:text="${seatType.displayName}">Ghế thường</span>
+            </button>
+
+            <!-- Stats real-time -->
+            <div class="stats-box">
+                <div class="stat-row">
+                    <span><i class="fas fa-chair" style="color:#94a3b8"></i> Thường:</span>
+                    <span class="stat-badge" id="count-std">0</span>
+                </div>
+                <div class="stat-row">
+                    <span><i class="fas fa-star" style="color:#f59e0b"></i> VIP:</span>
+                    <span class="stat-badge" id="count-vip">0</span>
+                </div>
+                <div class="stat-row">
+                    <span><i class="fas fa-heart" style="color:#db2777"></i> Couple:</span>
+                    <span class="stat-badge" id="count-couple">0</span>
+                </div>
+                <div class="stat-row">
+                    <span><i class="fas fa-times-circle" style="color:#ef4444"></i> Hỏng:</span>
+                    <span class="stat-badge" id="count-broken">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Tổng sức chứa:</span>
+                    <span id="count-total">0</span>
+                </div>
+            </div>
+
+            <!-- Reset button -->
+            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn btn-outline" style="width: 100%; justify-content: center;"
+                        onclick="resetGridLocal()">
+                    <i class="fas fa-redo"></i> Reset về ghế thường
+                </button>
+                <!-- Reset server-side (dùng form POST) -->
+                <form th:action="@{/admin/rooms/{id}/seats/reset(id=${room.id})}" method="POST"
+                      onsubmit="return confirm('Reset toàn bộ ghế về mặc định và lưu ngay vào DB?')">
+                    <button type="submit" class="btn btn-danger" style="width: 100%; justify-content: center;">
+                        <i class="fas fa-trash-restore"></i> Reset &amp; Lưu vào DB
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ─── RIGHT: Canvas ─── -->
+        <div class="canvas-card">
+            <div class="canvas-header">
+                <span>
+                    <i class="fas fa-border-all"></i>
+                    Lưới: <strong id="gridSizeText" th:text="${room.rows} + ' Hàng × ' + ${room.cols} + ' Cột'">? × ?</strong>
+                </span>
+                <span th:text="${room.roomName} + ' · ' + ${room.roomType}">Phòng 01 · 2D</span>
+            </div>
+
+            <div class="canvas-body" id="canvasBody">
+                <div class="screen-arc">MÀN HÌNH</div>
+
+                <div class="seat-matrix" id="seatMatrix">
+                    <!-- JS sẽ render lưới ghế vào đây -->
+                </div>
+
+                <!-- Legend -->
+                <div class="legend">
+                    <div class="legend-item" th:each="seatType : ${seatTypes}">
+                        <div class="legend-dot"
+                             th:style="${seatType.code == 'empty'
+                                ? 'background:transparent; border: 2px dashed #cbd5e1;'
+                                : 'background:' + seatType.color}"></div>
+                        <span th:text="${seatType.displayName}">Thường</span>
+                    </div>
+                </div>
+
+                <div class="instruction">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Hướng dẫn:</strong> Chọn loại ghế bên trái → Click hoặc kéo thả chuột trên lưới để vẽ.
+                    Nhấn <strong>Lưu sơ đồ</strong> để lưu vào database.
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /content-area -->
+</main>
+
+<!-- Toast notification -->
+<div id="saveToast">
+    <i id="toastIcon" class="fas fa-spinner fa-spin"></i>
+    <span id="toastMsg">Đang lưu...</span>
+</div>
+
+<!-- ===== SERVER DATA ===== -->
+<!-- Inject dữ liệu từ server vào JS -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const SERVER_ROWS   = /*[[${room.rows}]]*/ 10;
+    const SERVER_COLS   = /*[[${room.cols}]]*/ 12;
+    const SERVER_ROOM_ID = /*[[${room.id}]]*/ 0;
+    // matrixJson: mảng 2D type string (từ DB), rỗng [] nếu chưa có
+    const SERVER_MATRIX = /*[[${matrixJson}]]*/ null;
+    const SERVER_SEAT_TYPES = /*[[${seatTypesJson}]]*/ null;
+    /*]]>*/
+</script>
+
+<script>
+    // ═══════════════════════════════════════════════════════════════
+    //  CONFIG
+    // ═══════════════════════════════════════════════════════════════
+    let ROWS       = SERVER_ROWS;
+    let COLS       = SERVER_COLS;
+    const ROOM_ID  = SERVER_ROOM_ID;
+    const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    let currentTool = 'std';
+    let isDrawing   = false;
+    let matrixData  = [];  // Array<Array<{type, id}>>
+
+    const matrixEl = document.getElementById('seatMatrix');
+    const rowInput = document.getElementById('rowInput');
+    const colInput = document.getElementById('colInput');
+    const gridSizeText = document.getElementById('gridSizeText');
+    const roomGridInfo = document.getElementById('roomGridInfo');
+    const seatTypeList = parseSeatTypes();
+    const seatTypeByCode = new Map(seatTypeList.map(type => [type.code, type]));
+    const VALID_SEAT_TYPES = new Set([...seatTypeByCode.keys(), 'skip']);
+
+    function parseSeatTypes() {
+        if (!SERVER_SEAT_TYPES) return [];
+        if (Array.isArray(SERVER_SEAT_TYPES)) return SERVER_SEAT_TYPES;
+        if (typeof SERVER_SEAT_TYPES === 'string' && SERVER_SEAT_TYPES.trim().length > 0) {
+            try {
+                return JSON.parse(SERVER_SEAT_TYPES);
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    }
+
+    function getSeatTypeMeta(type) {
+        return seatTypeByCode.get(type) || seatTypeByCode.get('std') || {
+            code: 'std',
+            displayName: 'Ghế thường',
+            color: '#e2e8f0',
+            capacity: 1,
+            sellable: true
+        };
+    }
+
+    function normalizeSeatType(type) {
+        return VALID_SEAT_TYPES.has(type) ? type : 'std';
+    }
+
+    function parseServerMatrix() {
+        if (!SERVER_MATRIX) return null;
+        if (Array.isArray(SERVER_MATRIX)) return SERVER_MATRIX;
+        if (typeof SERVER_MATRIX === 'string' && SERVER_MATRIX.trim().length > 0) {
+            try {
+                return JSON.parse(SERVER_MATRIX);
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  INIT DATA
+    // ═══════════════════════════════════════════════════════════════
+    function initData() {
+        matrixData = [];
+        // Parse từ server JSON nếu có, nếu không thì tạo mặc định "std"
+        const serverTypes = parseServerMatrix();
+
+        for (let r = 0; r < ROWS; r++) {
+            const rowArr = [];
+            for (let c = 0; c < COLS; c++) {
+                const type = (serverTypes && serverTypes[r] && serverTypes[r][c])
+                    ? serverTypes[r][c]
+                    : 'std';
+                rowArr.push({ type: normalizeSeatType(type), id: ALPHABET[r] + (c + 1) });
+            }
+            matrixData.push(rowArr);
+        }
+        updateGridLabels();
+    }
+
+    function createSeatData(r, c, type = 'std') {
+        return { type: normalizeSeatType(type), id: ALPHABET[r] + (c + 1) };
+    }
+
+    function updateGridLabels() {
+        const label = `${ROWS} Hàng × ${COLS} Cột`;
+        gridSizeText.textContent = label;
+        roomGridInfo.textContent = `${roomGridInfo.textContent.split(' · ')[0]} · ${ROWS} hàng × ${COLS} cột`;
+        rowInput.value = ROWS;
+        colInput.value = COLS;
+    }
+
+    function applyGridSize() {
+        const nextRows = Math.min(26, Math.max(1, parseInt(rowInput.value, 10) || ROWS));
+        const nextCols = Math.min(50, Math.max(1, parseInt(colInput.value, 10) || COLS));
+        if (nextRows === ROWS && nextCols === COLS) return;
+
+        const oldData = matrixData;
+        const resized = [];
+        for (let r = 0; r < nextRows; r++) {
+            const rowArr = [];
+            for (let c = 0; c < nextCols; c++) {
+                const oldSeat = oldData[r] && oldData[r][c];
+                rowArr.push(createSeatData(r, c, oldSeat ? oldSeat.type : 'std'));
+            }
+            resized.push(rowArr);
+        }
+
+        ROWS = nextRows;
+        COLS = nextCols;
+        matrixData = resized;
+        repairCoupleSeats();
+        updateGridLabels();
+        renderMatrix();
+    }
+
+    function repairCoupleSeats() {
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const seat = matrixData[r][c];
+                if (seat.type === 'couple') {
+                    if (c >= COLS - 1) {
+                        matrixData[r][c] = createSeatData(r, c, 'std');
+                    } else {
+                        matrixData[r][c].id = ALPHABET[r] + (c + 1);
+                        matrixData[r][c + 1] = { type: 'skip', id: '' };
+                    }
+                } else if (seat.type === 'skip'
+                        && (c === 0 || matrixData[r][c - 1].type !== 'couple')) {
+                    matrixData[r][c] = createSeatData(r, c, 'std');
+                } else {
+                    seat.id = seat.type === 'skip' ? '' : ALPHABET[r] + (c + 1);
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  RENDER GRID
+    // ═══════════════════════════════════════════════════════════════
+    function renderMatrix() {
+        matrixEl.innerHTML = '';
+        for (let r = 0; r < ROWS; r++) {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'seat-row';
+
+            // Label trái
+            const lblLeft = document.createElement('div');
+            lblLeft.className = 'row-label';
+            lblLeft.textContent = ALPHABET[r];
+            rowDiv.appendChild(lblLeft);
+
+            const seatContainer = document.createElement('div');
+            seatContainer.className = 'seat-container';
+
+            for (let c = 0; c < COLS; c++) {
+                const sd = matrixData[r][c];
+                if (sd.type === 'skip') continue; // Ô bị Couple chiếm
+
+                const div = document.createElement('div');
+                div.className = `seat ${sd.type}`;
+                div.dataset.r = r;
+                div.dataset.c = c;
+                applySeatStyle(div, sd.type);
+
+                // Nội dung hiển thị
+                if (sd.type === 'couple') {
+                    div.innerHTML = `<i class="fas fa-heart" style="margin-right:4px;font-size:10px"></i>${sd.id}`;
+                } else if (sd.type !== 'empty' && sd.type !== 'broken') {
+                    div.textContent = c + 1;
+                }
+
+                // Mouse events để vẽ
+                div.addEventListener('mousedown', () => { isDrawing = true; applyTool(r, c); });
+                div.addEventListener('mouseenter', () => { if (isDrawing) applyTool(r, c); });
+
+                seatContainer.appendChild(div);
+            }
+
+            rowDiv.appendChild(seatContainer);
+
+            // Label phải
+            const lblRight = document.createElement('div');
+            lblRight.className = 'row-label';
+            lblRight.textContent = ALPHABET[r];
+            rowDiv.appendChild(lblRight);
+
+            matrixEl.appendChild(rowDiv);
+        }
+        updateStats();
+    }
+
+    function applySeatStyle(el, type) {
+        const meta = getSeatTypeMeta(type);
+        if (type === 'empty') {
+            el.style.background = 'transparent';
+            return;
+        }
+        if (type !== 'skip') {
+            el.style.background = meta.color;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  APPLY TOOL
+    // ═══════════════════════════════════════════════════════════════
+    function applyTool(r, c) {
+        const cur = matrixData[r][c].type;
+        if (cur === currentTool) return;
+
+        if (currentTool === 'couple') {
+            if (c >= COLS - 1) return; // Không đủ chỗ
+            // Nếu ô kế đang là couple khác, bỏ qua
+            if (matrixData[r][c+1].type === 'skip') return;
+            // Nếu ô hiện tại đang là couple, cần giải phóng skip cũ
+            if (cur === 'couple' && c < COLS - 1) {
+                matrixData[r][c+1] = { type: 'std', id: ALPHABET[r] + (c+2) };
+            }
+            matrixData[r][c]   = { type: 'couple', id: ALPHABET[r] + (c+1) };
+            matrixData[r][c+1] = { type: 'skip',   id: '' };
+        } else {
+            // Giải phóng couple nếu ô hiện tại là couple
+            if (cur === 'couple' && c < COLS - 1) {
+                matrixData[r][c+1] = { type: 'std', id: ALPHABET[r] + (c+2) };
+            }
+            // Nếu ô bị skip, tìm và giải phóng couple cha
+            if (cur === 'skip' && c > 0 && matrixData[r][c-1].type === 'couple') {
+                matrixData[r][c-1] = { type: currentTool, id: ALPHABET[r] + c };
+                matrixData[r][c]   = { type: currentTool, id: ALPHABET[r] + (c+1) };
+            } else {
+                matrixData[r][c] = { type: currentTool, id: ALPHABET[r] + (c+1) };
+            }
+        }
+        renderMatrix();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  STATS
+    // ═══════════════════════════════════════════════════════════════
+    function updateStats() {
+        let std = 0, vip = 0, couple = 0, broken = 0, total = 0;
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const t = matrixData[r][c].type;
+                if (t === 'std')    std++;
+                else if (t === 'vip')    vip++;
+                else if (t === 'couple') couple++;
+                else if (t === 'broken') broken++;
+                if (t !== 'skip') {
+                    total += getSeatTypeMeta(t).capacity || 0;
+                }
+            }
+        }
+        document.getElementById('count-std').textContent    = std;
+        document.getElementById('count-vip').textContent    = vip;
+        document.getElementById('count-couple').textContent = couple;
+        document.getElementById('count-broken').textContent = broken;
+        document.getElementById('count-total').textContent  = total;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  TOOL SELECTION
+    // ═══════════════════════════════════════════════════════════════
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTool = btn.dataset.type;
+        });
+    });
+
+    // Dừng vẽ khi nhả chuột
+    document.addEventListener('mouseup', () => { isDrawing = false; });
+    document.getElementById('canvasBody').addEventListener('dragstart', e => e.preventDefault());
+
+    // ═══════════════════════════════════════════════════════════════
+    //  RESET (local only)
+    // ═══════════════════════════════════════════════════════════════
+    function resetGridLocal() {
+        if (confirm('Đặt lại toàn bộ lưới về ghế thường? (Chưa lưu vào DB)')) {
+            for (let r = 0; r < ROWS; r++)
+                for (let c = 0; c < COLS; c++)
+                    matrixData[r][c] = createSeatData(r, c, 'std');
+            renderMatrix();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  SAVE (POST JSON → server)
+    // ═══════════════════════════════════════════════════════════════
+    async function saveMatrix() {
+        showToast('loading', '<i class="fas fa-spinner fa-spin"></i> Đang lưu sơ đồ...');
+
+        // Chuyển matrixData thành mảng 2D string để gửi lên
+        const typeMatrix = matrixData.map(row => row.map(cell => cell.type));
+
+        try {
+            const resp = await fetch(`/admin/rooms/${ROOM_ID}/seats/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matrix: typeMatrix })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                showToast('success', '<i class="fas fa-check-circle"></i> ' + data.message);
+            } else {
+                showToast('error', '<i class="fas fa-times-circle"></i> ' + data.message);
+            }
+        } catch (err) {
+            showToast('error', '<i class="fas fa-times-circle"></i> Lỗi kết nối: ' + err.message);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  TOAST
+    // ═══════════════════════════════════════════════════════════════
+    let toastTimer;
+    function showToast(type, html) {
+        const toast = document.getElementById('saveToast');
+        toast.className = '';
+        toast.innerHTML = html;
+        if (type === 'success') toast.classList.add('toast-success');
+        else if (type === 'error')  toast.classList.add('toast-error');
+        else                        toast.classList.add('toast-loading');
+        toast.style.display = 'flex';
+        clearTimeout(toastTimer);
+        if (type !== 'loading') {
+            toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3500);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  AUTO-HIDE FLASH ALERT
+    // ═══════════════════════════════════════════════════════════════
+    const flashAlert = document.getElementById('flashAlert');
+    if (flashAlert) {
+        setTimeout(() => {
+            flashAlert.style.transition = 'opacity 0.5s';
+            flashAlert.style.opacity = '0';
+            setTimeout(() => flashAlert.remove(), 500);
+        }, 4000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  BOOTSTRAP
+    // ═══════════════════════════════════════════════════════════════
+    window.onload = () => {
+        const activeTool = document.querySelector('.tool-btn.active');
+        if (activeTool) currentTool = activeTool.dataset.type;
+        initData();
+        renderMatrix();
+    };
+</script>
+</body>
+</html>
