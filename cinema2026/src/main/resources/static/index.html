@@ -227,7 +227,7 @@
                         <thead>
                             <tr>
                                 <th scope="col">PHIM</th>
-                                <th scope="col">NGÀY CHIẾU</th>
+                                <th scope="col">DẢI NGÀY CHIẾU</th>
                                 <th scope="col">GIỜ CHIẾU</th>
                                 <th scope="col">PHÒNG CHIẾU</th>
                                 <th scope="col">LOẠI NGÀY</th>
@@ -482,24 +482,32 @@
                     </div>
                 </div>
 
-                <!-- Ngày chiếu & Giờ chiếu -->
-                <div class="form-row split-2">
-                    <div class="form-group">
-                        <label for="showtimeDateInput">Ngày chiếu <span class="required">*</span></label>
+                <!-- Ngày chiếu: dải ngày khi thêm mới, ngày đơn khi sửa -->
+                <div class="form-row split-2" id="showtimeDateRow">
+                    <div class="form-group" id="startDateGroup">
+                        <label for="showtimeDateInput" id="lblShowtimeDateStart">
+                            Từ ngày <span class="required">*</span>
+                        </label>
                         <input type="date" id="showtimeDateInput" required>
                     </div>
-                    <div class="form-group">
-                        <label for="showtimeTimeInput">Giờ chiếu <span class="required">*</span></label>
-                        <input type="time" id="showtimeTimeInput" required>
+                    <div class="form-group" id="endDateGroup">
+                        <label for="showtimeEndDateInput" id="lblShowtimeDateEnd">
+                            Đến ngày <span class="required">*</span>
+                        </label>
+                        <input type="date" id="showtimeEndDateInput" required>
                     </div>
                 </div>
 
-                <!-- Phòng chiếu -->
-                <div class="form-row">
-                    <div class="form-group full-width">
+                <!-- Giờ chiếu & Phòng chiếu -->
+                <div class="form-row split-2">
+                    <div class="form-group">
+                        <label for="showtimeTimeInput">Giờ chiếu đầu tiên <span class="required">*</span></label>
+                        <input type="time" id="showtimeTimeInput" required>
+                    </div>
+                    <div class="form-group">
                         <label for="showtimeRoomInput">Phòng chiếu <span class="required">*</span></label>
                         <select id="showtimeRoomInput" required>
-                            <option value="">-- Chọn phòng --</option>
+                            <option value="">-- Chọn phòng chiếu --</option>
                             <option value="Phòng chiếu số 1">Phòng chiếu số 1</option>
                             <option value="Phòng chiếu số 2">Phòng chiếu số 2</option>
                             <option value="Phòng chiếu số 3">Phòng chiếu số 3</option>
@@ -508,18 +516,27 @@
                     </div>
                 </div>
 
-                <!-- Loại ngày (chỉ đọc, tự phát hiện) -->
+                <!-- Số suất chiếu trong ngày (chỉ hiện khi thêm mới) -->
+                <div class="form-row" id="slotCountRow">
+                    <div class="form-group full-width">
+                        <label for="showtimeSlotCount">
+                            <i class="fa-solid fa-layer-group"></i>
+                            Số suất chiếu trong ngày
+                            <span style="font-size:.8rem;color:var(--text-muted);font-weight:400;">
+                                (hệ thống tự tính giờ tiếp theo = 10 phút trailer + thời lượng phim + 20 phút dọn dẹp)
+                            </span>
+                        </label>
+                        <input type="number" id="showtimeSlotCount" min="1" max="15" value="1"
+                               placeholder="Nhập số suất muốn tạo trong ngày (1–15)">
+                    </div>
+                </div>
+
+                <!-- Loại ngày (chỉ đọc) -->
                 <div class="form-row">
                     <div class="form-group full-width">
                         <label>Loại ngày chiếu (tự động phát hiện)</label>
                         <input type="text" id="showtimeDayTypeDisplay" readonly
                                style="background:#f1f5f9; cursor:not-allowed; font-weight:600;" value="Chưa xác định ngày">
-                        <span class="helper-text">
-                            Hệ thống tự động phân loại và sinh giá vé theo loại ngày:
-                            Trong tuần (Thường 80k / VIP 100k) &bull;
-                            Cuối tuần (Thường 100k / VIP 120k) &bull;
-                            Ngày lễ (Thường 120k / VIP 140k)
-                        </span>
                     </div>
                 </div>
 
@@ -553,6 +570,22 @@
                         Trình duyệt của bạn không hỗ trợ thẻ video HTML5.
                     </video>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Custom Confirm Dialog -->
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-box">
+            <div class="confirm-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h3 class="confirm-title" id="confirmTitle">Xác nhận</h3>
+            <p class="confirm-message" id="confirmMessage"></p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" id="confirmBtnCancel">Hủy</button>
+                <button class="btn btn-danger"    id="confirmBtnOk">Xác nhận</button>
             </div>
         </div>
     </div>

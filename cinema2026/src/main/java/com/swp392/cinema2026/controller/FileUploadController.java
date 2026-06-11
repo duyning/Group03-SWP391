@@ -3,21 +3,23 @@ package com.swp392.cinema2026.controller;
 /**
  * Dự án: Cinema 2026 — SWP391 Group 03
  * File: FileUploadController.java
- * Chức năng: REST Controller chịu trách nhiệm xử lý tải lên (upload) và xóa video trailer phim.
- *            Hỗ trợ lưu trữ file video cục bộ trong thư mục tĩnh của máy chủ và trả về đường dẫn URL công khai.
+ * Chức năng: REST Controller chịu trách nhiệm xử lý tải lên (upload) và xóa file video trailer cũng như ảnh poster.
+ *            Hỗ trợ lưu trữ cục bộ và trả về đường dẫn URL công khai.
  * Endpoints:
- *   - POST /api/upload/video: Upload file video lên server, tự động tạo tên file ngẫu nhiên để tránh trùng lặp.
- *   - DELETE /api/upload/video/{filename}: Xóa file video tương ứng khỏi ổ cứng server.
+ *   - POST /api/upload/video: Upload file video trailer.
+ *   - POST /api/upload/image: Upload file ảnh poster.
+ *   - DELETE /api/upload/video/{filename}: Xóa file video tương ứng.
  * Người viết: TrienLX - HE182285
- * Ngày tạo: 2026-06-04
+ * Người sửa: TrienLX
+ * Ngày sửa: 2026-06-12
  */
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,9 +27,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-// Controller xử lý việc upload file video từ máy người dùng lên máy chủ
 @RestController
 @RequestMapping("/api/upload")
 @CrossOrigin(origins = "*")
@@ -36,6 +36,10 @@ public class FileUploadController {
     // Đọc đường dẫn thư mục lưu video từ cấu hình application.yaml
     @Value("${app.upload.video-dir:src/main/resources/static/uploads/videos/}")
     private String videoUploadDir;
+
+    // Đọc đường dẫn thư mục lưu ảnh từ cấu hình application.yaml
+    @Value("${app.upload.image-dir:src/main/resources/static/uploads/images/}")
+    private String imageUploadDir;
 
     // Endpoint: POST /api/upload/video
     // Nhận file video từ form multipart, lưu vào thư mục static và trả về URL truy cập
@@ -66,19 +70,34 @@ public class FileUploadController {
         }
 
         try {
-            // Tạo thư mục lưu trữ nếu chưa tồn tại
+            // Tạo thư mục lưu trữ video nếu chưa tồn tại trên ổ đĩa server
             Path uploadPath = Paths.get(videoUploadDir);
             Files.createDirectories(uploadPath);
 
-            // Tạo tên file duy nhất bằng UUID để tránh trùng tên
-            String suffix   = originalName.substring(originalName.lastIndexOf('.'));
-            String uniqueName = UUID.randomUUID().toString() + suffix;
-            Path targetPath   = uploadPath.resolve(uniqueName);
+            // Lấy đuôi mở rộng của file video (.mp4, .webm, ...)
+            String suffix = originalName.substring(originalName.lastIndexOf('.'));
+            
+            // Tạo file tạm thời với tên UUID ngẫu nhiên để nhận luồng ghi dữ liệu lần đầu
+            String tempName = java.util.UUID.randomUUID().toString() + suffix;
+            Path tempPath = uploadPath.resolve(tempName);
 
-            // Sao chép dữ liệu file vào đường dẫn đích, ghi đè nếu tồn tại
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            // Sao chép luồng dữ liệu file tải lên vào file tạm thời
+            Files.copy(file.getInputStream(), tempPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Đường dẫn URL công khai để trình duyệt có thể truy cập video
+            // Tính mã băm MD5 từ file tạm thời đã ghi xong trên ổ cứng.
+            String md5;
+            try (java.io.InputStream is = Files.newInputStream(tempPath)) {
+                md5 = DigestUtils.md5DigestAsHex(is);
+            }
+
+            // Tên file mới chính thức = mã MD5 + đuôi mở rộng
+            String uniqueName = md5 + suffix;
+            Path targetPath = uploadPath.resolve(uniqueName);
+
+            // Di chuyển file tạm thời sang file MD5 chính thức, ghi đè nếu đã tồn tại
+            Files.move(tempPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            // Đường dẫn URL công khai để trình duyệt có thể truy cập video từ client
             String publicUrl = "/uploads/videos/" + uniqueName;
 
             response.put("url",          publicUrl);
@@ -90,6 +109,76 @@ public class FileUploadController {
 
         } catch (IOException e) {
             response.put("error", "Lỗi khi lưu file: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    // Endpoint: POST /api/upload/image
+    // Nhận file ảnh từ form multipart, lưu vào thư mục static và trả về URL truy cập
+    @PostMapping("/image")
+    public ResponseEntity<Map<String, String>> uploadImage(
+            @RequestParam("file") MultipartFile file) {
+        
+        Map<String, String> response = new HashMap<>();
+
+        // Kiểm tra file ảnh tải lên không được rỗng
+        if (file.isEmpty()) {
+            response.put("error", "Vui lòng chọn file ảnh.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Lấy tên file gốc từ client
+        String originalName = file.getOriginalFilename();
+        if (originalName == null) {
+            response.put("error", "Tên file không hợp lệ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Kiểm tra định dạng ảnh được hỗ trợ (JPG, PNG, WebP)
+        String ext = originalName.toLowerCase();
+        if (!ext.endsWith(".jpg") && !ext.endsWith(".jpeg")
+                && !ext.endsWith(".png") && !ext.endsWith(".webp")) {
+            response.put("error", "Định dạng ảnh không được hỗ trợ. Vui lòng sử dụng JPG, JPEG, PNG hoặc WebP.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        try {
+            // Tạo thư mục lưu trữ ảnh poster nếu chưa tồn tại
+            Path uploadPath = Paths.get(imageUploadDir);
+            Files.createDirectories(uploadPath);
+
+            // Lấy đuôi mở rộng của file ảnh (.jpg, .png, ...)
+            String suffix = originalName.substring(originalName.lastIndexOf('.'));
+
+            // Tạo file tạm thời với tên UUID ngẫu nhiên để nhận luồng ghi dữ liệu lần đầu
+            String tempName = java.util.UUID.randomUUID().toString() + suffix;
+            Path tempPath = uploadPath.resolve(tempName);
+
+            // Sao chép file tải lên vào file tạm thời
+            Files.copy(file.getInputStream(), tempPath, StandardCopyOption.REPLACE_EXISTING);
+
+            // Tính mã băm MD5 của file tạm thời đã ghi trên đĩa
+            String md5;
+            try (java.io.InputStream is = Files.newInputStream(tempPath)) {
+                md5 = DigestUtils.md5DigestAsHex(is);
+            }
+
+            // Tên file chính thức = mã MD5 + đuôi mở rộng
+            String uniqueName = md5 + suffix;
+            Path targetPath = uploadPath.resolve(uniqueName);
+
+            // Di chuyển file tạm thời thành file MD5 chính thức
+            Files.move(tempPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            // Đường dẫn URL công khai của ảnh poster
+            response.put("url", "/uploads/images/" + uniqueName);
+            response.put("originalName", originalName);
+            response.put("size", String.valueOf(file.getSize()));
+            response.put("message", "Upload ảnh thành công!");
+            
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            response.put("error", "Lỗi khi lưu file ảnh: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }

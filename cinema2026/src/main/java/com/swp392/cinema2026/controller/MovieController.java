@@ -71,22 +71,28 @@ public class MovieController {
     }
 
     // Endpoint: POST /api/movies
-    // Thêm một bộ phim mới vào cơ sở dữ liệu. Dữ liệu phim được gửi trong thân Request (Request Body) ở dạng JSON
+    // Thêm một bộ phim mới vào cơ sở dữ liệu.
     @PostMapping
-    public ResponseEntity<Movie> createMovie(@RequestBody Movie movie) {
-        Movie savedMovie = movieService.saveMovie(movie);
-        return ResponseEntity.ok(savedMovie); // Trả về HTTP 200 OK kèm đối tượng phim đã được lưu thành công
+    public ResponseEntity<?> createMovie(@RequestBody Movie movie) {
+        try {
+            Movie savedMovie = movieService.saveMovie(movie);
+            return ResponseEntity.ok(savedMovie);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     // Endpoint: PUT /api/movies/{id}
     // Cập nhật thông tin phim đã tồn tại theo mã ID
     @PutMapping("/{id}")
-    public ResponseEntity<Movie> updateMovie(@PathVariable Long id, @RequestBody Movie movie) {
+    public ResponseEntity<?> updateMovie(@PathVariable Long id, @RequestBody Movie movie) {
         try {
             Movie updated = movieService.updateMovie(id, movie);
-            return ResponseEntity.ok(updated); // Trả về HTTP 200 OK kèm thông tin phim sau khi sửa đổi thành công
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build(); // Trả về HTTP 404 Not Found nếu ID phim không tồn tại
+            return ResponseEntity.notFound().build();
         }
     }
 

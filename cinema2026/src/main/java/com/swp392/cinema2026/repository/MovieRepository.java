@@ -43,4 +43,14 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
 
     // Phương thức Spring Data JPA tự động sinh câu truy vấn đếm số lượng phim theo trạng thái cụ thể
     long countByStatus(String status);
+
+    // Kiểm tra trùng lặp thông tin phim
+    boolean existsByTitleIgnoreCase(String title);
+    boolean existsByTitleIgnoreCaseAndIdNot(String title, Long id);
+
+    boolean existsByTrailerUrl(String trailerUrl);
+    boolean existsByTrailerUrlAndIdNot(String trailerUrl, Long id);
+
+    boolean existsByPosterUrl(String posterUrl);
+    boolean existsByPosterUrlAndIdNot(String posterUrl, Long id);
 }
