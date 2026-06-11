@@ -24,6 +24,28 @@ public class ComboService {
         this.comboRepository = comboRepository;
     }
 
+    // ==========================================
+    // 2 HÀM KIỂM TRA TRÙNG TÊN MỚI THÊM VÀO
+    // ==========================================
+
+    /**
+     * Dùng khi Thêm mới: Check xem tên này đã có ai dùng chưa
+     */
+    public boolean existsByName(String name) {
+        return comboRepository.existsByName(name);
+    }
+
+    /**
+     * Dùng khi Cập nhật: Check xem tên này có bị trùng với các combo KHÁC không (trừ chính nó ra)
+     */
+    public boolean existsByNameAndIdNot(String name, Long id) {
+        return comboRepository.existsByNameAndIdNot(name, id);
+    }
+
+    // ==========================================
+    // CÁC HÀM CŨ GIỮ NGUYÊN LOGIC
+    // ==========================================
+
     public List<Combo> searchCombos(String keyword, String status) {
         String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
         return comboRepository.searchCombos(searchKeyword, status);

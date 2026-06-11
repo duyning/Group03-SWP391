@@ -4,6 +4,7 @@ import com.group3.cinema.entity.Combo;
 import com.group3.cinema.service.ComboService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,8 +42,21 @@ public class ComboController {
 
     @PostMapping("/save")
     public String saveCombo(
-            @ModelAttribute Combo combo,
-            @RequestParam("imageFile") MultipartFile file) throws IOException {
+            @ModelAttribute("combo") Combo combo, // Thêm tên định danh "combo" cho chuẩn với HTML
+            BindingResult bindingResult,
+            @RequestParam("imageFile") MultipartFile file,
+            Model model) throws IOException { // THÊM tham số Model vào đây
+
+        // 1. Kiểm tra trùng tên khi THÊM MỚI
+        if (comboService.existsByName(combo.getName())) {
+            bindingResult.rejectValue("name", "error.combo", "Tên gói combo này đã tồn tại trong hệ thống!");
+        }
+
+        // Nếu có lỗi, trả về form create (lúc này object combo lỗi vẫn được giữ lại tự động)
+        if (bindingResult.hasErrors()) {
+            return "combo-create";
+        }
+
         comboService.createCombo(combo, file);
         return "redirect:/admin/combos";
     }
@@ -61,8 +75,23 @@ public class ComboController {
 
     @PostMapping("/update")
     public String updateCombo(
-            @ModelAttribute Combo combo,
-            @RequestParam("imageFile") MultipartFile file) throws IOException {
+            @ModelAttribute("combo") Combo combo, // Thêm tên định danh "combo"
+            BindingResult bindingResult,
+            @RequestParam("imageFile") MultipartFile file,
+            Model model) throws IOException { // THÊM tham số Model vào đây
+
+        // 2. Kiểm tra trùng tên khi CẬP NHẬT (Trừ chính ID đang sửa ra)
+        if (comboService.existsByNameAndIdNot(combo.getName(), combo.getId())) {
+            bindingResult.rejectValue("name", "error.combo", "Tên gói combo này đã bị trùng với một combo khác!");
+        }
+
+        // Nếu có lỗi trùng tên, phải nạp lại dữ liệu cũ (như đường dẫn ảnh) để giao diện edit không bị trống ảnh
+        if (bindingResult.hasErrors()) {
+            Combo oldCombo = comboService.getCombo(combo.getId());
+            combo.setImage(oldCombo.getImage()); // Giữ lại ảnh cũ của combo hiển thị lên màn hình edit
+            return "combo-edit";
+        }
+
         comboService.updateCombo(combo, file);
         return "redirect:/admin/combos";
     }

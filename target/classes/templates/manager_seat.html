@@ -152,7 +152,7 @@
     </div>
     <ul class="sidebar-nav">
         <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
-        <a href="/manage_movies.html"><li class="active"><i class="fas fa-film"></i> Quản lý phim</li></a>
+        <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
         <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
         <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
         <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
@@ -215,11 +215,11 @@
                 <div class="grid-size-row">
                     <div class="grid-size-field">
                         <label>Số hàng</label>
-                        <input type="number" id="rowInput" min="1" max="26" th:value="${room.rows}">
+                        <input type="number" id="rowInput" min="1" max="26" step="1" required th:value="${room.rows}">
                     </div>
                     <div class="grid-size-field">
                         <label>Số cột</label>
-                        <input type="number" id="colInput" min="1" max="50" th:value="${room.cols}">
+                        <input type="number" id="colInput" min="1" max="50" step="1" required th:value="${room.cols}">
                     </div>
                 </div>
                 <button type="button" class="btn btn-outline" style="width: 100%; justify-content: center;"
@@ -438,8 +438,15 @@
     }
 
     function applyGridSize() {
-        const nextRows = Math.min(26, Math.max(1, parseInt(rowInput.value, 10) || ROWS));
-        const nextCols = Math.min(50, Math.max(1, parseInt(colInput.value, 10) || COLS));
+        const nextRows = parseInt(rowInput.value, 10);
+        const nextCols = parseInt(colInput.value, 10);
+        const sizeError = validateGridSize(nextRows, nextCols);
+        if (sizeError) {
+            showToast('error', '<i class="fas fa-times-circle"></i> ' + sizeError);
+            rowInput.value = ROWS;
+            colInput.value = COLS;
+            return;
+        }
         if (nextRows === ROWS && nextCols === COLS) return;
 
         const oldData = matrixData;
@@ -552,6 +559,10 @@
     //  APPLY TOOL
     // ═══════════════════════════════════════════════════════════════
     function applyTool(r, c) {
+        if (!VALID_SEAT_TYPES.has(currentTool) || currentTool === 'skip') {
+            showToast('error', '<i class="fas fa-times-circle"></i> Loại ghế đang chọn không hợp lệ.');
+            return;
+        }
         const cur = matrixData[r][c].type;
         if (cur === currentTool) return;
 
@@ -636,10 +647,15 @@
     //  SAVE (POST JSON → server)
     // ═══════════════════════════════════════════════════════════════
     async function saveMatrix() {
-        showToast('loading', '<i class="fas fa-spinner fa-spin"></i> Đang lưu sơ đồ...');
-
         // Chuyển matrixData thành mảng 2D string để gửi lên
         const typeMatrix = matrixData.map(row => row.map(cell => cell.type));
+        const validationError = validateMatrixClient(typeMatrix);
+        if (validationError) {
+            showToast('error', '<i class="fas fa-times-circle"></i> ' + validationError);
+            return;
+        }
+
+        showToast('loading', '<i class="fas fa-spinner fa-spin"></i> Đang lưu sơ đồ...');
 
         try {
             const resp = await fetch(`/admin/rooms/${ROOM_ID}/seats/save`, {
@@ -677,6 +693,59 @@
         }
     }
 
+    function validateGridSize(rows, cols) {
+        if (!Number.isInteger(rows) || rows < 1 || rows > 26) {
+            return 'Số hàng ghế phải là số nguyên từ 1 đến 26.';
+        }
+        if (!Number.isInteger(cols) || cols < 1 || cols > 50) {
+            return 'Số cột ghế phải là số nguyên từ 1 đến 50.';
+        }
+        return '';
+    }
+
+    function validateMatrixClient(typeMatrix) {
+        if (!Array.isArray(typeMatrix) || typeMatrix.length === 0) {
+            return 'Sơ đồ ghế phải có ít nhất 1 hàng.';
+        }
+        const sizeError = validateGridSize(typeMatrix.length, Array.isArray(typeMatrix[0]) ? typeMatrix[0].length : 0);
+        if (sizeError) return sizeError;
+
+        let totalCapacity = 0;
+        const cols = typeMatrix[0].length;
+        for (let r = 0; r < typeMatrix.length; r++) {
+            if (!Array.isArray(typeMatrix[r]) || typeMatrix[r].length !== cols) {
+                return 'Các hàng trong sơ đồ ghế phải có cùng số cột.';
+            }
+            for (let c = 0; c < cols; c++) {
+                const type = typeMatrix[r][c];
+                const position = `${ALPHABET[r]}${c + 1}`;
+                if (!type || typeof type !== 'string') {
+                    return `Loại ghế tại ${position} không được để trống.`;
+                }
+                if (!/^[a-z0-9_]+$/.test(type)) {
+                    return `Mã loại ghế tại ${position} không hợp lệ.`;
+                }
+                if (!VALID_SEAT_TYPES.has(type)) {
+                    return `Loại ghế tại ${position} không tồn tại hoặc đang bị tắt.`;
+                }
+                if (type === 'couple') {
+                    if (c >= cols - 1) return `Ghế couple tại ${position} không được nằm ở cột cuối.`;
+                    if (typeMatrix[r][c + 1] !== 'skip') return `Ghế couple tại ${position} phải chiếm ô bên phải.`;
+                }
+                if (type === 'skip' && (c === 0 || typeMatrix[r][c - 1] !== 'couple')) {
+                    return `Ô skip tại ${position} không thuộc ghế couple.`;
+                }
+                if (type !== 'skip') {
+                    totalCapacity += getSeatTypeMeta(type).capacity || 0;
+                }
+            }
+        }
+        if (totalCapacity <= 0) {
+            return 'Sơ đồ ghế phải có ít nhất 1 ghế có sức chứa.';
+        }
+        return '';
+    }
+
     // ═══════════════════════════════════════════════════════════════
     //  AUTO-HIDE FLASH ALERT
     // ═══════════════════════════════════════════════════════════════
@@ -693,6 +762,10 @@
     //  BOOTSTRAP
     // ═══════════════════════════════════════════════════════════════
     window.onload = () => {
+        if (seatTypeList.length === 0) {
+            showToast('error', '<i class="fas fa-times-circle"></i> Chưa có loại ghế đang hoạt động. Vui lòng cấu hình loại ghế trước.');
+            document.getElementById('btnSave').disabled = true;
+        }
         const activeTool = document.querySelector('.tool-btn.active');
         if (activeTool) currentTool = activeTool.dataset.type;
         initData();
