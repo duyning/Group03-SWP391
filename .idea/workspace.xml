@@ -4,43 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="update validate add combo">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/Group03Swp391Summer26Application.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/Group03Swp391Summer26Application.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ComboController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ComboController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ComboRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ComboRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ComboService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ComboService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-create.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-create.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-edit.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/CatalogInitializer.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/CatalogInitializer.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/SecurityConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/SecurityConfig.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/CatalogController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/CatalogController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/ComboController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/ComboController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/PostController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/PostController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/RoomController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/RoomController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/SeatController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/SeatController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/MovieController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/MovieController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController$RoomOption.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController$RoomOption.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/ShowtimeController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/ShowtimeController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/AudioTechnology.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/AudioTechnology.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Room.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Room.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/RoomType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/RoomType.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Seat.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Seat.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/SeatType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/SeatType.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/RoomRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/RoomRepository.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/api/ShowtimeRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/api/ShowtimeRepository.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/CatalogService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/CatalogService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/ComboService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/ComboService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/RoomService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/RoomService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/SeatService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/SeatService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/manager_catalog.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/manager_catalog.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/manager_room.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/manager_room.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/manager_seat.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/manager_seat.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/PostController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/PostController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Post.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Post.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/PostRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/PostRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/PostService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/PostService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/create-post.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/create-post.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/post-edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/post-edit.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,18 +26,18 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "tuanpmhe187404-dot"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;tuanpmhe187404-dot&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/duyning/Group03-SWP391.git",
-    "accountId": "8acc8bf7-f2e2-4973-b2b1-03b678654fd9"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/duyning/Group03-SWP391.git&quot;,
+    &quot;accountId&quot;: &quot;8acc8bf7-f2e2-4973-b2b1-03b678654fd9&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 3
@@ -76,28 +47,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RequestMappingsPanelOrder0": "0",
-    "RequestMappingsPanelOrder1": "1",
-    "RequestMappingsPanelWidth0": "75",
-    "RequestMappingsPanelWidth1": "75",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "Spring Boot.CinemaApplication.executor": "Run",
-    "Spring Boot.Group03Swp391Summer26Application (1).executor": "Run",
-    "Spring Boot.Group03Swp391Summer26Application.executor": "Run",
-    "git-widget-placeholder": "TuanPM",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;Spring Boot.CinemaApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Spring Boot.Group03Swp391Summer26Application (1).executor&quot;: &quot;Run&quot;,
+    &quot;Spring Boot.Group03Swp391Summer26Application.executor&quot;: &quot;Run&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;TuanPM&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="Group03Swp391Summer26Application" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
       <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
@@ -145,11 +116,25 @@
       <workItem from="1780370983436" duration="959000" />
       <workItem from="1780582537570" duration="6873000" />
       <workItem from="1780971577890" duration="3223000" />
-      <workItem from="1781189006719" duration="2502000" />
+      <workItem from="1781189006719" duration="2813000" />
+      <workItem from="1781218856883" duration="3524000" />
     </task>
+    <task id="LOCAL-00001" summary="update validate add combo">
+      <option name="closed" value="true" />
+      <created>1781191645210</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1781191645210</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="update validate add combo" />
+    <option name="LAST_COMMIT_MESSAGE" value="update validate add combo" />
   </component>
 </project>

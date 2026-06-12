@@ -27,7 +27,7 @@
         }
         .form-title {
             font-weight: 700;
-            color: #1a365d; /* Màu xanh đậm của tiêu đề mẫu */
+            color: #1a365d;
             font-size: 1.6rem;
             margin-bottom: 30px;
         }
@@ -38,7 +38,8 @@
             margin-bottom: 8px;
         }
         .required {
-            color: #2d3748; /* Dấu sao tối giống text mẫu */
+            color: #dc3545;
+            font-weight: bold;
         }
         .form-control, .form-select {
             border: 1px solid #cbd5e1;
@@ -55,7 +56,7 @@
             color: #94a3b8;
         }
 
-        /* Tùy biến input file giống ảnh mẫu */
+        /* Tùy biến input file */
         .custom-file-input::-webkit-file-upload-button {
             background-color: #e2e8f0;
             color: #1e293b;
@@ -71,12 +72,10 @@
             background-color: #cbd5e1;
         }
 
-        /* Khu vực nội dung & tóm tắt */
         textarea.form-control {
             resize: vertical;
         }
 
-        /* Nhóm nút bấm hành động chuẩn form mẫu */
         .btn-submit {
             background-color: #2563eb;
             color: white;
@@ -117,108 +116,123 @@
     <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('posts')}"></aside>
     <main class="admin-main">
 
-<div class="container">
-    <div class="form-card">
+        <div class="container">
+            <div class="form-card">
 
-        <h2 class="form-title">Viết bài mới</h2>
+                <h2 class="form-title">Viết bài mới</h2>
 
-        <form th:action="@{/admin/posts/save}"
-              th:object="${post}"
-              method="post"
-              enctype="multipart/form-data">
+                <div class="alert alert-danger" th:if="${errorMessage != null}" th:text="${errorMessage}"></div>
 
-            <div class="mb-4">
-                <label class="form-label">
-                    Tiêu đề bài viết
-                    <span class="required">*</span>
-                </label>
-                <input type="text"
-                       class="form-control"
-                       th:field="*{title}"
-                       placeholder="Nhập tiêu đề bài viết">
+                <form th:action="@{/admin/posts/save}"
+                      th:object="${post}"
+                      method="post"
+                      enctype="multipart/form-data">
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Tiêu đề bài viết
+                            <span class="required">*</span>
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               th:field="*{title}"
+                               maxlength="150"
+                               pattern=".*\S.*"
+                               title="Tiêu đề không được chỉ chứa khoảng trắng"
+                               placeholder="Nhập tiêu đề bài viết (10 - 150 ký tự)" required>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Danh mục <span class="required">*</span></label>
+                        <select class="form-select"
+                                th:field="*{category}" required>
+                            <option value="">-- Chọn danh mục --</option>
+                            <option value="Khuyến mãi">Khuyến mãi</option>
+                            <option value="Điện ảnh">Điện ảnh</option>
+                            <option value="Sự kiện">Sự kiện</option>
+                        </select>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Tác giả <span class="required">*</span></label>
+                        <input type="text"
+                               class="form-control"
+                               th:field="*{author}"
+                               maxlength="50"
+                               pattern=".*\S.*"
+                               title="Tên tác giả không được chỉ chứa khoảng trắng"
+                               placeholder="Nhập tên tác giả hoặc ban biên tập" required>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('author')}" th:errors="*{author}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Tóm tắt ngắn <span class="required">*</span></label>
+                        <textarea class="form-control"
+                                  rows="3"
+                                  th:field="*{summary}"
+                                  maxlength="255"
+                                  placeholder="Nhập nội dung tóm tắt ngắn hiển thị ở trang chủ (tối đa 255 ký tự)..." required></textarea>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('summary')}" th:errors="*{summary}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Nội dung chi tiết bài viết
+                            <span class="required">*</span>
+                        </label>
+                        <textarea class="form-control"
+                                  rows="10"
+                                  th:field="*{content}"
+                                  placeholder="Nhập nội dung bài viết..." required></textarea>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Ảnh Thumbnail <span class="required">*</span></label>
+                        <input type="file"
+                               name="thumbnailFile"
+                               class="form-control custom-file-input"
+                               accept="image/png, image/jpeg, image/jpg, image/webp"
+                               required>
+                        <div class="text-danger small mt-1" th:if="${imageError != null}" th:text="${imageError}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Tags (Từ khóa)</label>
+                        <input type="text"
+                               class="form-control"
+                               th:field="*{tags}"
+                               placeholder="Ví dụ: tin-hot, review-phim">
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label">Trạng thái <span class="required">*</span></label>
+                        <select class="form-select"
+                                th:field="*{status}" required>
+                            <option value="DRAFT">Bản nháp (Ẩn bài viết)</option>
+                            <option value="PUBLISHED">Xuất bản (Hiển thị ngay)</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn-submit">
+                            <i class="fa-solid fa-paper-plane me-1"></i>
+                            Đăng bài
+                        </button>
+                        <a th:href="@{/admin/posts}" class="btn-cancel">
+                            Hủy
+                        </a>
+                    </div>
+
+                </form>
+
             </div>
+        </div>
 
-            <div class="mb-4">
-                <label class="form-label">Danh mục</label>
-                <select class="form-select"
-                        th:field="*{category}">
-                    <option value="">-- Chọn danh mục --</option>
-                    <option value="Khuyến mãi">Khuyến mãi</option>
-                    <option value="Điện ảnh">Điện ảnh</option>
-                    <option value="Sự kiện">Sự kiện</option>
-                </select>
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label">Tác giả</label>
-                <input type="text"
-                       class="form-control"
-                       th:field="*{author}"
-                       placeholder="Nhập tên tác giả">
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label">Tóm tắt ngắn</label>
-                <textarea class="form-control"
-                          rows="3"
-                          th:field="*{summary}"
-                          placeholder="Nhập nội dung tóm tắt..."></textarea>
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label">
-                    Nội dung chi tiết bài viết
-                    <span class="required">*</span>
-                </label>
-                <textarea class="form-control"
-                          rows="10"
-                          th:field="*{content}"
-                          placeholder="Nhập nội dung bài viết..."></textarea>
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label">Ảnh Thumbnail</label>
-                <input type="file"
-                       name="thumbnailFile"
-                       class="form-control custom-file-input"
-                       accept="image/*">
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label">Tags (Từ khóa)</label>
-                <input type="text"
-                       class="form-control"
-                       th:field="*{tags}"
-                       placeholder="Ví dụ: tin-hot, review-phim">
-            </div>
-
-            <div class="mb-5">
-                <label class="form-label">Trạng thái</label>
-                <select class="form-select"
-                        th:field="*{status}">
-                    <option value="DRAFT">Bản nháp (Ẩn bài viết)</option>
-                    <option value="PUBLISHED">Xuất bản (Hiển thị ngay)</option>
-                </select>
-            </div>
-
-            <div class="d-flex gap-3">
-                <button type="submit" class="btn-submit">
-                    <i class="fa-solid fa-paper-plane me-1"></i>
-                    Đăng bài
-                </button>
-                <a th:href="@{/admin/posts}" class="btn-cancel">
-                    Hủy
-                </a>
-            </div>
-
-        </form>
-
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     </main>
 </div>
 </body>
 </html>
-

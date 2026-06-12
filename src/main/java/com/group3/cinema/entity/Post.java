@@ -66,6 +66,14 @@ public class Post {
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+
+        if ("PUBLISHED".equalsIgnoreCase(this.status)) {
+            if (this.publishedAt == null) {
+                this.publishedAt = LocalDateTime.now();
+            }
+        } else if ("DRAFT".equalsIgnoreCase(this.status)) {
+            this.publishedAt = null; // Hạ bài viết xuống thì xóa ngày xuất bản để ẩn khỏi trang chủ
+        }
     }
 
     // ===== Getter & Setter =====
