@@ -39,4 +39,6 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
 
     // Truy vấn tự động của JPA đếm số lượng lịch chiếu theo loại ngày cụ thể
     long countByDayType(String dayType);
+
+    List<Showtime> findByRoomIgnoreCaseAndShowDate(String room, LocalDate showDate);
 }

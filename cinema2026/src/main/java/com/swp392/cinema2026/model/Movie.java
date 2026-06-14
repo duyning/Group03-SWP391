@@ -61,6 +61,15 @@ public class Movie {
     // Trạng thái hiển thị của bộ phim tại rạp (ví dụ: "Đang chiếu", "Sắp chiếu", "Suất chiếu đặc biệt")
     private String status;
 
+    // Năm phát hành của bộ phim
+    private Integer releaseYear;
+
+    // Nhà sản xuất bộ phim
+    private String producer;
+
+    // Khuyến cáo độ tuổi (P, K, T13, T16, T18)
+    private String ageRating;
+
     // Khởi tạo constructor không tham số mặc định (bắt buộc đối với JPA Entity)
     public Movie() {
     }
@@ -200,6 +209,36 @@ public class Movie {
     // Thiết lập trạng thái hiển thị phim
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    // Lấy năm phát hành
+    public Integer getReleaseYear() {
+        return releaseYear;
+    }
+
+    // Thiết lập năm phát hành
+    public void setReleaseYear(Integer releaseYear) {
+        this.releaseYear = releaseYear;
+    }
+
+    // Lấy nhà sản xuất
+    public String getProducer() {
+        return producer;
+    }
+
+    // Thiết lập nhà sản xuất
+    public void setProducer(String producer) {
+        this.producer = producer;
+    }
+
+    // Lấy khuyến cáo độ tuổi
+    public String getAgeRating() {
+        return ageRating;
+    }
+
+    // Thiết lập khuyến cáo độ tuổi
+    public void setAgeRating(String ageRating) {
+        this.ageRating = ageRating;
     }
 
     // Danh sách lịch chiếu liên kết với bộ phim này (Xóa phim sẽ tự động xóa tất cả lịch chiếu liên quan)

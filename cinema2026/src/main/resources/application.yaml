@@ -9,7 +9,7 @@
 # ============================================================
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=swp392;encrypt=true;trustServerCertificate=true;
+    url: jdbc:sqlserver://localhost:1433;databaseName=Group3_SWP391;encrypt=true;trustServerCertificate=true;
     username: swp392
     password: 123
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
@@ -26,8 +26,8 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 500MB
-      max-request-size: 1024MB
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 # Thư mục lưu video upload trên máy chủ (dùng đường dẫn tuyệt đối hoặc tương đối)
 app:

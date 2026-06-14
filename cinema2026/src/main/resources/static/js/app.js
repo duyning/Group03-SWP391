@@ -44,9 +44,37 @@ const PAGE_SIZE   = 6;      // Số dòng mỗi trang
 
 let activeShowtimeId = null; // ID suất chiếu đang mở sơ đồ ghế
 
+const AVAILABLE_GENRES = [
+    'Hành động', 'Tình cảm', 'Kinh dị', 'Hài hước', 
+    'Hoạt hình', 'Viễn tưởng', 'Phiêu lưu', 'Kịch tính', 
+    'Thần thoại', 'Tội phạm', 'Gia đình', 'Nhạc kịch'
+];
+
+function renderGenreCheckboxes() {
+    const filterContainer = document.getElementById('filterGenreContainer');
+    const modalContainer = document.getElementById('movieGenreContainer');
+    
+    if (filterContainer) {
+        filterContainer.innerHTML = AVAILABLE_GENRES.map(genre => `
+            <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; cursor: pointer; background: rgba(0,0,0,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; user-select: none; color: var(--text-main); font-weight: 500;">
+                <input type="checkbox" name="filterGenreVal" value="${genre}" style="margin: 0; width: auto; height: auto;"> ${genre}
+            </label>
+        `).join('');
+    }
+    
+    if (modalContainer) {
+        modalContainer.innerHTML = AVAILABLE_GENRES.map(genre => `
+            <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; cursor: pointer; background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; user-select: none; color: #1e293b; font-weight: 500;">
+                <input type="checkbox" name="movieGenreVal" value="${genre}" style="margin: 0; width: auto; height: auto;"> ${genre}
+            </label>
+        `).join('');
+    }
+}
+
 // ==================== KHỞI TẠO ====================
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
+    renderGenreCheckboxes();
     initMovieEvents();
     initShowtimeEvents();
     initTicketEvents();
@@ -314,6 +342,10 @@ function initMovieEvents() {
     document.getElementById('btnCancelModal').addEventListener('click',    closeMovieModal);
     document.getElementById('btnApplyFilter').addEventListener('click',    applyMovieFilter);
     document.getElementById('btnResetFilter').addEventListener('click',    resetMovieFilter);
+    document.getElementById('filterForm').addEventListener('submit', e => {
+        e.preventDefault();
+        applyMovieFilter();
+    });
     document.getElementById('movieForm').addEventListener('submit',        handleMovieSave);
     document.getElementById('btnCloseTrailerModal').addEventListener('click', closeTrailer);
     document.getElementById('moviePosterFile').addEventListener('change', handlePosterFilePreview);
@@ -455,15 +487,17 @@ function renderMovieTable() {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <td style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">MV-${mv.id}</td>
             <td>
                 <div class="movie-info-cell">
                     ${poster}
                     <div class="movie-meta">
                         <div class="movie-title-row">
-                            <span class="movie-title-text">${esc(mv.title)}</span>
+                            <span class="movie-title-text" style="font-weight: 700;">${esc(mv.title)}</span>
                             ${trailer}
                         </div>
-                        <span class="movie-director-text">Đạo diễn: ${esc(mv.director||'Chưa rõ')}</span>
+                        <span class="movie-director-text" style="font-size: 0.75rem; margin-top: 0.2rem;">Đạo diễn: ${esc(mv.director||'Chưa rõ')} | NSX: ${esc(mv.producer||'—')} (${mv.releaseYear||''})</span>
+                        <span class="movie-director-text" style="font-size: 0.75rem; font-weight: 600; color: var(--stat-red); margin-top: 0.1rem;">Độ tuổi: ${esc(mv.ageRating||'—')} | Ngôn ngữ: ${esc(mv.language||'—')}</span>
                     </div>
                 </div>
             </td>
@@ -487,9 +521,11 @@ function renderMovieTable() {
 
 // --- Bộ lọc phim ---
 function applyMovieFilter() {
+    const checkedGenres = Array.from(document.querySelectorAll('input[name="filterGenreVal"]:checked'))
+        .map(cb => cb.value);
     loadMovies({
         title:       document.getElementById('filterTitle').value.trim(),
-        genre:       document.getElementById('filterGenre').value.trim(),
+        genre:       checkedGenres.join(','),
         director:    document.getElementById('filterDirector').value.trim(),
         duration:    document.getElementById('filterDuration').value.trim() || null,
         status:      document.getElementById('filterStatus').value,
@@ -497,9 +533,10 @@ function applyMovieFilter() {
     });
 }
 function resetMovieFilter() {
-    ['filterTitle','filterGenre','filterDirector','filterDuration','filterReleaseDate']
+    ['filterTitle','filterDirector','filterDuration','filterReleaseDate']
         .forEach(id => document.getElementById(id).value = '');
     document.getElementById('filterStatus').value = '';
+    document.querySelectorAll('input[name="filterGenreVal"]').forEach(cb => cb.checked = false);
     loadMovies({});
 }
 
@@ -524,11 +561,10 @@ function openMovieModal(isEdit) {
         document.getElementById('movieParamId').value = '';
         showPosterPreview('');
         resetUploadZone();
-        // Xóa hint trạng thái khi mở modal thêm mới
+        document.querySelectorAll('input[name="movieGenreVal"]').forEach(cb => cb.checked = false);
         const hint = document.getElementById('movieStatusHint');
         if (hint) { hint.textContent = ''; }
     }
-    // [MỚI - TrienLX - 2026-06-11] Luôn đặt min date = hôm nay khi mở modal
     setMinReleaseDateToday();
     document.getElementById('movieModal').classList.add('show');
 }
@@ -540,41 +576,49 @@ async function handleMovieSave(e) {
     const id        = document.getElementById('movieParamId').value;
     const trailerUrl = document.getElementById('movieTrailerUrl').value; // URL từ upload
 
+    const checkedGenres = Array.from(document.querySelectorAll('input[name="movieGenreVal"]:checked'))
+        .map(cb => cb.value);
+
     const body = {
         title:       document.getElementById('movieTitle').value.trim(),
-        trailerUrl:  trailerUrl || null,           // Dùng URL video đã upload
+        trailerUrl:  trailerUrl || null,
         summary:     document.getElementById('movieSummary').value.trim()   || null,
-        genre:       document.getElementById('movieGenre').value.trim()     || null,
+        genre:       checkedGenres.join(', '),
         duration:    document.getElementById('movieDuration').value
                         ? parseInt(document.getElementById('movieDuration').value) : null,
         director:    document.getElementById('movieDirector').value.trim()  || null,
-        language:    document.getElementById('movieLanguage').value.trim()  || null,
+        language:    document.getElementById('movieLanguage').value         || null,
         actors:      document.getElementById('movieActors').value.trim()    || null,
         posterUrl:   document.getElementById('moviePosterUrl').value.trim() || null,
         releaseDate: document.getElementById('movieReleaseDate').value      || null,
-        status:      document.getElementById('movieStatus').value
+        status:      document.getElementById('movieStatus').value,
+        releaseYear: document.getElementById('movieReleaseYear').value
+                        ? parseInt(document.getElementById('movieReleaseYear').value) : null,
+        producer:    document.getElementById('movieProducer').value.trim()  || null,
+        ageRating:   document.getElementById('movieAgeRating').value        || null
     };
 
     const posterUrlValue = document.getElementById('moviePosterUrl').value.trim();
     const hasPosterFile = document.getElementById('moviePosterFile').files.length > 0;
 
-    // Kiểm tra tất cả các trường bắt buộc — nếu thiếu bất kỳ trường nào thì hiển thị toast lỗi và dừng lại
     if (!body.title || !body.summary || !body.genre || !body.duration ||
         !body.director || !body.language || !body.actors || !body.releaseDate ||
-        !body.status || !body.trailerUrl || (!posterUrlValue && !hasPosterFile)) {
-        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast() để hiển thị thông báo hệ thống
+        !body.status || !body.trailerUrl || (!posterUrlValue && !hasPosterFile) ||
+        !body.releaseYear || !body.producer || !body.ageRating) {
         showToast('warning', 'Thiếu thông tin', 'Vui lòng điền đầy đủ tất cả các trường thông tin!');
-        return; // Dừng xử lý, không gửi lên server
+        return;
     }
 
-    // Kiểm tra thời lượng phim phải là số dương hợp lệ
     if (isNaN(body.duration) || body.duration <= 0) {
-        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
         showToast('warning', 'Thời lượng không hợp lệ', 'Thời lượng phim phải là số lớn hơn 0!');
         return;
     }
 
-    // [MỚI - TrienLX - 2026-06-11] Kiểm tra ngày khởi chiếu không được là quá khứ
+    if (isNaN(body.releaseYear) || body.releaseYear < 1800 || body.releaseYear > 2100) {
+        showToast('warning', 'Năm phát hành không hợp lệ', 'Năm phát hành phải từ năm 1800 đến 2100!');
+        return;
+    }
+
     if (body.releaseDate) {
         const today    = new Date(); today.setHours(0, 0, 0, 0);
         const releaseD = new Date(body.releaseDate + 'T00:00:00');
@@ -626,10 +670,16 @@ async function editMovie(id) {
         document.getElementById('movieParamId').value   = mv.id;
         document.getElementById('movieTitle').value     = mv.title       || '';
         document.getElementById('movieSummary').value   = mv.summary     || '';
-        document.getElementById('movieGenre').value     = mv.genre       || '';
+        const genres = (mv.genre || '').split(',').map(s => s.trim());
+        document.querySelectorAll('input[name="movieGenreVal"]').forEach(cb => {
+            cb.checked = genres.includes(cb.value);
+        });
         document.getElementById('movieDuration').value  = mv.duration    || '';
         document.getElementById('movieDirector').value  = mv.director    || '';
         document.getElementById('movieLanguage').value  = mv.language    || '';
+        document.getElementById('movieProducer').value  = mv.producer    || '';
+        document.getElementById('movieReleaseYear').value = mv.releaseYear || '';
+        document.getElementById('movieAgeRating').value = mv.ageRating   || '';
         document.getElementById('movieActors').value    = mv.actors      || '';
         document.getElementById('moviePosterUrl').value = mv.posterUrl   || '';
         showPosterPreview(mv.posterUrl || '');
@@ -911,6 +961,10 @@ function initShowtimeEvents() {
     document.getElementById('btnCancelShowtimeModal').addEventListener('click',  closeShowtimeModal);
     document.getElementById('btnApplyShowtimeFilter').addEventListener('click',  applyShowtimeFilter);
     document.getElementById('btnResetShowtimeFilter').addEventListener('click',  resetShowtimeFilter);
+    document.getElementById('showtimeFilterForm').addEventListener('submit', e => {
+        e.preventDefault();
+        applyShowtimeFilter();
+    });
     document.getElementById('showtimeForm').addEventListener('submit',           handleShowtimeSave);
 
     // Tự phát hiện loại ngày khi chọn ngày chiếu và đồng bộ Đến ngày khi thêm mới

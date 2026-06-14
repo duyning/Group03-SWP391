@@ -84,6 +84,15 @@ public class MovieService {
         if (movie.getStatus() == null || movie.getStatus().isBlank()) {
             throw new IllegalArgumentException("Trạng thái không được để trống!");
         }
+        if (movie.getReleaseYear() == null || movie.getReleaseYear() < 1800 || movie.getReleaseYear() > 2100) {
+            throw new IllegalArgumentException("Năm phát hành phải từ năm 1800 đến 2100!");
+        }
+        if (movie.getProducer() == null || movie.getProducer().isBlank()) {
+            throw new IllegalArgumentException("Nhà sản xuất không được để trống!");
+        }
+        if (movie.getAgeRating() == null || movie.getAgeRating().isBlank()) {
+            throw new IllegalArgumentException("Khuyến cáo độ tuổi không được để trống!");
+        }
     }
 
     // Hàm tự động xác định trạng thái phim dựa trên ngày khởi chiếu
@@ -155,6 +164,9 @@ public class MovieService {
             movie.setActors(updatedMovie.getActors());
             movie.setPosterUrl(updatedMovie.getPosterUrl());
             movie.setReleaseDate(updatedMovie.getReleaseDate());
+            movie.setReleaseYear(updatedMovie.getReleaseYear());
+            movie.setProducer(updatedMovie.getProducer());
+            movie.setAgeRating(updatedMovie.getAgeRating());
             // Ghi trạng thái đã được tính tự động
             movie.setStatus(resolveStatusFromDate(updatedMovie.getReleaseDate(), updatedMovie.getStatus()));
             // Lưu lại phim đã cập nhật vào cơ sở dữ liệu
