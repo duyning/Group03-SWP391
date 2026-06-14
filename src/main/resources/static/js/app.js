@@ -1,0 +1,1760 @@
+/*
+ * ============================================================
+ * Dự án: Cinema 2026 — SWP391 Group 03
+ * File: app.js
+ * Chức năng: Tập tin JavaScript xử lý logic nghiệp vụ phía giao diện (SPA).
+ *            Bao gồm:
+ *              - Điều khiển Tabs và phân trang dữ liệu.
+ *              - Phân hệ Phim: Tìm kiếm, lọc, hiển thị danh mục, mở hộp thoại CRUD,
+ *                xử lý tải file video lên server thông qua XMLHttpRequest có thanh tiến trình (progress bar),
+ *                trình phát trailer video thông minh tự phát hiện loại nguồn (YouTube iframe hoặc HTML5 Video Player).
+ *              - Phân hệ Lịch chiếu: Lập lịch, xem, chỉnh sửa, tự phát hiện loại ngày trong tuần / cuối tuần / ngày lễ.
+ *              - Phân hệ Bán vé: Chọn lịch chiếu để tải và vẽ sơ đồ 40 ghế (Thường/VIP), xử lý bán vé,
+ *                hoàn trả vé và đồng bộ thống kê doanh thu theo thời gian thực.
+ * Người viết: TrienLX - HE182285
+ * Ngày tạo: 2026-06-04
+ * ============================================================
+ * [THAY ĐỔI - TrienLX - 2026-06-11]
+ *   - Thêm hàm showToast(type, title, message, duration): hiển thị thông báo toast
+ *     góc trên phải màn hình (thay thế hoàn toàn alert() của trình duyệt).
+ *   - Thêm hàm showConfirm(title, message, onOk): hiển thị hộp thoại xác nhận
+ *     tùy chỉnh (thay thế hoàn toàn confirm() của trình duyệt).
+ *   - Thay tất cả alert() và confirm() trong phân hệ Phim bằng showToast / showConfirm.
+ * [THAY ĐỔI - TrienLX - 2026-06-12]
+ *   - Sửa hàm closeTrailer() giải phóng video player bằng removeAttribute('src')
+ *     để khắc phục lỗi không thể phát trailer từ lần thứ hai.
+ * ============================================================
+ */
+
+
+// ==================== CẤU HÌNH API ====================
+const API_MOVIES    = '/api/movies';
+const API_SHOWTIMES = '/api/showtimes';
+const API_TICKETS   = '/api/tickets';
+const API_ROOMS     = '/api/rooms';
+
+// ==================== TRẠNG THÁI TOÀN CỤC ====================
+let moviesData      = [];   // Toàn bộ phim sau khi lọc
+let showtimesData   = [];   // Toàn bộ lịch chiếu sau khi lọc
+let ticketsData     = [];   // Vé của suất chiếu đang xem
+let ticketsFiltered = [];   // Vé sau khi lọc theo trạng thái
+
+let moviesPage    = 1;
+let showtimesPage = 1;
+const PAGE_SIZE   = 6;      // Số dòng mỗi trang
+
+let activeShowtimeId = null; // ID suất chiếu đang mở sơ đồ ghế
+
+const AVAILABLE_GENRES = [
+    'Hành động', 'Tình cảm', 'Kinh dị', 'Hài hước', 
+    'Hoạt hình', 'Viễn tưởng', 'Phiêu lưu', 'Kịch tính', 
+    'Thần thoại', 'Tội phạm', 'Gia đình', 'Nhạc kịch'
+];
+
+function renderGenreCheckboxes() {
+    const filterContainer = document.getElementById('filterGenreContainer');
+    const modalContainer = document.getElementById('movieGenreContainer');
+    
+    if (filterContainer) {
+        filterContainer.innerHTML = AVAILABLE_GENRES.map(genre => `
+            <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; cursor: pointer; background: rgba(0,0,0,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; user-select: none; color: var(--text-main); font-weight: 500;">
+                <input type="checkbox" name="filterGenreVal" value="${genre}" style="margin: 0; width: auto; height: auto;"> ${genre}
+            </label>
+        `).join('');
+    }
+    
+    if (modalContainer) {
+        modalContainer.innerHTML = AVAILABLE_GENRES.map(genre => `
+            <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; cursor: pointer; background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; user-select: none; color: #1e293b; font-weight: 500;">
+                <input type="checkbox" name="movieGenreVal" value="${genre}" style="margin: 0; width: auto; height: auto;"> ${genre}
+            </label>
+        `).join('');
+    }
+}
+
+// ==================== KHỞI TẠO ====================
+document.addEventListener('DOMContentLoaded', () => {
+    const page = document.body.dataset.page || 'movies';
+    initTabs();
+
+    if (page === 'movies') {
+        renderGenreCheckboxes();
+        initMovieEvents();
+        loadMovieStats();
+        loadMovies({});
+    }
+
+    if (page === 'showtimes') {
+        initShowtimeEvents();
+        loadShowtimeStats();
+        populateMovieDropdowns();
+        populateRoomDropdown();
+        loadShowtimes({});
+    }
+
+    if (page === 'tickets') {
+        initTicketEvents();
+        populateShowtimeDropdown();
+    }
+});
+
+// ==================== ĐIỀU KHIỂN TABS ====================
+function initTabs() {
+    const tabMoviesBtn = document.getElementById('tabMoviesBtn');
+    const tabShowtimesBtn = document.getElementById('tabShowtimesBtn');
+    const tabTicketsBtn = document.getElementById('tabTicketsBtn');
+
+    if (tabMoviesBtn) tabMoviesBtn.addEventListener('click', () => window.location.href = '/manage_movies.html');
+    if (tabShowtimesBtn) tabShowtimesBtn.addEventListener('click', () => window.location.href = '/manage_showtime.html');
+    if (tabTicketsBtn) tabTicketsBtn.addEventListener('click', () => window.location.href = '/manage_ticket.html');
+}
+
+function switchTab(tab) {
+    // Ẩn tất cả section, bỏ active tất cả tabs
+    ['moviesSection', 'showtimesSection', 'ticketsSection'].forEach(id => {
+        document.getElementById(id)?.classList.remove('active');
+    });
+    ['tabMoviesBtn', 'tabShowtimesBtn', 'tabTicketsBtn'].forEach(id => {
+        document.getElementById(id)?.classList.remove('active');
+    });
+
+    if (tab === 'movies') {
+        document.getElementById('moviesSection')?.classList.add('active');
+        document.getElementById('tabMoviesBtn')?.classList.add('active');
+        loadMovieStats();
+        loadMovies({});
+    } else if (tab === 'showtimes') {
+        document.getElementById('showtimesSection')?.classList.add('active');
+        document.getElementById('tabShowtimesBtn')?.classList.add('active');
+        loadShowtimeStats();
+        populateMovieDropdowns();
+        loadShowtimes({});
+    } else if (tab === 'tickets') {
+        document.getElementById('ticketsSection')?.classList.add('active');
+        document.getElementById('tabTicketsBtn')?.classList.add('active');
+        populateShowtimeDropdown();
+    }
+}
+
+// ==================== XỬ LÝ ANTI-XSS ====================
+function esc(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// ==================== FORMAT TIỀN ====================
+function formatVND(n) {
+    if (n == null) return '0';
+    return Number(n).toLocaleString('vi-VN');
+}
+
+// ==================== FORMAT NGÀY (dd/MM/yyyy) ====================
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const p = dateStr.split('-');
+    return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : dateStr;
+}
+
+// ==================== FORMAT GIỜ (HH:mm) ====================
+function formatTime(timeStr) {
+    if (!timeStr) return '—';
+    const p = timeStr.split(':');
+    return `${p[0]}:${p[1]}`;
+}
+
+// ==================== PHÂN LOẠI NGÀY (Client-side) ====================
+function detectDayType(dateStr) {
+    if (!dateStr) return 'Chưa xác định';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    // Kiểm tra ngày lễ dương lịch Việt Nam
+    if ((m===1&&d===1)||(m===4&&d===30)||(m===5&&d===1)||(m===9&&d===2)) return 'Ngày lễ';
+    const dow = new Date(y, m-1, d).getDay(); // 0=CN, 6=T7
+    if (dow === 0 || dow === 6) return 'Cuối tuần';
+    return 'Trong tuần';
+}
+
+// ==================== PHÂN TRANG ====================
+function buildPagination(containerId, infoId, total, currentPage, onPageChange) {
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    document.getElementById(infoId).textContent =
+        `Hiển thị trang ${currentPage} / ${totalPages}`;
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+
+    // Nút lùi
+    const prev = document.createElement('button');
+    prev.className = 'btn-page';
+    prev.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+    prev.disabled = currentPage === 1;
+    prev.onclick = () => onPageChange(currentPage - 1);
+    container.appendChild(prev);
+
+    // Nút số trang
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-page' + (i === currentPage ? ' active' : '');
+        btn.textContent = i;
+        btn.onclick = () => onPageChange(i);
+        container.appendChild(btn);
+    }
+
+    // Nút tiến
+    const next = document.createElement('button');
+    next.className = 'btn-page';
+    next.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+    next.disabled = currentPage === totalPages;
+    next.onclick = () => onPageChange(currentPage + 1);
+    container.appendChild(next);
+}
+
+// ==================== KHOẢNG NGÀY ====================
+function getWeekRange() {
+    const today = new Date();
+    const dow = today.getDay(); // 0=CN
+    const diffToMon = dow === 0 ? -6 : 1 - dow;
+    const mon = new Date(today); mon.setDate(today.getDate() + diffToMon);
+    const sun = new Date(mon);  sun.setDate(mon.getDate() + 6);
+    return { startDate: isoDate(mon), endDate: isoDate(sun) };
+}
+
+function getMonthRange() {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const last  = new Date(today.getFullYear(), today.getMonth()+1, 0);
+    return { startDate: isoDate(first), endDate: isoDate(last) };
+}
+
+function isoDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+}
+
+// ==================== YOUTUBE ====================
+function extractYouTubeId(url) {
+    if (!url) return null;                                                    // Trả về null nếu URL rỗng
+    const m = url.match(/(?:youtu\.be\/|v=|embed\/)([^#&?]{11})/);
+    return m ? m[1] : null;                                                   // Trả về ID YouTube hoặc null
+}
+
+// ==================== TOAST NOTIFICATION SYSTEM ====================
+// [THÊM MỚI - TrienLX - 2026-06-11]
+// Hiển thị thông báo toast góc trên phải màn hình thay thế alert() của trình duyệt.
+//
+// @param {string} type     - Loại thông báo: 'success' | 'error' | 'warning' | 'info'
+// @param {string} title    - Tiêu đề ngắn gọn của thông báo
+// @param {string} message  - Nội dung chi tiết (có thể để trống '')
+// @param {number} duration - Thời gian hiển thị (ms), mặc định 3500ms
+function showToast(type = 'info', title = '', message = '', duration = 3500) {
+    // Map loại toast sang icon Font Awesome tương ứng
+    const iconMap = {
+        success: 'fa-solid fa-circle-check',         // Xanh lá: thao tác thành công
+        error:   'fa-solid fa-circle-xmark',          // Đỏ: có lỗi xảy ra
+        warning: 'fa-solid fa-triangle-exclamation',  // Cam: cảnh báo người dùng
+        info:    'fa-solid fa-circle-info'             // Xanh biển: thông tin thông thường
+    };
+
+    const container = document.getElementById('toast-container');
+    if (!container) return; // Không làm gì nếu chưa có container trong DOM
+
+    // Tạo phần tử toast mới
+    const toast = document.createElement('div');
+    toast.className = `toast-item toast-${type}`;  // Class quyết định màu sắc viền trái
+    toast.setAttribute('role', 'alert');            // Accessibility: đánh dấu là vùng thông báo
+    toast.innerHTML = `
+        <i class="toast-icon ${iconMap[type] || iconMap.info}"></i>
+        <div class="toast-content">
+            ${title   ? `<div class="toast-title">${esc(title)}</div>`   : ''}
+            ${message ? `<div class="toast-message">${esc(message)}</div>` : ''}
+        </div>
+        <button class="toast-close" aria-label="Đóng thông báo">&#x2715;</button>
+    `;
+
+    // Hàm đóng toast với hiệu ứng trượt ra
+    const closeToast = () => {
+        toast.classList.add('hiding');                // Kích hoạt animation trượt ra phải
+        toast.addEventListener('animationend', () => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast); // Xóa khỏi DOM sau animation
+        }, { once: true });
+    };
+
+    // Nhấn nút X để đóng ngay
+    toast.querySelector('.toast-close').addEventListener('click', e => {
+        e.stopPropagation(); // Không lan sự kiện click ra toast cha
+        closeToast();
+    });
+
+    // Nhấn vào toast cũng đóng toast
+    toast.addEventListener('click', closeToast);
+
+    // Thêm toast vào vùng chứa
+    container.appendChild(toast);
+
+    // Tự động đóng sau thời gian duration
+    setTimeout(closeToast, duration);
+}
+
+// ==================== CUSTOM CONFIRM DIALOG ====================
+// [THÊM MỚI - TrienLX - 2026-06-11]
+// Hiển thị hộp thoại xác nhận tùy chỉnh (thay thế confirm() của trình duyệt).
+// Trả về một Promise: resolve(true) nếu người dùng nhấn Xác nhận, resolve(false) nếu nhấn Hủy.
+//
+// @param {string} title   - Tiêu đề hộp thoại
+// @param {string} message - Câu hỏi / nội dung cần xác nhận
+// @param {string} okText  - Nhãn nút đồng ý (mặc định: 'Xác nhận')
+function showConfirm(title = 'Xác nhận', message = 'Bạn có chắc chắn không?', okText = 'Xác nhận') {
+    return new Promise(resolve => {
+        const overlay   = document.getElementById('confirmOverlay');
+        const btnOk     = document.getElementById('confirmBtnOk');
+        const btnCancel = document.getElementById('confirmBtnCancel');
+
+        if (!overlay || !btnOk || !btnCancel) {
+            // Fallback về confirm() mặc định nếu chưa có HTML trong DOM
+            resolve(window.confirm(message));
+            return;
+        }
+
+        // Gán nội dung động vào hộp thoại
+        document.getElementById('confirmTitle').textContent   = title;
+        document.getElementById('confirmMessage').textContent = message;
+        btnOk.textContent = okText; // Nhãn nút tuỳ chỉnh
+
+        // Hiển thị overlay với hiệu ứng fade-in (thêm class 'show' qua CSS)
+        overlay.classList.add('show');
+
+        // Hàm đóng hộp thoại và trả kết quả
+        const close = result => {
+            overlay.classList.remove('show'); // Ẩn overlay
+            // Xóa event listener cũ để tránh tích lũy nhiều listener
+            btnOk.replaceWith(btnOk.cloneNode(true));
+            btnCancel.replaceWith(btnCancel.cloneNode(true));
+            resolve(result); // Trả kết quả ra cho caller
+        };
+
+        // Sau khi replaceWith, cần lấy lại tham chiếu nút mới
+        document.getElementById('confirmBtnOk').addEventListener('click',     () => close(true),  { once: true });
+        document.getElementById('confirmBtnCancel').addEventListener('click',  () => close(false), { once: true });
+
+        // Nhấn vào vùng nền mờ bên ngoài cũng đóng (tương đương Hủy)
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) close(false);
+        }, { once: true });
+    });
+}
+
+// ======================================================
+//   QUẢN LÝ PHIM
+// ======================================================
+
+// --- Đăng ký sự kiện phim ---
+function initMovieEvents() {
+    document.getElementById('btnOpenAddModal').addEventListener('click',   () => openMovieModal(false));
+    document.getElementById('btnCloseModal').addEventListener('click',     closeMovieModal);
+    document.getElementById('btnCancelModal').addEventListener('click',    closeMovieModal);
+    document.getElementById('btnApplyFilter').addEventListener('click',    applyMovieFilter);
+    document.getElementById('btnResetFilter').addEventListener('click',    resetMovieFilter);
+    document.getElementById('filterForm').addEventListener('submit', e => {
+        e.preventDefault();
+        applyMovieFilter();
+    });
+    document.getElementById('movieForm').addEventListener('submit',        handleMovieSave);
+    document.getElementById('btnCloseTrailerModal').addEventListener('click', closeTrailer);
+    document.getElementById('moviePosterFile').addEventListener('change', handlePosterFilePreview);
+    document.getElementById('moviePosterUrl').addEventListener('input', e => showPosterPreview(e.target.value.trim()));
+
+    // Sự kiện upload video: nút chọn file
+    document.getElementById('btnSelectVideo').addEventListener('click', () => {
+        document.getElementById('videoFileInput').click();
+    });
+    // Khi người dùng chọn file qua hộp thoại
+    document.getElementById('videoFileInput').addEventListener('change', e => {
+        if (e.target.files.length > 0) handleVideoFileSelected(e.target.files[0]);
+    });
+    // Nút xóa video đã upload
+    document.getElementById('btnRemoveVideo').addEventListener('click', removeUploadedVideo);
+
+    // Sự kiện kéo thả file vào upload zone
+    const zone = document.getElementById('videoUploadZone');
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',      e  => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) handleVideoFileSelected(file);
+    });
+    // Click vào vùng (không phải nút) cũng mở hộp chọn file
+    zone.addEventListener('click', e => {
+        if (e.target === zone || e.target.classList.contains('upload-zone-content') ||
+            e.target.classList.contains('upload-hint-main') ||
+            e.target.classList.contains('upload-hint-sub')) {
+            document.getElementById('videoFileInput').click();
+        }
+    });
+
+    // [MỚI - TrienLX - 2026-06-11]
+    // Khi người dùng thay đổi ngày khởi chiếu, tự động gợi ý trạng thái phim
+    // và hiển thị hint cho Manager biết hệ thống sẽ tính trạng thái nào.
+    document.getElementById('movieReleaseDate').addEventListener('change', e => {
+        const selectedDate = e.target.value; // Giá trị 'yyyy-MM-dd'
+        if (!selectedDate) return;           // Bỏ qua nếu chưa chọn ngày
+
+        const today    = new Date(); today.setHours(0, 0, 0, 0);      // Hôm nay 00:00:00
+        const releaseD = new Date(selectedDate + 'T00:00:00');        // Ngày khởi chiếu 00:00:00
+
+        // Lấy select trạng thái và hint label
+        const statusSelect = document.getElementById('movieStatus');
+        const statusHint   = document.getElementById('movieStatusHint');
+
+        // Kiểm tra trạng thái đặc biệt — nếu đã chọn SPECIAL_SCREENING thì không tự ghi đè
+        if (statusSelect.value === 'Suất chiếu đặc biệt') {
+            if (statusHint) statusHint.textContent = 'Trạng thái đặc biệt do bạn chọn, hệ thống không tự đổi.';
+            return;
+        }
+
+        // Tự động tính và SET trạng thái phù hợp
+        if (releaseD <= today) {
+            // Ngày chiếu đã đến hoặc đã qua → Đang chiếu
+            statusSelect.value = 'Đang chiếu';
+            if (statusHint) {
+                statusHint.textContent = '✓ Hệ thống tự đặt: Đang chiếu (ngày khởi chiếu đã đến).';
+                statusHint.style.color = 'var(--stat-green)';
+            }
+        } else {
+            // Ngày chiếu trong tương lai → Sắp chiếu
+            statusSelect.value = 'Sắp chiếu';
+            if (statusHint) {
+                statusHint.textContent = '✓ Hệ thống tự đặt: Sắp chiếu. Sẽ tự chuyển sang Đang chiếu khi đến ngày.';
+                statusHint.style.color = 'var(--stat-orange)';
+            }
+        }
+    });
+
+    window.addEventListener('click', e => {
+        if (e.target === document.getElementById('movieModal'))    closeMovieModal();
+        if (e.target === document.getElementById('trailerModal'))  closeTrailer();
+        if (e.target === document.getElementById('showtimeModal')) closeShowtimeModal();
+    });
+}
+
+// --- Thống kê phim ---
+async function loadMovieStats() {
+    try {
+        const r = await fetch(`${API_MOVIES}/stats`);
+        if (!r.ok) return;
+        const s = await r.json();
+        document.getElementById('statTotal').textContent       = s.total       ?? 0;
+        document.getElementById('statNowShowing').textContent  = s.nowShowing  ?? 0;
+        document.getElementById('statUpcoming').textContent    = s.upcoming    ?? 0;
+        document.getElementById('statSpecialShow').textContent = s.specialShow ?? 0;
+    } catch(e) { console.error('Lỗi thống kê phim:', e); }
+}
+
+// --- Tải danh sách phim ---
+async function loadMovies(filters) {
+    const qs = new URLSearchParams();
+    Object.entries(filters).forEach(([k,v]) => { if (v != null && v !== '') qs.append(k, v); });
+    try {
+        const r = await fetch(`${API_MOVIES}${qs.toString() ? '?'+qs : ''}`);
+        if (!r.ok) throw new Error();
+        moviesData  = await r.json();
+        moviesPage  = 1;
+        document.getElementById('resultsCount').textContent = `Tìm thấy ${moviesData.length} kết quả`;
+        renderMovieTable();
+    } catch(e) {
+        document.getElementById('movieTableBody').innerHTML =
+            `<tr><td colspan="6" class="text-center" style="padding:3rem;color:var(--stat-red);">
+                <i class="fa-solid fa-triangle-exclamation"></i> Không thể tải danh sách phim.
+            </td></tr>`;
+    }
+}
+
+// --- Render bảng phim ---
+function renderMovieTable() {
+    const tbody = document.getElementById('movieTableBody');
+    tbody.innerHTML = '';
+
+    if (!moviesData.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding:3rem;color:var(--text-muted);">
+            <i class="fa-regular fa-folder-open" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
+            Không tìm thấy phim nào.
+        </td></tr>`;
+        buildPagination('paginationControls','paginationInfo', 0, 1, ()=>{});
+        return;
+    }
+
+    const start   = (moviesPage - 1) * PAGE_SIZE;
+    const slice   = moviesData.slice(start, start + PAGE_SIZE);
+    const colorMap = { 'Đang chiếu':'var(--stat-green)', 'Sắp chiếu':'var(--stat-orange)', 'Suất chiếu đặc biệt':'var(--stat-red)' };
+
+    slice.forEach(mv => {
+        const poster = mv.posterUrl
+            ? `<img class="movie-poster-thumb" src="${esc(mv.posterUrl)}" alt="Poster"
+                    onerror="this.outerHTML='<div class=\\'movie-poster-placeholder\\'><i class=\\'fa-regular fa-image\\'></i></div>'">`
+            : `<div class="movie-poster-placeholder"><i class="fa-regular fa-image"></i></div>`;
+        const trailer = mv.trailerUrl
+            ? `<button class="badge-trailer" onclick="openTrailer('${esc(mv.trailerUrl)}')">
+                    <i class="fa-solid fa-play"></i> Trailer</button>` : '';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">MV-${mv.id}</td>
+            <td>
+                <div class="movie-info-cell">
+                    ${poster}
+                    <div class="movie-meta">
+                        <div class="movie-title-row">
+                            <span class="movie-title-text" style="font-weight: 700;">${esc(mv.title)}</span>
+                            ${trailer}
+                        </div>
+                        <span class="movie-director-text" style="font-size: 0.75rem; margin-top: 0.2rem;">Đạo diễn: ${esc(mv.director||'Chưa rõ')} | NSX: ${esc(mv.producer||'—')} (${mv.releaseYear||''})</span>
+                        <span class="movie-director-text" style="font-size: 0.75rem; font-weight: 600; color: var(--stat-red); margin-top: 0.1rem;">Độ tuổi: ${esc(mv.ageRating||'—')} | Ngôn ngữ: ${esc(mv.language||'—')}</span>
+                    </div>
+                </div>
+            </td>
+            <td>${esc(mv.genre||'—')}</td>
+            <td>${mv.duration ? mv.duration+' phút' : '—'}</td>
+            <td><span class="status-text" style="color:${colorMap[mv.status]||'inherit'}">${esc(mv.status||'—')}</span></td>
+            <td>${formatDate(mv.releaseDate)}</td>
+            <td>
+                <div class="action-cell">
+                    <button class="action-btn action-btn-edit"   onclick="editMovie(${mv.id})">Sửa</button>
+                    <button class="action-btn action-btn-delete" onclick="deleteMovie(${mv.id})">Xóa</button>
+                </div>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+
+    buildPagination('paginationControls','paginationInfo', moviesData.length, moviesPage, p => {
+        moviesPage = p; renderMovieTable();
+    });
+}
+
+// --- Bộ lọc phim ---
+function applyMovieFilter() {
+    const checkedGenres = Array.from(document.querySelectorAll('input[name="filterGenreVal"]:checked'))
+        .map(cb => cb.value);
+    loadMovies({
+        title:       document.getElementById('filterTitle').value.trim(),
+        genre:       checkedGenres.join(','),
+        director:    document.getElementById('filterDirector').value.trim(),
+        duration:    document.getElementById('filterDuration').value.trim() || null,
+        status:      document.getElementById('filterStatus').value,
+        releaseDate: document.getElementById('filterReleaseDate').value || null
+    });
+}
+function resetMovieFilter() {
+    ['filterTitle','filterDirector','filterDuration','filterReleaseDate']
+        .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('filterStatus').value = '';
+    document.querySelectorAll('input[name="filterGenreVal"]').forEach(cb => cb.checked = false);
+    loadMovies({});
+}
+
+// --- Modal phim ---
+// [MỚI - TrienLX - 2026-06-11] Đặt ngày tối thiểu cho input ngày khởi chiếu = hôm nay
+// (không cho phép chọn ngày trong quá khứ)
+function setMinReleaseDateToday() {
+    const input = document.getElementById('movieReleaseDate');
+    if (!input) return;
+    // Định dạng yyyy-MM-dd theo chuẩn HTML date input
+    const today = new Date();
+    const yyyy  = today.getFullYear();
+    const mm    = String(today.getMonth() + 1).padStart(2, '0');
+    const dd    = String(today.getDate()).padStart(2, '0');
+    input.min = `${yyyy}-${mm}-${dd}`; // Giới hạn tối thiểu là ngày hôm nay
+}
+
+function openMovieModal(isEdit) {
+    document.getElementById('modalTitle').textContent = isEdit ? 'Sửa thông tin phim' : 'Thêm phim mới';
+    if (!isEdit) {
+        document.getElementById('movieForm').reset();
+        document.getElementById('movieParamId').value = '';
+        showPosterPreview('');
+        resetUploadZone();
+        document.querySelectorAll('input[name="movieGenreVal"]').forEach(cb => cb.checked = false);
+        const hint = document.getElementById('movieStatusHint');
+        if (hint) { hint.textContent = ''; }
+    }
+    setMinReleaseDateToday();
+    document.getElementById('movieModal').classList.add('show');
+}
+function closeMovieModal() { document.getElementById('movieModal').classList.remove('show'); }
+
+// --- Lưu phim (có upload video nếu cần) ---
+async function handleMovieSave(e) {
+    e.preventDefault();
+    const id        = document.getElementById('movieParamId').value;
+    const trailerUrl = document.getElementById('movieTrailerUrl').value; // URL từ upload
+
+    const checkedGenres = Array.from(document.querySelectorAll('input[name="movieGenreVal"]:checked'))
+        .map(cb => cb.value);
+
+    const body = {
+        title:       document.getElementById('movieTitle').value.trim(),
+        trailerUrl:  trailerUrl || null,
+        summary:     document.getElementById('movieSummary').value.trim()   || null,
+        genre:       checkedGenres.join(', '),
+        duration:    document.getElementById('movieDuration').value
+                        ? parseInt(document.getElementById('movieDuration').value) : null,
+        director:    document.getElementById('movieDirector').value.trim()  || null,
+        language:    document.getElementById('movieLanguage').value         || null,
+        actors:      document.getElementById('movieActors').value.trim()    || null,
+        posterUrl:   document.getElementById('moviePosterUrl').value.trim() || null,
+        releaseDate: document.getElementById('movieReleaseDate').value      || null,
+        status:      document.getElementById('movieStatus').value,
+        releaseYear: document.getElementById('movieReleaseYear').value
+                        ? parseInt(document.getElementById('movieReleaseYear').value) : null,
+        producer:    document.getElementById('movieProducer').value.trim()  || null,
+        ageRating:   document.getElementById('movieAgeRating').value        || null
+    };
+
+    const posterUrlValue = document.getElementById('moviePosterUrl').value.trim();
+    const hasPosterFile = document.getElementById('moviePosterFile').files.length > 0;
+
+    if (!body.title || !body.summary || !body.genre || !body.duration ||
+        !body.director || !body.language || !body.actors || !body.releaseDate ||
+        !body.status || !body.trailerUrl || (!posterUrlValue && !hasPosterFile) ||
+        !body.releaseYear || !body.producer || !body.ageRating) {
+        showToast('warning', 'Thiếu thông tin', 'Vui lòng điền đầy đủ tất cả các trường thông tin!');
+        return;
+    }
+
+    if (isNaN(body.duration) || body.duration <= 0) {
+        showToast('warning', 'Thời lượng không hợp lệ', 'Thời lượng phim phải là số lớn hơn 0!');
+        return;
+    }
+
+    if (isNaN(body.releaseYear) || body.releaseYear < 1800 || body.releaseYear > 2100) {
+        showToast('warning', 'Năm phát hành không hợp lệ', 'Năm phát hành phải từ năm 1800 đến 2100!');
+        return;
+    }
+
+    if (body.releaseDate) {
+        const today    = new Date(); today.setHours(0, 0, 0, 0);
+        const releaseD = new Date(body.releaseDate + 'T00:00:00');
+        if (releaseD < today) {
+            showToast('warning', 'Ngày khởi chiếu không hợp lệ',
+                'Ngày khởi chiếu không được là ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.');
+            return;
+        }
+    }
+
+    try {
+        // Upload ảnh poster (nếu chọn từ máy) và lấy URL công khai từ server
+        body.posterUrl = await resolvePosterUrl();
+        if (!body.posterUrl) {
+            showToast('warning', 'Thiếu ảnh poster', 'Vui lòng cung cấp ảnh poster phim!');
+            return;
+        }
+
+        const url    = id ? `${API_MOVIES}/${id}` : API_MOVIES;
+        const method = id ? 'PUT' : 'POST';
+        const r = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!r.ok) {
+            const payload = await r.json().catch(() => ({}));
+            throw new Error(payload.error || 'Lỗi khi lưu phim. Vui lòng thử lại.');
+        }
+        showToast('success', id ? 'Cập nhật thành công!' : 'Thêm phim thành công!',
+                  id ? 'Thông tin phim đã được cập nhật.' : 'Phim mới đã được thêm vào hệ thống.');
+        closeMovieModal();
+        loadMovieStats();
+        applyMovieFilter();
+    } catch(err) {
+        showToast('error', 'Lưu phim thất bại', err.message || 'Lỗi khi lưu phim. Vui lòng thử lại.');
+    }
+}
+
+// --- Sửa phim (khôi phục trạng thái upload nếu có video) ---
+async function editMovie(id) {
+    try {
+        const r  = await fetch(`${API_MOVIES}/${id}`);
+        const mv = await r.json();
+        document.getElementById('movieParamId').value   = mv.id;
+        document.getElementById('movieTitle').value     = mv.title       || '';
+        document.getElementById('movieSummary').value   = mv.summary     || '';
+        const genres = (mv.genre || '').split(',').map(s => s.trim());
+        document.querySelectorAll('input[name="movieGenreVal"]').forEach(cb => {
+            cb.checked = genres.includes(cb.value);
+        });
+        document.getElementById('movieDuration').value  = mv.duration    || '';
+        document.getElementById('movieDirector').value  = mv.director    || '';
+        document.getElementById('movieLanguage').value  = mv.language    || '';
+        document.getElementById('movieProducer').value  = mv.producer    || '';
+        document.getElementById('movieReleaseYear').value = mv.releaseYear || '';
+        document.getElementById('movieAgeRating').value = mv.ageRating   || '';
+        document.getElementById('movieActors').value    = mv.actors      || '';
+        document.getElementById('moviePosterUrl').value = mv.posterUrl   || '';
+        showPosterPreview(mv.posterUrl || '');
+        setMinReleaseDateToday();
+        document.getElementById('movieReleaseDate').value = mv.releaseDate || '';
+        document.getElementById('movieStatus').value    = mv.status      || 'Đang chiếu';
+        // Cập nhật hint trạng thái theo ngày hiện tại của phim
+        const hint = document.getElementById('movieStatusHint');
+        if (hint) {
+            hint.textContent = `Trạng thái hiện tại: ${mv.status || '—'} (hệ thống sẽ tự cập nhật theo ngày khởi chiếu).`;
+            hint.style.color = 'var(--text-muted)';
+        }
+
+        // Nếu phim đã có video — khôi phục trạng thái preview trong upload zone
+        const trailerUrl = mv.trailerUrl || '';
+        document.getElementById('movieTrailerUrl').value = trailerUrl;
+        if (trailerUrl) {
+            const fileName = trailerUrl.split('/').pop(); // lấy tên file từ URL
+            showUploadPreview(fileName);
+        } else {
+            resetUploadZone();
+        }
+
+        openMovieModal(true);
+    } catch(e) {
+        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
+        showToast('error', 'Không thể tải thông tin phim', 'Vui lòng thử lại hoặc kiểm tra kết nối.');
+    }
+}
+
+function handlePosterFilePreview(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    // Kiểm tra định dạng file phải là ảnh (image/*)
+    if (!file.type.startsWith('image/')) {
+        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
+        showToast('warning', 'Định dạng không hợp lệ', 'Vui lòng chọn file ảnh hợp lệ (JPG, PNG, WebP).');
+        e.target.value = ''; // Xóa lựa chọn file không hợp lệ
+        return;
+    }
+    showPosterPreview(URL.createObjectURL(file));
+}
+
+function showPosterPreview(src) {
+    const img = document.getElementById('moviePosterPreview');
+    const placeholder = document.getElementById('moviePosterPlaceholder');
+    if (!img || !placeholder) return;
+
+    if (src) {
+        img.src = src;
+        img.style.display = '';
+        placeholder.style.display = 'none';
+    } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        placeholder.style.display = '';
+    }
+}
+
+async function resolvePosterUrl() {
+    const fileInput = document.getElementById('moviePosterFile');
+    const posterUrlInput = document.getElementById('moviePosterUrl');
+    const file = fileInput.files && fileInput.files[0];
+
+    if (!file) {
+        return posterUrlInput.value.trim();
+    }
+
+    const data = new FormData();
+    data.append('file', file);
+    const response = await fetch('/api/upload/image', { method: 'POST', body: data });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload.error || 'Không thể upload ảnh poster.');
+    }
+
+    posterUrlInput.value = payload.url;
+    fileInput.value = '';
+    showPosterPreview(payload.url);
+    return payload.url;
+}
+
+function handlePosterFilePreview(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh hợp lệ.');
+        e.target.value = '';
+        return;
+    }
+    showPosterPreview(URL.createObjectURL(file));
+}
+
+function showPosterPreview(src) {
+    const img = document.getElementById('moviePosterPreview');
+    const placeholder = document.getElementById('moviePosterPlaceholder');
+    if (!img || !placeholder) return;
+
+    if (src) {
+        img.src = src;
+        img.style.display = '';
+        placeholder.style.display = 'none';
+    } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        placeholder.style.display = '';
+    }
+}
+
+async function resolvePosterUrl() {
+    const fileInput = document.getElementById('moviePosterFile');
+    const posterUrlInput = document.getElementById('moviePosterUrl');
+    const file = fileInput.files && fileInput.files[0];
+
+    if (!file) {
+        return posterUrlInput.value.trim();
+    }
+
+    const data = new FormData();
+    data.append('file', file);
+    const response = await fetch('/api/upload/image', { method: 'POST', body: data });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload.error || 'Không thể upload ảnh poster.');
+    }
+
+    posterUrlInput.value = payload.url;
+    fileInput.value = '';
+    showPosterPreview(payload.url);
+    return payload.url;
+}
+
+// --- Xóa phim ---
+// --- Xóa phim (soft delete: chỉ đổi trạng thái active = false, không xóa dữ liệu khỏi DB) ---
+async function deleteMovie(id) {
+    // [SỬA - TrienLX - 2026-06-11]: Thay confirm() bằng showConfirm() — hộp thoại xác nhận tùy chỉnh
+    const confirmed = await showConfirm(
+        'Xác nhận xóa phim',                          // Tiêu đề hộp thoại
+        'Bạn có chắc chắn muốn xóa phim này không?\nPhim sẽ bị ẩn khỏi hệ thống (không bị xóa hoàn toàn khỏi dữ liệu).', // Nội dung
+        'Xóa phim'                                    // Nhãn nút đồng ý
+    );
+    if (!confirmed) return; // Người dùng nhấn Hủy — không làm gì
+
+    try {
+        // Gửi yêu cầu xóa (soft delete) lên API
+        const r = await fetch(`${API_MOVIES}/${id}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error();
+        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast() — thông báo thành công
+        showToast('success', 'Xóa phim thành công!', 'Phim đã được ẩn khỏi hệ thống.');
+        loadMovieStats();    // Cập nhật lại thống kê
+        applyMovieFilter();  // Cập nhật lại danh sách phim
+    } catch(e) {
+        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
+        showToast('error', 'Lỗi khi xóa phim', 'Không thể xóa phim. Vui lòng thử lại.');
+    }
+}
+
+// =====================================================
+//   UPLOAD VIDEO
+// =====================================================
+
+// Xử lý khi người dùng chọn file (qua hộp thoại hoặc kéo thả)
+function handleVideoFileSelected(file) {
+    // Kiểm tra định dạng file video hợp lệ
+    // Danh sách MIME type video được hỗ trợ
+    const allowed = ['video/mp4', 'video/webm', 'video/x-matroska', 'video/avi', 'video/quicktime'];
+    // Kiểm tra định dạng file — theo cả MIME type và phần mở rộng tên file
+    if (!allowed.includes(file.type) && !file.name.match(/\.(mp4|webm|mkv|avi|mov)$/i)) {
+        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
+        showToast('warning', 'Định dạng không hỗ trợ', 'Vui lòng chọn file MP4, WebM, MKV, AVI hoặc MOV.');
+        return;
+    }
+    // Kiểm tra giới hạn kích thước tối đa 50MB (50 × 1024 × 1024 bytes)
+    if (file.size > 50 * 1024 * 1024) {
+        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
+        showToast('error', 'File quá lớn!', 'Kích thước tối đa cho phép là 50MB.');
+        return;
+    }
+    uploadVideoFile(file);
+}
+
+// Upload file lên server bằng XMLHttpRequest (để theo dõi tiến trình)
+function uploadVideoFile(file) {
+    showUploadProgress();
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+
+    // Theo dõi tiến trình upload
+    xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+            const pct = Math.round(e.loaded / e.total * 100);
+            document.getElementById('uploadProgressText').textContent =
+                `Đang tải lên... ${pct}%`;
+        }
+    };
+
+    xhr.onload = () => {
+        if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            // Lưu URL trả về vào hidden input để dùng khi lưu phim
+            document.getElementById('movieTrailerUrl').value = data.url;
+            showUploadPreview(file.name);
+        } else {
+            // Lấy thông báo lỗi từ server nếu có, ngược lại dùng thông báo chung
+            let msg = 'Upload thất bại.';
+            try { msg = JSON.parse(xhr.responseText).error || msg; } catch(_) {}
+            // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
+            showToast('error', 'Upload thất bại', msg);
+            resetUploadZone(); // Đặt lại vùng upload về trạng thái ban đầu
+        }
+    };
+
+    // Xử lý lỗi mạng (mất kết nối, server không phản hồi)
+    xhr.onerror = () => {
+        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
+        showToast('error', 'Lỗi kết nối', 'Không thể kết nối đến server. Vui lòng thử lại.');
+        resetUploadZone(); // Đặt lại vùng upload
+    };
+
+    xhr.open('POST', '/api/upload/video');
+    xhr.send(formData);
+}
+
+// Hiển thị thanh tiến trình đang chạy
+function showUploadProgress() {
+    document.getElementById('uploadZoneContent').style.display = 'none';
+    document.getElementById('uploadPreview').style.display     = 'none';
+    document.getElementById('uploadProgress').style.display    = '';
+}
+
+// Hiển thị trạng thái đã upload xong
+function showUploadPreview(fileName) {
+    document.getElementById('uploadProgress').style.display    = 'none';
+    document.getElementById('uploadZoneContent').style.display = 'none';
+    document.getElementById('uploadPreviewName').textContent   = fileName;
+    document.getElementById('uploadPreview').style.display     = '';
+}
+
+// Đặt lại upload zone về trạng thái ban đầu
+function resetUploadZone() {
+    document.getElementById('uploadProgress').style.display    = 'none';
+    document.getElementById('uploadPreview').style.display     = 'none';
+    document.getElementById('uploadZoneContent').style.display = '';
+    document.getElementById('movieTrailerUrl').value           = '';
+    document.getElementById('videoFileInput').value            = '';
+}
+
+// Xóa video đã upload và khôi phục upload zone về trạng thái ban đầu
+async function removeUploadedVideo() {
+    // [SỬA - TrienLX - 2026-06-11]: Thay confirm() bằng showConfirm() — hộp thoại xác nhận tùy chỉnh
+    const confirmed = await showConfirm(
+        'Xóa video trailer',            // Tiêu đề hộp thoại
+        'Bạn có chắc chắn muốn bỏ video trailer này không?', // Nội dung
+        'Xóa video'                     // Nhãn nút đồng ý
+    );
+    if (!confirmed) return; // Người dùng nhấn Hủy — giữ nguyên video
+    resetUploadZone();      // Đặt lại upload zone và xóa URL đã lưu
+}
+
+// --- Mở trình phát trailer (tự phát hiện YouTube hoặc video cục bộ) ---
+function openTrailer(url) {
+    // Nếu không có URL trailer thì hiển thị thông báo lỗi và dừng lại
+    if (!url) {
+        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
+        showToast('info', 'Chưa có trailer', 'Phim này chưa có video trailer.');
+        return;
+    }
+
+    const youtubeId = extractYouTubeId(url);
+    const modal     = document.getElementById('trailerModal');
+    const ytCont    = document.getElementById('youtubeContainer');
+    const lcCont    = document.getElementById('localVideoContainer');
+
+    if (youtubeId) {
+        // Phát YouTube qua iframe embed
+        document.getElementById('trailerModalTitle').textContent = 'Xem Trailer (YouTube)';
+        document.getElementById('trailerIframe').src =
+            `https://www.youtube.com/embed/${youtubeId}?autoplay=1`;
+        ytCont.style.display = '';
+        lcCont.style.display = 'none';
+    } else {
+        // Phát video cục bộ qua HTML5 player
+        document.getElementById('trailerModalTitle').textContent = 'Xem Trailer';
+        const player = document.getElementById('localVideoPlayer');
+        player.src = url;
+        player.load();
+        player.play().catch(() => {}); // Tự động phát, bỏ qua lỗi autoplay
+        ytCont.style.display = 'none';
+        lcCont.style.display = '';
+    }
+
+    modal.classList.add('show');
+}
+
+// --- Đóng trình phát trailer ---
+// [SỬA - TrienLX - 2026-06-12] Giải phóng nguồn phát của HTML5 video để tránh lỗi không phát được ở lần tiếp theo
+function closeTrailer() {
+    document.getElementById('trailerModal').classList.remove('show');
+    // Dừng YouTube bằng cách xóa URL nguồn trong iframe
+    document.getElementById('trailerIframe').src = '';
+    // Dừng video HTML5
+    const player = document.getElementById('localVideoPlayer');
+    player.pause();
+    // Thay vì gán src = '', ta loại bỏ thuộc tính src và load lại để trình duyệt reset hoàn toàn trạng thái player
+    player.removeAttribute('src');
+    player.load();
+}
+
+// ======================================================
+//   QUẢN LÝ LỊCH CHIẾU
+// ======================================================
+
+// Hàm tiện ích: đặt min date = hôm nay cho input ngày chiếu (không cho chọn quá khứ)
+function setMinShowtimeDateToday(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const today = isoDate(new Date());
+    input.min = today;
+}
+
+function initShowtimeEvents() {
+    document.getElementById('btnOpenAddShowtimeModal').addEventListener('click', () => openShowtimeModal(false));
+    document.getElementById('btnCloseShowtimeModal').addEventListener('click',   closeShowtimeModal);
+    document.getElementById('btnCancelShowtimeModal').addEventListener('click',  closeShowtimeModal);
+    document.getElementById('btnApplyShowtimeFilter').addEventListener('click',  applyShowtimeFilter);
+    document.getElementById('btnResetShowtimeFilter').addEventListener('click',  resetShowtimeFilter);
+    document.getElementById('showtimeFilterForm').addEventListener('submit', e => {
+        e.preventDefault();
+        applyShowtimeFilter();
+    });
+    document.getElementById('showtimeForm').addEventListener('submit',           handleShowtimeSave);
+
+    // Tự phát hiện loại ngày khi chọn ngày chiếu và đồng bộ Đến ngày khi thêm mới
+    document.getElementById('showtimeDateInput').addEventListener('change', e => {
+        const val = e.target.value;
+        document.getElementById('showtimeDayTypeDisplay').value = detectDayType(val) || 'Chưa xác định';
+
+        // Tự động đồng bộ Đến ngày = Từ ngày nếu thêm mới và chưa chọn Đến ngày
+        const paramId = document.getElementById('showtimeParamId').value;
+        if (!paramId) {
+            const endInput = document.getElementById('showtimeEndDateInput');
+            // Cập nhật min của Đến ngày theo Từ ngày
+            if (val) endInput.min = val;
+            if (val && (!endInput.value || endInput.value < val)) {
+                endInput.value = val;
+            }
+        }
+    });
+}
+
+// --- Thống kê lịch chiếu ---
+async function loadShowtimeStats() {
+    try {
+        const r = await fetch(`${API_SHOWTIMES}/stats`);
+        if (!r.ok) return;
+        const s = await r.json();
+        document.getElementById('statShowtimeTotal').textContent   = s.total   ?? 0;
+        document.getElementById('statShowtimeWeekday').textContent = s.weekday ?? 0;
+        document.getElementById('statShowtimeWeekend').textContent = s.weekend ?? 0;
+        document.getElementById('statShowtimeHoliday').textContent = s.holiday ?? 0;
+    } catch(e) { console.error('Lỗi thống kê lịch chiếu:', e); }
+}
+
+// --- Nạp phim vào các Select dropdown ---
+async function populateMovieDropdowns() {
+    try {
+        const r    = await fetch(API_MOVIES);
+        const list = await r.json();
+
+        const filterSel = document.getElementById('filterShowtimeMovie');
+        const formSel   = document.getElementById('showtimeMovieSelect');
+        filterSel.innerHTML = '<option value="">-- Tất cả phim --</option>';
+        formSel.innerHTML   = '<option value="">-- Chọn bộ phim --</option>';
+
+        list.forEach(mv => {
+            [filterSel, formSel].forEach(sel => {
+                const opt = document.createElement('option');
+                opt.value       = mv.id;
+                opt.textContent = mv.title;
+                sel.appendChild(opt);
+            });
+        });
+    } catch(e) { console.error('Lỗi nạp dropdown phim:', e); }
+}
+
+// --- Nạp phòng chiếu từ danh mục phòng vào select lịch chiếu ---
+async function populateRoomDropdown(selectedRoomName = '') {
+    const roomSel = document.getElementById('showtimeRoomInput');
+    if (!roomSel) return;
+
+    roomSel.innerHTML = '<option value="">-- Chọn phòng từ danh mục phòng --</option>';
+    try {
+        const r = await fetch(API_ROOMS);
+        if (!r.ok) throw new Error();
+        const rooms = await r.json();
+
+        rooms.forEach(room => {
+            const opt = document.createElement('option');
+            opt.value = room.roomName || '';
+            const details = [room.roomType, room.audioTech, room.totalSeats ? `${room.totalSeats} ghế` : '']
+                .filter(Boolean)
+                .join(' · ');
+            opt.textContent = details ? `${room.roomName} (${details})` : room.roomName;
+            roomSel.appendChild(opt);
+        });
+
+        if (selectedRoomName && [...roomSel.options].some(option => option.value === selectedRoomName)) {
+            roomSel.value = selectedRoomName;
+        }
+    } catch (e) {
+        console.error('Lỗi nạp danh sách phòng chiếu:', e);
+        roomSel.innerHTML = '<option value="">Không thể tải danh sách phòng</option>';
+    }
+}
+
+// --- Tải lịch chiếu ---
+async function loadShowtimes(filters) {
+    const qs = new URLSearchParams();
+    const { viewMode, movieId, dayType, startDate, endDate } = filters;
+
+    if (movieId) qs.append('movieId', movieId);
+    if (dayType)  qs.append('dayType', dayType);
+
+    // Xử lý chế độ xem theo tuần / tháng
+    if (viewMode === 'week') {
+        const { startDate: sd, endDate: ed } = getWeekRange();
+        qs.append('startDate', sd); qs.append('endDate', ed);
+    } else if (viewMode === 'month') {
+        const { startDate: sd, endDate: ed } = getMonthRange();
+        qs.append('startDate', sd); qs.append('endDate', ed);
+    } else {
+        // Lọc theo ngày cụ thể (startDate=endDate)
+        if (startDate) { qs.append('startDate', startDate); qs.append('endDate', startDate); }
+        if (endDate && endDate !== startDate) qs.append('endDate', endDate);
+    }
+
+    try {
+        const r = await fetch(`${API_SHOWTIMES}${qs.toString() ? '?'+qs : ''}`);
+        if (!r.ok) throw new Error();
+        showtimesData  = await r.json();
+        showtimesPage  = 1;
+        document.getElementById('showtimeResultsCount').textContent =
+            `Tìm thấy ${showtimesData.length} lịch chiếu`;
+        renderShowtimeTable();
+    } catch(e) {
+        document.getElementById('showtimeTableBody').innerHTML =
+            `<tr><td colspan="7" class="text-center" style="padding:3rem;color:var(--stat-red);">
+                <i class="fa-solid fa-triangle-exclamation"></i> Không thể tải lịch chiếu.
+            </td></tr>`;
+    }
+}
+
+// ==================== NHÓM LỊCH CHIẾU THEO DẢI NGÀY ====================
+// Nhóm mảng showtimes thành các nhóm [movie+room+time, minDate, maxDate, ids[]]
+// để hiển thị "Từ ngày - Đến ngày" thay vì liệt kê từng dòng
+function groupShowtimes(list) {
+    // key = movieId|room|showTime (group showtimes của cùng phim + phòng + giờ)
+    const groups = new Map();
+    list.forEach(st => {
+        const mv    = st.movie || {};
+        const key   = `${mv.id||'?'}|${st.room||''}|${st.showTime||''}`;
+        if (!groups.has(key)) {
+            groups.set(key, {
+                movie:   mv,
+                room:    st.room,
+                showTime:st.showTime,
+                dayType: st.dayType,
+                minDate: st.showDate,
+                maxDate: st.showDate,
+                ids:     [st.id],
+                showtimes: [st]
+            });
+        } else {
+            const g = groups.get(key);
+            if (st.showDate < g.minDate) g.minDate = st.showDate;
+            if (st.showDate > g.maxDate) g.maxDate = st.showDate;
+            g.ids.push(st.id);
+            g.showtimes.push(st);
+        }
+    });
+    return Array.from(groups.values());
+}
+
+// --- Render bảng lịch chiếu (hiển thị dải ngày) ---
+async function renderShowtimeTable() {
+    const tbody = document.getElementById('showtimeTableBody');
+    tbody.innerHTML = '';
+
+    if (!showtimesData.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;color:var(--text-muted);">
+            <i class="fa-regular fa-calendar-xmark" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
+            Không tìm thấy lịch chiếu nào.
+        </td></tr>`;
+        buildPagination('showtimePaginationControls','showtimePaginationInfo', 0, 1, ()=>{});
+        return;
+    }
+
+    // Nhóm lịch chiếu theo phim + phòng + giờ để hiển thị dải ngày
+    const groups = groupShowtimes(showtimesData);
+    const start  = (showtimesPage - 1) * PAGE_SIZE;
+    const slice  = groups.slice(start, start + PAGE_SIZE);
+    const badgeMap = { 'Trong tuần':'badge-weekday', 'Cuối tuần':'badge-weekend', 'Ngày lễ':'badge-holiday' };
+
+    // Lấy thống kê ghế đại diện từ lịch chiếu đầu tiên trong mỗi nhóm
+    const statsPromises = slice.map(g =>
+        fetch(`${API_TICKETS}/stats/${g.ids[0]}`).then(r => r.ok ? r.json() : null).catch(() => null)
+    );
+    const statsResults = await Promise.all(statsPromises);
+
+    slice.forEach((g, idx) => {
+        const mv  = g.movie;
+        const poster = mv.posterUrl
+            ? `<img class="movie-poster-thumb" src="${esc(mv.posterUrl)}" alt="Poster"
+                    onerror="this.outerHTML='<div class=\\'movie-poster-placeholder\\'><i class=\\'fa-regular fa-image\\'></i></div>'">`
+            : `<div class="movie-poster-placeholder"><i class="fa-regular fa-image"></i></div>`;
+
+        // Dải ngày: nếu cùng ngày thì chỉ hiện 1 ngày
+        const dateRange = g.minDate === g.maxDate
+            ? `<strong>${formatDate(g.minDate)}</strong>`
+            : `<strong>${formatDate(g.minDate)}</strong>
+               <span style="color:var(--text-muted);font-size:.8rem;"> → </span>
+               <strong>${formatDate(g.maxDate)}</strong>`;
+
+        const slotCount = g.ids.length;
+        const slotLabel = slotCount > 1
+            ? `<span style="font-size:.75rem;color:var(--text-muted);display:block;">${slotCount} suất</span>`
+            : '';
+
+        const stats    = statsResults[idx];
+        const seatInfo = stats
+            ? `<span style="font-weight:600;">${stats.emptyCount}</span> / ${stats.totalCount}
+               <span style="font-size:.75rem;color:var(--text-muted);">(trống/tổng)</span>`
+            : '—';
+
+        // Hành động: nếu nhóm có nhiều suất thì hiện nút xóa nhóm
+        let actionHtml;
+        if (slotCount === 1) {
+            actionHtml = `
+                <button class="action-btn action-btn-edit"   onclick="editShowtime(${g.ids[0]})">Sửa</button>
+                <button class="action-btn action-btn-delete" onclick="deleteShowtime(${g.ids[0]})">Xóa</button>`;
+        } else {
+            const idsJson = JSON.stringify(g.ids);
+            actionHtml = `
+                <button class="action-btn action-btn-edit"   onclick="editShowtime(${g.ids[0]})" title="Sửa suất đầu tiên">Sửa đầu</button>
+                <button class="action-btn action-btn-delete" onclick="deleteShowtimeGroup(${idsJson})" title="Xóa tất cả ${slotCount} suất">Xóa tất (${slotCount})</button>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <div class="movie-info-cell">
+                    ${poster}
+                    <div class="movie-meta">
+                        <span class="movie-title-text">${esc(mv.title||'Phim đã xóa')}</span>
+                        <span class="movie-director-text">ĐD: ${esc(mv.director||'—')}</span>
+                    </div>
+                </div>
+            </td>
+            <td>${dateRange}${slotLabel}</td>
+            <td><strong style="color:var(--primary-color);font-size:1rem;">${formatTime(g.showTime)}</strong></td>
+            <td>${esc(g.room||'—')}</td>
+            <td><span class="badge-daytype ${badgeMap[g.dayType]||''}">${esc(g.dayType||'—')}</span></td>
+            <td>${seatInfo}</td>
+            <td>
+                <div class="action-cell">
+                    ${actionHtml}
+                </div>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+
+    buildPagination('showtimePaginationControls','showtimePaginationInfo',
+        groups.length, showtimesPage, p => { showtimesPage = p; renderShowtimeTable(); });
+}
+
+// --- Bộ lọc lịch chiếu ---
+function applyShowtimeFilter() {
+    loadShowtimes({
+        movieId:  document.getElementById('filterShowtimeMovie').value   || null,
+        viewMode: document.getElementById('filterShowtimeViewMode').value || 'all',
+        dayType:  document.getElementById('filterShowtimeDayType').value  || null,
+        startDate:document.getElementById('filterShowtimeDate').value     || null
+    });
+}
+function resetShowtimeFilter() {
+    ['filterShowtimeMovie','filterShowtimeDayType','filterShowtimeDate']
+        .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('filterShowtimeViewMode').value = 'all';
+    loadShowtimes({});
+}
+
+// --- Modal lịch chiếu ---
+// Điều khiển ẩn/hiện trường dải ngày và slotCount linh hoạt theo chế độ Thêm mới / Sửa
+function openShowtimeModal(isEdit) {
+    document.getElementById('showtimeModalTitle').textContent =
+        isEdit ? 'Sửa lịch chiếu phim' : 'Thêm lịch chiếu mới';
+
+    const dateRow      = document.getElementById('showtimeDateRow');
+    const endDateGroup = document.getElementById('endDateGroup');
+    const endDateInput = document.getElementById('showtimeEndDateInput');
+    const lblStart     = document.getElementById('lblShowtimeDateStart');
+    const slotRow      = document.getElementById('slotCountRow');
+
+    if (!isEdit) {
+        document.getElementById('showtimeForm').reset();
+        document.getElementById('showtimeParamId').value        = '';
+        document.getElementById('showtimeDayTypeDisplay').value = 'Chưa xác định ngày';
+        document.getElementById('showtimeSlotCount').value      = '1';
+
+        // Khôi phục layout dải ngày khi thêm mới
+        dateRow.classList.add('split-2');
+        endDateGroup.style.display = '';
+        endDateInput.setAttribute('required', 'true');
+        lblStart.innerHTML = 'Từ ngày <span class="required">*</span>';
+        if (slotRow) slotRow.style.display = '';
+
+        // Đặt min = hôm nay cho cả hai input ngày
+        setMinShowtimeDateToday('showtimeDateInput');
+        setMinShowtimeDateToday('showtimeEndDateInput');
+    } else {
+        // Ẩn trường "Đến ngày" và slotCount khi chỉnh sửa một lịch chiếu cụ thể
+        dateRow.classList.remove('split-2');
+        endDateGroup.style.display = 'none';
+        endDateInput.removeAttribute('required');
+        lblStart.innerHTML = 'Ngày chiếu <span class="required">*</span>';
+        if (slotRow) slotRow.style.display = 'none';
+
+        // Đặt min = hôm nay cho ngày chiếu
+        setMinShowtimeDateToday('showtimeDateInput');
+    }
+
+    populateMovieDropdowns();
+    populateRoomDropdown();
+    document.getElementById('showtimeModal').classList.add('show');
+}
+function closeShowtimeModal() { document.getElementById('showtimeModal').classList.remove('show'); }
+
+// --- Lưu lịch chiếu ---
+async function handleShowtimeSave(e) {
+    e.preventDefault();
+    const id      = document.getElementById('showtimeParamId').value;
+    const movieId = document.getElementById('showtimeMovieSelect').value;
+    const timeVal = document.getElementById('showtimeTimeInput').value;
+
+    if (!movieId) {
+        showToast('warning', 'Thiếu thông tin', 'Vui lòng chọn bộ phim.');
+        return;
+    }
+
+    const roomVal = document.getElementById('showtimeRoomInput').value;
+    if (!timeVal || !roomVal) {
+        showToast('warning', 'Thiếu thông tin', 'Vui lòng điền đầy đủ các trường bắt buộc (*)');
+        return;
+    }
+
+    const today = isoDate(new Date());
+    let body = {};
+
+    if (!id) {
+        // Chế độ thêm mới (hỗ trợ khoảng ngày + số suất)
+        const startDate = document.getElementById('showtimeDateInput').value;
+        const endDate   = document.getElementById('showtimeEndDateInput').value;
+
+        if (!startDate || !endDate) {
+            showToast('warning', 'Thiếu thông tin', 'Vui lòng chọn Từ ngày và Đến ngày.');
+            return;
+        }
+        // Kiểm tra ngày không được là quá khứ
+        if (startDate < today) {
+            showToast('warning', 'Ngày không hợp lệ', 'Ngày bắt đầu không được là ngày trong quá khứ.');
+            return;
+        }
+        if (endDate < startDate) {
+            showToast('warning', 'Ngày không hợp lệ', 'Ngày kết thúc không được trước ngày bắt đầu.');
+            return;
+        }
+        // Kiểm tra giờ chiếu không được là quá khứ (nếu thêm cho hôm nay)
+        if (startDate === today) {
+            const nowTime = new Date().toTimeString().substring(0, 5);
+            if (timeVal < nowTime) {
+                showToast('warning', 'Giờ chiếu không hợp lệ',
+                    'Giờ chiếu không được là giờ đã qua hôm nay. Vui lòng chọn giờ trong tương lai.');
+                return;
+            }
+        }
+
+        const slotCountRaw = document.getElementById('showtimeSlotCount')?.value || '1';
+        const slotCount = parseInt(slotCountRaw) || 1;
+        if (slotCount < 1 || slotCount > 15) {
+            showToast('warning', 'Số suất không hợp lệ', 'Số suất chiếu trong ngày phải từ 1 đến 15.');
+            return;
+        }
+
+        body = {
+            movieId:   parseInt(movieId),
+            startDate: startDate,
+            endDate:   endDate,
+            showTime:  timeVal + ':00',
+            room:      roomVal,
+            slotCount: slotCount
+        };
+    } else {
+        // Chế độ chỉnh sửa (1 ngày duy nhất)
+        const showDate = document.getElementById('showtimeDateInput').value;
+        if (!showDate) {
+            showToast('warning', 'Thiếu thông tin', 'Vui lòng chọn ngày chiếu.');
+            return;
+        }
+        // Kiểm tra ngày sửa không được là quá khứ
+        if (showDate < today) {
+            showToast('warning', 'Ngày không hợp lệ', 'Ngày chiếu không được là ngày trong quá khứ.');
+            return;
+        }
+        body = {
+            movie:    { id: parseInt(movieId) },
+            showDate: showDate,
+            showTime: timeVal + ':00',
+            room:      roomVal
+        };
+    }
+
+    try {
+        const url    = id ? `${API_SHOWTIMES}/${id}` : API_SHOWTIMES;
+        const method = id ? 'PUT' : 'POST';
+        const r = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        // Đọc response body một lần duy nhất
+        const payload = await r.json().catch(() => ({}));
+
+        if (!r.ok) {
+            throw new Error(payload.error || 'Lỗi khi lưu lịch chiếu. Vui lòng kiểm tra lại.');
+        }
+
+        // Tính số suất đã tạo từ kết quả trả về
+        const countCreated = Array.isArray(payload) ? payload.length : 1;
+        const successMsg = id
+            ? 'Lịch chiếu đã được cập nhật.'
+            : `Đã tạo thành công ${countCreated} suất chiếu.`;
+
+        showToast('success', id ? 'Cập nhật thành công!' : 'Thêm lịch chiếu thành công!', successMsg);
+        closeShowtimeModal();
+        loadShowtimeStats();
+        applyShowtimeFilter();
+        populateShowtimeDropdown();
+    } catch(err) {
+        showToast('error', 'Lưu lịch chiếu thất bại', err.message || 'Lỗi khi lưu lịch chiếu. Vui lòng thử lại.');
+    }
+}
+
+// --- Sửa lịch chiếu ---
+// [SỬA - TrienLX - 2026-06-12] Nạp thông tin lịch chiếu và đổi thông báo lỗi thành showToast
+async function editShowtime(id) {
+    try {
+        const r  = await fetch(`${API_SHOWTIMES}/${id}`);
+        const st = await r.json();
+
+        // Mở modal trước để kích hoạt các trạng thái giao diện sửa
+        openShowtimeModal(true);
+
+        await populateMovieDropdowns();
+        await populateRoomDropdown(st.room || '');
+
+        document.getElementById('showtimeParamId').value         = st.id;
+        document.getElementById('showtimeMovieSelect').value     = st.movie?.id || '';
+        document.getElementById('showtimeDateInput').value       = st.showDate  || '';
+        document.getElementById('showtimeTimeInput').value       = st.showTime
+            ? st.showTime.substring(0,5) : '';
+        document.getElementById('showtimeRoomInput').value       = st.room      || '';
+        document.getElementById('showtimeDayTypeDisplay').value  = st.dayType   || '—';
+    } catch(e) {
+        showToast('error', 'Lỗi tải dữ liệu', 'Không thể tải thông tin lịch chiếu.');
+    }
+}
+
+// --- Xóa lịch chiếu đơn ---
+async function deleteShowtime(id) {
+    const confirmed = await showConfirm(
+        'Xác nhận xóa lịch chiếu',
+        'Bạn có chắc chắn muốn xóa lịch chiếu này không?\nTất cả vé liên quan cũng sẽ bị xóa khỏi hệ thống.',
+        'Xóa lịch chiếu'
+    );
+    if (!confirmed) return;
+    try {
+        const r = await fetch(`${API_SHOWTIMES}/${id}`, { method:'DELETE' });
+        if (!r.ok) throw new Error();
+        showToast('success', 'Xóa thành công!', 'Lịch chiếu đã được xóa khỏi hệ thống.');
+        loadShowtimeStats();
+        applyShowtimeFilter();
+        populateShowtimeDropdown();
+    } catch(e) {
+        showToast('error', 'Xóa thất bại', 'Lỗi khi xóa lịch chiếu. Vui lòng thử lại.');
+    }
+}
+
+// --- Xóa nhóm lịch chiếu (nhiều suất cùng phim + phòng + giờ) ---
+async function deleteShowtimeGroup(ids) {
+    if (!ids || ids.length === 0) return;
+    const confirmed = await showConfirm(
+        'Xác nhận xóa nhóm lịch chiếu',
+        `Bạn có chắc chắn muốn xóa tất cả ${ids.length} suất chiếu trong nhóm này không?\nTất cả vé liên quan cũng sẽ bị xóa.`,
+        `Xóa tất ${ids.length} suất`
+    );
+    if (!confirmed) return;
+    try {
+        // Xóa tuần tự từng suất trong nhóm
+        await Promise.all(ids.map(id => fetch(`${API_SHOWTIMES}/${id}`, { method: 'DELETE' })));
+        showToast('success', 'Xóa nhóm thành công!', `Đã xóa ${ids.length} suất chiếu khỏi hệ thống.`);
+        loadShowtimeStats();
+        applyShowtimeFilter();
+        populateShowtimeDropdown();
+    } catch(e) {
+        showToast('error', 'Xóa thất bại', 'Lỗi khi xóa nhóm lịch chiếu. Vui lòng thử lại.');
+    }
+}
+
+// ======================================================
+//   QUẢN LÝ BÁN VÉ & SƠ ĐỒ GHẾ
+// ======================================================
+
+function initTicketEvents() {
+    document.getElementById('ticketShowtimeSelect').addEventListener('change', e => {
+        const id = e.target.value;
+        activeShowtimeId = id ? parseInt(id) : null;
+        if (activeShowtimeId) loadTicketView(activeShowtimeId);
+        else hideSeatMap();
+    });
+    document.getElementById('btnFilterAllTickets').addEventListener('click',   () => filterTicketTable('all'));
+    document.getElementById('btnFilterSoldTickets').addEventListener('click',  () => filterTicketTable('sold'));
+    document.getElementById('btnFilterEmptyTickets').addEventListener('click', () => filterTicketTable('empty'));
+}
+
+// --- Nạp danh sách suất chiếu vào dropdown Bán vé ---
+async function populateShowtimeDropdown() {
+    try {
+        const r    = await fetch(API_SHOWTIMES);
+        const list = await r.json();
+
+        const sel = document.getElementById('ticketShowtimeSelect');
+        const prevId = sel.value;
+        sel.innerHTML = '<option value="">-- Chọn suất chiếu --</option>';
+
+        list.forEach(st => {
+            const mv   = st.movie || {};
+            const opt  = document.createElement('option');
+            opt.value  = st.id;
+            opt.textContent =
+                `${esc(mv.title||'?')} | ${formatDate(st.showDate)} ${formatTime(st.showTime)} | ${esc(st.room||'?')}`;
+            sel.appendChild(opt);
+        });
+
+        // Khôi phục lựa chọn nếu vẫn còn tồn tại
+        if (prevId && [...sel.options].some(o => o.value == prevId)) {
+            sel.value = prevId;
+        }
+    } catch(e) { console.error('Lỗi nạp suất chiếu:', e); }
+}
+
+// --- Tải toàn bộ giao diện vé của một suất chiếu ---
+async function loadTicketView(showtimeId) {
+    try {
+        // Tải song song: danh sách vé + thống kê
+        const [ticketRes, statsRes] = await Promise.all([
+            fetch(`${API_TICKETS}/showtime/${showtimeId}`),
+            fetch(`${API_TICKETS}/stats/${showtimeId}`)
+        ]);
+        ticketsData     = await ticketRes.json();
+        const stats     = await statsRes.json();
+        ticketsFiltered = [...ticketsData];
+
+        updateTicketStats(stats);
+        renderSeatGrid(ticketsData);
+        renderTicketTable(ticketsFiltered);
+        showSeatMap();
+    } catch(e) {
+        console.error('Lỗi tải vé:', e);
+        hideSeatMap();
+    }
+}
+
+// --- Hiển thị / Ẩn sơ đồ ghế ---
+function showSeatMap() {
+    document.getElementById('seatMapSection').style.display = '';
+    document.getElementById('seatMapEmpty').style.display   = 'none';
+}
+function hideSeatMap() {
+    document.getElementById('seatMapSection').style.display = 'none';
+    document.getElementById('seatMapEmpty').style.display   = '';
+}
+
+// --- Cập nhật thẻ thống kê ---
+function updateTicketStats(stats) {
+    document.getElementById('ticketStatTotal').textContent   = stats.totalCount   ?? 0;
+    document.getElementById('ticketStatEmpty').textContent   = stats.emptyCount   ?? 0;
+    document.getElementById('ticketStatSold').textContent    = stats.soldCount    ?? 0;
+
+    // Hiển thị doanh thu và tỷ lệ lấp đầy
+    const rev  = stats.revenue ?? 0;
+    const rate = stats.occupancyRate ?? 0;
+    document.getElementById('ticketStatRevenue').textContent = formatVND(rev);
+    document.getElementById('ticketStatRevenue').closest('.stat-info')
+        .querySelector('.stat-label').textContent =
+        `Doanh thu | Lấp đầy ${rate}%`;
+}
+
+// --- Render sơ đồ ghế ngồi trực quan ---
+function renderSeatGrid(tickets) {
+    const grid = document.getElementById('seatGrid');
+    grid.innerHTML = '';
+
+    // Nhóm vé theo hàng (A,B,C,D,E)
+    const rowMap = {};
+    tickets.forEach(t => {
+        const row  = t.seatNumber.charAt(0);     // 'A','B',...
+        if (!rowMap[row]) rowMap[row] = [];
+        rowMap[row].push(t);
+    });
+
+    // Render từng hàng
+    Object.keys(rowMap).sort().forEach(row => {
+        const seats = rowMap[row].sort((a,b) =>
+            parseInt(a.seatNumber.slice(1)) - parseInt(b.seatNumber.slice(1)));
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'seat-row';
+
+        // Nhãn hàng chữ cái
+        const lbl = document.createElement('span');
+        lbl.className   = 'seat-row-label';
+        lbl.textContent = row;
+        rowDiv.appendChild(lbl);
+
+        seats.forEach(ticket => {
+            const isSold     = ticket.status === 'Đã bán';
+            const isVIP      = ticket.seatType === 'VIP';
+            const typeClass  = isVIP ? 'vip' : 'standard';
+            const stateClass = isSold ? 'is-sold' : 'available';
+            const priceLabel = formatVND(ticket.price) + 'đ';
+            const icon       = isSold ? '🔒' : ticket.seatNumber;
+
+            const btn = document.createElement('button');
+            btn.className        = `seat-btn ${typeClass} ${stateClass}`;
+            btn.dataset.ticketId = ticket.id;
+            btn.dataset.price    = priceLabel;
+            btn.textContent      = icon;
+            btn.title            = `Ghế ${ticket.seatNumber} — ${ticket.seatType} — ${priceLabel} — ${ticket.status}`;
+            btn.setAttribute('aria-label', `Ghế ${ticket.seatNumber}`);
+
+            if (!isSold) {
+                btn.addEventListener('click', () => toggleSeat(ticket.id));
+            } else {
+                // Ghế đã bán: click để hỏi có muốn hủy vé không
+                btn.addEventListener('click', () => confirmCancelSeat(ticket.id, ticket.seatNumber));
+            }
+
+            rowDiv.appendChild(btn);
+        });
+
+        grid.appendChild(rowDiv);
+    });
+
+    // Render thông tin giá vé theo loại
+    renderPriceInfo(tickets);
+}
+
+// --- Thông tin giá vé từng loại ghế ---
+function renderPriceInfo(tickets) {
+    const info    = document.getElementById('seatPriceInfo');
+    info.innerHTML = '';
+    const priceSet = {};
+    tickets.forEach(t => {
+        const key = t.seatType;
+        if (!priceSet[key]) priceSet[key] = t.price;
+    });
+    const colors = { 'Thường':'#10b981', 'VIP':'#f59e0b' };
+    Object.entries(priceSet).forEach(([type, price]) => {
+        const div = document.createElement('div');
+        div.className = 'price-info-item';
+        div.innerHTML = `
+            <span class="price-info-dot" style="background:${colors[type]||'#aaa'};"></span>
+            Ghế ${type}: <strong>${formatVND(price)}đ</strong>`;
+        info.appendChild(div);
+    });
+}
+
+// --- Toggle đặt vé / hủy đặt ---
+async function toggleSeat(ticketId) {
+    try {
+        const r = await fetch(`${API_TICKETS}/${ticketId}/status`, { method:'PUT' });
+        if (!r.ok) throw new Error();
+        // Tải lại toàn bộ để cập nhật sơ đồ + thống kê + bảng
+        await loadTicketView(activeShowtimeId);
+    } catch(e) { alert('Không thể cập nhật trạng thái ghế.'); }
+}
+
+// --- Hỏi hủy vé đã bán ---
+async function confirmCancelSeat(ticketId, seatNum) {
+    if (!confirm(`Ghế ${seatNum} đang ở trạng thái "Đã bán".\nBạn có muốn hủy vé này (đặt lại thành "Còn trống") không?`)) return;
+    await toggleSeat(ticketId);
+}
+
+// --- Render bảng vé chi tiết ---
+function renderTicketTable(tickets) {
+    const tbody = document.getElementById('ticketTableBody');
+    tbody.innerHTML = '';
+
+    if (!tickets.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="padding:2rem;color:var(--text-muted);">
+            Không có vé nào.
+        </td></tr>`;
+        return;
+    }
+
+    tickets.forEach(t => {
+        const isSold    = t.status === 'Đã bán';
+        const isVIP     = t.seatType === 'VIP';
+        const statusBadge = isSold
+            ? `<span class="badge-sold">Đã bán</span>`
+            : `<span class="badge-available">Còn trống</span>`;
+        const typeBadge = isVIP
+            ? `<span class="badge-vip">VIP</span>`
+            : `<span class="badge-standard">Thường</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong style="font-size:1rem;">${esc(t.seatNumber)}</strong></td>
+            <td>${typeBadge}</td>
+            <td><strong>${formatVND(t.price)}</strong></td>
+            <td>${statusBadge}</td>
+            <td class="text-center">
+                <button class="action-btn ${isSold ? 'action-btn-edit' : 'action-btn-delete'}"
+                        onclick="${isSold ? `confirmCancelSeat(${t.id},'${t.seatNumber}')` : `toggleSeat(${t.id})`}">
+                    ${isSold ? 'Hủy vé' : 'Bán vé'}
+                </button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// --- Lọc bảng vé theo trạng thái ---
+function filterTicketTable(mode) {
+    // Cập nhật trạng thái active cho nút lọc
+    ['btnFilterAllTickets','btnFilterSoldTickets','btnFilterEmptyTickets'].forEach(id => {
+        document.getElementById(id).classList.remove('btn-primary');
+        document.getElementById(id).classList.add('btn-outline');
+    });
+    const activeId = mode === 'sold' ? 'btnFilterSoldTickets'
+                  : mode === 'empty' ? 'btnFilterEmptyTickets'
+                  : 'btnFilterAllTickets';
+    document.getElementById(activeId).classList.add('btn-primary');
+    document.getElementById(activeId).classList.remove('btn-outline');
+
+    if (mode === 'sold')  ticketsFiltered = ticketsData.filter(t => t.status === 'Đã bán');
+    else if (mode === 'empty') ticketsFiltered = ticketsData.filter(t => t.status === 'Còn trống');
+    else ticketsFiltered = [...ticketsData];
+
+    renderTicketTable(ticketsFiltered);
+}

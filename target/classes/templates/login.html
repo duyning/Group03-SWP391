@@ -1,0 +1,236 @@
+<!--
+  Trang Đăng nhập (Login Page).
+  Giao diện cho người dùng đăng nhập vào hệ thống kèm liên kết đến trang Đăng ký và Quên mật khẩu.
+  
+  Ngày thực hiện: 04/06/2026
+  Tạo bởi: DuongND_HE186619
+-->
+<!DOCTYPE html>
+<!--
+  Updated on 2026-06-04: Translated visible frontend title, metadata, and email wording to Vietnamese.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập | Beta Cinemas</title>
+    <meta name="description" content="Đăng nhập vào Beta Cinemas để đặt vé xem phim">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/register.css}">
+    <link rel="stylesheet" th:href="@{/css/customer-account.css}">
+    <style>
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 1.5rem 0;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+        }
+        .divider span {
+            color: rgba(255,255,255,0.35);
+            font-size: 0.8rem;
+        }
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 13px;
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .social-btn:hover {
+            border-color: rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .forgot-link {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.82rem;
+            text-decoration: none;
+            transition: color 0.2s;
+            float: right;
+            margin-top: 6px;
+        }
+        .forgot-link:hover {
+            color: #a78bfa;
+        }
+        .welcome-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(167,139,250,0.12);
+            border: 1px solid rgba(167,139,250,0.25);
+            color: #c4b5fd;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 50px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="register-wrapper">
+    <!-- Decorative background elements -->
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+    <div class="bg-shape bg-shape-3"></div>
+
+    <div class="register-card">
+        <!-- Header -->
+        <div class="register-header">
+            <div class="logo-icon">
+                <i class="fas fa-film"></i>
+            </div>
+            <div class="welcome-badge">
+                <i class="fas fa-star"></i> Beta Cinemas
+            </div>
+            <h1>Chào mừng trở lại</h1>
+            <p>Đăng nhập để tiếp tục đặt vé xem phim</p>
+        </div>
+
+        <!-- Error message -->
+        <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show animate-slide-in" role="alert"
+             style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; border-radius: 14px; font-size: 0.9rem; backdrop-filter: blur(10px);">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${errorMessage != null ? errorMessage : 'Thư điện tử hoặc mật khẩu không đúng'}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" style="filter: invert(1); opacity: 0.5;"></button>
+        </div>
+
+        <!-- Success message (from logout) -->
+        <div th:if="${param.logout}" class="alert alert-success alert-dismissible fade show animate-slide-in" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${successMessage != null ? successMessage : 'Đăng xuất thành công!'}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Login Form -->
+        <form th:action="@{/login}" method="POST" class="register-form" id="loginForm" novalidate>
+
+            <!-- Email -->
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper" id="emailWrapper">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email"
+                           name="email"
+                           class="form-input"
+                           placeholder="Thư điện tử của bạn"
+                           id="loginEmail"
+                           required
+                           autocomplete="email">
+                    <label for="loginEmail">Thư điện tử <span class="required">*</span></label>
+                </div>
+                <div class="error-message" id="emailError" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Vui lòng nhập thư điện tử hợp lệ</span>
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper" id="passwordWrapper">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password"
+                           name="password"
+                           class="form-input"
+                           placeholder="Mật khẩu"
+                           id="loginPassword"
+                           required
+                           autocomplete="current-password">
+                    <label for="loginPassword">Mật khẩu <span class="required">*</span></label>
+                    <button type="button" class="toggle-password" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </button>
+                </div>
+                <a th:href="@{/forgot-password}" class="forgot-link">Quên mật khẩu?</a>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-register" id="btnLogin" style="margin-top: 2.5rem;">
+                <span class="btn-text"><i class="fas fa-sign-in-alt me-2"></i>Đăng nhập</span>
+                <span class="btn-loader" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
+            </button>
+        </form>
+
+        <div class="divider"><span>hoặc</span></div>
+
+        <a th:href="@{/register}" class="social-btn">
+            <i class="fas fa-user-plus" style="color: #a78bfa;"></i>
+            Tạo tài khoản mới
+        </a>
+
+        <!-- Footer -->
+        <div class="register-footer">
+            <p>Chưa có tài khoản? <a th:href="@{/register}" class="login-link">Đăng ký ngay</a></p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Toggle password visibility
+    function togglePassword() {
+        const passwordInput = document.getElementById('loginPassword');
+        const toggleIcon = document.getElementById('toggleIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+
+    // Form submit animation
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+
+        if (!email || !password) {
+            e.preventDefault();
+            if (!email) document.getElementById('emailWrapper').classList.add('focused');
+            return;
+        }
+
+        const btn = document.getElementById('btnLogin');
+        btn.querySelector('.btn-text').style.display = 'none';
+        btn.querySelector('.btn-loader').style.display = 'inline-block';
+        btn.disabled = true;
+    });
+
+    // Input focus animation
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.addEventListener('focus', function () {
+            this.closest('.input-icon-wrapper').classList.add('focused');
+        });
+        input.addEventListener('blur', function () {
+            this.closest('.input-icon-wrapper').classList.remove('focused');
+        });
+    });
+</script>
+
+</body>
+</html>

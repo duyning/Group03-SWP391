@@ -1,0 +1,422 @@
+<!doctype html>
+<!--
+  Added on 2026-06-04: UC-G03 Search Result screen for Guest movie search.
+  Supports search by movie title keyword, genre, and movie status only.
+  Updated on 2026-06-04: Synchronized header/footer with home page and
+  translated all visible frontend text to Vietnamese.
+  Created by: HuyPB - HE191335
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả tìm kiếm | Beta Cinemas</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #fdfdfd;
+            color: #333;
+        }
+
+        .top-bar {
+            background: #0054a6;
+            color: white;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .top-container,
+        .header-container,
+        .content-container,
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .top-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .top-link:hover {
+            text-decoration: underline;
+        }
+
+        .lang-icon {
+            height: 14px;
+            margin-left: 15px;
+        }
+
+        .header-main {
+            background: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .logo {
+            height: 55px;
+            display: block;
+        }
+
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            flex-grow: 1;
+            gap: 25px;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 700;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: #0054a6;
+        }
+
+        .header-search-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-search-form input {
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 8px 14px;
+            min-width: 180px;
+            outline: none;
+        }
+
+        .header-search-form button {
+            background: #0054a6;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 8px 14px;
+        }
+
+        .search-panel {
+            border-bottom: 1px solid #e5eaf0;
+            padding: 24px 0;
+        }
+
+        .filter-form {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 190px 190px auto;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filter-form input,
+        .filter-form select {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #d9e2ec;
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #333;
+            background: #fff;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .filter-form input:focus,
+        .filter-form select:focus {
+            border-color: #0054a6;
+            box-shadow: 0 0 0 3px rgba(0, 84, 166, 0.12);
+        }
+
+        .search-btn {
+            height: 40px;
+            border: none;
+            border-radius: 6px;
+            background: #0054a6;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 800;
+            padding: 0 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .search-icon {
+            width: 15px;
+            height: 15px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            position: relative;
+            flex: 0 0 auto;
+        }
+
+        .search-icon::after {
+            content: "";
+            width: 7px;
+            height: 2px;
+            background: currentColor;
+            position: absolute;
+            right: -6px;
+            bottom: -4px;
+            transform: rotate(45deg);
+            border-radius: 2px;
+        }
+
+        .result-heading {
+            margin: 32px 0 22px;
+            text-align: center;
+        }
+
+        .result-heading h1 {
+            margin: 0 0 8px;
+            color: #0054a6;
+            font-size: 28px;
+            text-transform: uppercase;
+        }
+
+        .result-heading p {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .movies {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 30px;
+            margin-bottom: 56px;
+        }
+
+        .movie-card {
+            background: white;
+        }
+
+        .movie-poster {
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #eef2f7;
+            display: block;
+            transition: transform 0.25s ease;
+        }
+
+        .movie-poster:hover {
+            transform: translateY(-2px);
+        }
+
+        .movie-title {
+            color: #0054a6;
+            display: inline-block;
+            font-size: 17px;
+            font-weight: 800;
+            line-height: 1.35;
+            margin: 13px 0 7px;
+            text-decoration: none;
+        }
+
+        .movie-title:hover {
+            text-decoration: underline;
+        }
+
+        .movie-genre {
+            color: #333;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .empty-state {
+            border: 1px solid #dbe7f4;
+            border-radius: 8px;
+            color: #64748b;
+            margin: 20px auto 58px;
+            max-width: 680px;
+            padding: 28px 20px;
+            text-align: center;
+        }
+
+        .footer {
+            background: #0054a6;
+            color: white;
+            padding: 45px 0;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 45px;
+        }
+
+        @media (max-width: 960px) {
+            .header-container,
+            .nav-menu {
+                flex-wrap: wrap;
+            }
+
+            .header-search-form {
+                width: 100%;
+            }
+
+            .header-search-form input {
+                flex: 1;
+            }
+
+            .filter-form {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .filter-form {
+                grid-template-columns: 1fr;
+            }
+
+            .search-btn {
+                width: 100%;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
+</head>
+
+<body>
+    <div class="top-bar">
+        <div class="top-container">
+            <th:block th:if="${user == null}">
+                <a th:href="@{/login}" class="top-link">Đăng nhập</a>
+                <span style="opacity: 0.5">|</span>
+                <a th:href="@{/register}" class="top-link">Đăng ký</a>
+            </th:block>
+            <th:block th:if="${user != null}">
+                <span>Xin chào,</span>
+                <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
+                <span style="opacity: 0.5">|</span>
+                <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
+                <span style="opacity: 0.5">|</span>
+                <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
+            </th:block>
+            <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
+        </div>
+    </div>
+
+    <header class="header-main">
+        <div class="header-container">
+            <a th:href="@{/}">
+                <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
+            </a>
+            <nav class="nav-menu">
+                <a th:href="@{/}">TRANG CHỦ</a>
+                <a th:href="@{/movies}" class="active">PHIM</a>
+                <a href="#">RẠP</a>
+                <a href="#">GIÁ VÉ</a>
+                <a href="#">KHO VOUCHER</a>
+                <a th:href="@{/posts}">TIN TỨC</a>
+                <a href="#">CỘNG ĐỒNG</a>
+            </nav>
+
+            <form class="header-search-form" th:action="@{/search}" method="get">
+                <input type="search" name="keyword" placeholder="Tìm phim" th:value="${keyword}">
+                <button type="submit">Tìm</button>
+            </form>
+        </div>
+    </header>
+
+    <section class="search-panel">
+        <div class="content-container">
+            <form class="filter-form" th:action="@{/search}" method="get">
+                <input type="search" name="keyword" placeholder="Tìm theo tên phim" th:value="${keyword}">
+                <select name="genre">
+                    <option value="">Tất cả thể loại</option>
+                    <option th:each="genreOption : ${genres}"
+                            th:value="${genreOption}"
+                            th:text="${genreOption}"
+                            th:selected="${genre == genreOption}">Tâm lý</option>
+                </select>
+                <select name="status">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="NOW_SHOWING" th:selected="${status == 'NOW_SHOWING'}">Đang chiếu</option>
+                    <option value="COMING_SOON" th:selected="${status == 'COMING_SOON'}">Sắp chiếu</option>
+                    <option value="SPECIAL_SCREENING" th:selected="${status == 'SPECIAL_SCREENING'}">Suất chiếu đặc biệt</option>
+                </select>
+                <button class="search-btn" type="submit">
+                    <span class="search-icon" aria-hidden="true"></span>
+                    Tìm kiếm
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <main class="content-container">
+        <div class="result-heading">
+            <h1>Kết quả tìm kiếm</h1>
+            <p th:text="${#lists.size(movies)} + ' phim được tìm thấy'">0 phim được tìm thấy</p>
+        </div>
+
+        <section class="movies" th:if="${!#lists.isEmpty(movies)}">
+            <article class="movie-card" th:each="movie : ${movies}">
+                <a th:href="@{/movies/{id}(id=${movie.id})}">
+                    <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
+                </a>
+                <a class="movie-title" th:href="@{/movies/{id}(id=${movie.id})}" th:text="${movie.title}">Tên phim</a>
+                <p class="movie-genre">
+                    <b>Thể loại:</b>
+                    <span th:text="${movie.genre}">Tâm lý</span>
+                </p>
+            </article>
+        </section>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(movies)}">
+            Không tìm thấy phim phù hợp với tìm kiếm của bạn. Vui lòng thử từ khóa khác.
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div>
+                <h4>BETA CINEMAS</h4>
+                <p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p>
+            </div>
+            <div>
+                <h4>LIÊN HỆ</h4>
+                <p>Hotline: 1900 636807</p>
+            </div>
+            <div>
+                <h4>KẾT NỐI</h4>
+                <p>Facebook | Youtube | TikTok</p>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

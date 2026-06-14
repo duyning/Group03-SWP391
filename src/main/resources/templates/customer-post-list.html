@@ -1,0 +1,118 @@
+<!doctype html>
+<!--
+  Created on 2026-06-09: Customer-facing news listing page.
+  Created by: NinhDD - HE186113
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beta Cinemas | Tin tức</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <style>
+        body { margin: 0; font-family: "Be Vietnam Pro", Arial, "Segoe UI", sans-serif; background: #fdfdfd; color: #333; }
+        .top-bar { background: #0054a6; color: white; padding: 8px 0; font-size: 13px; }
+        .top-container, .header-container, .content-container, .footer-container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        .top-container { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+        .top-link { color: white; text-decoration: none; font-weight: 500; }
+        .lang-icon { height: 14px; margin-left: 15px; }
+        .header-main { background: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,.05); position: sticky; top: 0; z-index: 1000; }
+        .header-container { display: flex; align-items: center; gap: 25px; }
+        .logo { height: 55px; display: block; }
+        .nav-menu { display: flex; justify-content: center; flex-grow: 1; gap: 25px; }
+        .nav-menu a { text-decoration: none; color: #333; font-weight: 700; font-size: 16px; white-space: nowrap; }
+        .nav-menu a:hover, .nav-menu a.active { color: #0054a6; }
+        .search-form { display: flex; gap: 8px; }
+        .search-form input { border: 1px solid #ddd; border-radius: 20px; padding: 8px 14px; min-width: 190px; outline: none; }
+        .search-form button, .read-btn { background: #0054a6; color: white; border: none; border-radius: 20px; padding: 8px 14px; font-weight: 800; text-decoration: none; cursor: pointer; }
+        .hero { background: linear-gradient(rgba(0,84,166,.78), rgba(0,84,166,.78)), url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=80') center/cover; color: white; padding: 70px 0; }
+        .hero h1 { margin: 0 0 10px; font-size: 38px; text-transform: uppercase; }
+        .hero p { margin: 0; max-width: 650px; line-height: 1.6; }
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 28px; margin: 45px 0 60px; }
+        .news-card { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(15,23,42,.08); border: 1px solid #eef2f7; }
+        .news-card img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #eef2f7; }
+        .news-body { padding: 20px; }
+        .category { color: #0054a6; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; }
+        .news-card h2 { font-size: 20px; color: #0f172a; margin: 10px 0; line-height: 1.35; }
+        .news-card p { color: #64748b; line-height: 1.6; margin: 0 0 18px; }
+        .empty-state { text-align: center; color: #64748b; padding: 60px 15px; }
+        .footer { background: #0054a6; color: white; padding: 45px 0; }
+        .footer-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 45px; }
+        @media (max-width: 900px) { .header-container, .nav-menu { flex-wrap: wrap; } .search-form { width: 100%; } .search-form input { flex: 1; } .footer-container { grid-template-columns: 1fr; } }
+    </style>
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
+</head>
+<body>
+<div class="top-bar">
+    <div class="top-container">
+        <th:block th:if="${user == null}">
+            <a th:href="@{/login}" class="top-link">Đăng nhập</a><span style="opacity:.5">|</span>
+            <a th:href="@{/register}" class="top-link">Đăng ký</a>
+        </th:block>
+        <th:block th:if="${user != null}">
+            <span>Xin chào,</span><a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a><span style="opacity:.5">|</span>
+            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a><span style="opacity:.5">|</span>
+            <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
+        </th:block>
+        <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
+    </div>
+</div>
+
+<header class="header-main">
+    <div class="header-container">
+        <a th:href="@{/}"><img src="/images/cineflow-logo.svg" alt="CineFlow Cinema" class="logo"></a>
+        <nav class="nav-menu">
+            <a th:href="@{/}">TRANG CHỦ</a>
+            <a th:href="@{/movies}">PHIM</a>
+            <a href="#">RẠP</a>
+            <a href="#">GIÁ VÉ</a>
+            <a href="#">KHO VOUCHER</a>
+            <a th:href="@{/posts}" class="active">TIN TỨC</a>
+            <a href="#">CỘNG ĐỒNG</a>
+        </nav>
+        <form class="search-form" th:action="@{/search}" method="get">
+            <input type="search" name="keyword" placeholder="Tìm phim">
+            <button type="submit">Tìm</button>
+        </form>
+    </div>
+</header>
+
+<section class="hero hero-banner-only" th:if="${newsBanner != null}">
+    <img class="banner-image" th:src="${newsBanner.imageUrl}" th:alt="${newsBanner.title}">
+    <a class="banner-click-area"
+       th:if="${newsBanner != null && newsBanner.linkUrl != null && !newsBanner.linkUrl.isEmpty()}"
+       th:href="${newsBanner.linkUrl}"
+       th:aria-label="${newsBanner.title}">Xem banner</a>
+</section>
+
+<section class="content-container news-heading">
+    <h1>Tin tức</h1>
+    <p>Cập nhật lịch ra mắt, ưu đãi, sự kiện rạp và những câu chuyện điện ảnh mới nhất tại Beta Cinemas.</p>
+</section>
+
+<main class="content-container">
+    <section class="news-grid" th:if="${posts != null && !#lists.isEmpty(posts)}">
+        <article class="news-card" th:each="post : ${posts}">
+            <a th:href="@{/posts/{id}(id=${post.id})}">
+                <img th:src="${post.thumbnail}" th:alt="${post.title}">
+            </a>
+            <div class="news-body">
+                <span class="category" th:text="${post.category}">Tin tức</span>
+                <h2 th:text="${post.title}">Tiêu đề tin tức</h2>
+                <p th:text="${post.summary}">Tóm tắt bài viết</p>
+                <a class="read-btn" th:href="@{/posts/{id}(id=${post.id})}">Đọc tiếp</a>
+            </div>
+        </article>
+    </section>
+    <div class="empty-state" th:if="${posts == null || #lists.isEmpty(posts)}">Hiện chưa có tin tức được xuất bản.</div>
+</main>
+
+<footer class="footer">
+    <div class="footer-container">
+        <div><h4>BETA CINEMAS</h4><p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p></div>
+        <div><h4>LIÊN HỆ</h4><p>Hotline: 1900 636807</p></div>
+        <div><h4>KẾT NỐI</h4><p>Facebook | Youtube | TikTok</p></div>
+    </div>
+</footer>
+</body>
+</html>
