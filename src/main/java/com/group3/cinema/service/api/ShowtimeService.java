@@ -163,7 +163,7 @@ public class ShowtimeService {
         }
 
         int count = slotCount != null ? slotCount : 1;
-        Movie movie = movieRepository.findById(movieId)
+        Movie movie = movieRepository.findById(movieId.intValue())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bộ phim!"));
 
         int duration = movie.getDuration() != null && movie.getDuration() > 0 ? movie.getDuration() : 120;
@@ -225,6 +225,7 @@ public class ShowtimeService {
             return "Cuối tuần";
         }
 
+        return "Trong tuần";
     }
 
 //    // Táº¡o 40 vÃ© cho sÆ¡ Ä‘á»“ gháº¿ cá»§a lá»‹ch chiáº¿u (A1-A8, B1-B8, C1-C8 lÃ  Gháº¿ thÆ°á»ng; D1-D8, E1-E8 lÃ  Gháº¿ VIP)
@@ -253,5 +254,3 @@ public class ShowtimeService {
 //        }
 //        return "VIP".equals(seatType) ? 100000.0 : 80000.0;
 //    }
-
->>>>>>> origin/main:src/main/java/com/group3/cinema/service/api/ShowtimeService.java

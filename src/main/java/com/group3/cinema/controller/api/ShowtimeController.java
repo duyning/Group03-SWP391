@@ -135,7 +135,7 @@ public class ShowtimeController {
                 Showtime st = new Showtime();
                 if (req.getMovieId() != null) {
                     Movie mv = new Movie();
-                    mv.setId(req.getMovieId());
+                    mv.setId(req.getMovieId().intValue());
                     st.setMovie(mv);
                 }
                 st.setShowDate(req.getStartDate());
