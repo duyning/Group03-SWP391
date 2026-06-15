@@ -152,6 +152,35 @@ public class ShowtimeService {
     }
 
     @Transactional
+    public List<Showtime> updateShowtimeBatch(Long id, com.group3.cinema.controller.api.ShowtimeController.ShowtimeRequest req) {
+        // 1. Xóa các lịch chiếu cũ trong nhóm để tránh xung đột với chính nó khi lưu dải ngày mới
+        if (req.getGroupIds() != null && !req.getGroupIds().isEmpty()) {
+            for (Long oldId : req.getGroupIds()) {
+                if (showtimeRepository.existsById(oldId)) {
+                    showtimeRepository.deleteById(oldId);
+                }
+            }
+        } else {
+            if (showtimeRepository.existsById(id)) {
+                showtimeRepository.deleteById(id);
+            }
+        }
+
+        // Đẩy thay đổi xóa xuống database ngay lập tức để checkRoomConflict ở bước sau không bị nhận diện xung đột
+        showtimeRepository.flush();
+
+        // 2. Tạo dải lịch chiếu mới
+        return saveShowtimeBatch(
+                req.getMovieId(),
+                req.getStartDate(),
+                req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
+                req.getShowTime(),
+                req.getRoom(),
+                1 // Khóa slotCount = 1 khi chỉnh sửa dải ngày
+        );
+    }
+
+    @Transactional
     public List<Showtime> saveShowtimeBatch(Long movieId, LocalDate startDate, LocalDate endDate,
                                             LocalTime showTime, String room, Integer slotCount) {
         if (startDate == null || endDate == null || showTime == null || room == null || movieId == null) {
@@ -172,15 +201,16 @@ public class ShowtimeService {
         LocalDate current = startDate;
         while (!current.isAfter(endDate)) {
             LocalTime currentSlotTime = showTime;
+            LocalDate slotDate = current;
             for (int i = 0; i < count; i++) {
-                validateDateTimeNotPast(current, currentSlotTime);
+                validateDateTimeNotPast(slotDate, currentSlotTime);
 
                 Showtime showtime = new Showtime();
                 showtime.setMovie(movie);
-                showtime.setShowDate(current);
+                showtime.setShowDate(slotDate);
                 showtime.setShowTime(currentSlotTime);
                 showtime.setRoom(room);
-                showtime.setDayType(determineDayType(current));
+                showtime.setDayType(determineDayType(slotDate));
 
                 checkRoomConflict(showtime, null);
                 savedShowtimes.add(showtimeRepository.save(showtime));
@@ -190,7 +220,9 @@ public class ShowtimeService {
                 int rem = minute % 5;
                 if (rem > 0) nextStart = nextStart.plusMinutes(5 - rem);
 
-                if (nextStart.isBefore(currentSlotTime)) break;
+                if (nextStart.isBefore(currentSlotTime)) {
+                    slotDate = slotDate.plusDays(1);
+                }
                 currentSlotTime = nextStart;
             }
             current = current.plusDays(1);

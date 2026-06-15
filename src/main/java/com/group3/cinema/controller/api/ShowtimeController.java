@@ -67,6 +67,8 @@ public class ShowtimeController {
         // Số suất chiếu trong ngày (tùy chọn, mặc định 1)
         private Integer slotCount;
 
+        private List<Long> groupIds;
+
         public Long getMovieId() { return movieId; }
         public void setMovieId(Long movieId) { this.movieId = movieId; }
 
@@ -84,6 +86,9 @@ public class ShowtimeController {
 
         public Integer getSlotCount() { return slotCount; }
         public void setSlotCount(Integer slotCount) { this.slotCount = slotCount; }
+
+        public List<Long> getGroupIds() { return groupIds; }
+        public void setGroupIds(List<Long> groupIds) { this.groupIds = groupIds; }
     }
 
     // Endpoint: GET /api/showtimes
@@ -156,14 +161,15 @@ public class ShowtimeController {
     // Endpoint: PUT /api/showtimes/{id}
     // Cập nhật thông tin lịch chiếu hiện có
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateShowtime(@PathVariable("id") Long id, @RequestBody Showtime showtime) {
+    public ResponseEntity<?> updateShowtime(@PathVariable("id") Long id, @RequestBody ShowtimeRequest req) {
         try {
-            return ResponseEntity.ok(showtimeService.updateShowtime(id, showtime));
+            return ResponseEntity.ok(showtimeService.updateShowtimeBatch(id, req));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", ex.getMessage()));
-        } catch (RuntimeException ex) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi hệ thống: " + ex.getMessage()));
         }
     }
 

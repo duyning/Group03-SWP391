@@ -66,44 +66,50 @@ public class MovieController {
     @GetMapping("/{id}")
     public ResponseEntity<Movie> getMovieById(@PathVariable("id") Integer id) {
         return movieService.getMovieById(id)
-                .map(ResponseEntity::ok) // Náº¿u tÃ¬m tháº¥y, tráº£ vá» HTTP 200 OK kÃ¨m dá»¯ liá»‡u phim
-                .orElse(ResponseEntity.notFound().build()); // Náº¿u khÃ´ng tÃ¬m tháº¥y, tráº£ vá» HTTP 404 Not Found
+                .map(ResponseEntity::ok) // Náº¿u tÃ¬m tháº¥y, tráº£ vá»  HTTP 200 OK kÃ¨m dá»¯ liá»‡u phim
+                .orElse(ResponseEntity.notFound().build()); // Náº¿u khÃ´ng tÃ¬m tháº¥y, tráº£ vá»  HTTP 404 Not Found
     }
 
     // Endpoint: POST /api/movies
-    // ThÃªm má»™t bá»™ phim má»›i vÃ o cÆ¡ sá»Ÿ dá»¯ liá»‡u. Dá»¯ liá»‡u phim Ä‘Æ°á»£c gá»­i trong thÃ¢n Request (Request Body) á»Ÿ dáº¡ng JSON
+    // Thêm một bộ phim mới vào cơ sở dữ liệu. Dữ liệu phim được gửi trong thân Request (Request Body) ở dạng JSON
     @PostMapping
-    public ResponseEntity<Movie> createMovie(@RequestBody Movie movie) {
-        Movie savedMovie = movieService.saveMovie(movie);
-        return ResponseEntity.ok(savedMovie); // Tráº£ vá» HTTP 200 OK kÃ¨m Ä‘á»‘i tÆ°á»£ng phim Ä‘Ã£ Ä‘Æ°á»£c lÆ°u thÃ nh cÃ´ng
+    public ResponseEntity<?> createMovie(@RequestBody Movie movie) {
+        try {
+            Movie savedMovie = movieService.saveMovie(movie);
+            return ResponseEntity.ok(savedMovie); // Trả về HTTP 200 OK kèm đối tượng phim đã được lưu thành công
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     // Endpoint: PUT /api/movies/{id}
-    // Cáº­p nháº­t thÃ´ng tin phim Ä‘Ã£ tá»“n táº¡i theo mÃ£ ID
+    // Cập nhật thông tin phim đã tồn tại theo mã ID
     @PutMapping("/{id}")
-    public ResponseEntity<Movie> updateMovie(@PathVariable("id") Integer id, @RequestBody Movie movie) {
+    public ResponseEntity<?> updateMovie(@PathVariable("id") Integer id, @RequestBody Movie movie) {
         try {
             Movie updated = movieService.updateMovie(id, movie);
-            return ResponseEntity.ok(updated); // Tráº£ vá» HTTP 200 OK kÃ¨m thÃ´ng tin phim sau khi sá»­a Ä‘á»•i thÃ nh cÃ´ng
+            return ResponseEntity.ok(updated); // Trả về HTTP 200 OK kèm thông tin phim sau khi sửa đổi thành công
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build(); // Tráº£ vá» HTTP 404 Not Found náº¿u ID phim khÃ´ng tá»“n táº¡i
+            return ResponseEntity.notFound().build(); // Trả về HTTP 404 Not Found nếu ID phim không tồn tại
         }
     }
 
     // Endpoint: DELETE /api/movies/{id}
-    // XÃ³a bá»™ phim khá»i há»‡ thá»‘ng theo mÃ£ ID
+    // Xóa bộ phim khỏi hệ thống theo mã ID (Soft-delete: active = false)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMovie(@PathVariable("id") Integer id) {
+    public ResponseEntity<?> deleteMovie(@PathVariable("id") Integer id) {
         try {
             movieService.deleteMovie(id);
-            return ResponseEntity.noContent().build(); // Tráº£ vá» HTTP 204 No Content náº¿u xÃ³a thÃ nh cÃ´ng
+            return ResponseEntity.ok(Map.of("message", "Phim đã được ẩn thành công."));
         } catch (Exception e) {
-            return ResponseEntity.notFound().build(); // Tráº£ vá» HTTP 404 Not Found náº¿u gáº·p lá»—i
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi xóa phim."));
         }
     }
 
     // Endpoint: GET /api/movies/stats
-    // Tráº£ vá» sá»‘ liá»‡u thá»‘ng kÃª tá»•ng sá»‘ lÆ°á»£ng phim vÃ  phim theo tá»«ng tráº¡ng thÃ¡i hiá»ƒn thá»‹
+    // Tráº£ vá»  sá»‘ liá»‡u thá»‘ng kÃª tá»•ng sá»‘ lÆ°á»£ng phim vÃ  phim theo tá»«ng tráº¡ng thÃ¡i hiá»ƒn thá»‹
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Long>> getMovieStats() {
         return ResponseEntity.ok(movieService.getMovieStats()); // Tráº£ vá» HTTP 200 OK kÃ¨m map dá»¯ liá»‡u thá»‘ng kÃª dáº¡ng JSON

@@ -72,12 +72,20 @@ public class Movie {
     @Column(columnDefinition = "NVARCHAR(50)")
     private String ageRating;
 
+    private Integer releaseYear;
+
+    @Column(columnDefinition = "NVARCHAR(255)")
+    private String producer;
+
     /*
      * Stored as text so database values remain readable and stable even if enum
      * order changes later.
      */
     @Enumerated(EnumType.STRING)
     private MovieStatus status;
+
+    @Column(columnDefinition = "NVARCHAR(50)")
+    private String format;
 
     /*
      * Soft-display flag:
@@ -87,6 +95,14 @@ public class Movie {
     private boolean active = true;
 
     public Movie() {
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
+        this.format = format;
     }
 
     public int getId() {
@@ -207,6 +223,22 @@ public class Movie {
 
     public void setAgeRating(String ageRating) {
         this.ageRating = ageRating;
+    }
+
+    public Integer getReleaseYear() {
+        return releaseYear;
+    }
+
+    public void setReleaseYear(Integer releaseYear) {
+        this.releaseYear = releaseYear;
+    }
+
+    public String getProducer() {
+        return producer;
+    }
+
+    public void setProducer(String producer) {
+        this.producer = producer;
     }
 
     public MovieStatus getStatus() {
