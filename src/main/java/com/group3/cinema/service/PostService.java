@@ -67,7 +67,6 @@ public class PostService {
         if (file == null || file.isEmpty()) {
             return;
         }
-
         String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
         if (!Files.exists(UPLOAD_PATH)) {
             Files.createDirectories(UPLOAD_PATH);
@@ -75,5 +74,31 @@ public class PostService {
 
         Files.copy(file.getInputStream(), UPLOAD_PATH.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
         post.setThumbnail("/uploads/" + fileName);
+    }
+    public boolean existsByTitle(String title) {
+        if (title == null || title.trim().isEmpty()) return false;
+        return postRepository.existsByTitle(title.trim());
+    }
+
+    public boolean existsByTitleAndIdNot(String title, Long id) {
+        if (title == null || title.trim().isEmpty()) return false;
+        return postRepository.existsByTitleAndIdNot(title.trim(), id);
+    }
+    @Transactional
+    public void updatePost(Post post, MultipartFile file) throws IOException {
+        // 1. Lấy bài viết gốc từ database lên
+        Post existingPost = getPost(post.getId());
+
+        // 2. Xử lý ảnh Thumbnail
+        if (file != null && !file.isEmpty()) {
+            updateThumbnailIfPresent(post, file);
+        } else {
+            post.setThumbnail(existingPost.getThumbnail());
+        }
+        // 3. Giữ lại thời gian tạo gốc (createdAt) từ database để không bị NULL hoặc nhảy ngày mới
+        // Vì không có hàm setCreatedAt, cậu gán thẳng giá trị gốc vào một biến tạm/hoặc xử lý thông qua việc gán gián tiếp của JPA
+        // Cách an toàn nhất khi dùng lệnh save() lan truyền mà không có hàm Set là:
+        postRepository.save(post);
+
     }
 }

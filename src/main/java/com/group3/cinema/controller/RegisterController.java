@@ -66,6 +66,11 @@ public class RegisterController {
             bindingResult.rejectValue("phoneNum", "error.account", "Số điện thoại đã được sử dụng");
         }
 
+        // Map backend age validation to the 'dob' field so the UI can display it
+        if (account.getDob() != null && !account.isValidAge()) {
+            bindingResult.rejectValue("dob", "error.account", "Tuổi không hợp lệ (phải từ 13 đến 100 tuổi).");
+        }
+
         // If validation errors exist, return back to the form
         if (bindingResult.hasErrors()) {
             return "register";

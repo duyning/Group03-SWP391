@@ -22,4 +22,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findTop3ByStatusOrderByPublishedAtDescCreatedAtDesc(String status);
 
     Optional<Post> findByIdAndStatus(Long id, String status);
+
+    boolean existsByTitle(String title);
+
+    boolean existsByTitleAndIdNot(String title, Long id);
 }
