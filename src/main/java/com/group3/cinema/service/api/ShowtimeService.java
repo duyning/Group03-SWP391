@@ -11,6 +11,8 @@ package com.group3.cinema.service.api;
  */
 
 import com.group3.cinema.entity.Showtime;
+import com.group3.cinema.entity.Movie;
+import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,11 +31,16 @@ import java.util.Optional;
 @Service
 public class ShowtimeService {
 
+    private static final int DEFAULT_MOVIE_DURATION_MINUTES = 120;
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
     private final ShowtimeRepository showtimeRepository;
+    private final MovieRepository movieRepository;
 
     @Autowired
-    public ShowtimeService(ShowtimeRepository showtimeRepository) {
+    public ShowtimeService(ShowtimeRepository showtimeRepository, MovieRepository movieRepository) {
         this.showtimeRepository = showtimeRepository;
+        this.movieRepository = movieRepository;
     }
 
     // Láº¥y danh sÃ¡ch toÃ n bá»™ lá»‹ch chiáº¿u
@@ -52,6 +61,7 @@ public class ShowtimeService {
     // LÆ°u lá»‹ch chiáº¿u má»›i, tá»± Ä‘á»™ng phÃ¡t hiá»‡n loáº¡i ngÃ y chiáº¿u vÃ  táº¡o sÆ¡ Ä‘á»“ 40 gháº¿ ngá»“i (vÃ©)
     @Transactional
     public Showtime saveShowtime(Showtime showtime) {
+        prepareAndValidateShowtime(showtime, null);
         if (showtime.getShowDate() != null) {
             showtime.setDayType(determineDayType(showtime.getShowDate()));
         }
@@ -67,6 +77,7 @@ public class ShowtimeService {
     @Transactional
     public Showtime updateShowtime(Long id, Showtime updatedShowtime) {
         return showtimeRepository.findById(id).map(showtime -> {
+            prepareAndValidateShowtime(updatedShowtime, id);
             showtime.setMovie(updatedShowtime.getMovie());
             
             // Xá»­ lÃ½ Ä‘á»•i ngÃ y chiáº¿u vÃ  tÃ­nh toÃ¡n láº¡i loáº¡i ngÃ y
@@ -82,6 +93,72 @@ public class ShowtimeService {
             
             return showtimeRepository.save(showtime);
         }).orElseThrow(() -> new RuntimeException("Showtime not found with id " + id));
+    }
+
+    private void prepareAndValidateShowtime(Showtime showtime, Long editingId) {
+        if (showtime.getMovie() == null || showtime.getMovie().getId() <= 0) {
+            throw new IllegalArgumentException("Vui lòng chọn phim chiếu.");
+        }
+        if (showtime.getShowDate() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn ngày chiếu.");
+        }
+        if (showtime.getShowTime() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn giờ chiếu.");
+        }
+        if (showtime.getRoom() == null || showtime.getRoom().trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn phòng chiếu.");
+        }
+
+        Movie movie = movieRepository.findById(showtime.getMovie().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Phim được chọn không tồn tại."));
+        showtime.setMovie(movie);
+        showtime.setRoom(showtime.getRoom().trim());
+        validateRoomTimeOverlap(showtime, editingId);
+    }
+
+    private void validateRoomTimeOverlap(Showtime candidate, Long editingId) {
+        LocalTime candidateStart = candidate.getShowTime();
+        int candidateStartMinutes = toMinutes(candidateStart);
+        int candidateEndMinutes = candidateStartMinutes + resolveDuration(candidate.getMovie());
+
+        List<Showtime> sameRoomShowtimes = showtimeRepository.findByRoomIgnoreCaseAndShowDate(
+                candidate.getRoom(),
+                candidate.getShowDate()
+        );
+
+        for (Showtime existing : sameRoomShowtimes) {
+            if (editingId != null && editingId.equals(existing.getId())) {
+                continue;
+            }
+
+            LocalTime existingStart = existing.getShowTime();
+            LocalTime existingEnd = existingStart.plusMinutes(resolveDuration(existing.getMovie()));
+            int existingStartMinutes = toMinutes(existingStart);
+            int existingEndMinutes = existingStartMinutes + resolveDuration(existing.getMovie());
+            boolean overlaps = candidateStartMinutes < existingEndMinutes && candidateEndMinutes > existingStartMinutes;
+
+            if (overlaps) {
+                String movieTitle = existing.getMovie() != null ? existing.getMovie().getTitle() : "suất chiếu khác";
+                throw new IllegalArgumentException(
+                        "Phòng " + candidate.getRoom()
+                                + " đã có lịch chiếu \"" + movieTitle + "\" từ "
+                                + existingStart.format(TIME_FORMATTER) + " đến "
+                                + existingEnd.format(TIME_FORMATTER)
+                                + ". Vui lòng chọn phòng hoặc khung giờ khác."
+                );
+            }
+        }
+    }
+
+    private int toMinutes(LocalTime time) {
+        return time.getHour() * 60 + time.getMinute();
+    }
+
+    private int resolveDuration(Movie movie) {
+        if (movie == null || movie.getDuration() == null || movie.getDuration() <= 0) {
+            return DEFAULT_MOVIE_DURATION_MINUTES;
+        }
+        return movie.getDuration();
     }
 
     // XÃ³a lá»‹ch chiáº¿u khá»i cÆ¡ sá»Ÿ dá»¯ liá»‡u (tá»± Ä‘á»™ng xÃ³a sáº¡ch vÃ© liÃªn quan nhá» CascadeType.ALL)

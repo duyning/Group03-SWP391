@@ -25,6 +25,9 @@ public class RoomUnicodeMigration {
     public void migrateRoomUnicodeColumns() {
         try {
             createBannerTableIfMissing();
+            createComboCatalogTablesIfMissing();
+            migrateComboPricingColumns();
+            seedDefaultFoodItems();
             migrateTextColumns();
             normalizeVietnameseValues();
         } catch (Exception e) {
@@ -52,9 +55,74 @@ public class RoomUnicodeMigration {
                 """);
     }
 
+    private void createComboCatalogTablesIfMissing() {
+        if (!tableExists("food_items")) {
+            jdbcTemplate.execute("""
+                    CREATE TABLE food_items (
+                        id BIGINT IDENTITY(1,1) PRIMARY KEY,
+                        name NVARCHAR(150) NOT NULL,
+                        category NVARCHAR(80) NOT NULL,
+                        unit_price DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        cost_price DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        description NVARCHAR(255) NULL,
+                        status NVARCHAR(20) NOT NULL DEFAULT N'ACTIVE'
+                    )
+                    """);
+        }
+
+        if (!tableExists("combo_items") && tableExists("combos") && tableExists("food_items")) {
+            jdbcTemplate.execute("""
+                    CREATE TABLE combo_items (
+                        id BIGINT IDENTITY(1,1) PRIMARY KEY,
+                        combo_id BIGINT NOT NULL,
+                        food_item_id BIGINT NOT NULL,
+                        quantity INT NOT NULL DEFAULT 1,
+                        unit_price DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        cost_price DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        CONSTRAINT fk_combo_items_combo FOREIGN KEY (combo_id) REFERENCES combos(id) ON DELETE CASCADE,
+                        CONSTRAINT fk_combo_items_food_item FOREIGN KEY (food_item_id) REFERENCES food_items(id)
+                    )
+                    """);
+        }
+    }
+
+    private void migrateComboPricingColumns() {
+        addColumnIfMissing("combos", "original_price", "DECIMAL(18,2) NULL");
+        addColumnIfMissing("combos", "discount_percent", "DECIMAL(5,2) NULL");
+        addColumnIfMissing("combos", "discount_amount", "DECIMAL(18,2) NULL");
+        addColumnIfMissing("combos", "cost_price", "DECIMAL(18,2) NULL");
+
+        updateIfTableExists("combos", """
+                UPDATE combos
+                SET original_price = ISNULL(original_price, price),
+                    discount_percent = ISNULL(discount_percent, 0),
+                    discount_amount = ISNULL(discount_amount, 0),
+                    cost_price = ISNULL(cost_price, 0)
+                """);
+    }
+
+    private void seedDefaultFoodItems() {
+        if (!tableExists("food_items")) {
+            return;
+        }
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM food_items", Integer.class);
+        if (count != null && count > 0) {
+            return;
+        }
+        jdbcTemplate.update("""
+                INSERT INTO food_items (name, category, unit_price, cost_price, description, status)
+                VALUES
+                (N'Bắp rang bơ lớn', N'Bắp nước', 55000, 30000, N'Bắp rang bơ cỡ lớn', N'ACTIVE'),
+                (N'Bắp rang caramel', N'Bắp nước', 65000, 36000, N'Bắp rang vị caramel', N'NEW'),
+                (N'Nước ngọt lớn', N'Bắp nước', 35000, 16000, N'Ly nước ngọt cỡ lớn', N'ACTIVE'),
+                (N'Nước suối', N'Đồ uống', 20000, 8000, N'Nước suối đóng chai', N'ACTIVE'),
+                (N'Nachos phô mai', N'Đồ ăn nhanh', 59000, 32000, N'Nachos ăn kèm sốt phô mai', N'NEW')
+                """);
+    }
+
     private void migrateTextColumns() {
         alterColumn("rooms", "room_name", "NVARCHAR(100) NOT NULL");
-        alterColumn("rooms", "room_type", "NVARCHAR(50) NULL");
+        alterColumn("rooms", "room_type", "NVARCHAR(255) NULL");
         alterColumn("rooms", "audio_tech", "NVARCHAR(80) NULL");
         alterColumn("rooms", "status", "NVARCHAR(20) NULL");
 
@@ -97,6 +165,11 @@ public class RoomUnicodeMigration {
         alterColumn("combos", "description", "NVARCHAR(500) NULL");
         alterColumn("combos", "image", "NVARCHAR(255) NULL");
         alterColumn("combos", "status", "NVARCHAR(20) NOT NULL");
+
+        alterColumn("food_items", "name", "NVARCHAR(150) NOT NULL");
+        alterColumn("food_items", "category", "NVARCHAR(80) NOT NULL");
+        alterColumn("food_items", "description", "NVARCHAR(255) NULL");
+        alterColumn("food_items", "status", "NVARCHAR(20) NOT NULL");
 
         alterColumn("showtimes", "room", "NVARCHAR(100) NOT NULL");
         alterColumn("showtimes", "day_type", "NVARCHAR(20) NULL");
@@ -158,6 +231,17 @@ public class RoomUnicodeMigration {
             jdbcTemplate.execute("ALTER TABLE " + tableName + " ALTER COLUMN " + columnName + " " + definition);
         } catch (Exception e) {
             log.warn("Không thể chuyển {}.{} sang {}: {}", tableName, columnName, definition, e.getMessage());
+        }
+    }
+
+    private void addColumnIfMissing(String tableName, String columnName, String definition) {
+        if (!tableExists(tableName) || columnExists(tableName, columnName)) {
+            return;
+        }
+        try {
+            jdbcTemplate.execute("ALTER TABLE " + tableName + " ADD " + columnName + " " + definition);
+        } catch (Exception e) {
+            log.warn("Không thể thêm cột {}.{}: {}", tableName, columnName, e.getMessage());
         }
     }
 

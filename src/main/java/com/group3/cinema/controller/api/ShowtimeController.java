@@ -67,18 +67,24 @@ public class ShowtimeController {
     // Endpoint: POST /api/showtimes
     // Táº¡o má»›i má»™t lá»‹ch chiáº¿u phim
     @PostMapping
-    public ResponseEntity<Showtime> createShowtime(@RequestBody Showtime showtime) {
-        Showtime saved = showtimeService.saveShowtime(showtime);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<?> createShowtime(@RequestBody Showtime showtime) {
+        try {
+            Showtime saved = showtimeService.saveShowtime(showtime);
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     // Endpoint: PUT /api/showtimes/{id}
     // Cáº­p nháº­t thÃ´ng tin lá»‹ch chiáº¿u phim
     @PutMapping("/{id}")
-    public ResponseEntity<Showtime> updateShowtime(@PathVariable("id") Long id, @RequestBody Showtime showtime) {
+    public ResponseEntity<?> updateShowtime(@PathVariable("id") Long id, @RequestBody Showtime showtime) {
         try {
             Showtime updated = showtimeService.updateShowtime(id, showtime);
             return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

@@ -74,7 +74,7 @@
                     </form>
                 </div>
 
-                <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}">Lưu thành công</div>
+                <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}" data-auto-dismiss="5000">Lưu thành công</div>
 
                 <form th:action="@{/admin/banners/save}" th:object="${banner}" method="post" enctype="multipart/form-data">
                     <input type="hidden" th:field="*{id}">
@@ -202,5 +202,6 @@
         </div>
     </main>
 </div>
+<script th:src="@{/js/auto-dismiss-alerts.js}"></script>
 </body>
 </html>
