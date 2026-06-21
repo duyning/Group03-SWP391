@@ -181,10 +181,10 @@
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <!-- Flash alerts từ redirect -->
-            <div th:if="${successMessage}" class="topbar-alert alert-success" id="flashAlert">
+            <div th:if="${successMessage}" class="topbar-alert alert-success" data-auto-dismiss="5000">
                 <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
             </div>
-            <div th:if="${errorMessage}" class="topbar-alert alert-error" id="flashAlert">
+            <div th:if="${errorMessage}" class="topbar-alert alert-error" data-auto-dismiss="5000">
                 <i class="fas fa-times-circle"></i> <span th:text="${errorMessage}"></span>
             </div>
 
@@ -741,7 +741,7 @@
         toast.style.display = 'flex';
         clearTimeout(toastTimer);
         if (type !== 'loading') {
-            toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3500);
+            toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 5000);
         }
     }
 
@@ -809,18 +809,6 @@
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  AUTO-HIDE FLASH ALERT
-    // ═══════════════════════════════════════════════════════════════
-    const flashAlert = document.getElementById('flashAlert');
-    if (flashAlert) {
-        setTimeout(() => {
-            flashAlert.style.transition = 'opacity 0.5s';
-            flashAlert.style.opacity = '0';
-            setTimeout(() => flashAlert.remove(), 500);
-        }, 4000);
-    }
-
-    // ═══════════════════════════════════════════════════════════════
     //  BOOTSTRAP
     // ═══════════════════════════════════════════════════════════════
     window.onload = () => {
@@ -834,5 +822,6 @@
         renderMatrix({ resetScroll: true });
     };
 </script>
+<script src="/js/auto-dismiss-alerts.js"></script>
 </body>
 </html>

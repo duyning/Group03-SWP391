@@ -1,37 +1,39 @@
 package com.group3.cinema.controller.api;
 
 /**
- * Dá»± Ã¡n: Cinema 2026 â€” SWP391 Group 03
+ * Dự án: Cinema 2026 — SWP391 Group 03
  * File: ShowtimeController.java
- * Chá»©c nÄƒng: REST Controller cung cáº¥p cÃ¡c API Ä‘á»ƒ quáº£n lÃ½ lá»‹ch chiáº¿u (Showtime).
- *            Há»— trá»£ xem danh sÃ¡ch, lá»c lá»‹ch chiáº¿u nÃ¢ng cao (theo phim, loáº¡i ngÃ y, khoáº£ng ngÃ y),
- *            táº¡o má»›i, cáº­p nháº­t, xÃ³a lá»‹ch chiáº¿u vÃ  thá»‘ng kÃª sá»‘ lÆ°á»£ng lá»‹ch chiáº¿u theo loáº¡i ngÃ y.
- * Endpoints:
- *   - GET /api/showtimes: Láº¥y danh sÃ¡ch lá»‹ch chiáº¿u theo bá»™ lá»c (Query Params: movieId, dayType, startDate, endDate).
- *   - GET /api/showtimes/{id}: Xem thÃ´ng tin chi tiáº¿t má»™t lá»‹ch chiáº¿u theo ID.
- *   - POST /api/showtimes: Táº¡o lá»‹ch chiáº¿u má»›i (bao gá»“m tá»± Ä‘á»™ng Ä‘á»‹nh cáº¥u hÃ¬nh giÃ¡ vÃ©).
- *   - PUT /api/showtimes/{id}: Cáº­p nháº­t lá»‹ch chiáº¿u.
- *   - DELETE /api/showtimes/{id}: XÃ³a lá»‹ch chiáº¿u.
- *   - GET /api/showtimes/stats: Thá»‘ng kÃª sá»‘ lá»‹ch chiáº¿u (Tá»•ng sá»‘, trong tuáº§n, cuá»‘i tuáº§n, ngÃ y lá»…).
- * NgÆ°á»i viáº¿t: TrienLX - HE182285
- * NgÃ y táº¡o: 2026-06-04
+ * Chức năng: REST Controller quản lý lịch chiếu, hỗ trợ tạo đơn lẻ và tạo hàng loạt.
+ * Người viết: TrienLX - HE182285
+ * Người sửa: TrienLX, NinhDD
  */
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.service.api.ShowtimeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
-// ÄÃ¡nh dáº¥u Ä‘Ã¢y lÃ  má»™t RestController quáº£n lÃ½ API cho Showtime
 @RestController
 @RequestMapping("/api/showtimes")
-// Cho phÃ©p gá»i API tá»« giao diá»‡n HTML tÄ©nh á»Ÿ nguá»“n khÃ¡c (CORS)
 @CrossOrigin(origins = "*")
 public class ShowtimeController {
 
@@ -42,8 +44,54 @@ public class ShowtimeController {
         this.showtimeService = showtimeService;
     }
 
-    // Endpoint: GET /api/showtimes
-    // Há»— trá»£ tÃ¬m kiáº¿m, lá»c danh sÃ¡ch lá»‹ch chiáº¿u theo phim, loáº¡i ngÃ y hoáº·c khoáº£ng ngÃ y chiáº¿u (tuáº§n/thÃ¡ng)
+    public static class ShowtimeRequest {
+        private Long movieId;
+        private Movie movie;
+
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate startDate;
+
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate endDate;
+
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate showDate;
+
+        @JsonFormat(pattern = "HH:mm:ss")
+        private LocalTime showTime;
+
+        private String room;
+        private Integer slotCount;
+        private List<Long> groupIds;
+
+        public Long getMovieId() { return movieId; }
+        public void setMovieId(Long movieId) { this.movieId = movieId; }
+
+        public Movie getMovie() { return movie; }
+        public void setMovie(Movie movie) { this.movie = movie; }
+
+        public LocalDate getStartDate() { return startDate; }
+        public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+        public LocalDate getEndDate() { return endDate; }
+        public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+
+        public LocalDate getShowDate() { return showDate; }
+        public void setShowDate(LocalDate showDate) { this.showDate = showDate; }
+
+        public LocalTime getShowTime() { return showTime; }
+        public void setShowTime(LocalTime showTime) { this.showTime = showTime; }
+
+        public String getRoom() { return room; }
+        public void setRoom(String room) { this.room = room; }
+
+        public Integer getSlotCount() { return slotCount; }
+        public void setSlotCount(Integer slotCount) { this.slotCount = slotCount; }
+
+        public List<Long> getGroupIds() { return groupIds; }
+        public void setGroupIds(List<Long> groupIds) { this.groupIds = groupIds; }
+    }
+
     @GetMapping
     public ResponseEntity<List<Showtime>> searchShowtimes(
             @RequestParam(value = "movieId", required = false) Integer movieId,
@@ -51,12 +99,14 @@ public class ShowtimeController {
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        List<Showtime> showtimes = showtimeService.searchShowtimes(movieId, dayType, startDate, endDate);
-        return ResponseEntity.ok(showtimes);
+        return ResponseEntity.ok(showtimeService.searchShowtimes(movieId, dayType, startDate, endDate));
     }
 
-    // Endpoint: GET /api/showtimes/{id}
-    // Láº¥y chi tiáº¿t lá»‹ch chiáº¿u phim theo mÃ£ ID
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Long>> getShowtimeStats() {
+        return ResponseEntity.ok(showtimeService.getShowtimeStats());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Showtime> getShowtimeById(@PathVariable("id") Long id) {
         return showtimeService.getShowtimeById(id)
@@ -64,28 +114,57 @@ public class ShowtimeController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Endpoint: POST /api/showtimes
-    // Táº¡o má»›i má»™t lá»‹ch chiáº¿u phim
     @PostMapping
-    public ResponseEntity<Showtime> createShowtime(@RequestBody Showtime showtime) {
-        Showtime saved = showtimeService.saveShowtime(showtime);
-        return ResponseEntity.ok(saved);
-    }
-
-    // Endpoint: PUT /api/showtimes/{id}
-    // Cáº­p nháº­t thÃ´ng tin lá»‹ch chiáº¿u phim
-    @PutMapping("/{id}")
-    public ResponseEntity<Showtime> updateShowtime(@PathVariable("id") Long id, @RequestBody Showtime showtime) {
+    public ResponseEntity<?> createShowtime(@RequestBody ShowtimeRequest req) {
         try {
-            Showtime updated = showtimeService.updateShowtime(id, showtime);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            Long movieId = resolveMovieId(req);
+            LocalDate startDate = resolveStartDate(req);
+
+            if (req.getEndDate() != null || req.getSlotCount() != null || req.getStartDate() != null) {
+                List<Showtime> saved = showtimeService.saveShowtimeBatch(
+                        movieId,
+                        startDate,
+                        req.getEndDate() != null ? req.getEndDate() : startDate,
+                        req.getShowTime(),
+                        req.getRoom(),
+                        req.getSlotCount()
+                );
+                return ResponseEntity.ok(saved);
+            }
+
+            Showtime showtime = toShowtime(req);
+            return ResponseEntity.ok(showtimeService.saveShowtime(showtime));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorBody("Lỗi hệ thống: " + ex.getMessage()));
         }
     }
 
-    // Endpoint: DELETE /api/showtimes/{id}
-    // XÃ³a lá»‹ch chiáº¿u phim khá»i há»‡ thá»‘ng
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateShowtime(@PathVariable("id") Long id, @RequestBody ShowtimeRequest req) {
+        try {
+            if (req.getGroupIds() != null || req.getStartDate() != null || req.getEndDate() != null) {
+                req.setMovieId(resolveMovieId(req));
+                req.setStartDate(resolveStartDate(req));
+                if (req.getEndDate() == null) {
+                    req.setEndDate(req.getStartDate());
+                }
+                return ResponseEntity.ok(showtimeService.updateShowtimeBatch(id, req));
+            }
+
+            return ResponseEntity.ok(showtimeService.updateShowtime(id, toShowtime(req)));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorBody("Lỗi hệ thống: " + ex.getMessage()));
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteShowtime(@PathVariable("id") Long id) {
         try {
@@ -96,10 +175,35 @@ public class ShowtimeController {
         }
     }
 
-    // Endpoint: GET /api/showtimes/stats
-    // Tráº£ vá» sá»‘ liá»‡u thá»‘ng kÃª tá»•ng há»£p sá»‘ lá»‹ch chiáº¿u theo cÃ¡c loáº¡i ngÃ y
-    @GetMapping("/stats")
-    public ResponseEntity<Map<String, Long>> getShowtimeStats() {
-        return ResponseEntity.ok(showtimeService.getShowtimeStats());
+    private Showtime toShowtime(ShowtimeRequest req) {
+        Showtime showtime = new Showtime();
+        Long movieId = resolveMovieId(req);
+        if (movieId != null) {
+            Movie movie = new Movie();
+            movie.setId(movieId.intValue());
+            showtime.setMovie(movie);
+        }
+        showtime.setShowDate(resolveStartDate(req));
+        showtime.setShowTime(req.getShowTime());
+        showtime.setRoom(req.getRoom());
+        return showtime;
+    }
+
+    private Long resolveMovieId(ShowtimeRequest req) {
+        if (req.getMovieId() != null) {
+            return req.getMovieId();
+        }
+        if (req.getMovie() != null && req.getMovie().getId() > 0) {
+            return (long) req.getMovie().getId();
+        }
+        return null;
+    }
+
+    private LocalDate resolveStartDate(ShowtimeRequest req) {
+        return req.getStartDate() != null ? req.getStartDate() : req.getShowDate();
+    }
+
+    private Map<String, String> errorBody(String message) {
+        return Map.of("message", message, "error", message);
     }
 }

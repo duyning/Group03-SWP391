@@ -70,6 +70,11 @@
         .filter-group label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
         .filter-input { padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; outline: none; font-family: inherit; font-size: 14px; transition: border-color 0.2s; width: 100%; box-sizing: border-box; }
         .filter-input:focus { border-color: var(--primary); }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+        .checkbox-card { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #f8fafc; cursor: pointer; font-size: 14px; font-weight: 700; color: #334155; transition: all 0.2s; }
+        .checkbox-card:hover { border-color: var(--primary); background: #eff6ff; }
+        .checkbox-card input { width: 16px; height: 16px; accent-color: var(--primary); }
+        .field-hint { display: block; margin-top: 8px; font-size: 12px; color: #64748b; line-height: 1.5; }
 
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8fafc; padding: 15px; text-align: left; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -150,12 +155,12 @@
 
     <!-- Flash messages -->
     <div th:if="${successMessage}" id="alertSuccess"
-         class="alert alert-success">
+         class="alert alert-success" data-auto-dismiss="5000">
         <i class="fas fa-check-circle"></i>
         <span th:text="${successMessage}"></span>
     </div>
     <div th:if="${errorMessage}" id="alertError"
-         class="alert alert-error">
+         class="alert alert-error" data-auto-dismiss="5000">
         <i class="fas fa-times-circle"></i>
         <span th:text="${errorMessage}"></span>
     </div>
@@ -358,7 +363,7 @@
             <button class="btn-close" onclick="closeModal('addRoomModal')"><i class="fas fa-times"></i></button>
         </div>
 
-        <form th:action="@{/admin/rooms/add}" method="POST">
+        <form th:action="@{/admin/rooms/add}" method="POST" id="addRoomForm">
             <div class="modal-body">
 
                 <div class="form-group">
@@ -372,13 +377,15 @@
 
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label>Loại phòng <span class="required-star">*</span></label>
-                        <select name="roomType" class="filter-input" required>
-                            <option value="">-- Chọn loại phòng --</option>
-                            <option th:each="type : ${roomTypeOptions}"
-                                    th:value="${type.name}"
-                                    th:text="${type.name}"></option>
-                        </select>
+                        <label>Loại phòng hỗ trợ <span class="required-star">*</span></label>
+                        <div class="checkbox-grid">
+                            <label class="checkbox-card" th:each="type : ${roomTypeOptions}">
+                                <input type="checkbox" name="roomTypes" class="add-room-type"
+                                       th:value="${type.name}">
+                                <span th:text="${type.name}">2D</span>
+                            </label>
+                        </div>
+                        <small class="field-hint">Có thể chọn nhiều loại, ví dụ phòng hỗ trợ cả 2D và 3D.</small>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Công nghệ âm thanh <span class="required-star">*</span></label>
@@ -441,13 +448,15 @@
 
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label>Loại phòng <span class="required-star">*</span></label>
-                        <select name="roomType" id="editRoomType" class="filter-input" required>
-                            <option value="">-- Chọn loại phòng --</option>
-                            <option th:each="type : ${roomTypeOptions}"
-                                    th:value="${type.name}"
-                                    th:text="${type.name}"></option>
-                        </select>
+                        <label>Loại phòng hỗ trợ <span class="required-star">*</span></label>
+                        <div class="checkbox-grid">
+                            <label class="checkbox-card" th:each="type : ${roomTypeOptions}">
+                                <input type="checkbox" name="roomTypes" class="edit-room-type"
+                                       th:value="${type.name}">
+                                <span th:text="${type.name}">2D</span>
+                            </label>
+                        </div>
+                        <small class="field-hint">Chọn tất cả định dạng chiếu mà phòng này hỗ trợ.</small>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Công nghệ âm thanh <span class="required-star">*</span></label>
@@ -486,6 +495,8 @@
 <script>
     // ─── Modal helpers ────────────────────────────────────────────────────────
     function openAddModal() {
+        const form = document.getElementById('addRoomForm');
+        if (form) form.reset();
         document.getElementById('addRoomModal').style.display = 'flex';
     }
 
@@ -496,7 +507,7 @@
     function openEditModal(id, roomName, roomType, audioTech, status) {
         document.getElementById('editRoomId').value    = id;
         document.getElementById('editRoomName').value  = roomName;
-        setSelectValue('editRoomType',  roomType);
+        setRoomTypeCheckboxes(roomType);
         setSelectValue('editAudioTech', audioTech);
         setSelectValue('editStatus',    status);
         document.getElementById('editRoomModal').style.display = 'flex';
@@ -524,6 +535,35 @@
         }
     }
 
+    function setRoomTypeCheckboxes(roomTypeText) {
+        const selectedTypes = (roomTypeText || '')
+            .split(',')
+            .map(type => type.trim().toLowerCase())
+            .filter(Boolean);
+
+        document.querySelectorAll('.edit-room-type').forEach(function (checkbox) {
+            checkbox.checked = selectedTypes.includes(checkbox.value.trim().toLowerCase());
+        });
+    }
+
+    function hasCheckedRoomType(selector) {
+        return document.querySelectorAll(selector + ':checked').length > 0;
+    }
+
+    function validateRoomTypeSelection(formId, selector) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        form.addEventListener('submit', function (event) {
+            if (!hasCheckedRoomType(selector)) {
+                event.preventDefault();
+                alert('Vui lòng chọn ít nhất một loại phòng chiếu.');
+            }
+        });
+    }
+
+    validateRoomTypeSelection('addRoomForm', '.add-room-type');
+    validateRoomTypeSelection('editRoomForm', '.edit-room-type');
+
     // Đóng modal khi click vùng tối bên ngoài
     window.addEventListener('click', function (e) {
         const addModal  = document.getElementById('addRoomModal');
@@ -532,16 +572,7 @@
         if (e.target === editModal) closeModal('editRoomModal');
     });
 
-    // ─── Tự động ẩn flash message sau 4 giây ─────────────────────────────────
-    ['alertSuccess', 'alertError'].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        setTimeout(() => {
-            el.style.transition = 'opacity 0.5s ease';
-            el.style.opacity = '0';
-            setTimeout(() => el.style.display = 'none', 500);
-        }, 4000);
-    });
 </script>
+<script src="/js/auto-dismiss-alerts.js"></script>
 </body>
 </html>

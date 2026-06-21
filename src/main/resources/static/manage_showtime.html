@@ -1,6 +1,6 @@
-<!DOCTYPE html>
 <!--
     Updated on 2026-06-05: Split admin Quản lý lịch chiếu from the original static index page.
+    Updated on 2026-06-21: Added movie/room operation views for professional showtime management.
     Created by: NinhDD - HE186113
 -->
 <html lang="vi">
@@ -14,6 +14,771 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .showtime-header {
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.35rem;
+            background: #ffffff;
+            border: 1px solid #e5edf6;
+            border-radius: 8px;
+            box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+        }
+
+        .showtime-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin-bottom: 0.4rem;
+            color: #0369a1;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .showtime-subtitle {
+            margin-top: 0.25rem;
+            color: #64748b;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .showtime-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 0.28rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            white-space: nowrap;
+            min-height: 30px;
+        }
+
+        .showtime-status-upcoming {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .showtime-status-running {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .showtime-status-finished {
+            background: #e5e7eb;
+            color: #475569;
+        }
+
+        .showtime-status-conflict {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .locked-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #94a3b8;
+            font-size: 0.78rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .showtime-command-panel,
+        .showtime-board {
+            background: #ffffff;
+            border: 1px solid #e5edf6;
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+        }
+
+        .showtime-command-panel {
+            padding: 1rem;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .showtime-viewbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .quick-date-strip {
+            display: flex;
+            gap: 0.65rem;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+
+        .quick-date-strip::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .quick-date-strip::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+
+        .showtime-date-chip {
+            min-width: 92px;
+            border: 1px solid #dbe5f0;
+            background: #f8fafc;
+            color: #0f172a;
+            border-radius: 8px;
+            padding: 0.62rem 0.75rem;
+            cursor: pointer;
+            display: grid;
+            gap: 0.15rem;
+            text-align: left;
+            transition: all 0.18s ease;
+        }
+
+        .showtime-date-chip:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+        }
+
+        .showtime-date-chip.active {
+            background: #0b53a0;
+            border-color: #0b53a0;
+            color: #ffffff;
+            box-shadow: 0 10px 20px rgba(11, 83, 160, 0.18);
+        }
+
+        .showtime-date-chip span {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: inherit;
+            opacity: 0.82;
+            text-transform: uppercase;
+        }
+
+        .showtime-date-chip strong {
+            font-size: 1rem;
+            font-weight: 800;
+            color: inherit;
+        }
+
+        .showtime-view-toggle {
+            display: inline-flex;
+            background: #edf3f9;
+            border: 1px solid #dbe5f0;
+            border-radius: 8px;
+            padding: 4px;
+            justify-self: end;
+        }
+
+        .showtime-view-btn {
+            border: 0;
+            background: transparent;
+            color: #64748b;
+            border-radius: 6px;
+            padding: 0.58rem 0.9rem;
+            font-family: inherit;
+            font-size: 0.86rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            white-space: nowrap;
+            transition: all 0.18s ease;
+        }
+
+        .showtime-view-btn.active {
+            background: #ffffff;
+            color: #0b53a0;
+            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+        }
+
+        .showtime-board {
+            overflow: hidden;
+        }
+
+        .showtime-board-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.15rem;
+            border-bottom: 1px solid #e5edf6;
+            background: #f8fafc;
+        }
+
+        .showtime-board-title {
+            display: grid;
+            gap: 0.2rem;
+        }
+
+        .showtime-board-title strong {
+            color: #0f172a;
+            font-size: 1rem;
+        }
+
+        .showtime-board-title span {
+            color: #64748b;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .showtime-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: #0284c7;
+        }
+
+        .legend-dot.running { background: #16a34a; }
+        .legend-dot.finished { background: #94a3b8; }
+        .legend-dot.conflict { background: #ef4444; }
+
+        .showtime-view {
+            display: none;
+        }
+
+        .showtime-view.active {
+            display: block;
+        }
+
+        .movie-schedule-stack {
+            display: grid;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .schedule-movie-card {
+            border: 1px solid #e5edf6;
+            border-radius: 8px;
+            background: #ffffff;
+            overflow: hidden;
+            transition: box-shadow 0.18s ease, transform 0.18s ease;
+        }
+
+        .schedule-movie-card:hover {
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .schedule-movie-head {
+            display: grid;
+            grid-template-columns: 70px minmax(0, 1fr) auto;
+            gap: 1rem;
+            align-items: center;
+            padding: 1rem;
+            background: #fbfdff;
+            border-bottom: 1px solid #e5edf6;
+        }
+
+        .schedule-poster {
+            width: 70px;
+            height: 96px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #dbe5f0;
+            background: #f1f5f9;
+        }
+
+        .schedule-poster-placeholder {
+            width: 70px;
+            height: 96px;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e1;
+            background: #f8fafc;
+            color: #94a3b8;
+            display: grid;
+            place-items: center;
+        }
+
+        .schedule-movie-title {
+            color: #0f172a;
+            font-size: 1.12rem;
+            font-weight: 800;
+            line-height: 1.25;
+            margin-bottom: 0.45rem;
+        }
+
+        .schedule-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .schedule-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.32rem;
+            border-radius: 999px;
+            padding: 0.22rem 0.55rem;
+            background: #eef5fb;
+            color: #475569;
+            font-size: 0.74rem;
+            font-weight: 800;
+        }
+
+        .schedule-movie-summary {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(72px, 1fr));
+            gap: 0.5rem;
+            min-width: 170px;
+        }
+
+        .summary-box {
+            border: 1px solid #e5edf6;
+            border-radius: 8px;
+            padding: 0.55rem;
+            background: #ffffff;
+        }
+
+        .summary-box span {
+            display: block;
+            color: #64748b;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .summary-box strong {
+            color: #0f172a;
+            font-size: 1.02rem;
+            font-weight: 800;
+        }
+
+        .movie-room-list {
+            display: grid;
+        }
+
+        .movie-room-row {
+            display: grid;
+            grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+            gap: 1rem;
+            padding: 1rem;
+            border-top: 1px dashed #e2e8f0;
+        }
+
+        .movie-room-row:first-child {
+            border-top: 0;
+        }
+
+        .room-stamp {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .room-stamp i {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #0b53a0;
+            display: grid;
+            place-items: center;
+        }
+
+        .room-stamp span {
+            display: block;
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 700;
+        }
+
+        .time-slot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .showtime-slot {
+            border: 1px solid #dbe5f0;
+            border-left: 4px solid #0284c7;
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.72rem;
+            min-height: 150px;
+            transition: all 0.18s ease;
+        }
+
+        .showtime-slot:hover {
+            border-color: #93c5fd;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .showtime-slot.running {
+            border-left-color: #16a34a;
+            background: #f0fdf4;
+        }
+
+        .showtime-slot.finished {
+            border-left-color: #94a3b8;
+            background: #f8fafc;
+        }
+
+        .showtime-slot.conflict {
+            border-left-color: #ef4444;
+            background: #fff7f7;
+        }
+
+        .slot-topline {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
+            gap: 0.5rem;
+        }
+
+        .slot-topline > div:first-child {
+            min-width: 0;
+            display: grid;
+            gap: 0.18rem;
+        }
+
+        .slot-time {
+            color: #0f172a;
+            font-size: 1.15rem;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .slot-date {
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 800;
+            line-height: 1.25;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .seat-meter {
+            height: 7px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: auto;
+        }
+
+        .seat-meter-fill {
+            height: 100%;
+            width: 0;
+            background: #0284c7;
+            border-radius: inherit;
+        }
+
+        .showtime-slot.running .seat-meter-fill { background: #16a34a; }
+        .showtime-slot.finished .seat-meter-fill { background: #94a3b8; }
+        .showtime-slot.conflict .seat-meter-fill { background: #ef4444; }
+
+        .slot-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 800;
+            min-height: 34px;
+        }
+
+        .slot-footer > span:first-child {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .slot-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-shrink: 0;
+        }
+
+        .slot-action-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #dbe5f0;
+            background: #ffffff;
+            color: #475569;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-grid;
+            place-items: center;
+            transition: all 0.18s ease;
+        }
+
+        .slot-action-btn:hover {
+            border-color: #93c5fd;
+            color: #0b53a0;
+            background: #eff6ff;
+        }
+
+        .slot-action-btn.delete:hover {
+            border-color: #fecaca;
+            color: #dc2626;
+            background: #fff1f2;
+        }
+
+        .timeline-day-stack {
+            display: grid;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .timeline-day-card {
+            border: 1px solid #e5edf6;
+            border-radius: 8px;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        .timeline-day-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 1rem;
+            background: #fbfdff;
+            border-bottom: 1px solid #e5edf6;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .timeline-scroll {
+            overflow-x: auto;
+        }
+
+        .timeline-wrap {
+            min-width: 980px;
+        }
+
+        .timeline-header,
+        .timeline-row {
+            display: grid;
+            grid-template-columns: 190px minmax(760px, 1fr);
+        }
+
+        .timeline-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e5edf6;
+        }
+
+        .timeline-room-heading {
+            padding: 0.75rem 1rem;
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .timeline-scale {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            color: #94a3b8;
+            font-size: 0.74rem;
+            font-weight: 800;
+        }
+
+        .timeline-scale span {
+            padding: 0.75rem 0.35rem;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        .timeline-row {
+            min-height: 88px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .timeline-row:last-child {
+            border-bottom: 0;
+        }
+
+        .timeline-room-cell {
+            display: grid;
+            align-content: center;
+            gap: 0.2rem;
+            padding: 0.9rem 1rem;
+            border-right: 1px solid #e5edf6;
+            background: #ffffff;
+        }
+
+        .timeline-room-cell strong {
+            color: #0f172a;
+            font-size: 0.96rem;
+            font-weight: 800;
+        }
+
+        .timeline-room-cell span {
+            color: #64748b;
+            font-size: 0.74rem;
+            font-weight: 700;
+        }
+
+        .timeline-track {
+            position: relative;
+            min-height: 88px;
+            background: repeating-linear-gradient(
+                to right,
+                transparent,
+                transparent calc(12.5% - 1px),
+                #edf2f7 calc(12.5% - 1px),
+                #edf2f7 12.5%
+            );
+        }
+
+        .timeline-slot {
+            position: absolute;
+            top: 12px;
+            bottom: 12px;
+            min-width: 54px;
+            border: 1px solid #93c5fd;
+            border-left: 4px solid #0284c7;
+            border-radius: 8px;
+            background: #eff6ff;
+            padding: 0.45rem 0.55rem;
+            overflow: hidden;
+            display: grid;
+            align-content: center;
+            gap: 0.16rem;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .timeline-slot:hover {
+            z-index: 5;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .timeline-slot.running {
+            background: #f0fdf4;
+            border-color: #86efac;
+            border-left-color: #16a34a;
+        }
+
+        .timeline-slot.finished {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            border-left-color: #94a3b8;
+        }
+
+        .timeline-slot.conflict {
+            background: #fff1f2;
+            border-color: #fecaca;
+            border-left-color: #ef4444;
+        }
+
+        .timeline-slot strong,
+        .timeline-slot span {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .timeline-slot strong {
+            color: #0f172a;
+            font-size: 0.76rem;
+            font-weight: 800;
+        }
+
+        .timeline-slot span {
+            color: #64748b;
+            font-size: 0.68rem;
+            font-weight: 800;
+        }
+
+        .empty-state {
+            padding: 3rem 1rem;
+            text-align: center;
+            color: #64748b;
+            display: grid;
+            gap: 0.5rem;
+            justify-items: center;
+        }
+
+        .empty-state i {
+            width: 54px;
+            height: 54px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #0b53a0;
+            display: grid;
+            place-items: center;
+            font-size: 1.35rem;
+        }
+
+        @media (max-width: 980px) {
+            .showtime-header,
+            .showtime-viewbar,
+            .schedule-movie-head,
+            .movie-room-row {
+                grid-template-columns: 1fr;
+            }
+
+            .showtime-viewbar {
+                align-items: stretch;
+            }
+
+            .showtime-view-toggle {
+                justify-self: stretch;
+            }
+
+            .showtime-view-btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .schedule-movie-summary {
+                min-width: 0;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 680px) {
+            .showtime-header {
+                padding: 1rem;
+            }
+
+            .showtime-view-toggle {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .filter-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body data-page="showtimes">
     <div class="admin-layout">
@@ -38,115 +803,133 @@
         </aside>
         <main class="admin-main">
             <div class="app-container">
-        <!-- ================= TAB 2: QUẢN LÝ LỊCH CHIẾU ================= -->
-        <div id="showtimesSection" class="tab-section active">
-            <header class="app-header">
-                <h1 class="page-title">Quản lý lịch chiếu phim</h1>
-                <button class="btn btn-primary" id="btnOpenAddShowtimeModal">
-                    <i class="fa-solid fa-plus"></i> Thêm lịch chiếu mới
-                </button>
-            </header>
-
-            <section class="stats-grid">
-                <div class="stat-card stat-blue">
-                    <div class="stat-info">
-                        <span class="stat-label">Tổng lịch chiếu</span>
-                        <strong class="stat-value" id="statShowtimeTotal">0</strong>
-                    </div>
-                </div>
-                <div class="stat-card stat-green">
-                    <div class="stat-info">
-                        <span class="stat-label">Trong tuần (T2–T6)</span>
-                        <strong class="stat-value" id="statShowtimeWeekday">0</strong>
-                    </div>
-                </div>
-                <div class="stat-card stat-orange">
-                    <div class="stat-info">
-                        <span class="stat-label">Cuối tuần (T7–CN)</span>
-                        <strong class="stat-value" id="statShowtimeWeekend">0</strong>
-                    </div>
-                </div>
-                <div class="stat-card stat-red">
-                    <div class="stat-info">
-                        <span class="stat-label">Ngày lễ</span>
-                        <strong class="stat-value" id="statShowtimeHoliday">0</strong>
-                    </div>
-                </div>
-            </section>
-
-            <section class="filter-card">
-                <form id="showtimeFilterForm" class="filter-grid" onsubmit="event.preventDefault();">
-                    <div class="form-group">
-                        <label for="filterShowtimeMovie"><i class="fa-solid fa-film"></i> CHỌN PHIM</label>
-                        <select id="filterShowtimeMovie">
-                            <option value="">-- Tất cả phim --</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="filterShowtimeViewMode"><i class="fa-solid fa-calendar-week"></i> CHẾ ĐỘ XEM</label>
-                        <select id="filterShowtimeViewMode">
-                            <option value="all">Xem tất cả thời gian</option>
-                            <option value="week">Lịch chiếu tuần này</option>
-                            <option value="month">Lịch chiếu tháng này</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="filterShowtimeDayType"><i class="fa-solid fa-calendar-day"></i> LOẠI NGÀY CHIẾU</label>
-                        <select id="filterShowtimeDayType">
-                            <option value="">-- Tất cả loại ngày --</option>
-                            <option value="Trong tuần">Trong tuần</option>
-                            <option value="Cuối tuần">Cuối tuần</option>
-                            <option value="Ngày lễ">Ngày lễ</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="filterShowtimeDate">NGÀY CHIẾU CỤ THỂ</label>
-                        <input type="date" id="filterShowtimeDate">
-                    </div>
-                </form>
-                <div class="filter-actions">
-                    <span class="results-count" id="showtimeResultsCount">Tìm thấy 0 lịch chiếu</span>
-                    <div class="action-buttons">
-                        <button class="btn btn-outline" id="btnResetShowtimeFilter">
-                            <i class="fa-solid fa-rotate-left"></i> Làm mới bộ lọc
+                <div id="showtimesSection" class="tab-section active">
+                    <header class="app-header showtime-header">
+                        <div>
+                            <span class="showtime-kicker"><i class="fa-solid fa-calendar-check"></i> Lịch vận hành rạp</span>
+                            <h1 class="page-title">Quản lý lịch chiếu phim</h1>
+                            <p class="showtime-subtitle">Theo dõi suất chiếu, phòng chiếu, trạng thái và sức chứa trong cùng một màn hình.</p>
+                        </div>
+                        <button class="btn btn-primary" id="btnOpenAddShowtimeModal">
+                            <i class="fa-solid fa-plus"></i> Thêm lịch chiếu mới
                         </button>
-                        <button class="btn btn-primary" id="btnApplyShowtimeFilter">
-                            <i class="fa-solid fa-magnifying-glass"></i> Áp dụng bộ lọc
-                        </button>
-                    </div>
-                </div>
-            </section>
+                    </header>
 
-            <main class="table-card">
-                <div class="table-responsive">
-                    <table class="movie-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">PHIM</th>
-                                <th scope="col">NGÀY CHIẾU</th>
-                                <th scope="col">GIỜ CHIẾU</th>
-                                <th scope="col">PHÒNG CHIẾU</th>
-                                <th scope="col">LOẠI NGÀY</th>
-                                <th scope="col">GHẾ TRỐNG / TỔNG</th>
-                                <th scope="col" class="text-center">HÀNH ĐỘNG</th>
-                            </tr>
-                        </thead>
-                        <tbody id="showtimeTableBody"></tbody>
-                    </table>
-                </div>
-                <div class="table-footer">
-                    <span class="pagination-info" id="showtimePaginationInfo">Hiển thị trang 1 / 1</span>
-                    <div class="pagination-controls" id="showtimePaginationControls"></div>
-                </div>
-            </main>
-        </div>
+                    <section class="stats-grid">
+                        <div class="stat-card stat-blue">
+                            <div class="stat-info">
+                                <span class="stat-label">Trong phạm vi lọc</span>
+                                <strong class="stat-value" id="statShowtimeTotal">0</strong>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-green">
+                            <div class="stat-info">
+                                <span class="stat-label">Đang chiếu</span>
+                                <strong class="stat-value" id="statShowtimeWeekday">0</strong>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-orange">
+                            <div class="stat-info">
+                                <span class="stat-label">Sắp chiếu</span>
+                                <strong class="stat-value" id="statShowtimeWeekend">0</strong>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-red">
+                            <div class="stat-info">
+                                <span class="stat-label">Đã chiếu</span>
+                                <strong class="stat-value" id="statShowtimeHoliday">0</strong>
+                            </div>
+                        </div>
+                    </section>
 
+                    <section class="showtime-command-panel">
+                        <div class="showtime-viewbar">
+                            <div class="quick-date-strip" id="showtimeQuickDateStrip"></div>
+                            <div class="showtime-view-toggle" role="tablist" aria-label="Chuyển góc nhìn lịch chiếu">
+                                <button type="button" class="showtime-view-btn active" id="btnShowtimeMovieView" data-showtime-view="movie" role="tab" aria-selected="true">
+                                    <i class="fa-solid fa-film"></i> Góc nhìn theo Phim
+                                </button>
+                                <button type="button" class="showtime-view-btn" id="btnShowtimeRoomView" data-showtime-view="room" role="tab" aria-selected="false">
+                                    <i class="fa-solid fa-door-open"></i> Góc nhìn theo Phòng
+                                </button>
+                            </div>
+                        </div>
 
+                        <form id="showtimeFilterForm" class="filter-grid" onsubmit="event.preventDefault();">
+                            <div class="form-group">
+                                <label for="filterShowtimeMovie"><i class="fa-solid fa-film"></i> CHỌN PHIM</label>
+                                <select id="filterShowtimeMovie">
+                                    <option value="">-- Tất cả phim --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="filterShowtimeViewMode"><i class="fa-solid fa-calendar-week"></i> PHẠM VI LỊCH</label>
+                                <select id="filterShowtimeViewMode">
+                                    <option value="next7">7 ngày tới</option>
+                                    <option value="today">Hôm nay</option>
+                                    <option value="next30">30 ngày tới</option>
+                                    <option value="week">Tuần này</option>
+                                    <option value="month">Tháng này</option>
+                                    <option value="upcoming">Từ hôm nay trở đi</option>
+                                    <option value="past">Lịch đã qua</option>
+                                    <option value="all">Tất cả lịch chiếu</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="filterShowtimeDayType"><i class="fa-solid fa-calendar-day"></i> LOẠI NGÀY CHIẾU</label>
+                                <select id="filterShowtimeDayType">
+                                    <option value="">-- Tất cả loại ngày --</option>
+                                    <option value="Trong tuần">Trong tuần</option>
+                                    <option value="Cuối tuần">Cuối tuần</option>
+                                    <option value="Ngày lễ">Ngày lễ</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="filterShowtimeDate">NGÀY CHIẾU CỤ THỂ</label>
+                                <input type="date" id="filterShowtimeDate">
+                                <span class="helper-text">Nếu chọn ngày cụ thể, hệ thống chỉ hiển thị lịch của ngày đó.</span>
+                            </div>
+                        </form>
+                        <div class="filter-actions">
+                            <span class="results-count" id="showtimeResultsCount">Đang tải lịch chiếu...</span>
+                            <div class="action-buttons">
+                                <button class="btn btn-outline" id="btnResetShowtimeFilter">
+                                    <i class="fa-solid fa-rotate-left"></i> Làm mới bộ lọc
+                                </button>
+                                <button class="btn btn-primary" id="btnApplyShowtimeFilter">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Áp dụng bộ lọc
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <main class="showtime-board">
+                        <div class="showtime-board-header">
+                            <div class="showtime-board-title">
+                                <strong id="showtimeBoardTitle">Góc nhìn theo phim</strong>
+                                <span id="showtimeBoardSubtitle">Các suất chiếu được nhóm theo phim và phòng.</span>
+                            </div>
+                            <div class="showtime-legend">
+                                <span class="legend-item"><span class="legend-dot"></span> Sắp chiếu</span>
+                                <span class="legend-item"><span class="legend-dot running"></span> Đang chiếu</span>
+                                <span class="legend-item"><span class="legend-dot finished"></span> Đã chiếu</span>
+                                <span class="legend-item"><span class="legend-dot conflict"></span> Trùng phòng</span>
+                            </div>
+                        </div>
+
+                        <section id="showtimeMovieView" class="showtime-view active" role="tabpanel" aria-labelledby="btnShowtimeMovieView">
+                            <div id="showtimeMovieBoard" class="movie-schedule-stack"></div>
+                        </section>
+
+                        <section id="showtimeRoomView" class="showtime-view" role="tabpanel" aria-labelledby="btnShowtimeRoomView">
+                            <div id="showtimeRoomTimeline" class="timeline-day-stack"></div>
+                        </section>
+                    </main>
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- Modal 2: Thêm / Sửa lịch chiếu (KHÔNG có trường giá vé) -->
     <div class="modal-overlay" id="showtimeModal">
         <div class="modal-box">
             <div class="modal-header">
@@ -156,7 +939,6 @@
             <form id="showtimeForm" class="modal-body">
                 <input type="hidden" id="showtimeParamId">
 
-                <!-- Chọn phim -->
                 <div class="form-row">
                     <div class="form-group full-width">
                         <label for="showtimeMovieSelect">Chọn phim chiếu <span class="required">*</span></label>
@@ -166,19 +948,31 @@
                     </div>
                 </div>
 
-                <!-- Ngày chiếu & Giờ chiếu -->
-                <div class="form-row split-2">
+                <!-- Ngày chiếu (Từ ngày - Đến ngày) -->
+                <div class="form-row split-2" id="showtimeDateRow">
                     <div class="form-group">
-                        <label for="showtimeDateInput">Ngày chiếu <span class="required">*</span></label>
+                        <label id="lblShowtimeDateStart" for="showtimeDateInput">Từ ngày <span class="required">*</span></label>
                         <input type="date" id="showtimeDateInput" required>
                     </div>
+                    <div class="form-group" id="endDateGroup">
+                        <label for="showtimeEndDateInput">Đến ngày <span class="required">*</span></label>
+                        <input type="date" id="showtimeEndDateInput" required>
+                    </div>
+                </div>
+
+                <!-- Giờ chiếu & Số suất chiếu tự động -->
+                <div class="form-row split-2" id="slotCountRow">
                     <div class="form-group">
                         <label for="showtimeTimeInput">Giờ chiếu <span class="required">*</span></label>
                         <input type="time" id="showtimeTimeInput" required>
                     </div>
+                    <div class="form-group">
+                        <label for="showtimeSlotCount">Số suất chiếu tự động / ngày <span class="required">*</span></label>
+                        <input type="number" id="showtimeSlotCount" min="1" max="15" value="1" required>
+                        <small class="field-hint" style="color: var(--text-muted); font-size: 0.7rem;">Hệ thống tự tính giờ các suất tiếp theo (+trailer, +dọn phòng)</small>
+                    </div>
                 </div>
 
-                <!-- Phòng chiếu -->
                 <div class="form-row">
                     <div class="form-group full-width">
                         <label for="showtimeRoomInput">Phòng chiếu <span class="required">*</span></label>
@@ -188,7 +982,6 @@
                     </div>
                 </div>
 
-                <!-- Loại ngày (chỉ đọc, tự phát hiện) -->
                 <div class="form-row">
                     <div class="form-group full-width">
                         <label>Loại ngày chiếu (tự động phát hiện)</label>
@@ -211,6 +1004,21 @@
         </div>
     </div>
 
+    <!-- Toast notification container -->
+    <div id="toast-container"></div>
+
+    <!-- Confirm dialog overlay -->
+    <div id="confirmOverlay">
+        <div id="confirmDialog">
+            <i id="confirmIcon" class="fa-solid fa-triangle-exclamation"></i>
+            <h3 id="confirmTitle">Xác nhận</h3>
+            <p id="confirmMessage">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
+            <div class="confirm-buttons">
+                <button type="button" class="btn btn-secondary" id="confirmBtnCancel">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmBtnOk">Xác nhận</button>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/app.js"></script>
 </body>

@@ -21,8 +21,8 @@ public class Room {
     @Column(name = "room_name", nullable = false, columnDefinition = "NVARCHAR(100)")
     private String roomName;
 
-    /** Loáº¡i phÃ²ng: 2D, 3D, IMAX, Gold */
-    @Column(name = "room_type", columnDefinition = "NVARCHAR(20)")
+    /** Các định dạng chiếu phòng hỗ trợ, ví dụ: 2D, 3D, IMAX */
+    @Column(name = "room_type", columnDefinition = "NVARCHAR(255)")
     private String roomType = "2D";
 
     /** CÃ´ng nghá»‡ Ã¢m thanh: "Dolby 7.1", "Dolby Atmos", "DTS:X" */

@@ -94,4 +94,13 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
             ORDER BY m.genre
             """)
     List<String> findDistinctActiveGenres();
+
+    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE LOWER(m.title) = LOWER(:title) AND m.id <> :id")
+    boolean existsDuplicateTitle(@Param("title") String title, @Param("id") int id);
+
+    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE m.posterUrl = :posterUrl AND m.posterUrl IS NOT NULL AND m.posterUrl <> '' AND m.id <> :id")
+    boolean existsDuplicatePoster(@Param("posterUrl") String posterUrl, @Param("id") int id);
+
+    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE m.trailerUrl = :trailerUrl AND m.trailerUrl IS NOT NULL AND m.trailerUrl <> '' AND m.id <> :id")
+    boolean existsDuplicateTrailer(@Param("trailerUrl") String trailerUrl, @Param("id") int id);
 }
