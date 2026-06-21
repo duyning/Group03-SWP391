@@ -85,13 +85,13 @@ public class RoomController {
     @PostMapping("/add")
     public String addRoom(
             @RequestParam("roomName")  String  roomName,
-            @RequestParam("roomType")  String  roomType,
+            @RequestParam(value = "roomTypes", required = false) List<String> roomTypes,
             @RequestParam("audioTech") String  audioTech,
             @RequestParam("status")    String  status,
             RedirectAttributes redirectAttributes) {
 
         try {
-            roomService.addRoom(DEFAULT_CINEMA_ID, roomName, roomType, audioTech, status);
+            roomService.addRoom(DEFAULT_CINEMA_ID, roomName, roomTypes, audioTech, status);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã thêm phòng \"" + roomName + "\" thành công!");
         } catch (Exception e) {
@@ -107,13 +107,13 @@ public class RoomController {
     public String editRoom(
             @RequestParam("id")        Long   id,
             @RequestParam("roomName")  String roomName,
-            @RequestParam("roomType")  String roomType,
+            @RequestParam(value = "roomTypes", required = false) List<String> roomTypes,
             @RequestParam("audioTech") String audioTech,
             @RequestParam("status")    String status,
             RedirectAttributes redirectAttributes) {
 
         try {
-            roomService.updateRoom(id, roomName, roomType, audioTech, status);
+            roomService.updateRoom(id, roomName, roomTypes, audioTech, status);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã cập nhật phòng \"" + roomName + "\" thành công!");
         } catch (Exception e) {

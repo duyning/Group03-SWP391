@@ -36,6 +36,8 @@ const API_ROOMS     = '/api/rooms';
 // ==================== TRẠNG THÁI TOÀN CỤC ====================
 let moviesData      = [];   // Toàn bộ phim sau khi lọc
 let showtimesData   = [];   // Toàn bộ lịch chiếu sau khi lọc
+let showtimeStatsMap = {};  // Thống kê ghế theo từng lịch chiếu
+let activeShowtimeView = 'movie';
 let ticketsData     = [];   // Vé của suất chiếu đang xem
 let ticketsFiltered = [];   // Vé sau khi lọc theo trạng thái
 
@@ -91,10 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (page === 'showtimes') {
         initShowtimeEvents();
-        loadShowtimeStats();
         populateMovieDropdowns();
         populateRoomDropdown();
-        loadShowtimes({});
+        initShowtimeDefaultFilters();
+        loadShowtimes(getShowtimeFiltersFromUI());
     }
 
     if (page === 'tickets') {
@@ -131,9 +133,9 @@ function switchTab(tab) {
     } else if (tab === 'showtimes') {
         document.getElementById('showtimesSection')?.classList.add('active');
         document.getElementById('tabShowtimesBtn')?.classList.add('active');
-        loadShowtimeStats();
         populateMovieDropdowns();
-        loadShowtimes({});
+        initShowtimeDefaultFilters();
+        loadShowtimes(getShowtimeFiltersFromUI());
     } else if (tab === 'tickets') {
         document.getElementById('ticketsSection')?.classList.add('active');
         document.getElementById('tabTicketsBtn')?.classList.add('active');
@@ -156,6 +158,68 @@ function esc(str) {
 function formatVND(n) {
     if (n == null) return '0';
     return Number(n).toLocaleString('vi-VN');
+}
+
+// ==================== THÔNG BÁO TỰ ẨN ====================
+function ensureNoticeStyles() {
+    if (document.getElementById('appNoticeStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'appNoticeStyles';
+    style.textContent = `
+        .app-notice-stack {
+            position: fixed;
+            top: 22px;
+            right: 22px;
+            z-index: 100000;
+            display: grid;
+            gap: 10px;
+            max-width: min(380px, calc(100vw - 32px));
+        }
+        .app-notice {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .app-notice.success {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .app-notice.error {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function showAppNotice(type, message) {
+    ensureNoticeStyles();
+    let stack = document.getElementById('appNoticeStack');
+    if (!stack) {
+        stack = document.createElement('div');
+        stack.id = 'appNoticeStack';
+        stack.className = 'app-notice-stack';
+        document.body.appendChild(stack);
+    }
+
+    const notice = document.createElement('div');
+    notice.className = `app-notice ${type === 'error' ? 'error' : 'success'}`;
+    notice.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i><span>${esc(message)}</span>`;
+    stack.appendChild(notice);
+
+    setTimeout(() => {
+        notice.style.opacity = '0';
+        notice.style.transform = 'translateY(-6px)';
+        setTimeout(() => notice.remove(), 360);
+    }, 5000);
 }
 
 // ==================== FORMAT NGÀY (dd/MM/yyyy) ====================
@@ -246,6 +310,16 @@ function getMonthRange() {
     const first = new Date(today.getFullYear(), today.getMonth(), 1);
     const last  = new Date(today.getFullYear(), today.getMonth()+1, 0);
     return { startDate: isoDate(first), endDate: isoDate(last) };
+}
+
+function todayISO() {
+    return isoDate(new Date());
+}
+
+function addDaysISO(days) {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return isoDate(date);
 }
 
 function isoDate(d) {
@@ -1196,6 +1270,10 @@ function initShowtimeEvents() {
         applyShowtimeFilter();
     });
     document.getElementById('showtimeForm').addEventListener('submit',           handleShowtimeSave);
+    document.querySelectorAll('[data-showtime-view]').forEach(btn => {
+        btn.addEventListener('click', () => setShowtimeView(btn.dataset.showtimeView));
+    });
+    renderShowtimeQuickDates();
 
     // Tự phát hiện loại ngày khi chọn ngày chiếu và đồng bộ Đến ngày khi thêm mới
     document.getElementById('showtimeDateInput').addEventListener('change', e => {
@@ -1213,19 +1291,268 @@ function initShowtimeEvents() {
             }
         }
     });
+    document.getElementById('filterShowtimeDate').addEventListener('change', syncShowtimeQuickDates);
 }
 
-// --- Thống kê lịch chiếu ---
-async function loadShowtimeStats() {
-    try {
-        const r = await fetch(`${API_SHOWTIMES}/stats`);
-        if (!r.ok) return;
-        const s = await r.json();
-        document.getElementById('statShowtimeTotal').textContent   = s.total   ?? 0;
-        document.getElementById('statShowtimeWeekday').textContent = s.weekday ?? 0;
-        document.getElementById('statShowtimeWeekend').textContent = s.weekend ?? 0;
-        document.getElementById('statShowtimeHoliday').textContent = s.holiday ?? 0;
-    } catch(e) { console.error('Lỗi thống kê lịch chiếu:', e); }
+function initShowtimeDefaultFilters() {
+    const viewMode = document.getElementById('filterShowtimeViewMode');
+    if (viewMode && !viewMode.value) {
+        viewMode.value = 'next7';
+    }
+}
+
+function getShowtimeFiltersFromUI() {
+    return {
+        movieId:  document.getElementById('filterShowtimeMovie').value   || null,
+        viewMode: document.getElementById('filterShowtimeViewMode').value || 'next7',
+        dayType:  document.getElementById('filterShowtimeDayType').value  || null,
+        startDate:document.getElementById('filterShowtimeDate').value     || null
+    };
+}
+
+function setShowtimeView(view) {
+    activeShowtimeView = view === 'room' ? 'room' : 'movie';
+
+    document.querySelectorAll('[data-showtime-view]').forEach(btn => {
+        const isActive = btn.dataset.showtimeView === activeShowtimeView;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', String(isActive));
+    });
+
+    document.getElementById('showtimeMovieView')?.classList.toggle('active', activeShowtimeView === 'movie');
+    document.getElementById('showtimeRoomView')?.classList.toggle('active', activeShowtimeView === 'room');
+
+    const title = document.getElementById('showtimeBoardTitle');
+    const subtitle = document.getElementById('showtimeBoardSubtitle');
+    if (title) title.textContent = activeShowtimeView === 'movie' ? 'Góc nhìn theo phim' : 'Góc nhìn theo phòng';
+    if (subtitle) {
+        subtitle.textContent = activeShowtimeView === 'movie'
+            ? 'Các suất chiếu được nhóm theo phim và phòng.'
+            : 'Timeline phân bổ suất chiếu theo từng phòng trong ngày.';
+    }
+}
+
+function renderShowtimeQuickDates() {
+    const container = document.getElementById('showtimeQuickDateStrip');
+    if (!container) return;
+
+    const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const selectedDate = document.getElementById('filterShowtimeDate')?.value || '';
+    const days = Array.from({ length: 8 }, (_, index) => {
+        const date = new Date();
+        date.setDate(date.getDate() + index);
+        const iso = isoDate(date);
+        const label = index === 0 ? 'Hôm nay' : weekdays[date.getDay()];
+        return { iso, label, display: formatDate(iso).slice(0, 5) };
+    });
+
+    container.innerHTML = days.map(day => `
+        <button type="button" class="showtime-date-chip ${selectedDate === day.iso ? 'active' : ''}" data-showtime-date="${day.iso}">
+            <span>${day.label}</span>
+            <strong>${day.display}</strong>
+        </button>
+    `).join('');
+
+    container.querySelectorAll('[data-showtime-date]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('filterShowtimeDate').value = btn.dataset.showtimeDate;
+            syncShowtimeQuickDates();
+            applyShowtimeFilter();
+        });
+    });
+}
+
+function syncShowtimeQuickDates() {
+    const selectedDate = document.getElementById('filterShowtimeDate')?.value || '';
+    document.querySelectorAll('[data-showtime-date]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.showtimeDate === selectedDate);
+    });
+}
+
+function updateShowtimeStatsFromData() {
+    const stats = showtimesData.reduce((acc, st) => {
+        const status = getShowtimeStatus(st).key;
+        acc.total++;
+        if (status === 'running') acc.running++;
+        if (status === 'upcoming') acc.upcoming++;
+        if (status === 'finished') acc.finished++;
+        return acc;
+    }, { total: 0, running: 0, upcoming: 0, finished: 0 });
+
+    document.getElementById('statShowtimeTotal').textContent   = stats.total;
+    document.getElementById('statShowtimeWeekday').textContent = stats.running;
+    document.getElementById('statShowtimeWeekend').textContent = stats.upcoming;
+    document.getElementById('statShowtimeHoliday').textContent = stats.finished;
+}
+
+function getShowtimeViewRange(filters) {
+    const selectedDate = filters.startDate;
+    if (selectedDate) {
+        return { startDate: selectedDate, endDate: selectedDate, label: 'ngày ' + formatDate(selectedDate) };
+    }
+
+    switch (filters.viewMode) {
+        case 'today':
+            return { startDate: todayISO(), endDate: todayISO(), label: 'hôm nay' };
+        case 'next7':
+            return { startDate: todayISO(), endDate: addDaysISO(6), label: '7 ngày tới' };
+        case 'next30':
+            return { startDate: todayISO(), endDate: addDaysISO(29), label: '30 ngày tới' };
+        case 'week':
+            return { ...getWeekRange(), label: 'tuần này' };
+        case 'month':
+            return { ...getMonthRange(), label: 'tháng này' };
+        case 'past':
+            return { startDate: null, endDate: addDaysISO(-1), label: 'lịch đã qua' };
+        case 'all':
+            return { startDate: null, endDate: null, label: 'tất cả lịch chiếu' };
+        case 'upcoming':
+            return { startDate: todayISO(), endDate: null, label: 'từ hôm nay trở đi' };
+        default:
+            return { startDate: todayISO(), endDate: addDaysISO(6), label: '7 ngày tới' };
+    }
+}
+
+function getShowtimeStartDateTime(st) {
+    if (!st.showDate || !st.showTime) return null;
+    const time = st.showTime.length >= 5 ? st.showTime.substring(0, 5) : st.showTime;
+    return new Date(`${st.showDate}T${time}:00`);
+}
+
+function sortShowtimesForView(list, viewMode) {
+    const sorted = [...list].sort((a, b) => {
+        const first = getShowtimeStartDateTime(a)?.getTime() || 0;
+        const second = getShowtimeStartDateTime(b)?.getTime() || 0;
+        return first - second;
+    });
+
+    return viewMode === 'past' ? sorted.reverse() : sorted;
+}
+
+function getShowtimeDateLabel(dateString) {
+    const date = new Date(`${dateString}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return formatDate(dateString);
+
+    if (dateString === todayISO()) {
+        return `Hôm nay · ${formatDate(dateString)}`;
+    }
+    if (dateString === addDaysISO(1)) {
+        return `Ngày mai · ${formatDate(dateString)}`;
+    }
+
+    const weekdays = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    return `${weekdays[date.getDay()]} · ${formatDate(dateString)}`;
+}
+
+function groupBy(list, keyFn) {
+    return list.reduce((map, item) => {
+        const key = keyFn(item);
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(item);
+        return map;
+    }, new Map());
+}
+
+function getShowtimeStartMinutes(st) {
+    if (!st.showTime) return null;
+    const parts = st.showTime.split(':').map(Number);
+    if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return null;
+    return parts[0] * 60 + parts[1];
+}
+
+function getMovieDuration(st) {
+    const duration = Number(st.movie?.duration);
+    return Number.isFinite(duration) && duration > 0 ? duration : 120;
+}
+
+function addMinutesToTimeLabel(st, minutesToAdd) {
+    const startMinutes = getShowtimeStartMinutes(st);
+    if (startMinutes == null) return '—';
+    const total = startMinutes + minutesToAdd;
+    const hours = Math.floor(total / 60) % 24;
+    const minutes = total % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function getShowtimeEndTimeLabel(st) {
+    return addMinutesToTimeLabel(st, getMovieDuration(st));
+}
+
+function getShowtimeSeatStats(st) {
+    const stats = showtimeStatsMap[st.id];
+    const total = Number(stats?.totalCount || 0);
+    const empty = Number(stats?.emptyCount || 0);
+    const sold = Math.max(total - empty, 0);
+    const soldPercent = total > 0 ? Math.round((sold / total) * 100) : 0;
+    return { total, empty, sold, soldPercent };
+}
+
+function getShowtimeSlotClass(st) {
+    if (st.hasRoomConflict) return 'conflict';
+    const key = getShowtimeStatus(st).key;
+    if (key === 'running') return 'running';
+    if (key === 'finished') return 'finished';
+    return 'upcoming';
+}
+
+function decorateShowtimesWithConflicts(list) {
+    list.forEach(st => { st.hasRoomConflict = false; });
+    const groups = groupBy(list, st => `${st.showDate || ''}__${(st.room || '').toLowerCase()}`);
+    groups.forEach(group => {
+        const sorted = [...group].sort((a, b) => (getShowtimeStartMinutes(a) ?? 0) - (getShowtimeStartMinutes(b) ?? 0));
+        let latestEnd = null;
+        let latestShowtime = null;
+        sorted.forEach(st => {
+            const start = getShowtimeStartMinutes(st);
+            const end = start == null ? null : start + getMovieDuration(st);
+            if (start != null && latestEnd != null && start < latestEnd) {
+                st.hasRoomConflict = true;
+                if (latestShowtime) latestShowtime.hasRoomConflict = true;
+            }
+            if (end != null && (latestEnd == null || end > latestEnd)) {
+                latestEnd = end;
+                latestShowtime = st;
+            }
+        });
+    });
+    return list;
+}
+
+function getShowtimeConflictCount() {
+    return showtimesData.filter(st => st.hasRoomConflict).length;
+}
+
+async function hydrateShowtimeTicketStats() {
+    showtimeStatsMap = {};
+    const pairs = await Promise.all(showtimesData.map(st =>
+        fetch(`${API_TICKETS}/stats/${st.id}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(stats => [st.id, stats])
+            .catch(() => [st.id, null])
+    ));
+
+    pairs.forEach(([id, stats]) => {
+        if (stats) showtimeStatsMap[id] = stats;
+    });
+}
+
+function getShowtimeStatus(st) {
+    const start = getShowtimeStartDateTime(st);
+    if (!start || Number.isNaN(start.getTime())) {
+        return { key: 'upcoming', text: 'Chưa xác định', icon: 'fa-circle-question', className: 'showtime-status-upcoming', locked: false };
+    }
+
+    const duration = Number(st.movie?.duration || 120);
+    const end = new Date(start.getTime() + duration * 60 * 1000);
+    const now = new Date();
+
+    if (now >= start && now <= end) {
+        return { key: 'running', text: 'Đang chiếu', icon: 'fa-circle-play', className: 'showtime-status-running', locked: true };
+    }
+    if (now > end) {
+        return { key: 'finished', text: 'Đã chiếu', icon: 'fa-lock', className: 'showtime-status-finished', locked: true };
+    }
+    return { key: 'upcoming', text: 'Sắp chiếu', icon: 'fa-clock', className: 'showtime-status-upcoming', locked: false };
 }
 
 // --- Nạp phim vào các Select dropdown (có cache để không bị lag) ---
@@ -1294,36 +1621,34 @@ async function populateRoomDropdown(selectedRoomName = '', forceRefresh = false)
 async function loadShowtimes(filters) {
     const qs = new URLSearchParams();
     const { viewMode, movieId, dayType, startDate, endDate } = filters;
+    const range = getShowtimeViewRange({ viewMode, startDate, endDate });
 
     if (movieId) qs.append('movieId', movieId);
     if (dayType)  qs.append('dayType', dayType);
-
-    // Xử lý chế độ xem theo tuần / tháng
-    if (viewMode === 'week') {
-        const { startDate: sd, endDate: ed } = getWeekRange();
-        qs.append('startDate', sd); qs.append('endDate', ed);
-    } else if (viewMode === 'month') {
-        const { startDate: sd, endDate: ed } = getMonthRange();
-        qs.append('startDate', sd); qs.append('endDate', ed);
-    } else {
-        // Lọc theo ngày cụ thể (startDate=endDate)
-        if (startDate) { qs.append('startDate', startDate); qs.append('endDate', startDate); }
-        if (endDate && endDate !== startDate) qs.append('endDate', endDate);
-    }
+    if (range.startDate) qs.append('startDate', range.startDate);
+    if (range.endDate)   qs.append('endDate', range.endDate);
 
     try {
         const r = await fetch(`${API_SHOWTIMES}${qs.toString() ? '?'+qs : ''}`);
         if (!r.ok) throw new Error();
-        showtimesData  = await r.json();
+        showtimesData  = decorateShowtimesWithConflicts(sortShowtimesForView(await r.json(), viewMode));
         showtimesPage  = 1;
+        await hydrateShowtimeTicketStats();
+        updateShowtimeStatsFromData();
+        const roomCount = new Set(showtimesData.map(st => st.room).filter(Boolean)).size;
+        const conflictCount = getShowtimeConflictCount();
         document.getElementById('showtimeResultsCount').textContent =
-            `Tìm thấy ${showtimesData.length} lịch chiếu`;
+            `${showtimesData.length} suất chiếu · ${roomCount} phòng · ${range.label}${conflictCount ? ` · ${conflictCount} trùng phòng` : ' · không trùng phòng'}`;
+        syncShowtimeQuickDates();
         renderShowtimeTable();
     } catch(e) {
-        document.getElementById('showtimeTableBody').innerHTML =
-            `<tr><td colspan="7" class="text-center" style="padding:3rem;color:var(--stat-red);">
-                <i class="fa-solid fa-triangle-exclamation"></i> Không thể tải lịch chiếu.
-            </td></tr>`;
+        showtimesData = [];
+        showtimeStatsMap = {};
+        showtimesPage = 1;
+        updateShowtimeStatsFromData();
+        document.getElementById('showtimeResultsCount').textContent =
+            'Không thể tải lịch chiếu trong phạm vi lọc hiện tại';
+        renderShowtimeErrorState();
     }
 }
 
@@ -1389,119 +1714,222 @@ function groupShowtimes(list) {
     return Array.from(groupMap.values());
 }
 
-// --- Render bảng lịch chiếu (hiển thị dải ngày) ---
+// --- Render lịch chiếu theo 2 góc nhìn vận hành ---
 async function renderShowtimeTable() {
-    const tbody = document.getElementById('showtimeTableBody');
-    tbody.innerHTML = '';
+    updateShowtimeStatsFromData();
+    renderShowtimeMovieBoard();
+    renderShowtimeRoomTimeline();
+}
+
+function renderShowtimeErrorState() {
+    const errorHtml = `
+        <div class="empty-state">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <strong>Không thể tải lịch chiếu</strong>
+            <span>Vui lòng kiểm tra kết nối hoặc thử lại bộ lọc khác.</span>
+        </div>`;
+    const movieBoard = document.getElementById('showtimeMovieBoard');
+    const roomTimeline = document.getElementById('showtimeRoomTimeline');
+    if (movieBoard) movieBoard.innerHTML = errorHtml;
+    if (roomTimeline) roomTimeline.innerHTML = errorHtml;
+}
+
+function renderShowtimeEmptyState(container, icon, title, message) {
+    if (!container) return;
+    container.innerHTML = `
+        <div class="empty-state">
+            <i class="fa-solid ${icon}"></i>
+            <strong>${esc(title)}</strong>
+            <span>${esc(message)}</span>
+        </div>`;
+}
+
+function renderShowtimeMovieBoard() {
+    const container = document.getElementById('showtimeMovieBoard');
+    if (!container) return;
 
     if (!showtimesData.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;color:var(--text-muted);">
-            <i class="fa-regular fa-calendar-xmark" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
-            Không tìm thấy lịch chiếu nào.
-        </td></tr>`;
-        buildPagination('showtimePaginationControls','showtimePaginationInfo', 0, 1, ()=>{});
+        renderShowtimeEmptyState(container, 'fa-calendar-xmark', 'Chưa có lịch chiếu', 'Không tìm thấy suất chiếu nào trong phạm vi lọc hiện tại.');
         return;
     }
 
-    // Nhóm lịch chiếu theo phim + phòng + dải ngày
-    const groups = groupShowtimes(showtimesData);
-    const start  = (showtimesPage - 1) * PAGE_SIZE;
-    const slice  = groups.slice(start, start + PAGE_SIZE);
-    const badgeMap = { 'Trong tuần':'badge-weekday', 'Cuối tuần':'badge-weekend', 'Ngày lễ':'badge-holiday' };
+    const movieGroups = [...groupBy(showtimesData, st => String(st.movie?.id || st.movie?.title || 'unknown')).values()];
+    container.innerHTML = movieGroups.map(group => {
+        const first = group[0];
+        const movie = first.movie || {};
+        const roomGroups = [...groupBy(group, st => st.room || 'Chưa chọn phòng').entries()];
+        const totalSeats = group.reduce((sum, st) => sum + getShowtimeSeatStats(st).total, 0);
+        const soldSeats = group.reduce((sum, st) => sum + getShowtimeSeatStats(st).sold, 0);
+        const poster = movie.posterUrl
+            ? `<img class="schedule-poster" src="${esc(movie.posterUrl)}" alt="Poster ${esc(movie.title || '')}" onerror="this.outerHTML='<div class=\\'schedule-poster-placeholder\\'><i class=\\'fa-regular fa-image\\'></i></div>'">`
+            : `<div class="schedule-poster-placeholder"><i class="fa-regular fa-image"></i></div>`;
 
-    // Lấy thống kê ghế từ suất chiếu đầu tiên trong mỗi nhóm (không chặn render)
-    const statsPromises = slice.map(g =>
-        fetch(`${API_TICKETS}/stats/${g.ids[0]}`).then(r => r.ok ? r.json() : null).catch(() => null)
-    );
-    const statsResults = await Promise.all(statsPromises);
-
-    slice.forEach((g, idx) => {
-        const mv = g.movie;
-        const poster = mv.posterUrl
-            ? `<img class="movie-poster-thumb" src="${esc(mv.posterUrl)}" alt="Poster"
-                    onerror="this.outerHTML='<div class=\\'movie-poster-placeholder\\'><i class=\\'fa-regular fa-image\\'></i></div>'">`
-            : `<div class="movie-poster-placeholder"><i class="fa-regular fa-image"></i></div>`;
-
-        // Dải ngày
-        const dateRange = g.minDate === g.maxDate
-            ? `<strong>${formatDate(g.minDate)}</strong>`
-            : `<strong>${formatDate(g.minDate)}</strong>
-               <span style="color:var(--text-muted);font-size:.8rem;"> → </span>
-               <strong>${formatDate(g.maxDate)}</strong>`;
-
-        const totalSlots = g.ids.length;
-        const datePerSlot = totalSlots > 1
-            ? `<span style="font-size:.75rem;color:var(--text-muted);display:block;margin-top:2px;">${totalSlots} suất</span>`
-            : '';
-
-        // Render các badge khung giờ — 1 badge mỗi slot, hiển thị giờ bắt đầu → kết thúc
-        const slotBadges = g.slots.map(slot => {
-            const slotIdsJson = JSON.stringify(slot.ids);
-            const startT = formatTime(slot.showTime);
-            const endT   = getEndTime(slot.showTime, mv.duration);
-            return `<span class="slot-time-badge" style="
-                display:inline-block; margin:2px 3px 2px 0;
-                background:var(--primary-color);
-                color:#fff; padding:3px 9px; border-radius:20px;
-                font-size:.82rem; font-weight:600; white-space:nowrap;
-                cursor:pointer;
-                " onclick="editShowtime(${slot.ids[0]}, ${slotIdsJson})" title="Nhấn để sửa slot ${startT}">${startT} – ${endT}</span>`;
-        }).join('');
-
-        const stats    = statsResults[idx];
-        const seatInfo = stats
-            ? `<span style="font-weight:600;">${stats.emptyCount}</span> / ${stats.totalCount}
-               <span style="font-size:.75rem;color:var(--text-muted);">(trống/tổng)</span>`
-            : '—';
-
-        const idsJson = JSON.stringify(g.ids);
-        const firstSlot = g.slots[0];
-        const actionHtml = `
-            <button class="action-btn action-btn-edit" onclick="editShowtime(${firstSlot.ids[0]}, ${idsJson})" title="Sửa nhóm lịch chiếu">Sửa</button>
-            <button class="action-btn action-btn-delete" onclick="deleteShowtimeGroup(${idsJson})" title="Xóa tất cả ${totalSlots} suất">Xóa (${totalSlots})</button>`;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>
-                <div class="movie-info-cell">
+        return `
+            <article class="schedule-movie-card">
+                <div class="schedule-movie-head">
                     ${poster}
-                    <div class="movie-meta">
-                        <span class="movie-title-text">${esc(mv.title||'Phim đã xóa')}</span>
-                        <span class="movie-director-text">ĐD: ${esc(mv.director||'—')}</span>
+                    <div>
+                        <h2 class="schedule-movie-title">${esc(movie.title || 'Phim đã xóa')}</h2>
+                        <div class="schedule-meta">
+                            <span class="schedule-chip"><i class="fa-regular fa-clock"></i>${getMovieDuration(first)} phút</span>
+                            <span class="schedule-chip"><i class="fa-solid fa-door-open"></i>${roomGroups.length} phòng</span>
+                            <span class="schedule-chip"><i class="fa-solid fa-ticket"></i>${group.length} suất</span>
+                            <span class="schedule-chip"><i class="fa-solid fa-user-tie"></i>${esc(movie.director || 'Chưa cập nhật')}</span>
+                        </div>
+                    </div>
+                    <div class="schedule-movie-summary">
+                        <div class="summary-box">
+                            <span>Đã đặt</span>
+                            <strong>${soldSeats}</strong>
+                        </div>
+                        <div class="summary-box">
+                            <span>Sức chứa</span>
+                            <strong>${totalSeats || '—'}</strong>
+                        </div>
                     </div>
                 </div>
-            </td>
-            <td>${dateRange}${datePerSlot}</td>
-            <td style="min-width:160px;">${slotBadges}</td>
-            <td>${esc(g.room||'—')}</td>
-            <td><span class="badge-daytype ${badgeMap[g.dayType]||''}">${esc(g.dayType||'—')}</span></td>
-            <td>${seatInfo}</td>
-            <td>
-                <div class="action-cell">
-                    ${actionHtml}
+                <div class="movie-room-list">
+                    ${roomGroups.map(([room, items]) => renderMovieRoomRow(room, items)).join('')}
                 </div>
-            </td>`;
-        tbody.appendChild(tr);
-    });
+            </article>`;
+    }).join('');
+}
 
-    buildPagination('showtimePaginationControls','showtimePaginationInfo',
-        groups.length, showtimesPage, p => { showtimesPage = p; renderShowtimeTable(); });
+function renderMovieRoomRow(room, items) {
+    const sorted = [...items].sort((a, b) => (getShowtimeStartMinutes(a) ?? 0) - (getShowtimeStartMinutes(b) ?? 0));
+    const totalSeats = sorted.reduce((sum, st) => sum + getShowtimeSeatStats(st).total, 0);
+    return `
+        <div class="movie-room-row">
+            <div class="room-stamp">
+                <i class="fa-solid fa-door-open"></i>
+                <div>
+                    ${esc(room)}
+                    <span>${sorted.length} suất · ${totalSeats || '—'} ghế</span>
+                </div>
+            </div>
+            <div class="time-slot-grid">
+                ${sorted.map(renderShowtimeSlotCard).join('')}
+            </div>
+        </div>`;
+}
+
+function renderShowtimeSlotCard(st) {
+    const status = getShowtimeStatus(st);
+    const statusClass = getShowtimeSlotClass(st);
+    const seatStats = getShowtimeSeatStats(st);
+    const statusText = st.hasRoomConflict ? 'Trùng phòng' : status.text;
+    const statusIcon = st.hasRoomConflict ? 'fa-triangle-exclamation' : status.icon;
+    const actionButtons = status.locked
+        ? `<span class="locked-note"><i class="fa-solid fa-lock"></i> Đã khóa</span>`
+        : `<span class="slot-actions">
+                <button type="button" class="slot-action-btn" title="Sửa lịch chiếu" onclick="editShowtime(${st.id})"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="slot-action-btn delete" title="Xóa lịch chiếu" onclick="deleteShowtime(${st.id})"><i class="fa-solid fa-trash"></i></button>
+           </span>`;
+
+    return `
+        <div class="showtime-slot ${statusClass}">
+            <div class="slot-topline">
+                <div>
+                    <div class="slot-time">${formatTime(st.showTime)}</div>
+                    <div class="slot-date">${getShowtimeDateLabel(st.showDate)}</div>
+                </div>
+                <span class="showtime-status ${st.hasRoomConflict ? 'showtime-status-conflict' : status.className}">
+                    <i class="fa-solid ${statusIcon}"></i>${statusText}
+                </span>
+            </div>
+            <div class="seat-meter" aria-label="Tỷ lệ ghế đã đặt">
+                <div class="seat-meter-fill" style="width:${seatStats.soldPercent}%;"></div>
+            </div>
+            <div class="slot-footer">
+                <span>${seatStats.sold}/${seatStats.total || '—'} ghế đã đặt</span>
+                ${actionButtons}
+            </div>
+        </div>`;
+}
+
+function renderShowtimeRoomTimeline() {
+    const container = document.getElementById('showtimeRoomTimeline');
+    if (!container) return;
+
+    if (!showtimesData.length) {
+        renderShowtimeEmptyState(container, 'fa-calendar-xmark', 'Chưa có lịch chiếu', 'Không tìm thấy suất chiếu nào trong phạm vi lọc hiện tại.');
+        return;
+    }
+
+    const dateGroups = [...groupBy(showtimesData, st => st.showDate || 'unknown').entries()]
+        .sort(([a], [b]) => a.localeCompare(b));
+
+    container.innerHTML = dateGroups.map(([date, items]) => {
+        const roomGroups = [...groupBy(items, st => st.room || 'Chưa chọn phòng').entries()]
+            .sort(([a], [b]) => a.localeCompare(b, 'vi'));
+        const conflictCount = items.filter(st => st.hasRoomConflict).length;
+        return `
+            <article class="timeline-day-card">
+                <div class="timeline-day-head">
+                    <span><i class="fa-regular fa-calendar-days"></i> ${esc(getShowtimeDateLabel(date))}</span>
+                    <span>${items.length} suất · ${roomGroups.length} phòng${conflictCount ? ` · ${conflictCount} trùng phòng` : ''}</span>
+                </div>
+                <div class="timeline-scroll">
+                    <div class="timeline-wrap">
+                        <div class="timeline-header">
+                            <div class="timeline-room-heading">Phòng chiếu</div>
+                            <div class="timeline-scale">
+                                <span>08:00</span><span>10:00</span><span>12:00</span><span>14:00</span>
+                                <span>16:00</span><span>18:00</span><span>20:00</span><span>22:00</span>
+                            </div>
+                        </div>
+                        ${roomGroups.map(([room, roomItems]) => renderTimelineRoomRow(room, roomItems)).join('')}
+                    </div>
+                </div>
+            </article>`;
+    }).join('');
+}
+
+function renderTimelineRoomRow(room, items) {
+    const sorted = [...items].sort((a, b) => (getShowtimeStartMinutes(a) ?? 0) - (getShowtimeStartMinutes(b) ?? 0));
+    const totalSeats = sorted.reduce((sum, st) => sum + getShowtimeSeatStats(st).total, 0);
+    return `
+        <div class="timeline-row">
+            <div class="timeline-room-cell">
+                <strong>${esc(room)}</strong>
+                <span>${sorted.length} suất · ${totalSeats || '—'} ghế</span>
+            </div>
+            <div class="timeline-track">
+                ${sorted.map(renderTimelineSlot).join('')}
+            </div>
+        </div>`;
+}
+
+function renderTimelineSlot(st) {
+    const startMinutes = getShowtimeStartMinutes(st);
+    const dayStart = 8 * 60;
+    const dayLength = 16 * 60;
+    const duration = getMovieDuration(st);
+    const left = Math.max(0, Math.min(100, (((startMinutes ?? dayStart) - dayStart) / dayLength) * 100));
+    const width = Math.max(5.5, Math.min(100 - left, (duration / dayLength) * 100));
+    const statusClass = getShowtimeSlotClass(st);
+    const movie = st.movie || {};
+    const seatStats = getShowtimeSeatStats(st);
+    const title = `${movie.title || 'Phim đã xóa'} · ${formatTime(st.showTime)} - ${getShowtimeEndTimeLabel(st)} · ${seatStats.sold}/${seatStats.total || '—'} ghế`;
+
+    return `
+        <div class="timeline-slot ${statusClass}" style="left:${left.toFixed(2)}%; width:${width.toFixed(2)}%;" title="${esc(title)}" onclick="${getShowtimeStatus(st).locked ? '' : `editShowtime(${st.id})`}">
+            <strong>${esc(movie.title || 'Phim đã xóa')}</strong>
+            <span>${formatTime(st.showTime)} - ${getShowtimeEndTimeLabel(st)}</span>
+            <span>${st.hasRoomConflict ? 'Trùng phòng' : `${seatStats.sold}/${seatStats.total || '—'} ghế`}</span>
+        </div>`;
 }
 
 // --- Bộ lọc lịch chiếu ---
 function applyShowtimeFilter() {
-    loadShowtimes({
-        movieId:  document.getElementById('filterShowtimeMovie').value   || null,
-        viewMode: document.getElementById('filterShowtimeViewMode').value || 'all',
-        dayType:  document.getElementById('filterShowtimeDayType').value  || null,
-        startDate:document.getElementById('filterShowtimeDate').value     || null
-    });
+    loadShowtimes(getShowtimeFiltersFromUI());
 }
 function resetShowtimeFilter() {
     ['filterShowtimeMovie','filterShowtimeDayType','filterShowtimeDate']
         .forEach(id => document.getElementById(id).value = '');
-    document.getElementById('filterShowtimeViewMode').value = 'all';
-    loadShowtimes({});
+    document.getElementById('filterShowtimeViewMode').value = 'next7';
+    syncShowtimeQuickDates();
+    loadShowtimes(getShowtimeFiltersFromUI());
 }
 
 function openShowtimeModal(isEdit) {
@@ -1530,6 +1958,8 @@ function openShowtimeModal(isEdit) {
         // Đặt min = hôm nay cho cả hai input ngày
         setMinShowtimeDateToday('showtimeDateInput');
         setMinShowtimeDateToday('showtimeEndDateInput');
+        populateMovieDropdowns();
+        populateRoomDropdown();
     } else {
         // Ẩn slotCount khi chỉnh sửa
         if (slotRow) slotRow.style.display = 'none';
@@ -1538,12 +1968,18 @@ function openShowtimeModal(isEdit) {
         setMinShowtimeDateToday('showtimeDateInput');
         setMinShowtimeDateToday('showtimeEndDateInput');
     }
-
-    populateMovieDropdowns();
-    populateRoomDropdown();
     document.getElementById('showtimeModal').classList.add('show');
 }
 function closeShowtimeModal() { document.getElementById('showtimeModal').classList.remove('show'); }
+
+async function readShowtimeApiError(response) {
+    try {
+        const data = await response.json();
+        return data.message || data.error || 'Lỗi khi lưu lịch chiếu. Vui lòng thử lại.';
+    } catch (e) {
+        return 'Lỗi khi lưu lịch chiếu. Vui lòng thử lại.';
+    }
+}
 
 // --- Lưu lịch chiếu ---
 async function handleShowtimeSave(e) {
@@ -1660,7 +2096,7 @@ async function handleShowtimeSave(e) {
         const payload = await r.json().catch(() => ({}));
 
         if (!r.ok) {
-            throw new Error(payload.error || 'Lỗi khi lưu lịch chiếu. Vui lòng kiểm tra lại.');
+            throw new Error(payload.error || payload.message || 'Lỗi khi lưu lịch chiếu. Vui lòng kiểm tra lại.');
         }
 
         // Tính số suất đã tạo/cập nhật từ kết quả trả về
@@ -1671,7 +2107,6 @@ async function handleShowtimeSave(e) {
 
         showToast('success', id ? 'Cập nhật thành công!' : 'Thêm lịch chiếu thành công!', successMsg);
         closeShowtimeModal();
-        loadShowtimeStats();
         applyShowtimeFilter();
         populateShowtimeDropdown();
     } catch(err) {
@@ -1729,7 +2164,6 @@ async function deleteShowtime(id) {
         const r = await fetch(`${API_SHOWTIMES}/${id}`, { method:'DELETE' });
         if (!r.ok) throw new Error();
         showToast('success', 'Xóa thành công!', 'Lịch chiếu đã được xóa khỏi hệ thống.');
-        loadShowtimeStats();
         applyShowtimeFilter();
         populateShowtimeDropdown();
     } catch(e) {
@@ -1750,7 +2184,6 @@ async function deleteShowtimeGroup(ids) {
         // Xóa tuần tự từng suất trong nhóm
         await Promise.all(ids.map(id => fetch(`${API_SHOWTIMES}/${id}`, { method: 'DELETE' })));
         showToast('success', 'Xóa nhóm thành công!', `Đã xóa ${ids.length} suất chiếu khỏi hệ thống.`);
-        loadShowtimeStats();
         applyShowtimeFilter();
         populateShowtimeDropdown();
     } catch(e) {

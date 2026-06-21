@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 
@@ -43,8 +44,10 @@ public class PostController {
     @PostMapping("/save")
     public String savePost(
             @ModelAttribute Post post,
-            @RequestParam("thumbnailFile") MultipartFile file) throws IOException {
+            @RequestParam("thumbnailFile") MultipartFile file,
+            RedirectAttributes redirectAttributes) throws IOException {
         postService.createPost(post, file);
+        redirectAttributes.addFlashAttribute("successMessage", "Đã thêm bài viết mới.");
         return "redirect:/admin/posts";
     }
 
@@ -55,14 +58,18 @@ public class PostController {
     }
 
     @PostMapping("/update")
-    public String updatePost(@ModelAttribute Post post) {
+    public String updatePost(@ModelAttribute Post post,
+                             RedirectAttributes redirectAttributes) {
         postService.updatePost(post);
+        redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật bài viết.");
         return "redirect:/admin/posts";
     }
 
     @GetMapping("/delete/{id}")
-    public String deletePost(@PathVariable("id") Long id) {
+    public String deletePost(@PathVariable("id") Long id,
+                             RedirectAttributes redirectAttributes) {
         postService.deletePost(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Đã xóa bài viết.");
         return "redirect:/admin/posts";
     }
 

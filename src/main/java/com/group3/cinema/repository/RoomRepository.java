@@ -36,7 +36,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
         SELECT r FROM Room r
         WHERE r.cinemaId = :cinemaId
           AND (:roomName IS NULL OR r.roomName LIKE %:roomName%)
-          AND (:roomType IS NULL OR r.roomType = :roomType)
+          AND (:roomType IS NULL OR r.roomType LIKE %:roomType%)
           AND (:status   IS NULL OR r.status   = :status)
           AND (:minSeats IS NULL OR r.totalSeats >= :minSeats)
         ORDER BY r.id ASC

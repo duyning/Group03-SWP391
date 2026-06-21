@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -23,7 +24,7 @@ import java.util.Set;
 public class RoomService {
 
     private static final int ROOM_NAME_MAX_LENGTH = 100;
-    private static final int ROOM_TYPE_MAX_LENGTH = 20;
+    private static final int ROOM_TYPE_MAX_LENGTH = 255;
     private static final int AUDIO_TECH_MAX_LENGTH = 50;
     private static final Set<String> ALLOWED_STATUSES = Set.of("Hoạt động", "Bảo trì", "Tạm ngưng");
 
@@ -72,9 +73,9 @@ public class RoomService {
                 .filter(room -> roomNameFilter == null
                         || room.getRoomName().toLowerCase().contains(roomNameFilter))
                 .filter(room -> roomTypeFilter == null
-                        || room.getRoomType().toLowerCase().contains(roomTypeFilter))
+                        || (room.getRoomType() != null && room.getRoomType().toLowerCase().contains(roomTypeFilter)))
                 .filter(room -> audioTechFilter == null
-                        || room.getAudioTech().toLowerCase().contains(audioTechFilter))
+                        || (room.getAudioTech() != null && room.getAudioTech().toLowerCase().contains(audioTechFilter)))
                 .filter(room -> statusFilter == null
                         || statusFilter.equals(room.getStatus()))
                 .filter(room -> minSeats == null
@@ -143,10 +144,10 @@ public class RoomService {
     }
 
     @Transactional
-    public Room addRoom(Long cinemaId, String roomName, String roomType,
+    public Room addRoom(Long cinemaId, String roomName, List<String> roomTypes,
                         String audioTech, String status) {
         String cleanRoomName = validateRoomName(roomName);
-        String cleanRoomType = validateRoomType(roomType);
+        String cleanRoomType = validateRoomTypes(roomTypes);
         String cleanAudioTech = validateAudioTech(audioTech);
         String cleanStatus = validateStatus(status);
         validateCinemaId(cinemaId);
@@ -167,13 +168,13 @@ public class RoomService {
     }
 
     @Transactional
-    public Room updateRoom(Long id, String roomName, String roomType,
+    public Room updateRoom(Long id, String roomName, List<String> roomTypes,
                            String audioTech, String status) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("ID phòng không hợp lệ.");
         }
         String cleanRoomName = validateRoomName(roomName);
-        String cleanRoomType = validateRoomType(roomType);
+        String cleanRoomType = validateRoomTypes(roomTypes);
         String cleanAudioTech = validateAudioTech(audioTech);
         String cleanStatus = validateStatus(status);
 
@@ -244,21 +245,35 @@ public class RoomService {
         return cleanRoomName;
     }
 
-    private String validateRoomType(String roomType) {
-        if (!StringUtils.hasText(roomType)) {
-            throw new IllegalArgumentException("Loại phòng không được để trống.");
+    private String validateRoomTypes(List<String> roomTypes) {
+        if (roomTypes == null || roomTypes.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một loại phòng.");
         }
-        String cleanRoomType = roomType.trim();
-        if (cleanRoomType.length() > ROOM_TYPE_MAX_LENGTH) {
-            throw new IllegalArgumentException("Loại phòng không được vượt quá " + ROOM_TYPE_MAX_LENGTH + " ký tự.");
+
+        LinkedHashSet<String> cleanRoomTypes = new LinkedHashSet<>();
+        for (String roomType : roomTypes) {
+            if (!StringUtils.hasText(roomType)) {
+                continue;
+            }
+            String cleanRoomType = roomType.trim();
+            boolean active = roomTypeRepository.findByNameIgnoreCase(cleanRoomType)
+                    .filter(type -> type.isActive())
+                    .isPresent();
+            if (!active) {
+                throw new IllegalArgumentException("Loại phòng \"" + cleanRoomType + "\" không tồn tại hoặc đang bị tắt.");
+            }
+            cleanRoomTypes.add(cleanRoomType);
         }
-        boolean active = roomTypeRepository.findByNameIgnoreCase(cleanRoomType)
-                .filter(type -> type.isActive())
-                .isPresent();
-        if (!active) {
-            throw new IllegalArgumentException("Loại phòng không tồn tại hoặc đang bị tắt.");
+
+        if (cleanRoomTypes.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một loại phòng.");
         }
-        return cleanRoomType;
+
+        String joinedRoomTypes = String.join(", ", cleanRoomTypes);
+        if (joinedRoomTypes.length() > ROOM_TYPE_MAX_LENGTH) {
+            throw new IllegalArgumentException("Danh sách loại phòng không được vượt quá " + ROOM_TYPE_MAX_LENGTH + " ký tự.");
+        }
+        return joinedRoomTypes;
     }
 
     private String validateAudioTech(String audioTech) {

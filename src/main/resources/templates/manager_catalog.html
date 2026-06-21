@@ -98,11 +98,11 @@
 </aside>
 
 <main class="main">
-    <div th:if="${successMessage}" class="alert alert-success">
+    <div th:if="${successMessage}" class="alert alert-success" data-auto-dismiss="5000">
         <i class="fas fa-check-circle"></i>
         <span th:text="${successMessage}"></span>
     </div>
-    <div th:if="${errorMessage}" class="alert alert-error">
+    <div th:if="${errorMessage}" class="alert alert-error" data-auto-dismiss="5000">
         <i class="fas fa-times-circle"></i>
         <span th:text="${errorMessage}"></span>
     </div>
@@ -340,5 +340,6 @@
         </section>
     </div>
 </main>
+<script src="/js/auto-dismiss-alerts.js"></script>
 </body>
 </html>

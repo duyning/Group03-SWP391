@@ -3,17 +3,14 @@ package com.group3.cinema.service.api;
 /**
  * Dự án: Cinema 2026 — SWP391 Group 03
  * File: ShowtimeService.java
- * Chức năng: Lớp nghiệp vụ (Service) xử lý các nghiệp vụ liên quan đến lịch chiếu (Showtime).
- *            Bao gồm: CRUD lịch chiếu, lọc tìm kiếm, tự động tính toán loại ngày
- *            (Ngày trong tuần/Cuối tuần/Ngày lễ), kiểm tra xung đột phòng chiếu theo thời gian,
- *            và thêm lịch chiếu hàng loạt theo dải ngày.
+ * Chức năng: Xử lý nghiệp vụ lịch chiếu: CRUD, lọc, phân loại ngày, chống trùng phòng
+ *            theo khoảng thời gian và tạo lịch hàng loạt theo dải ngày.
  * Người viết: Group 03 - SWP391
- * Người sửa: TrienLX
- * Ngày sửa: 2026-06-12
+ * Người sửa: TrienLX, NinhDD
  */
 
-import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.entity.Movie;
+import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,15 +20,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// Đánh dấu lớp này là một Service xử lý nghiệp vụ quản lý lịch chiếu
 @Service
 public class ShowtimeService {
+
+    private static final int DEFAULT_MOVIE_DURATION_MINUTES = 120;
+    private static final int ROOM_TURNOVER_MINUTES = 30;
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     private final ShowtimeRepository showtimeRepository;
     private final MovieRepository movieRepository;
@@ -54,180 +55,182 @@ public class ShowtimeService {
         return showtimeRepository.searchShowtimes(movieId, dayType, startDate, endDate);
     }
 
-    private void checkRoomConflict(Showtime newShowtime, Long excludeId) {
-        LocalDate date = newShowtime.getShowDate();
-        LocalTime time = newShowtime.getShowTime();
-        String room = newShowtime.getRoom();
-
-        if (date == null || time == null || room == null || newShowtime.getMovie() == null) {
-            return;
-        }
-
-        int newDuration = 120;
-        Movie movieInfo = movieRepository.findById(newShowtime.getMovie().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bộ phim tương ứng trong hệ thống!"));
-
-        if (movieInfo.getDuration() != null && movieInfo.getDuration() > 0) {
-            newDuration = movieInfo.getDuration();
-        }
-
-        newShowtime.setMovie(movieInfo);
-
-        LocalTime newStart = time;
-        LocalTime newEnd = newStart.plusMinutes(10 + newDuration + 20);
-
-        List<Showtime> existingShowtimes = showtimeRepository.findByRoomIgnoreCaseAndShowDate(room, date);
-
-        for (Showtime exist : existingShowtimes) {
-            if (excludeId != null && exist.getId().equals(excludeId)) {
-                continue;
-            }
-
-            int existDuration = 120;
-            if (exist.getMovie() != null && exist.getMovie().getDuration() != null) {
-                existDuration = exist.getMovie().getDuration();
-            }
-
-            LocalTime existStart = exist.getShowTime();
-            LocalTime existEnd = existStart.plusMinutes(10 + existDuration + 20);
-
-            if (newStart.isBefore(existEnd) && existStart.isBefore(newEnd)) {
-                throw new IllegalArgumentException(
-                    String.format(
-                        "Xung đột lịch chiếu! Phòng '%s' đã có lịch chiếu phim '%s' từ %s đến %s. Vui lòng chọn giờ khác hoặc phòng khác.",
-                        room,
-                        exist.getMovie() != null ? exist.getMovie().getTitle() : "?",
-                        existStart.toString().substring(0, 5),
-                        existEnd.toString().substring(0, 5)
-                    )
-                );
-            }
-        }
-    }
-
-    private void validateDateTimeNotPast(LocalDate date, LocalTime time) {
-        if (date == null || time == null) return;
-
-        LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
-
-        if (date.isBefore(today)) {
-            throw new IllegalArgumentException("Không thể xếp lịch chiếu cho ngày trong quá khứ!");
-        }
-
-        if (date.isEqual(today) && time.isBefore(now)) {
-            throw new IllegalArgumentException("Không thể xếp lịch chiếu cho giờ chiếu đã qua hôm nay!");
-        }
-    }
-
     @Transactional
     public Showtime saveShowtime(Showtime showtime) {
-        validateDateTimeNotPast(showtime.getShowDate(), showtime.getShowTime());
-        checkRoomConflict(showtime, null);
-
-        if (showtime.getShowDate() != null) {
-            showtime.setDayType(determineDayType(showtime.getShowDate()));
-        }
+        prepareAndValidateShowtime(showtime, null);
+        showtime.setDayType(determineDayType(showtime.getShowDate()));
         return showtimeRepository.save(showtime);
     }
 
     @Transactional
     public Showtime updateShowtime(Long id, Showtime updatedShowtime) {
-        validateDateTimeNotPast(updatedShowtime.getShowDate(), updatedShowtime.getShowTime());
-
         return showtimeRepository.findById(id).map(showtime -> {
+            prepareAndValidateShowtime(updatedShowtime, id);
             showtime.setMovie(updatedShowtime.getMovie());
-            if (updatedShowtime.getShowDate() != null) {
-                showtime.setShowDate(updatedShowtime.getShowDate());
-                showtime.setDayType(determineDayType(updatedShowtime.getShowDate()));
-            }
-
+            showtime.setShowDate(updatedShowtime.getShowDate());
             showtime.setShowTime(updatedShowtime.getShowTime());
             showtime.setRoom(updatedShowtime.getRoom());
-
-            checkRoomConflict(showtime, id);
-
+            showtime.setDayType(determineDayType(updatedShowtime.getShowDate()));
             return showtimeRepository.save(showtime);
         }).orElseThrow(() -> new RuntimeException("Showtime not found with id " + id));
     }
 
     @Transactional
     public List<Showtime> updateShowtimeBatch(Long id, com.group3.cinema.controller.api.ShowtimeController.ShowtimeRequest req) {
-        // 1. Xóa các lịch chiếu cũ trong nhóm để tránh xung đột với chính nó khi lưu dải ngày mới
         if (req.getGroupIds() != null && !req.getGroupIds().isEmpty()) {
             for (Long oldId : req.getGroupIds()) {
                 if (showtimeRepository.existsById(oldId)) {
                     showtimeRepository.deleteById(oldId);
                 }
             }
-        } else {
-            if (showtimeRepository.existsById(id)) {
-                showtimeRepository.deleteById(id);
-            }
+        } else if (showtimeRepository.existsById(id)) {
+            showtimeRepository.deleteById(id);
         }
 
-        // Đẩy thay đổi xóa xuống database ngay lập tức để checkRoomConflict ở bước sau không bị nhận diện xung đột
         showtimeRepository.flush();
 
-        // 2. Tạo dải lịch chiếu mới
         return saveShowtimeBatch(
                 req.getMovieId(),
                 req.getStartDate(),
                 req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
                 req.getShowTime(),
                 req.getRoom(),
-                1 // Khóa slotCount = 1 khi chỉnh sửa dải ngày
+                1
         );
     }
 
     @Transactional
     public List<Showtime> saveShowtimeBatch(Long movieId, LocalDate startDate, LocalDate endDate,
                                             LocalTime showTime, String room, Integer slotCount) {
-        if (startDate == null || endDate == null || showTime == null || room == null || movieId == null) {
-            throw new IllegalArgumentException("Vui lòng điền đầy đủ thông tin!");
+        if (movieId == null || startDate == null || endDate == null || showTime == null || room == null || room.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng điền đầy đủ thông tin lịch chiếu.");
         }
-
         if (endDate.isBefore(startDate)) {
-            throw new IllegalArgumentException("Ngày kết thúc không được nhỏ hơn ngày bắt đầu!");
+            throw new IllegalArgumentException("Ngày kết thúc không được nhỏ hơn ngày bắt đầu.");
         }
 
         int count = slotCount != null ? slotCount : 1;
-        Movie movie = movieRepository.findById(movieId.intValue())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bộ phim!"));
+        if (count < 1 || count > 15) {
+            throw new IllegalArgumentException("Số suất chiếu trong ngày phải từ 1 đến 15.");
+        }
 
-        int duration = movie.getDuration() != null && movie.getDuration() > 0 ? movie.getDuration() : 120;
+        Movie movie = movieRepository.findById(movieId.intValue())
+                .orElseThrow(() -> new IllegalArgumentException("Phim được chọn không tồn tại."));
+        int duration = resolveDuration(movie);
         List<Showtime> savedShowtimes = new ArrayList<>();
 
         LocalDate current = startDate;
         while (!current.isAfter(endDate)) {
             LocalTime currentSlotTime = showTime;
             LocalDate slotDate = current;
-            for (int i = 0; i < count; i++) {
-                validateDateTimeNotPast(slotDate, currentSlotTime);
 
+            for (int i = 0; i < count; i++) {
                 Showtime showtime = new Showtime();
                 showtime.setMovie(movie);
                 showtime.setShowDate(slotDate);
                 showtime.setShowTime(currentSlotTime);
-                showtime.setRoom(room);
+                showtime.setRoom(room.trim());
                 showtime.setDayType(determineDayType(slotDate));
 
-                checkRoomConflict(showtime, null);
+                validateDateTimeNotPast(slotDate, currentSlotTime);
+                validateRoomTimeOverlap(showtime, null);
                 savedShowtimes.add(showtimeRepository.save(showtime));
 
-                LocalTime nextStart = currentSlotTime.plusMinutes(10 + duration + 20);
-                int minute = nextStart.getMinute();
-                int rem = minute % 5;
-                if (rem > 0) nextStart = nextStart.plusMinutes(5 - rem);
-
+                LocalTime nextStart = currentSlotTime.plusMinutes(duration + ROOM_TURNOVER_MINUTES);
+                int remainder = nextStart.getMinute() % 5;
+                if (remainder > 0) {
+                    nextStart = nextStart.plusMinutes(5 - remainder);
+                }
                 if (nextStart.isBefore(currentSlotTime)) {
                     slotDate = slotDate.plusDays(1);
                 }
                 currentSlotTime = nextStart;
             }
+
             current = current.plusDays(1);
         }
+
         return savedShowtimes;
+    }
+
+    private void prepareAndValidateShowtime(Showtime showtime, Long editingId) {
+        if (showtime.getMovie() == null || showtime.getMovie().getId() <= 0) {
+            throw new IllegalArgumentException("Vui lòng chọn phim chiếu.");
+        }
+        if (showtime.getShowDate() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn ngày chiếu.");
+        }
+        if (showtime.getShowTime() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn giờ chiếu.");
+        }
+        if (showtime.getRoom() == null || showtime.getRoom().trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn phòng chiếu.");
+        }
+
+        Movie movie = movieRepository.findById(showtime.getMovie().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Phim được chọn không tồn tại."));
+        showtime.setMovie(movie);
+        showtime.setRoom(showtime.getRoom().trim());
+        validateDateTimeNotPast(showtime.getShowDate(), showtime.getShowTime());
+        validateRoomTimeOverlap(showtime, editingId);
+    }
+
+    private void validateDateTimeNotPast(LocalDate date, LocalTime time) {
+        if (date == null || time == null) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+
+        if (date.isBefore(today)) {
+            throw new IllegalArgumentException("Không thể xếp lịch chiếu cho ngày trong quá khứ.");
+        }
+        if (date.isEqual(today) && time.isBefore(now)) {
+            throw new IllegalArgumentException("Không thể xếp lịch chiếu cho giờ chiếu đã qua hôm nay.");
+        }
+    }
+
+    private void validateRoomTimeOverlap(Showtime candidate, Long editingId) {
+        int candidateStart = toMinutes(candidate.getShowTime());
+        int candidateEnd = candidateStart + resolveDuration(candidate.getMovie()) + ROOM_TURNOVER_MINUTES;
+
+        List<Showtime> sameRoomShowtimes = showtimeRepository.findByRoomIgnoreCaseAndShowDate(
+                candidate.getRoom(),
+                candidate.getShowDate()
+        );
+
+        for (Showtime existing : sameRoomShowtimes) {
+            if (editingId != null && editingId.equals(existing.getId())) {
+                continue;
+            }
+
+            int existingStart = toMinutes(existing.getShowTime());
+            int existingEnd = existingStart + resolveDuration(existing.getMovie()) + ROOM_TURNOVER_MINUTES;
+
+            if (candidateStart < existingEnd && candidateEnd > existingStart) {
+                String movieTitle = existing.getMovie() != null ? existing.getMovie().getTitle() : "suất chiếu khác";
+                LocalTime existingEndTime = existing.getShowTime().plusMinutes(resolveDuration(existing.getMovie()) + ROOM_TURNOVER_MINUTES);
+                throw new IllegalArgumentException(
+                        "Phòng " + candidate.getRoom()
+                                + " đã có lịch chiếu \"" + movieTitle + "\" từ "
+                                + existing.getShowTime().format(TIME_FORMATTER) + " đến "
+                                + existingEndTime.format(TIME_FORMATTER)
+                                + ". Vui lòng chọn phòng hoặc khung giờ khác."
+                );
+            }
+        }
+    }
+
+    private int toMinutes(LocalTime time) {
+        return time.getHour() * 60 + time.getMinute();
+    }
+
+    private int resolveDuration(Movie movie) {
+        if (movie == null || movie.getDuration() == null || movie.getDuration() <= 0) {
+            return DEFAULT_MOVIE_DURATION_MINUTES;
+        }
+        return movie.getDuration();
     }
 
     public void deleteShowtime(Long id) {
@@ -247,8 +250,8 @@ public class ShowtimeService {
         int month = date.getMonthValue();
         int day = date.getDayOfMonth();
 
-        if ((month == 1 && day == 1) || (month == 4 && day == 30) ||
-            (month == 5 && day == 1) || (month == 9 && day == 2)) {
+        if ((month == 1 && day == 1) || (month == 4 && day == 30)
+                || (month == 5 && day == 1) || (month == 9 && day == 2)) {
             return "Ngày lễ";
         }
 
@@ -259,30 +262,4 @@ public class ShowtimeService {
 
         return "Trong tuần";
     }
-
-//    // Táº¡o 40 vÃ© cho sÆ¡ Ä‘á»“ gháº¿ cá»§a lá»‹ch chiáº¿u (A1-A8, B1-B8, C1-C8 lÃ  Gháº¿ thÆ°á»ng; D1-D8, E1-E8 lÃ  Gháº¿ VIP)
-//    private void generateTicketsForShowtime(Showtime showtime) {
-//        String[] rows = {"A", "B", "C", "D", "E"};
-//        int seatsPerRow = 8;
-//        String dayType = showtime.getDayType();
-//
-//        for (String row : rows) {
-//            // HÃ ng D vÃ  E lÃ  gháº¿ VIP, cÃ²n láº¡i lÃ  gháº¿ thÆ°á»ng
-//            String seatType = (row.equals("D") || row.equals("E")) ? "VIP" : "ThÆ°á»ng";
-//            double price = calculateTicketPrice(dayType, seatType);
-//
-//
-//        }
-    }
-
-//    // TÃ­nh toÃ¡n giÃ¡ vÃ© thá»±c táº¿ dá»±a theo ma tráº­n phÃ¢n loáº¡i ngÃ y vÃ  loáº¡i gháº¿
-//    private double calculateTicketPrice(String dayType, String seatType) {
-//        if ("Trong tuáº§n".equals(dayType)) {
-//            return "VIP".equals(seatType) ? 100000.0 : 80000.0;
-//        } else if ("Cuá»‘i tuáº§n".equals(dayType)) {
-//            return "VIP".equals(seatType) ? 120000.0 : 100000.0;
-//        } else if ("NgÃ y lá»…".equals(dayType)) {
-//            return "VIP".equals(seatType) ? 140000.0 : 120000.0;
-//        }
-//        return "VIP".equals(seatType) ? 100000.0 : 80000.0;
-//    }
+}
