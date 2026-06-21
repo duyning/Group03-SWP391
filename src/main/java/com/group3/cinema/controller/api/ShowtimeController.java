@@ -1,37 +1,44 @@
 package com.group3.cinema.controller.api;
 
 /**
- * Dá»± Ã¡n: Cinema 2026 â€” SWP391 Group 03
+ * Dự án: Cinema 2026 — SWP391 Group 03
  * File: ShowtimeController.java
- * Chá»©c nÄƒng: REST Controller cung cáº¥p cÃ¡c API Ä‘á»ƒ quáº£n lÃ½ lá»‹ch chiáº¿u (Showtime).
- *            Há»— trá»£ xem danh sÃ¡ch, lá»c lá»‹ch chiáº¿u nÃ¢ng cao (theo phim, loáº¡i ngÃ y, khoáº£ng ngÃ y),
- *            táº¡o má»›i, cáº­p nháº­t, xÃ³a lá»‹ch chiáº¿u vÃ  thá»‘ng kÃª sá»‘ lÆ°á»£ng lá»‹ch chiáº¿u theo loáº¡i ngÃ y.
+ * Chức năng: REST Controller cung cấp các API để quản lý lịch chiếu (Showtime).
+ *            Hỗ trợ xem danh sách, lọc lịch chiếu nâng cao (theo phim, loại ngày, khoảng ngày),
+ *            tạo mới (đơn lẻ hoặc hàng loạt theo dải ngày), cập nhật, xóa lịch chiếu,
+ *            và thống kê số lượng lịch chiếu theo loại ngày.
  * Endpoints:
- *   - GET /api/showtimes: Láº¥y danh sÃ¡ch lá»‹ch chiáº¿u theo bá»™ lá»c (Query Params: movieId, dayType, startDate, endDate).
- *   - GET /api/showtimes/{id}: Xem thÃ´ng tin chi tiáº¿t má»™t lá»‹ch chiáº¿u theo ID.
- *   - POST /api/showtimes: Táº¡o lá»‹ch chiáº¿u má»›i (bao gá»“m tá»± Ä‘á»™ng Ä‘á»‹nh cáº¥u hÃ¬nh giÃ¡ vÃ©).
- *   - PUT /api/showtimes/{id}: Cáº­p nháº­t lá»‹ch chiáº¿u.
- *   - DELETE /api/showtimes/{id}: XÃ³a lá»‹ch chiáº¿u.
- *   - GET /api/showtimes/stats: Thá»‘ng kÃª sá»‘ lá»‹ch chiáº¿u (Tá»•ng sá»‘, trong tuáº§n, cuá»‘i tuáº§n, ngÃ y lá»…).
- * NgÆ°á»i viáº¿t: TrienLX - HE182285
- * NgÃ y táº¡o: 2026-06-04
+ *   - GET  /api/showtimes             : Lấy danh sách lịch chiếu theo bộ lọc.
+ *   - GET  /api/showtimes/{id}        : Xem chi tiết một lịch chiếu theo ID.
+ *   - POST /api/showtimes             : Tạo lịch chiếu (hỗ trợ thêm hàng loạt theo dải ngày).
+ *   - PUT  /api/showtimes/{id}        : Cập nhật lịch chiếu.
+ *   - DELETE /api/showtimes/{id}      : Xóa lịch chiếu.
+ *   - GET  /api/showtimes/stats       : Thống kê lịch chiếu.
+ * Người viết: TrienLX - HE182285
+ * Ngày tạo: 2026-06-04
+ * Người sửa: TrienLX
+ * Ngày sửa: 2026-06-12
  */
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.group3.cinema.entity.Showtime;
+import com.group3.cinema.entity.Movie;
 import com.group3.cinema.service.api.ShowtimeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
-// ÄÃ¡nh dáº¥u Ä‘Ã¢y lÃ  má»™t RestController quáº£n lÃ½ API cho Showtime
+// Đánh dấu đây là một RestController quản lý API cho Showtime
 @RestController
 @RequestMapping("/api/showtimes")
-// Cho phÃ©p gá»i API tá»« giao diá»‡n HTML tÄ©nh á»Ÿ nguá»“n khÃ¡c (CORS)
+// Cho phép gọi API từ giao diện HTML tĩnh ở nguồn khác (CORS)
 @CrossOrigin(origins = "*")
 public class ShowtimeController {
 
@@ -42,8 +49,50 @@ public class ShowtimeController {
         this.showtimeService = showtimeService;
     }
 
+    // DTO (Data Transfer Object) dùng riêng cho yêu cầu tạo lịch chiếu hàng loạt
+    public static class ShowtimeRequest {
+        private Long movieId;
+
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate startDate;
+
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate endDate;
+
+        @JsonFormat(pattern = "HH:mm:ss")
+        private LocalTime showTime;
+
+        private String room;
+
+        // Số suất chiếu trong ngày (tùy chọn, mặc định 1)
+        private Integer slotCount;
+
+        private List<Long> groupIds;
+
+        public Long getMovieId() { return movieId; }
+        public void setMovieId(Long movieId) { this.movieId = movieId; }
+
+        public LocalDate getStartDate() { return startDate; }
+        public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+        public LocalDate getEndDate() { return endDate; }
+        public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+
+        public LocalTime getShowTime() { return showTime; }
+        public void setShowTime(LocalTime showTime) { this.showTime = showTime; }
+
+        public String getRoom() { return room; }
+        public void setRoom(String room) { this.room = room; }
+
+        public Integer getSlotCount() { return slotCount; }
+        public void setSlotCount(Integer slotCount) { this.slotCount = slotCount; }
+
+        public List<Long> getGroupIds() { return groupIds; }
+        public void setGroupIds(List<Long> groupIds) { this.groupIds = groupIds; }
+    }
+
     // Endpoint: GET /api/showtimes
-    // Há»— trá»£ tÃ¬m kiáº¿m, lá»c danh sÃ¡ch lá»‹ch chiáº¿u theo phim, loáº¡i ngÃ y hoáº·c khoáº£ng ngÃ y chiáº¿u (tuáº§n/thÃ¡ng)
+    // Hỗ trợ tìm kiếm, lọc danh sách lịch chiếu theo phim, loại ngày hoặc khoảng ngày chiếu
     @GetMapping
     public ResponseEntity<List<Showtime>> searchShowtimes(
             @RequestParam(value = "movieId", required = false) Integer movieId,
@@ -51,12 +100,18 @@ public class ShowtimeController {
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        List<Showtime> showtimes = showtimeService.searchShowtimes(movieId, dayType, startDate, endDate);
-        return ResponseEntity.ok(showtimes);
+        return ResponseEntity.ok(showtimeService.searchShowtimes(movieId, dayType, startDate, endDate));
+    }
+
+    // Endpoint: GET /api/showtimes/stats
+    // Trả về thống kê số lịch chiếu theo tổng số và phân loại ngày
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Long>> getShowtimeStats() {
+        return ResponseEntity.ok(showtimeService.getShowtimeStats());
     }
 
     // Endpoint: GET /api/showtimes/{id}
-    // Láº¥y chi tiáº¿t lá»‹ch chiáº¿u phim theo mÃ£ ID
+    // Xem chi tiết một lịch chiếu theo ID
     @GetMapping("/{id}")
     public ResponseEntity<Showtime> getShowtimeById(@PathVariable("id") Long id) {
         return showtimeService.getShowtimeById(id)
@@ -65,27 +120,61 @@ public class ShowtimeController {
     }
 
     // Endpoint: POST /api/showtimes
-    // Táº¡o má»›i má»™t lá»‹ch chiáº¿u phim
+    // Tạo lịch chiếu mới — hỗ trợ cả thêm đơn lẻ và thêm hàng loạt theo dải ngày.
     @PostMapping
-    public ResponseEntity<Showtime> createShowtime(@RequestBody Showtime showtime) {
-        Showtime saved = showtimeService.saveShowtime(showtime);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<?> createShowtime(@RequestBody ShowtimeRequest req) {
+        try {
+            if (req.getMovieId() != null && req.getStartDate() != null) {
+                // Chế độ thêm hàng loạt theo dải ngày
+                List<Showtime> saved = showtimeService.saveShowtimeBatch(
+                        req.getMovieId(),
+                        req.getStartDate(),
+                        req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
+                        req.getShowTime(),
+                        req.getRoom(),
+                        req.getSlotCount()
+                );
+                return ResponseEntity.ok(saved);
+            } else {
+                // Chế độ đơn (backward-compatible)
+                Showtime st = new Showtime();
+                if (req.getMovieId() != null) {
+                    Movie mv = new Movie();
+                    mv.setId(req.getMovieId().intValue());
+                    st.setMovie(mv);
+                }
+                st.setShowDate(req.getStartDate());
+                st.setShowTime(req.getShowTime());
+                st.setRoom(req.getRoom());
+                return ResponseEntity.ok(showtimeService.saveShowtime(st));
+            }
+        } catch (IllegalArgumentException ex) {
+            // Xung đột lịch chiếu hoặc ngày/giờ không hợp lệ → trả về 400
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi hệ thống: " + ex.getMessage()));
+        }
     }
 
     // Endpoint: PUT /api/showtimes/{id}
-    // Cáº­p nháº­t thÃ´ng tin lá»‹ch chiáº¿u phim
+    // Cập nhật thông tin lịch chiếu hiện có
     @PutMapping("/{id}")
-    public ResponseEntity<Showtime> updateShowtime(@PathVariable("id") Long id, @RequestBody Showtime showtime) {
+    public ResponseEntity<?> updateShowtime(@PathVariable("id") Long id, @RequestBody ShowtimeRequest req) {
         try {
-            Showtime updated = showtimeService.updateShowtime(id, showtime);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ok(showtimeService.updateShowtimeBatch(id, req));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi hệ thống: " + ex.getMessage()));
         }
     }
 
     // Endpoint: DELETE /api/showtimes/{id}
-    // XÃ³a lá»‹ch chiáº¿u phim khá»i há»‡ thá»‘ng
+    // Xóa lịch chiếu
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteShowtime(@PathVariable("id") Long id) {
         try {
@@ -94,12 +183,5 @@ public class ShowtimeController {
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    // Endpoint: GET /api/showtimes/stats
-    // Tráº£ vá» sá»‘ liá»‡u thá»‘ng kÃª tá»•ng há»£p sá»‘ lá»‹ch chiáº¿u theo cÃ¡c loáº¡i ngÃ y
-    @GetMapping("/stats")
-    public ResponseEntity<Map<String, Long>> getShowtimeStats() {
-        return ResponseEntity.ok(showtimeService.getShowtimeStats());
     }
 }

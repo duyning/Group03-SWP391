@@ -42,5 +42,7 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
 
     boolean existsByRoomIgnoreCaseAndShowDateGreaterThanEqual(String room, LocalDate showDate);
 
+    List<Showtime> findByRoomIgnoreCaseAndShowDate(String room, LocalDate showDate);
+
     long countByRoomIgnoreCase(String room);
 }

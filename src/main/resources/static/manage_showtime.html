@@ -42,9 +42,6 @@
         <div id="showtimesSection" class="tab-section active">
             <header class="app-header">
                 <h1 class="page-title">Quản lý lịch chiếu phim</h1>
-                <button class="btn btn-primary" id="btnOpenAddShowtimeModal">
-                    <i class="fa-solid fa-plus"></i> Thêm lịch chiếu mới
-                </button>
             </header>
 
             <section class="stats-grid">
@@ -113,6 +110,9 @@
                         <button class="btn btn-primary" id="btnApplyShowtimeFilter">
                             <i class="fa-solid fa-magnifying-glass"></i> Áp dụng bộ lọc
                         </button>
+                        <button class="btn btn-primary" id="btnOpenAddShowtimeModal" style="background-color: #10b981; border-color: #10b981;">
+                            <i class="fa-solid fa-plus"></i> Thêm lịch chiếu mới
+                        </button>
                     </div>
                 </div>
             </section>
@@ -124,7 +124,7 @@
                             <tr>
                                 <th scope="col">PHIM</th>
                                 <th scope="col">NGÀY CHIẾU</th>
-                                <th scope="col">GIỜ CHIẾU</th>
+                                <th scope="col">GIỜ CHIẾU - KẾT THÚC</th>
                                 <th scope="col">PHÒNG CHIẾU</th>
                                 <th scope="col">LOẠI NGÀY</th>
                                 <th scope="col">GHẾ TRỐNG / TỔNG</th>
@@ -166,15 +166,28 @@
                     </div>
                 </div>
 
-                <!-- Ngày chiếu & Giờ chiếu -->
-                <div class="form-row split-2">
+                <!-- Ngày chiếu (Từ ngày - Đến ngày) -->
+                <div class="form-row split-2" id="showtimeDateRow">
                     <div class="form-group">
-                        <label for="showtimeDateInput">Ngày chiếu <span class="required">*</span></label>
+                        <label id="lblShowtimeDateStart" for="showtimeDateInput">Từ ngày <span class="required">*</span></label>
                         <input type="date" id="showtimeDateInput" required>
                     </div>
+                    <div class="form-group" id="endDateGroup">
+                        <label for="showtimeEndDateInput">Đến ngày <span class="required">*</span></label>
+                        <input type="date" id="showtimeEndDateInput" required>
+                    </div>
+                </div>
+
+                <!-- Giờ chiếu & Số suất chiếu tự động -->
+                <div class="form-row split-2" id="slotCountRow">
                     <div class="form-group">
                         <label for="showtimeTimeInput">Giờ chiếu <span class="required">*</span></label>
                         <input type="time" id="showtimeTimeInput" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="showtimeSlotCount">Số suất chiếu tự động / ngày <span class="required">*</span></label>
+                        <input type="number" id="showtimeSlotCount" min="1" max="15" value="1" required>
+                        <small class="field-hint" style="color: var(--text-muted); font-size: 0.7rem;">Hệ thống tự tính giờ các suất tiếp theo (+trailer, +dọn phòng)</small>
                     </div>
                 </div>
 
@@ -211,6 +224,22 @@
         </div>
     </div>
 
+
+    <!-- Toast notification container -->
+    <div id="toast-container"></div>
+
+    <!-- Confirm dialog overlay -->
+    <div id="confirmOverlay">
+        <div id="confirmDialog">
+            <i id="confirmIcon" class="fa-solid fa-triangle-exclamation"></i>
+            <h3 id="confirmTitle">Xác nhận</h3>
+            <p id="confirmMessage">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
+            <div class="confirm-buttons">
+                <button type="button" class="btn btn-secondary" id="confirmBtnCancel">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmBtnOk">Xác nhận</button>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/app.js"></script>
 </body>

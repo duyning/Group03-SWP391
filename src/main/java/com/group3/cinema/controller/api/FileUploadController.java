@@ -27,14 +27,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-// Controller xá»­ lÃ½ viá»‡c upload file video tá»« mÃ¡y ngÆ°á»i dÃ¹ng lÃªn mÃ¡y chá»§
+// Controller xá»­ lÃ½ viá»‡c upload file video tá»« mÃ¡y ngÆ°á» i dÃ¹ng lÃªn mÃ¡y chá»§
 @RestController
 @RequestMapping("/api/upload")
 @CrossOrigin(origins = "*")
 public class FileUploadController {
 
-    // Äá»c Ä‘Æ°á»ng dáº«n thÆ° má»¥c lÆ°u video tá»« cáº¥u hÃ¬nh application.yaml
-    @Value("${app.upload.video-dir:src/main/resources/static/uploads/videos/}")
+    // Ä á» c Ä‘Æ°á» ng dáº«n thÆ° má»¥c lÆ°u video tá»« cáº¥u hÃ¬nh application.yaml
+    @Value("${app.upload.video-dir:uploads/videos/}")
     private String videoUploadDir;
 
     @Value("${app.upload.image-dir:uploads/images/}")

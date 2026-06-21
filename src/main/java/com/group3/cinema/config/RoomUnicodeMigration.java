@@ -25,10 +25,33 @@ public class RoomUnicodeMigration {
     public void migrateRoomUnicodeColumns() {
         try {
             createBannerTableIfMissing();
+            addMovieColumnsIfMissing();
             migrateTextColumns();
             normalizeVietnameseValues();
         } catch (Exception e) {
             log.warn("Không thể tự động chuyển cột tiếng Việt sang NVARCHAR: {}", e.getMessage());
+        }
+    }
+
+    private void addMovieColumnsIfMissing() {
+        if (!tableExists("movie")) {
+            return;
+        }
+        if (!columnExists("movie", "release_year")) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE movie ADD release_year INT NULL");
+                log.info("Đã bổ sung cột release_year cho bảng movie");
+            } catch (Exception e) {
+                log.warn("Không thể bổ sung cột release_year: {}", e.getMessage());
+            }
+        }
+        if (!columnExists("movie", "producer")) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE movie ADD producer NVARCHAR(255) NULL");
+                log.info("Đã bổ sung cột producer cho bảng movie");
+            } catch (Exception e) {
+                log.warn("Không thể bổ sung cột producer: {}", e.getMessage());
+            }
         }
     }
 
