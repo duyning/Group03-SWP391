@@ -1,9 +1,8 @@
 <!doctype html>
 <!--
   Added on 2026-06-04: UC-G03 Search Result screen for Guest movie search.
-  Supports search by movie title keyword, genre, and movie status only.
-  Updated on 2026-06-04: Synchronized header/footer with home page and
-  translated all visible frontend text to Vietnamese.
+  Updated on 2026-06-26: Improved guest Search Film page with prominent
+  search input, multi-select pill filters, result sorting, card badges, and pagination.
   Created by: HuyPB - HE191335
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
@@ -11,14 +10,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kết quả tìm kiếm | Beta Cinemas</title>
+    <title>Tìm phim | CineFlow</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
     <style>
         body {
             margin: 0;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background: #fdfdfd;
-            color: #333;
+            font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f6f8fb;
+            color: #0f172a;
         }
 
         .top-bar {
@@ -48,15 +48,6 @@
             color: white;
             text-decoration: none;
             font-weight: 500;
-        }
-
-        .top-link:hover {
-            text-decoration: underline;
-        }
-
-        .lang-icon {
-            height: 14px;
-            margin-left: 15px;
         }
 
         .header-main {
@@ -99,12 +90,12 @@
             color: #0054a6;
         }
 
-        .header-search-form {
+        .search-form {
             display: flex;
             gap: 8px;
         }
 
-        .header-search-form input {
+        .search-form input {
             border: 1px solid #ddd;
             border-radius: 20px;
             padding: 8px 14px;
@@ -112,7 +103,7 @@
             outline: none;
         }
 
-        .header-search-form button {
+        .search-form button {
             background: #0054a6;
             color: white;
             border: none;
@@ -122,137 +113,269 @@
             padding: 8px 14px;
         }
 
-        .search-panel {
-            border-bottom: 1px solid #e5eaf0;
-            padding: 24px 0;
+        .search-shell {
+            background: white;
+            border-bottom: 1px solid #dbe7f4;
+            padding: 34px 0 28px;
         }
 
-        .filter-form {
-            display: grid;
-            grid-template-columns: minmax(220px, 1fr) 190px 190px auto;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .filter-form input,
-        .filter-form select {
-            width: 100%;
-            box-sizing: border-box;
-            border: 1px solid #d9e2ec;
-            border-radius: 6px;
-            padding: 10px 12px;
-            color: #333;
-            background: #fff;
-            outline: none;
-            font-size: 14px;
-        }
-
-        .filter-form input:focus,
-        .filter-form select:focus {
-            border-color: #0054a6;
-            box-shadow: 0 0 0 3px rgba(0, 84, 166, 0.12);
-        }
-
-        .search-btn {
-            height: 40px;
-            border: none;
-            border-radius: 6px;
-            background: #0054a6;
-            color: #fff;
-            cursor: pointer;
-            font-weight: 800;
-            padding: 0 18px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .search-icon {
-            width: 15px;
-            height: 15px;
-            border: 2px solid currentColor;
-            border-radius: 50%;
-            position: relative;
-            flex: 0 0 auto;
-        }
-
-        .search-icon::after {
-            content: "";
-            width: 7px;
-            height: 2px;
-            background: currentColor;
-            position: absolute;
-            right: -6px;
-            bottom: -4px;
-            transform: rotate(45deg);
-            border-radius: 2px;
-        }
-
-        .result-heading {
-            margin: 32px 0 22px;
-            text-align: center;
-        }
-
-        .result-heading h1 {
-            margin: 0 0 8px;
+        .search-title {
+            margin: 0 0 18px;
             color: #0054a6;
-            font-size: 28px;
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 0;
             text-transform: uppercase;
         }
 
-        .result-heading p {
-            margin: 0;
-            color: #64748b;
-            font-size: 14px;
+        .guest-search-form {
+            display: grid;
+            gap: 22px;
         }
 
-        .movies {
+        .search-input-wrap {
+            position: relative;
+        }
+
+        .main-search-input {
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px solid #b8d4ef;
+            border-radius: 999px;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 600;
+            min-height: 64px;
+            outline: none;
+            padding: 0 118px 0 26px;
+            box-shadow: 0 14px 34px rgba(0, 84, 166, 0.1);
+        }
+
+        .main-search-input:focus {
+            border-color: #0054a6;
+            box-shadow: 0 0 0 4px rgba(0, 84, 166, 0.14), 0 14px 34px rgba(0, 84, 166, 0.14);
+        }
+
+        .enter-hint {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #0054a6;
+            font-size: 14px;
+            font-weight: 800;
+            pointer-events: none;
+        }
+
+        .filter-group {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-            gap: 30px;
-            margin-bottom: 56px;
+            gap: 10px;
+        }
+
+        .filter-title {
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-pill {
+            border: 1px solid #c8daed;
+            border-radius: 999px;
+            background: #f8fbff;
+            color: #24516f;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 800;
+            min-height: 38px;
+            padding: 0 15px;
+        }
+
+        .filter-pill:hover,
+        .filter-pill.active {
+            background: #0054a6;
+            border-color: #0054a6;
+            color: white;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .primary-search-btn {
+            align-items: center;
+            background: #0054a6;
+            border: none;
+            border-radius: 999px;
+            color: white;
+            cursor: pointer;
+            display: inline-flex;
+            font-weight: 900;
+            gap: 8px;
+            min-height: 44px;
+            padding: 0 22px;
+        }
+
+        .results-bar {
+            align-items: center;
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin: 30px 0 22px;
+        }
+
+        .result-count {
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .sort-select {
+            border: 1px solid #c8daed;
+            border-radius: 8px;
+            color: #0f172a;
+            font-weight: 700;
+            min-height: 40px;
+            padding: 0 12px;
+            background: white;
+        }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 28px;
+            margin-bottom: 34px;
         }
 
         .movie-card {
             background: white;
+            border: 1px solid #e0e9f4;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .poster-wrap {
+            display: block;
+            position: relative;
+            background: #e8f0f7;
         }
 
         .movie-poster {
             width: 100%;
             aspect-ratio: 2 / 3;
-            object-fit: cover;
-            border-radius: 8px;
-            background: #eef2f7;
             display: block;
-            transition: transform 0.25s ease;
+            object-fit: cover;
         }
 
-        .movie-poster:hover {
-            transform: translateY(-2px);
+        .status-badge,
+        .age-badge {
+            position: absolute;
+            top: 10px;
+            border-radius: 999px;
+            color: white;
+            font-size: 12px;
+            font-weight: 900;
+            padding: 5px 9px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+        }
+
+        .status-badge {
+            left: 10px;
+            background: #16a34a;
+        }
+
+        .status-badge.upcoming {
+            background: #f59e0b;
+        }
+
+        .age-badge {
+            right: 10px;
+            background: #0f172a;
+        }
+
+        .age-p {
+            background: #0891b2;
+        }
+
+        .age-t13 {
+            background: #2563eb;
+        }
+
+        .age-t16 {
+            background: #7c3aed;
+        }
+
+        .age-t18 {
+            background: #dc2626;
+        }
+
+        .movie-info {
+            padding: 14px;
+        }
+
+        .movie-genre {
+            color: #0054a6;
+            font-size: 13px;
+            font-weight: 900;
+            margin: 0 0 6px;
         }
 
         .movie-title {
-            color: #0054a6;
-            display: inline-block;
-            font-size: 17px;
-            font-weight: 800;
-            line-height: 1.35;
-            margin: 13px 0 7px;
+            color: #0f172a;
+            display: block;
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1.28;
+            margin: 0 0 10px;
+            min-height: 46px;
             text-decoration: none;
         }
 
         .movie-title:hover {
-            text-decoration: underline;
+            color: #0054a6;
         }
 
-        .movie-genre {
-            color: #333;
+        .movie-meta,
+        .movie-format {
+            color: #475569;
             font-size: 14px;
-            margin: 0;
+            font-weight: 700;
+            margin: 0 0 8px;
+        }
+
+        .buy-btn,
+        .disabled-buy-btn {
+            align-items: center;
+            border: none;
+            border-radius: 6px;
+            display: flex;
+            font-weight: 900;
+            justify-content: center;
+            min-height: 40px;
+            text-decoration: none;
+            width: 100%;
+        }
+
+        .buy-btn {
+            background: #0054a6;
+            color: white;
+        }
+
+        .disabled-buy-btn {
+            background: #e2e8f0;
+            color: #64748b;
+            cursor: not-allowed;
         }
 
         .empty-state {
+            background: white;
             border: 1px solid #dbe7f4;
             border-radius: 8px;
             color: #64748b;
@@ -260,6 +383,33 @@
             max-width: 680px;
             padding: 28px 20px;
             text-align: center;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 0 0 58px;
+        }
+
+        .page-link {
+            align-items: center;
+            background: white;
+            border: 1px solid #c8daed;
+            border-radius: 6px;
+            color: #0054a6;
+            display: inline-flex;
+            font-weight: 900;
+            height: 38px;
+            justify-content: center;
+            min-width: 38px;
+            padding: 0 10px;
+            text-decoration: none;
+        }
+
+        .page-link.active {
+            background: #0054a6;
+            color: white;
         }
 
         .footer {
@@ -280,25 +430,46 @@
                 flex-wrap: wrap;
             }
 
-            .header-search-form {
+            .search-form {
                 width: 100%;
             }
 
-            .header-search-form input {
+            .search-form input {
                 flex: 1;
             }
 
-            .filter-form {
-                grid-template-columns: 1fr 1fr;
+            .results-bar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .sort-select {
+                width: 100%;
             }
         }
 
         @media (max-width: 640px) {
-            .filter-form {
-                grid-template-columns: 1fr;
+            .search-title {
+                font-size: 24px;
             }
 
-            .search-btn {
+            .main-search-input {
+                font-size: 15px;
+                min-height: 56px;
+                padding-left: 18px;
+                padding-right: 86px;
+            }
+
+            .enter-hint {
+                right: 16px;
+            }
+
+            .form-actions {
+                justify-content: stretch;
+            }
+
+            .primary-search-btn {
+                justify-content: center;
                 width: 100%;
             }
 
@@ -307,105 +478,178 @@
             }
         }
     </style>
-    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
 </head>
 
 <body>
-    <div class="top-bar">
-        <div class="top-container">
-            <th:block th:if="${user == null}">
-                <a th:href="@{/login}" class="top-link">Đăng nhập</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/register}" class="top-link">Đăng ký</a>
-            </th:block>
-            <th:block th:if="${user != null}">
-                <span>Xin chào,</span>
-                <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
-            </th:block>
-            <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
-        </div>
-    </div>
+    <div th:replace="~{fragments/common_header :: customerHeader('movies', ${keyword})}"></div>
 
-    <header class="header-main">
-        <div class="header-container">
-            <a th:href="@{/}">
-                <img src="/images/cineflow-logo.svg" alt="CineFlow Cinema" class="logo">
-            </a>
-            <nav class="nav-menu">
-                <a th:href="@{/}">TRANG CHỦ</a>
-                <a th:href="@{/movies}" class="active">PHIM</a>
-                <a href="#">RẠP</a>
-                <a href="#">GIÁ VÉ</a>
-                <a href="#">KHO VOUCHER</a>
-                <a th:href="@{/posts}">TIN TỨC</a>
-                <a href="#">CỘNG ĐỒNG</a>
-            </nav>
-
-            <form class="header-search-form" th:action="@{/search}" method="get">
-                <input type="search" name="keyword" placeholder="Tìm phim" th:value="${keyword}">
-                <button type="submit">Tìm</button>
-            </form>
-        </div>
-    </header>
-
-    <section class="search-panel">
+    <section class="search-shell">
         <div class="content-container">
-            <form class="filter-form" th:action="@{/search}" method="get">
-                <input type="search" name="keyword" placeholder="Tìm theo tên phim" th:value="${keyword}">
-                <select name="genre">
-                    <option value="">Tất cả thể loại</option>
-                    <option th:each="genreOption : ${genres}"
-                            th:value="${genreOption}"
-                            th:text="${genreOption}"
-                            th:selected="${genre == genreOption}">Tâm lý</option>
-                </select>
-                <select name="status">
-                    <option value="">Tất cả trạng thái</option>
-                    <option value="NOW_SHOWING" th:selected="${status == 'NOW_SHOWING'}">Đang chiếu</option>
-                    <option value="COMING_SOON" th:selected="${status == 'COMING_SOON'}">Sắp chiếu</option>
-                    <option value="SPECIAL_SCREENING" th:selected="${status == 'SPECIAL_SCREENING'}">Suất chiếu đặc biệt</option>
-                </select>
-                <button class="search-btn" type="submit">
-                    <span class="search-icon" aria-hidden="true"></span>
-                    Tìm kiếm
-                </button>
+            <h1 class="search-title">Tìm phim</h1>
+
+            <form class="guest-search-form" id="guestSearchForm" th:action="@{/search}" method="get">
+                <div class="search-input-wrap">
+                    <input class="main-search-input"
+                           type="search"
+                           name="keyword"
+                           placeholder="Nhập tên phim, diễn viên, đạo diễn"
+                           th:value="${keyword}"
+                           autocomplete="off">
+                    <span class="enter-hint">↵ Tìm</span>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-title">Thể loại</div>
+                    <div class="pill-row">
+                        <button type="button" class="filter-pill" data-name="genre" data-value="Hành động"
+                                th:classappend="${#lists.contains(selectedGenres, 'Hành động')} ? ' active'">Hành động</button>
+                        <button type="button" class="filter-pill" data-name="genre" data-value="Hài"
+                                th:classappend="${#lists.contains(selectedGenres, 'Hài')} ? ' active'">Hài</button>
+                        <button type="button" class="filter-pill" data-name="genre" data-value="Kinh dị"
+                                th:classappend="${#lists.contains(selectedGenres, 'Kinh dị')} ? ' active'">Kinh dị</button>
+                        <button type="button" class="filter-pill" data-name="genre" data-value="Lãng mạn"
+                                th:classappend="${#lists.contains(selectedGenres, 'Lãng mạn')} ? ' active'">Lãng mạn</button>
+                        <button type="button" class="filter-pill" data-name="genre" data-value="Hoạt hình"
+                                th:classappend="${#lists.contains(selectedGenres, 'Hoạt hình')} ? ' active'">Hoạt hình</button>
+                        <button type="button" class="filter-pill" data-name="genre" data-value="Tâm lý"
+                                th:classappend="${#lists.contains(selectedGenres, 'Tâm lý')} ? ' active'">Tâm lý</button>
+                        <button type="button" class="filter-pill" data-name="genre" data-value="Sci-Fi"
+                                th:classappend="${#lists.contains(selectedGenres, 'Sci-Fi')} ? ' active'">Sci-Fi</button>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-title">Định dạng chiếu</div>
+                    <div class="pill-row">
+                        <button type="button" class="filter-pill" data-name="format" data-value="2D"
+                                th:classappend="${#lists.contains(selectedFormats, '2D')} ? ' active'">2D</button>
+                        <button type="button" class="filter-pill" data-name="format" data-value="3D"
+                                th:classappend="${#lists.contains(selectedFormats, '3D')} ? ' active'">3D</button>
+                        <button type="button" class="filter-pill" data-name="format" data-value="IMAX"
+                                th:classappend="${#lists.contains(selectedFormats, 'IMAX')} ? ' active'">IMAX</button>
+                        <button type="button" class="filter-pill" data-name="format" data-value="4DX"
+                                th:classappend="${#lists.contains(selectedFormats, '4DX')} ? ' active'">4DX</button>
+                        <button type="button" class="filter-pill" data-name="format" data-value="Dolby"
+                                th:classappend="${#lists.contains(selectedFormats, 'Dolby')} ? ' active'">Dolby</button>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-title">Ngôn ngữ / Phụ đề</div>
+                    <div class="pill-row">
+                        <button type="button" class="filter-pill" data-name="language" data-value="Lồng tiếng"
+                                th:classappend="${#lists.contains(selectedLanguages, 'Lồng tiếng')} ? ' active'">Lồng tiếng</button>
+                        <button type="button" class="filter-pill" data-name="language" data-value="Phụ đề VI"
+                                th:classappend="${#lists.contains(selectedLanguages, 'Phụ đề VI')} ? ' active'">Phụ đề VI</button>
+                        <button type="button" class="filter-pill" data-name="language" data-value="Phụ đề EN"
+                                th:classappend="${#lists.contains(selectedLanguages, 'Phụ đề EN')} ? ' active'">Phụ đề EN</button>
+                        <button type="button" class="filter-pill" data-name="language" data-value="Nguyên gốc"
+                                th:classappend="${#lists.contains(selectedLanguages, 'Nguyên gốc')} ? ' active'">Nguyên gốc</button>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-title">Độ tuổi</div>
+                    <div class="pill-row">
+                        <button type="button" class="filter-pill" data-name="age" data-value="P"
+                                th:classappend="${#lists.contains(selectedAges, 'P')} ? ' active'">P</button>
+                        <button type="button" class="filter-pill" data-name="age" data-value="T13"
+                                th:classappend="${#lists.contains(selectedAges, 'T13')} ? ' active'">T13+</button>
+                        <button type="button" class="filter-pill" data-name="age" data-value="T16"
+                                th:classappend="${#lists.contains(selectedAges, 'T16')} ? ' active'">T16+</button>
+                        <button type="button" class="filter-pill" data-name="age" data-value="T18"
+                                th:classappend="${#lists.contains(selectedAges, 'T18')} ? ' active'">T18+</button>
+                    </div>
+                </div>
+
+                <input type="hidden" name="sort" th:value="${sort}">
+
+                <div class="form-actions">
+                    <button class="primary-search-btn" type="submit">Tìm kiếm</button>
+                </div>
             </form>
         </div>
     </section>
 
     <main class="content-container">
-        <div class="result-heading">
-            <h1>Kết quả tìm kiếm</h1>
-            <p th:text="${#lists.size(movies)} + ' phim được tìm thấy'">0 phim được tìm thấy</p>
+        <div class="results-bar">
+            <div class="result-count" th:text="${totalMovies} + ' phim được tìm thấy'">0 phim được tìm thấy</div>
+            <form th:action="@{/search}" method="get" id="sortForm">
+                <input type="hidden" name="keyword" th:value="${keyword}">
+                <input type="hidden" name="genre" th:each="item : ${selectedGenres}" th:value="${item}">
+                <input type="hidden" name="format" th:each="item : ${selectedFormats}" th:value="${item}">
+                <input type="hidden" name="language" th:each="item : ${selectedLanguages}" th:value="${item}">
+                <input type="hidden" name="age" th:each="item : ${selectedAges}" th:value="${item}">
+                <select class="sort-select" name="sort" onchange="this.form.submit()">
+                    <option value="featured" th:selected="${sort == 'featured'}">Nổi bật nhất</option>
+                    <option value="releaseDate" th:selected="${sort == 'releaseDate'}">Ngày chiếu gần nhất</option>
+                    <option value="titleAsc" th:selected="${sort == 'titleAsc'}">Tên A-Z</option>
+                    <option value="newest" th:selected="${sort == 'newest'}">Mới thêm</option>
+                </select>
+            </form>
         </div>
 
-        <section class="movies" th:if="${!#lists.isEmpty(movies)}">
+        <section class="movies-grid" th:if="${!#lists.isEmpty(movies)}">
             <article class="movie-card" th:each="movie : ${movies}">
-                <a th:href="@{/movies/{id}(id=${movie.id})}">
+                <a class="poster-wrap" th:href="@{/movies/{id}(id=${movie.id})}">
                     <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
+                    <span class="status-badge"
+                          th:classappend="${movie.status.name() == 'COMING_SOON'} ? ' upcoming'"
+                          th:text="${movie.status.name() == 'COMING_SOON' ? 'Sắp chiếu' : 'Đang chiếu'}">Đang chiếu</span>
+                    <span class="age-badge"
+                          th:classappend="${movie.ageRating != null && #strings.contains(movie.ageRating, '18') ? ' age-t18' : (movie.ageRating != null && #strings.contains(movie.ageRating, '16') ? ' age-t16' : (movie.ageRating != null && #strings.contains(movie.ageRating, '13') ? ' age-t13' : ' age-p'))}"
+                          th:text="${movie.ageRating != null && !movie.ageRating.isBlank() ? movie.ageRating : 'P'}">P</span>
                 </a>
-                <a class="movie-title" th:href="@{/movies/{id}(id=${movie.id})}" th:text="${movie.title}">Tên phim</a>
-                <p class="movie-genre">
-                    <b>Thể loại:</b>
-                    <span th:text="${movie.genre}">Tâm lý</span>
-                </p>
+
+                <div class="movie-info">
+                    <p class="movie-genre" th:text="${movie.genre}">Hành động</p>
+                    <a class="movie-title" th:href="@{/movies/{id}(id=${movie.id})}" th:text="${movie.title}">Tên phim</a>
+                    <p class="movie-meta"
+                       th:if="${movie.status.name() != 'COMING_SOON'}"
+                       th:text="${(movie.releaseYear != null ? movie.releaseYear : (movie.releaseDate != null ? movie.releaseDate.year : '')) + ' / ' + (movie.duration != null ? movie.duration + ' phút' : 'Đang cập nhật')}">2026 / 120 phút</p>
+                    <p class="movie-meta"
+                       th:if="${movie.status.name() == 'COMING_SOON'}"
+                       th:text="'Khởi chiếu: ' + ${movie.releaseDate != null ? movie.releaseDate : 'Đang cập nhật'}">Khởi chiếu: Đang cập nhật</p>
+                    <p class="movie-format">
+                        <b>Định dạng:</b>
+                        <span th:text="${movie.format != null && !movie.format.isBlank() ? movie.format : '2D'}">2D</span>
+                    </p>
+
+                    <a class="buy-btn"
+                       th:if="${movie.status.name() != 'COMING_SOON'}"
+                       th:href="@{/booking/showtimes(movieId=${movie.id})}">Mua vé</a>
+                    <button class="disabled-buy-btn"
+                            type="button"
+                            th:if="${movie.status.name() == 'COMING_SOON'}"
+                            disabled>Chưa mở bán</button>
+                </div>
             </article>
         </section>
 
         <div class="empty-state" th:if="${#lists.isEmpty(movies)}">
             Không tìm thấy phim phù hợp với tìm kiếm của bạn. Vui lòng thử từ khóa khác.
         </div>
+
+        <nav class="pagination" th:if="${totalPages > 1}">
+            <a class="page-link"
+               th:if="${currentPage > 1}"
+               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, sort=${sort}, page=${currentPage - 1})}">Trước</a>
+            <a class="page-link"
+               th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
+               th:classappend="${pageNumber == currentPage} ? ' active'"
+               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, sort=${sort}, page=${pageNumber})}"
+               th:text="${pageNumber}">1</a>
+            <a class="page-link"
+               th:if="${currentPage < totalPages}"
+               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, sort=${sort}, page=${currentPage + 1})}">Sau</a>
+        </nav>
     </main>
 
     <footer class="footer">
         <div class="footer-container">
             <div>
-                <h4>BETA CINEMAS</h4>
-                <p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p>
+                <h4>CINEFLOW</h4>
+                <p>Hệ thống rạp chiếu phim hiện đại cho trải nghiệm điện ảnh trọn vẹn.</p>
             </div>
             <div>
                 <h4>LIÊN HỆ</h4>
@@ -417,6 +661,38 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        const searchForm = document.getElementById("guestSearchForm");
+        const sortInput = searchForm.querySelector('input[name="sort"]');
+
+        function syncSelectedPills() {
+            searchForm.querySelectorAll('input[data-pill-input="true"]').forEach((input) => input.remove());
+
+            document.querySelectorAll(".filter-pill.active").forEach((pill) => {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = pill.dataset.name;
+                input.value = pill.dataset.value;
+                input.dataset.pillInput = "true";
+                searchForm.appendChild(input);
+            });
+        }
+
+        document.querySelectorAll(".filter-pill").forEach((pill) => {
+            pill.addEventListener("click", () => {
+                pill.classList.toggle("active");
+                syncSelectedPills();
+            });
+        });
+
+        searchForm.addEventListener("submit", () => {
+            syncSelectedPills();
+            sortInput.value = document.querySelector(".sort-select")?.value || "featured";
+        });
+
+        syncSelectedPills();
+    </script>
 </body>
 
 </html>

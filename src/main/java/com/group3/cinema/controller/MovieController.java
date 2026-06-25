@@ -4,6 +4,8 @@ package com.group3.cinema.controller;
  * Added on 2026-06-04: Movie routes for listing, detail, and search.
  * Updated on 2026-06-04: Added GET /search for UC-G03 Search Movies.
  * Updated on 2026-06-04: Passed logged-in user to search page header.
+ * Updated on 2026-06-26: Added multi-select guest search filters, sorting,
+ * and pagination model data for search-result.html.
  * Created by: HuyPB - HE191335
  */
 
@@ -17,6 +19,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.Collections;
+import java.util.List;
 
 @Controller
 public class MovieController {
@@ -71,17 +76,42 @@ public class MovieController {
 
     @GetMapping("/search")
     public String searchMovies(@RequestParam(value = "keyword", required = false) String keyword,
-                               @RequestParam(value = "genre", required = false) String genre,
+                               @RequestParam(value = "genre", required = false) List<String> genres,
+                               @RequestParam(value = "format", required = false) List<String> formats,
+                               @RequestParam(value = "language", required = false) List<String> languages,
+                               @RequestParam(value = "age", required = false) List<String> ageRatings,
                                @RequestParam(value = "status", required = false) String status,
+                               @RequestParam(value = "sort", required = false, defaultValue = "featured") String sort,
+                               @RequestParam(value = "page", required = false, defaultValue = "1") int page,
                                HttpSession session,
                                Model model) {
         addLoggedInUser(session, model);
-        model.addAttribute("movies", movieService.searchMovies(keyword, genre, status));
+
+        List<Movie> allMovies = movieService.searchMovies(keyword, genres, formats, languages, ageRatings, status, sort);
+        int pageSize = 12;
+        int totalMovies = allMovies.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalMovies / pageSize));
+        int currentPage = Math.min(Math.max(page, 1), totalPages);
+        int fromIndex = Math.min((currentPage - 1) * pageSize, totalMovies);
+        int toIndex = Math.min(fromIndex + pageSize, totalMovies);
+
+        model.addAttribute("movies", allMovies.subList(fromIndex, toIndex));
+        model.addAttribute("totalMovies", totalMovies);
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
         model.addAttribute("keyword", keyword);
-        model.addAttribute("genre", genre);
+        model.addAttribute("selectedGenres", nullToEmpty(genres));
+        model.addAttribute("selectedFormats", nullToEmpty(formats));
+        model.addAttribute("selectedLanguages", nullToEmpty(languages));
+        model.addAttribute("selectedAges", nullToEmpty(ageRatings));
         model.addAttribute("status", status);
+        model.addAttribute("sort", sort);
         model.addAttribute("genres", movieService.getActiveGenres());
         model.addAttribute("statuses", movieService.getMovieStatuses());
         return "search-result";
+    }
+
+    private List<String> nullToEmpty(List<String> values) {
+        return values == null ? Collections.emptyList() : values;
     }
 }
