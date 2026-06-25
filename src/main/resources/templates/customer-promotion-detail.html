@@ -1,0 +1,167 @@
+<!doctype html>
+<!--
+  Created on 2026-06-25: Customer-facing promotion campaign detail page.
+  Created by: NinhDD - HE186113
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${promotion.title} + ' | Beta Cinemas'">Ưu đãi | Beta Cinemas</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <style>
+        body { margin: 0; font-family: "Be Vietnam Pro", Arial, "Segoe UI", sans-serif; background: #f7fafc; color: #172033; }
+        .top-bar { background: #0054a6; color: white; padding: 8px 0; font-size: 13px; }
+        .top-container, .header-container, .detail-container, .footer-container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        .top-container { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+        .top-link { color: white; text-decoration: none; font-weight: 600; }
+        .lang-icon { height: 14px; margin-left: 15px; }
+        .header-main { background: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,.05); position: sticky; top: 0; z-index: 1000; }
+        .header-container { display: flex; align-items: center; gap: 25px; }
+        .logo { height: 55px; display: block; }
+        .nav-menu { display: flex; justify-content: center; flex-grow: 1; gap: 25px; }
+        .nav-menu a { text-decoration: none; color: #333; font-weight: 800; font-size: 16px; white-space: nowrap; }
+        .nav-menu a:hover, .nav-menu a.active { color: #0054a6; }
+        .search-form { display: flex; gap: 8px; }
+        .search-form input { border: 1px solid #ddd; border-radius: 20px; padding: 8px 14px; min-width: 190px; outline: none; }
+        .search-form button { background: #0054a6; color: white; border: none; border-radius: 20px; padding: 8px 14px; font-weight: 800; cursor: pointer; }
+        .campaign-banner { width: 100%; aspect-ratio: 1920 / 700; max-height: 620px; background: #fff; overflow: hidden; border-bottom: 1px solid #dbe5ef; }
+        .campaign-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .detail-container { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 34px; margin-top: 38px; margin-bottom: 60px; }
+        .campaign-main, .campaign-side { background: white; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 14px 34px rgba(15, 23, 42, .08); }
+        .campaign-main { padding: 30px; }
+        .campaign-main h1 { color: #0f3768; font-size: clamp(30px, 4vw, 46px); line-height: 1.1; margin: 0 0 16px; }
+        .meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+        .pill { border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 900; padding: 8px 11px; }
+        .pill-blue { background: #e0f2fe; color: #0369a1; }
+        .pill-green { background: #dcfce7; color: #166534; }
+        .pill-gray { background: #f1f5f9; color: #475569; }
+        .rule-box { background: #eef6ff; border: 1px solid #d8eafe; border-left: 5px solid #0054a6; border-radius: 10px; color: #0f3768; font-size: 20px; font-weight: 900; line-height: 1.55; padding: 18px; margin: 24px 0; }
+        .section-title { color: #0f172a; font-size: 19px; font-weight: 900; margin: 28px 0 10px; }
+        .content-text { color: #475569; font-size: 16px; line-height: 1.8; white-space: pre-line; }
+        .campaign-side { align-self: start; padding: 22px; position: sticky; top: 112px; }
+        .side-block { border-bottom: 1px solid #e2e8f0; padding: 16px 0; }
+        .side-block:first-child { padding-top: 0; }
+        .side-block:last-child { border-bottom: 0; padding-bottom: 0; }
+        .side-block span { color: #64748b; display: block; font-size: .82rem; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
+        .side-block strong { color: #0f172a; font-size: 16px; }
+        .campaign-progress { background: #e2e8f0; border-radius: 999px; height: 9px; margin-top: 10px; overflow: hidden; }
+        .campaign-progress-fill { background: #0054a6; border-radius: inherit; height: 100%; }
+        .cta-btn { background: #0054a6; border-radius: 10px; color: white; display: flex; font-weight: 900; justify-content: center; margin-top: 18px; padding: 13px 16px; text-decoration: none; }
+        .related { margin-top: 24px; }
+        .related a { color: #0f3768; display: block; font-weight: 900; padding: 12px 0; text-decoration: none; border-top: 1px solid #e2e8f0; }
+        .footer { background: #0054a6; color: white; padding: 45px 0; }
+        .footer-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 45px; }
+        @media (max-width: 900px) { .header-container, .nav-menu { flex-wrap: wrap; } .detail-container, .footer-container { grid-template-columns: 1fr; } .search-form { width: 100%; } .search-form input { flex: 1; } .campaign-side { position: static; } }
+    </style>
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
+</head>
+<body>
+<div class="top-bar">
+    <div class="top-container">
+        <th:block th:if="${user == null}">
+            <a th:href="@{/login}" class="top-link">Đăng nhập</a><span style="opacity:.5">|</span>
+            <a th:href="@{/register}" class="top-link">Đăng ký</a>
+        </th:block>
+        <th:block th:if="${user != null}">
+            <span>Xin chào,</span><a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a><span style="opacity:.5">|</span>
+            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a><span style="opacity:.5">|</span>
+            <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
+        </th:block>
+        <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
+    </div>
+</div>
+
+<header class="header-main">
+    <div class="header-container">
+        <a th:href="@{/}"><img src="/images/cineflow-logo.svg" alt="CineFlow Cinema" class="logo"></a>
+        <nav class="nav-menu">
+            <a th:href="@{/}">TRANG CHỦ</a>
+            <a th:href="@{/movies}">PHIM</a>
+            <a th:href="@{/about}">RẠP</a>
+            <a href="#">GIÁ VÉ</a>
+            <a th:href="@{/promotions}" class="active">ƯU ĐÃI</a>
+            <a th:href="@{/posts}">TIN TỨC</a>
+            <a th:href="@{/contact}">LIÊN HỆ</a>
+        </nav>
+        <form class="search-form" th:action="@{/search}" method="get">
+            <input type="search" name="keyword" placeholder="Tìm phim">
+            <button type="submit">Tìm</button>
+        </form>
+    </div>
+</header>
+
+<section class="campaign-banner">
+    <img th:src="${promotion.bannerImage != null ? promotion.bannerImage : 'https://placehold.co/1920x700?text=Promotion'}" th:alt="${promotion.title}">
+</section>
+
+<main class="detail-container">
+    <article class="campaign-main">
+        <div class="meta-row">
+            <span class="pill pill-green" th:text="${promotion.campaignStateDisplayName}">Đang diễn ra</span>
+            <span class="pill pill-blue" th:text="${promotion.targetGroup.displayName}">Thành viên</span>
+            <span class="pill pill-gray" th:text="${promotion.type.displayName}">Member Day</span>
+        </div>
+        <h1 th:text="${promotion.title}">Happy Monday</h1>
+        <div class="rule-box" th:text="${promotion.discountRule}">
+            Đồng giá vé vào thứ Hai hàng tuần.
+        </div>
+
+        <h2 class="section-title">Nội dung chiến dịch</h2>
+        <div class="content-text" th:text="${promotion.description}">Mô tả chiến dịch.</div>
+
+        <h2 class="section-title">Điều kiện tham gia</h2>
+        <div class="content-text" th:text="${promotion.conditionText}">Điều kiện tham gia.</div>
+
+        <h2 class="section-title">Cách nhận ưu đãi</h2>
+        <div class="content-text" th:text="${promotion.howToJoin}">Cách nhận ưu đãi.</div>
+    </article>
+
+    <aside class="campaign-side">
+        <div class="side-block">
+            <span>Thời gian áp dụng</span>
+            <strong>
+                <span th:text="${#temporals.format(promotion.startDate, 'dd/MM/yyyy')}">01/07/2026</span>
+                -
+                <span th:text="${#temporals.format(promotion.endDate, 'dd/MM/yyyy')}">31/07/2026</span>
+            </strong>
+        </div>
+        <div class="side-block">
+            <span>Nhóm khách hàng</span>
+            <strong th:text="${promotion.targetGroup.displayName}">Tất cả khách hàng</strong>
+        </div>
+        <div class="side-block">
+            <span>Loại chiến dịch</span>
+            <strong th:text="${promotion.type.displayName}">Happy Monday</strong>
+        </div>
+        <div class="side-block" th:if="${promotion.remainingDays > 0}">
+            <span>Thời gian còn lại</span>
+            <strong><span th:text="${promotion.remainingDays}">10</span> ngày</strong>
+        </div>
+        <div class="side-block">
+            <span>Tiến độ campaign</span>
+            <strong><span th:text="${promotion.progressPercent}">40</span>% vòng đời</strong>
+            <div class="campaign-progress">
+                <div class="campaign-progress-fill" th:style="'width:' + ${promotion.progressPercent} + '%'"></div>
+            </div>
+        </div>
+        <a class="cta-btn" th:href="@{/movies}">Xem phim đang chiếu</a>
+
+        <div class="related" th:if="${relatedPromotions != null && !#lists.isEmpty(relatedPromotions)}">
+            <h3 class="section-title" style="font-size: 17px;">Ưu đãi khác</h3>
+            <a th:each="item : ${relatedPromotions}" th:href="@{/promotions/{id}(id=${item.id})}" th:text="${item.title}">
+                Member Day
+            </a>
+        </div>
+    </aside>
+</main>
+
+<footer class="footer">
+    <div class="footer-container">
+        <div><h4>BETA CINEMAS</h4><p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p></div>
+        <div><h4>LIÊN HỆ</h4><p>Hotline: 1900 636807</p></div>
+        <div><h4>KẾT NỐI</h4><p>Facebook | Youtube | TikTok</p></div>
+    </div>
+</footer>
+</body>
+</html>

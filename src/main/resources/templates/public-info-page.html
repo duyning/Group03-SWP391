@@ -1,0 +1,116 @@
+<!doctype html>
+<!--
+  Created on 2026-06-25: Customer-facing cinema information content page.
+  Created by: NinhDD - HE186113
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${page.title} + ' | Beta Cinemas'">Thông tin rạp | Beta Cinemas</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <link rel="stylesheet" th:href="@{/css/public-info.css}">
+</head>
+<body>
+<div class="top-bar">
+    <div class="top-container">
+        <th:block th:if="${user == null}">
+            <a th:href="@{/login}" class="top-link">Đăng nhập</a>
+            <span style="opacity:.5">|</span>
+            <a th:href="@{/register}" class="top-link">Đăng ký</a>
+        </th:block>
+        <th:block th:if="${user != null}">
+            <span>Xin chào,</span>
+            <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
+            <span style="opacity:.5">|</span>
+            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
+            <span style="opacity:.5">|</span>
+            <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
+        </th:block>
+        <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
+    </div>
+</div>
+
+<header class="header-main">
+    <div class="header-container">
+        <a th:href="@{/}">
+            <img src="/images/cineflow-logo.svg" alt="CineFlow Cinema" class="logo">
+        </a>
+        <nav class="nav-menu">
+            <a th:href="@{/}">TRANG CHỦ</a>
+            <a th:href="@{/movies}">PHIM</a>
+            <a th:href="@{/about}" class="active">RẠP</a>
+            <a href="#">GIÁ VÉ</a>
+            <a th:href="@{/promotions}">ƯU ĐÃI</a>
+            <a th:href="@{/posts}">TIN TỨC</a>
+            <a th:href="@{/contact}">LIÊN HỆ</a>
+        </nav>
+        <form class="search-form" th:action="@{/search}" method="get">
+            <input type="search" name="keyword" placeholder="Tìm phim">
+            <button type="submit">Tìm</button>
+        </form>
+    </div>
+</header>
+
+<section class="info-hero">
+    <div class="info-container">
+        <h1 th:text="${page.title}">Giới thiệu Beta Cinemas</h1>
+        <p th:text="${page.summary}">Tóm tắt nội dung trang</p>
+    </div>
+</section>
+
+<main class="info-container info-layout">
+    <aside class="info-menu" aria-label="Danh mục thông tin rạp">
+        <a th:each="item : ${infoPages}"
+           th:href="${item.url}"
+           th:text="${item.menuTitle}"
+           th:classappend="${item.key == activeInfoKey} ? 'active' : ''">
+            GIỚI THIỆU
+        </a>
+    </aside>
+
+    <article class="info-content">
+        <section class="info-section" th:each="section : ${page.sections}">
+            <h2 th:text="${section.heading}">Tiêu đề nội dung</h2>
+            <p th:each="paragraph : ${section.paragraphs}" th:text="${paragraph}">Nội dung</p>
+            <ul th:if="${section.bullets != null && !#lists.isEmpty(section.bullets)}">
+                <li th:each="bullet : ${section.bullets}" th:text="${bullet}">Quy định</li>
+            </ul>
+        </section>
+    </article>
+</main>
+
+<footer class="footer">
+    <div class="footer-container">
+        <div>
+            <h4>BETA CINEMAS</h4>
+            <p>Hệ thống rạp chiếu phim hiện đại, thân thiện và minh bạch cho khách hàng yêu điện ảnh.</p>
+        </div>
+        <div>
+            <h4>THÔNG TIN</h4>
+            <div class="footer-links">
+                <a th:href="@{/about}">Giới thiệu</a>
+                <a th:href="@{/contact}">Liên hệ</a>
+                <a th:href="@{/faq}">Câu hỏi thường gặp</a>
+            </div>
+        </div>
+        <div>
+            <h4>CHÍNH SÁCH</h4>
+            <div class="footer-links">
+                <a th:href="@{/general-terms}">Điều khoản chung</a>
+                <a th:href="@{/transaction-terms}">Điều khoản giao dịch</a>
+                <a th:href="@{/payment-policy}">Chính sách thanh toán</a>
+            </div>
+        </div>
+        <div>
+            <h4>HỖ TRỢ</h4>
+            <div class="footer-links">
+                <a th:href="@{/privacy-policy}">Chính sách bảo mật</a>
+                <a th:href="@{/partners}">Dành cho đối tác</a>
+                <a th:href="@{/cinema-rules}">Quy định tại rạp</a>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+</html>
