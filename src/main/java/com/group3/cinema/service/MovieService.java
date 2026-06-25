@@ -123,7 +123,25 @@ public class MovieService {
     }
 
     public List<String> getActiveGenres() {
-        return movieRepository.findDistinctActiveGenres();
+        return distinctMovieValues(Movie::getGenre);
+    }
+
+    public List<String> getActiveFormats() {
+        return distinctMovieValues(Movie::getFormat);
+    }
+
+    public List<String> getActiveLanguages() {
+        return distinctMovieValues(Movie::getLanguage);
+    }
+
+    public List<String> getActiveAgeRatings() {
+        return movieRepository.findByActiveTrue().stream()
+                .map(Movie::getAgeRating)
+                .map(this::trimToNull)
+                .filter(value -> value != null)
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
     }
 
     public Movie.MovieStatus[] getMovieStatuses() {
@@ -205,6 +223,26 @@ public class MovieService {
         return values.stream()
                 .map(this::normalize)
                 .filter(value -> value != null && !value.isBlank())
+                .toList();
+    }
+
+    private List<String> distinctMovieValues(java.util.function.Function<Movie, String> getter) {
+        return movieRepository.findByActiveTrue().stream()
+                .map(getter)
+                .flatMap(value -> splitMovieValue(value).stream())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    private List<String> splitMovieValue(String value) {
+        String cleanValue = trimToNull(value);
+        if (cleanValue == null) {
+            return Collections.emptyList();
+        }
+        return java.util.Arrays.stream(cleanValue.split("[,;|/]+"))
+                .map(String::trim)
+                .filter(item -> !item.isBlank())
                 .toList();
     }
 

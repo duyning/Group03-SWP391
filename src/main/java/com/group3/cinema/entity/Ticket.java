@@ -72,7 +72,7 @@ public class Ticket {
     private String paymentMethod;
 
     /** Mã đặt vé duy nhất, ví dụ: "CF-20260625-001" */
-    @Column(name = "booking_code", nullable = false, unique = true, columnDefinition = "NVARCHAR(50)")
+    @Column(name = "booking_code", nullable = false, columnDefinition = "NVARCHAR(50)")
     private String bookingCode;
 
     public Ticket() {

@@ -20,6 +20,7 @@ public class AccountSeedInitializer {
 
     @PostConstruct
     public void seedAccounts() {
+        ensureAccountSchema();
         try {
             String sql = "DECLARE @ConstraintName nvarchar(200)\n" +
                          "SELECT @ConstraintName = Name FROM sys.default_constraints WHERE PARENT_OBJECT_ID = OBJECT_ID('account') AND PARENT_COLUMN_ID = (SELECT column_id FROM sys.columns WHERE NAME = N'age' AND object_id = OBJECT_ID(N'account'))\n" +
@@ -76,5 +77,35 @@ public class AccountSeedInitializer {
         account.setRole(role);
 
         accountRepository.save(account);
+    }
+
+    private void ensureAccountSchema() {
+        try {
+            if (!tableExists("account") || columnExists("account", "dob")) {
+                return;
+            }
+            jdbcTemplate.execute("ALTER TABLE account ADD dob DATE NULL");
+            System.out.println("Da tu dong them cot dob cho bang account.");
+        } catch (Exception e) {
+            System.err.println("Khong the them cot dob cho bang account: " + e.getMessage());
+        }
+    }
+
+    private boolean tableExists(String tableName) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_NAME = ?
+                """, Integer.class, tableName);
+        return count != null && count > 0;
+    }
+
+    private boolean columnExists(String tableName, String columnName) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = ? AND COLUMN_NAME = ?
+                """, Integer.class, tableName, columnName);
+        return count != null && count > 0;
     }
 }

@@ -107,6 +107,9 @@ public class MovieController {
         model.addAttribute("status", status);
         model.addAttribute("sort", sort);
         model.addAttribute("genres", movieService.getActiveGenres());
+        model.addAttribute("formats", movieService.getActiveFormats());
+        model.addAttribute("languages", movieService.getActiveLanguages());
+        model.addAttribute("ageRatings", movieService.getActiveAgeRatings());
         model.addAttribute("statuses", movieService.getMovieStatuses());
         return "search-result";
     }

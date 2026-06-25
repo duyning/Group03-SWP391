@@ -9,9 +9,13 @@ package com.group3.cinema.service;
 import com.group3.cinema.entity.Booking;
 import com.group3.cinema.entity.BookingTicket;
 import com.group3.cinema.entity.Payment;
+import com.group3.cinema.entity.Ticket;
+import com.group3.cinema.repository.AccountRepository;
 import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.PaymentRepository;
+import com.group3.cinema.repository.TicketRepository;
+import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +30,24 @@ public class PaymentService {
     private final BookingRepository bookingRepository;
     private final BookingTicketRepository ticketRepository;
     private final BookingEmailService bookingEmailService;
+    private final TicketRepository realTicketRepository;
+    private final ShowtimeRepository showtimeRepository;
+    private final AccountRepository accountRepository;
 
     public PaymentService(PaymentRepository paymentRepository,
                           BookingRepository bookingRepository,
                           BookingTicketRepository ticketRepository,
-                          BookingEmailService bookingEmailService) {
+                          BookingEmailService bookingEmailService,
+                          TicketRepository realTicketRepository,
+                          ShowtimeRepository showtimeRepository,
+                          AccountRepository accountRepository) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.ticketRepository = ticketRepository;
         this.bookingEmailService = bookingEmailService;
+        this.realTicketRepository = realTicketRepository;
+        this.showtimeRepository = showtimeRepository;
+        this.accountRepository = accountRepository;
     }
 
     @Transactional
@@ -97,6 +110,7 @@ public class PaymentService {
                 ticket.setHoldExpiresAt(null);
             });
             ticketRepository.saveAll(tickets);
+            saveRealTickets(booking, tickets, payment);
         } else if ("CANCELLED".equals(normalized)) {
             payment.setStatus(Payment.Status.CANCELLED);
             payment.setResponseCode("24");
@@ -149,6 +163,7 @@ public class PaymentService {
                 ticket.setHoldExpiresAt(null);
             });
             ticketRepository.saveAll(tickets);
+            saveRealTickets(booking, tickets, payment);
         } else if ("CANCELLED".equalsIgnoreCase(responseCode)) {
             payment.setStatus(Payment.Status.CANCELLED);
             payment.setResponseCode(responseCode);
@@ -243,6 +258,37 @@ public class PaymentService {
     private void sendEmailIfPaid(Payment payment) {
         if (payment.getStatus() == Payment.Status.SUCCESS) {
             bookingEmailService.sendTicketEmail(payment.getBookingId());
+        }
+    }
+
+    private void saveRealTickets(Booking booking, List<BookingTicket> bookingTickets, Payment payment) {
+        try {
+            var accountOpt = accountRepository.findById(booking.getAccountId());
+            var showtimeOpt = showtimeRepository.findById(booking.getShowtimeId());
+            if (accountOpt.isPresent() && showtimeOpt.isPresent()) {
+                var account = accountOpt.get();
+                var showtime = showtimeOpt.get();
+                var movie = showtime.getMovie();
+                
+                for (BookingTicket bt : bookingTickets) {
+                    Ticket t = new Ticket();
+                    t.setAccount(account);
+                    t.setMovie(movie);
+                    t.setRoomName(showtime.getRoom());
+                    t.setSeatLabel(bt.getSeatLabel());
+                    t.setSeatType(bt.getSeatType());
+                    t.setShowDate(showtime.getShowDate());
+                    t.setShowTime(showtime.getShowTime());
+                    t.setPrice(bt.getPrice());
+                    t.setBookingTime(booking.getCreatedAt());
+                    t.setStatus("CONFIRMED");
+                    t.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "Momo");
+                    t.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
+                    realTicketRepository.save(t);
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Warning: Failed to copy tickets to customer account display: " + ex.getMessage());
         }
     }
 }
