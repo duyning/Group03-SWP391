@@ -1,0 +1,169 @@
+%% Cinema Core Domain Class Diagram
+classDiagram
+  direction LR
+
+  namespace Identity {
+    class Account {
+      accountID: int
+      name: String
+      email: String
+      password: String
+      phoneNum: String
+      address: String
+      dob: LocalDate
+      gender: String
+      avatar: String
+      loyaltyPoint: int
+      status: boolean
+    }
+
+    class Role {
+      <<enumeration>>
+      ADMIN
+      MANAGER
+      CUSTOMER
+    }
+
+    class MembershipLevel {
+      <<enumeration>>
+      SILVER
+      GOLD
+      PLAT
+    }
+  }
+
+  namespace Catalog {
+    class Movie {
+      id: int
+      title: String
+      genre: String
+      duration: Integer
+      releaseDate: LocalDate
+      status: MovieStatus
+      active: boolean
+    }
+
+    class MovieStatus {
+      <<enumeration>>
+      NOW_SHOWING
+      COMING_SOON
+      SPECIAL_SCREENING
+    }
+
+    class Showtime {
+      id: Long
+      showDate: LocalDate
+      showTime: LocalTime
+      room: String
+      dayType: String
+    }
+
+    class Room {
+      id: Long
+      roomName: String
+      roomType: String
+      audioTech: String
+      rows: int
+      cols: int
+      totalSeats: int
+      status: String
+      cinemaId: Long
+    }
+
+    class Seat {
+      id: Long
+      roomId: Long
+      rowIndex: int
+      colIndex: int
+      seatLabel: String
+      seatType: String
+    }
+
+    class RoomType {
+      id: Long
+      name: String
+      active: boolean
+    }
+
+    class SeatType {
+      id: Long
+      code: String
+      displayName: String
+      color: String
+      capacity: int
+      sellable: boolean
+      active: boolean
+    }
+
+    class AudioTechnology {
+      id: Long
+      name: String
+      active: boolean
+    }
+  }
+
+  namespace Commerce {
+    class Combo {
+      id: Long
+      name: String
+      price: BigDecimal
+      status: String
+    }
+
+    class ComboItem {
+      id: Long
+      quantity: Integer
+      unitPrice: BigDecimal
+      costPrice: BigDecimal
+    }
+
+    class FoodItem {
+      id: Long
+      name: String
+      category: String
+      unitPrice: BigDecimal
+      costPrice: BigDecimal
+      status: String
+    }
+  }
+
+  namespace Content {
+    class Post {
+      id: Long
+      title: String
+      category: String
+      status: String
+    }
+
+    class Banner {
+      id: Long
+      title: String
+      page: BannerPage
+      displayOrder: Integer
+      active: boolean
+    }
+
+    class BannerPage {
+      <<enumeration>>
+      HOME
+      NEWS
+    }
+
+    class MoviePersonSuggestion {
+      id: int
+      name: String
+      type: String
+    }
+  }
+
+  Account --> Role
+  Account --> MembershipLevel
+  Movie --> MovieStatus
+  Showtime --> Movie
+  Room o-- Seat
+  Seat --> SeatType
+  Room --> RoomType
+  Room --> AudioTechnology
+  Combo *-- ComboItem
+  ComboItem --> FoodItem
+  Banner --> BannerPage

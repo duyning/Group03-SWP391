@@ -129,26 +129,7 @@
 </head>
 <body>
 
-<!-- ===== SIDEBAR ===== -->
-<aside class="sidebar">
-    <div class="sidebar-header">
-        <img src="/images/cineflow-logo-light.svg" height="35" alt="CineFlow Cinema">
-        <span>ADMIN</span>
-    </div>
-    <ul class="sidebar-nav">
-        <a href="/admin/dashboard"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
-        <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
-        <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
-        <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
-        <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
-        <a href="/admin/banners"><li><i class="fas fa-images"></i> Quản lý banner</li></a>
-        <a href="/admin/rooms"><li class="active"><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
-        <a href="/admin/catalogs"><li><i class="fas fa-list"></i> Danh mục phòng</li></a>
-        <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
-        <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
-        <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
-    </ul>
-</aside>
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('rooms')}"></div>
 
 <!-- ===== MAIN CONTENT ===== -->
 <main class="main">

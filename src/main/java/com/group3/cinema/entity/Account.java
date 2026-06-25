@@ -126,6 +126,7 @@ public class Account {
     }
 
     @JsonIgnore
+    @Transient
     public boolean isValidAge() {
         if (dob == null) return false;
         int calculatedAge = java.time.Period.between(dob, LocalDate.now()).getYears();

@@ -4,9 +4,9 @@ spring:
     name: Group03_SWP391_Summer26
 
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=Group3_SWP391;encrypt=false;trustServerCertificate=true
+    url: jdbc:sqlserver://localhost:1433;databaseName=sample;encrypt=false;trustServerCertificate=true
     username: sa
-    password: 123
+    password: sa
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
     hikari:
       connection-timeout: 20000
@@ -55,7 +55,7 @@ spring:
             enable: true
 
 server:
-  port: 8080
+  port: 8081
   servlet:
     context-path: /
 

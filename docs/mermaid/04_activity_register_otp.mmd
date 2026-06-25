@@ -1,0 +1,41 @@
+%% Register With OTP Activity Diagram
+flowchart TD
+  Start((Start))
+  Stop((Stop))
+
+  subgraph Customer
+    direction TB
+    C1[Open register form]
+    C2[Submit account data]
+    C3[Enter OTP]
+  end
+
+  subgraph RegisterController
+    direction TB
+    R1[Validate input]
+    R2[Check duplicate email and phone]
+    R3[Check age rule]
+    D1{Data valid?}
+    R4[Store pending account in session]
+    R5[Store OTP in session]
+    R6[Redirect to OTP page]
+    R7[Compare OTP with session value]
+    D2{OTP valid?}
+    R8[Show OTP error]
+    R9[Clear session data]
+    R10[Redirect to login with success]
+    R11[Return register form with errors]
+  end
+
+  subgraph AccountService
+    direction TB
+    A1[Generate OTP]
+    A2[Send OTP by email]
+    A3[Save account with customer role]
+  end
+
+  Start --> C1 --> C2 --> R1 --> R2 --> R3 --> D1
+  D1 -->|Yes| A1 --> A2 --> R4 --> R5 --> R6 --> C3 --> R7 --> D2
+  D1 -->|No| R11 --> Stop
+  D2 -->|Yes| A3 --> R9 --> R10 --> Stop
+  D2 -->|No| R8 --> Stop

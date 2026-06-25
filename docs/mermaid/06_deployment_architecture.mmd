@@ -1,0 +1,33 @@
+%% Cinema Deployment Diagram
+flowchart LR
+  subgraph ClientDevice[ClientDevice]
+    direction TB
+    BrowserApp[Browser]
+  end
+
+  subgraph ApplicationServer[ApplicationServer]
+    direction TB
+    AppServer[SpringBootApp]
+    Views[ThymeleafViews]
+    Assets[StaticAssets]
+  end
+
+  subgraph DatabaseServer[DatabaseServer]
+    direction TB
+    DbServer[(SQLServer)]
+  end
+
+  subgraph FileStorage[FileStorage]
+    direction TB
+    UploadDir[(Uploads)]
+  end
+
+  subgraph MailServer[MailServer]
+    direction TB
+    SmtpServer[GmailSMTP]
+  end
+
+  BrowserApp -->|HTTP| AppServer
+  AppServer -->|JDBC| DbServer
+  AppServer -->|file io| UploadDir
+  AppServer -->|SMTP| SmtpServer

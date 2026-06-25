@@ -48,6 +48,13 @@ public class AccountSeedInitializer {
                 "0900000002",
                 Role.MANAGER
         );
+        createAccountIfMissing(
+                "Nguyễn Văn Khách",
+                "customer@group03.com",
+                "customer123",
+                "0900000003",
+                Role.CUSTOMER
+        );
     }
 
     private void createAccountIfMissing(String name, String email, String password, String phoneNum, Role role) {

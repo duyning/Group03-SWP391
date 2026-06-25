@@ -21,6 +21,9 @@
         <a th:href="@{/admin/catalogs}"><li th:classappend="${active == 'catalogs'} ? 'active' : ''"><i class="fas fa-list"></i> Danh mục phòng</li></a>
         <a th:href="@{/admin/posts}"><li th:classappend="${active == 'posts'} ? 'active' : ''"><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
         <a th:href="@{/profile}"><li th:classappend="${active == 'profile'} ? 'active' : ''"><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
+        <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/create-manager}">
+            <li th:classappend="${active == 'create-manager'} ? 'active' : ''"><i class="fas fa-user-shield"></i> Tạo tài khoản Quản lý</li>
+        </a>
         <a th:href="@{/logout}"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
     </ul>
 </aside>

@@ -1,0 +1,32 @@
+@startuml
+title Login Sequence Diagram
+autonumber
+skinparam shadowing false
+
+actor User
+boundary LoginForm as LF
+control LoginController as LC
+control AccountService as AS
+database AccountRepository as AR
+collections HttpSession as HS
+
+User -> LF : submit email and password
+LF -> LC : POST /login
+LC -> AS : login(email, password)
+AS -> AR : findByEmail(email)
+AR --> AS : Account or null
+
+alt valid credentials and active account
+  AS --> LC : Account
+  LC -> HS : set loggedInUser
+  alt role is admin or manager
+    LC --> User : redirect /admin/dashboard
+  else role is customer
+    LC --> User : redirect /home
+  end
+else invalid credentials
+  LC --> User : redirect /login error
+else locked account
+  LC --> User : redirect /login error
+end
+@enduml

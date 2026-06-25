@@ -1,0 +1,29 @@
+%% Login Sequence Diagram
+sequenceDiagram
+  autonumber
+  actor User
+  participant LoginForm
+  participant LoginController
+  participant AccountService
+  database AccountRepository
+  participant HttpSession
+
+  User->>LoginForm: submit email and password
+  LoginForm->>LoginController: POST /login
+  LoginController->>AccountService: login(email, password)
+  AccountService->>AccountRepository: findByEmail(email)
+  AccountRepository-->>AccountService: Account or null
+
+  alt valid credentials and active account
+    AccountService-->>LoginController: Account
+    LoginController->>HttpSession: set loggedInUser
+    alt role is admin or manager
+      LoginController-->>User: redirect /admin/dashboard
+    else role is customer
+      LoginController-->>User: redirect /home
+    end
+  else invalid credentials
+    LoginController-->>User: redirect /login error
+  else locked account
+    LoginController-->>User: redirect /login error
+  end

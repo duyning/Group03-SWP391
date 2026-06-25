@@ -1,0 +1,16 @@
+%% Cinema Application Component Diagram
+flowchart LR
+  WebControllers[WebControllers]
+  ApiControllers[ApiControllers]
+  ServiceLayer[ServiceLayer]
+  RepositoryLayer[RepositoryLayer]
+  UploadStorage[UploadStorage]
+  GmailSMTP[GmailSMTP]
+  SQLServer[(SQLServer)]
+
+  WebControllers --> ServiceLayer
+  ApiControllers --> ServiceLayer
+  ServiceLayer --> RepositoryLayer
+  RepositoryLayer --> SQLServer
+  ServiceLayer --> UploadStorage
+  ServiceLayer --> GmailSMTP

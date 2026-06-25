@@ -1,0 +1,65 @@
+@startuml
+title Cinema System Use Case Diagram
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+actor Customer
+actor Manager
+actor Admin
+
+rectangle PublicPortal {
+  usecase BrowseMovies as UC_BrowseMovies
+  usecase ViewMovieDetail as UC_ViewMovieDetail
+  usecase SearchMovies as UC_SearchMovies
+  usecase ViewShowtimes as UC_ViewShowtimes
+  usecase ViewPosts as UC_ViewPosts
+  usecase RegisterAccount as UC_RegisterAccount
+  usecase LoginAccount as UC_LoginAccount
+  usecase ResetPassword as UC_ResetPassword
+}
+
+rectangle StaffPortal {
+  usecase ViewDashboard as UC_ViewDashboard
+  usecase ManageMovies as UC_ManageMovies
+  usecase ManageShowtimes as UC_ManageShowtimes
+  usecase ManageRooms as UC_ManageRooms
+  usecase ManageSeats as UC_ManageSeats
+  usecase ManageCombos as UC_ManageCombos
+  usecase ManagePosts as UC_ManagePosts
+  usecase ManageBanners as UC_ManageBanners
+  usecase ManageCatalogs as UC_ManageCatalogs
+  usecase UploadMedia as UC_UploadMedia
+}
+
+Customer --> UC_BrowseMovies
+Customer --> UC_ViewMovieDetail
+Customer --> UC_SearchMovies
+Customer --> UC_ViewShowtimes
+Customer --> UC_ViewPosts
+Customer --> UC_RegisterAccount
+Customer --> UC_LoginAccount
+Customer --> UC_ResetPassword
+
+Manager --> UC_ViewDashboard
+Manager --> UC_ManageMovies
+Manager --> UC_ManageShowtimes
+Manager --> UC_ManageRooms
+Manager --> UC_ManageSeats
+Manager --> UC_ManageCombos
+Manager --> UC_ManagePosts
+Manager --> UC_ManageBanners
+Manager --> UC_ManageCatalogs
+Manager --> UC_UploadMedia
+
+Admin --> UC_ViewDashboard
+Admin --> UC_ManageMovies
+Admin --> UC_ManageShowtimes
+Admin --> UC_ManageRooms
+Admin --> UC_ManageSeats
+Admin --> UC_ManageCombos
+Admin --> UC_ManagePosts
+Admin --> UC_ManageBanners
+Admin --> UC_ManageCatalogs
+Admin --> UC_UploadMedia
+@enduml
