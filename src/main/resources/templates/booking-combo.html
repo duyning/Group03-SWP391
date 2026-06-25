@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Chọn combo | CineFlow</title>
+    <link rel="stylesheet" th:href="@{/css/booking-flow.css}">
+    <style>
+        .combo-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}
+        .combo-toolbar p{margin:6px 0 0;color:#68768b}
+        .combo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .combo-card{position:relative;overflow:hidden;transition:.18s ease;background:#fff}
+        .combo-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(23,54,87,.12);border-color:#b8c9dd}
+        .combo-card img{background:#eef3f8}
+        .combo-card .combo-content{display:flex;flex-direction:column;gap:8px}
+        .combo-card h3{font-size:18px}
+        .combo-card p{margin:0}
+        .combo-price{font-size:18px;color:#0054a6}
+        .qty-row{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+        .qty-label{font-weight:800;color:#32435a}
+        .qty-control{display:inline-flex;align-items:center;border:1px solid #cbd8e6;border-radius:999px;overflow:hidden;background:#f8fbff}
+        .qty-btn{width:38px;height:36px;border:0;background:#e8eef5;color:#0054a6;font-size:22px;font-weight:900;cursor:pointer;line-height:1}
+        .qty-btn:hover{background:#0054a6;color:#fff}
+        .qty-input{width:48px!important;margin:0!important;border:0!important;background:#fff!important;text-align:center;font-weight:900;color:#172033;padding:9px 4px!important}
+        .combo-total{margin-top:6px;color:#68768b;font-size:13px}
+        .mini-summary{display:flex;justify-content:space-between;gap:16px;align-items:center}
+        .mini-summary .grand{font-size:18px;color:#0054a6}
+        @media(max-width:820px){.combo-toolbar,.mini-summary{flex-direction:column;align-items:stretch}.combo-grid{grid-template-columns:1fr}.qty-row{align-items:flex-start;flex-direction:column}.combo-card{grid-template-columns:112px 1fr}.combo-card img{width:112px;height:112px}}
+    </style>
+</head>
+<body>
+<header th:replace="~{fragments/common_header :: flowHeaderTimer('Thời gian giữ ghế còn lại:', ${summary.expiresAt}, @{/booking/seats})}"></header>
+<main class="flow-page">
+    <div class="steps">
+        <b>1 Suất chiếu</b><b>2 Ghế</b><b class="active">3 Combo</b><b>4 Xác nhận</b><b>5 Thanh toán</b>
+    </div>
+
+    <section class="panel">
+        <div class="combo-toolbar">
+            <div>
+                <h1>Chọn combo bắp nước</h1>
+                <p>Nhấn dấu cộng/trừ để thêm combo vào đơn. Có thể bỏ qua bước này nếu không cần.</p>
+            </div>
+            <a class="btn secondary small" th:href="@{/booking/summary}">Bỏ qua combo</a>
+        </div>
+
+        <div class="notice error" th:if="${error}" th:text="${error}"></div>
+
+        <form method="post" th:action="@{/booking/combos}" id="comboForm">
+            <div class="combo-grid">
+                <article class="combo-card" th:each="combo:${combos}">
+                    <img th:src="${combo.image}" th:alt="${combo.name}">
+                    <div class="combo-content">
+                        <h3 th:text="${combo.name}">Combo</h3>
+                        <p th:text="${combo.description}">Mô tả</p>
+                        <strong class="combo-price" th:text="${#numbers.formatDecimal(combo.price,0,'COMMA',0,'POINT')} + 'đ'">0đ</strong>
+
+                        <div class="qty-row">
+                            <span class="qty-label">Số lượng</span>
+                            <div class="qty-control" th:attr="data-price=${combo.price}">
+                                <button type="button" class="qty-btn qty-minus" aria-label="Giảm số lượng">−</button>
+                                <input class="qty-input" type="number" min="0" max="10"
+                                       th:name="${'combo_' + combo.id}"
+                                       th:value="${selectedCombos.get(combo.id) ?: 0}">
+                                <button type="button" class="qty-btn qty-plus" aria-label="Tăng số lượng">+</button>
+                            </div>
+                        </div>
+                        <div class="combo-total">Tạm tính: <b>0đ</b></div>
+                    </div>
+                </article>
+            </div>
+
+            <aside class="mini-summary">
+                <div>
+                    Ghế: <b th:text="${#strings.listJoin(summary.tickets.![seatLabel], ', ')}">A1</b>
+                    <br>
+                    Tiền vé: <b th:text="${#numbers.formatDecimal(summary.ticketSubtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b>
+                </div>
+                <div class="grand">Combo tạm tính: <b id="comboGrand">0đ</b></div>
+            </aside>
+
+            <div class="flow-actions">
+                <a class="btn secondary" th:href="@{/booking/seats/change}">Đổi ghế</a>
+                <button class="btn" type="submit">Tiếp tục</button>
+            </div>
+        </form>
+    </section>
+</main>
+<script th:src="@{/js/booking-timer.js}"></script>
+<script>
+    const money = new Intl.NumberFormat('vi-VN').format;
+    function refreshComboTotals() {
+        let grand = 0;
+        document.querySelectorAll('.qty-control').forEach(control => {
+            const input = control.querySelector('.qty-input');
+            const price = Number(control.dataset.price || 0);
+            const qty = Math.max(0, Math.min(10, Number(input.value || 0)));
+            input.value = qty;
+            const subtotal = price * qty;
+            grand += subtotal;
+            control.closest('.combo-card').querySelector('.combo-total b').textContent = money(subtotal) + 'đ';
+        });
+        document.getElementById('comboGrand').textContent = money(grand) + 'đ';
+    }
+    document.querySelectorAll('.qty-control').forEach(control => {
+        const input = control.querySelector('.qty-input');
+        control.querySelector('.qty-minus').addEventListener('click', () => {
+            input.value = Math.max(0, Number(input.value || 0) - 1);
+            refreshComboTotals();
+        });
+        control.querySelector('.qty-plus').addEventListener('click', () => {
+            input.value = Math.min(10, Number(input.value || 0) + 1);
+            refreshComboTotals();
+        });
+        input.addEventListener('input', refreshComboTotals);
+    });
+    refreshComboTotals();
+</script>
+</body>
+</html>

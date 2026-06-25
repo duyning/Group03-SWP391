@@ -11,12 +11,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
     /** TÃ¬m táº¥t cáº£ phÃ²ng theo cinemaId */
     List<Room> findByCinemaId(Long cinemaId);
+
+    Optional<Room> findFirstByRoomNameIgnoreCase(String roomName);
 
     /** Kiá»ƒm tra tÃªn phÃ²ng Ä‘Ã£ tá»“n táº¡i trong ráº¡p chÆ°a */
     boolean existsByRoomNameAndCinemaId(String roomName, Long cinemaId);

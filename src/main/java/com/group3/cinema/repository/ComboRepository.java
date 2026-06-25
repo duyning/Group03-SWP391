@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface ComboRepository extends JpaRepository<Combo, Long> {
 
+    List<Combo> findByStatusInOrderByNameAsc(List<String> statuses);
+
     // 1. Kiểm tra xem tên combo đã tồn tại chưa (phục vụ lúc tạo mới)
     boolean existsByName(String name);
 
