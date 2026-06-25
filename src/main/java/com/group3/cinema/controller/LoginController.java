@@ -67,6 +67,14 @@ public class LoginController {
         if (account.getRole() == Role.ADMIN || account.getRole() == Role.MANAGER) {
             return "redirect:/admin/dashboard";
         }
+
+        Object redirectTarget = session.getAttribute("redirectAfterLogin");
+        session.removeAttribute("redirectAfterLogin");
+        if (redirectTarget instanceof String target
+                && target.startsWith("/")
+                && !target.startsWith("//")) {
+            return "redirect:" + target;
+        }
         return "redirect:/home";
     }
 

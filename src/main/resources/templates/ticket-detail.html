@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Vé điện tử | CineFlow</title>
+    <link rel="stylesheet" th:href="@{/css/booking-flow.css}">
+</head>
+<body>
+<header th:replace="~{fragments/common_header :: flowHeader('Vé điện tử')}"></header>
+<main class="gateway ticket">
+    <div class="gateway-logo">CINEFLOW E-TICKET</div>
+    <h1 th:text="${details.showtime.movie.title}">Vé xem phim</h1>
+    <div class="ticket-code" style="width:180px;height:180px;margin:22px auto;display:grid;place-items:center;border:12px solid #172033;background:#0054a6;color:#fff;font-weight:900;font-size:20px" th:text="${'CF-' + details.booking.id}">CF-1</div>
+    <dl>
+        <dt>Mã vé</dt><dd th:text="${'#CF' + details.booking.id}"></dd>
+        <dt>Suất chiếu</dt><dd th:text="${#temporals.format(details.showtime.showDate,'dd/MM/yyyy')} + ' • ' + ${#temporals.format(details.showtime.showTime,'HH:mm')}"></dd>
+        <dt>Phòng</dt><dd th:text="${details.showtime.room}"></dd>
+        <dt>Ghế</dt><dd th:text="${#strings.listJoin(details.tickets.![seatLabel], ', ')}"></dd>
+        <dt>Số tiền</dt><dd th:text="${#numbers.formatDecimal(details.booking.totalAmount,0,'COMMA',0,'POINT')} + 'đ'"></dd>
+        <dt>Thanh toán lúc</dt><dd th:text="${#temporals.format(details.booking.paidAt,'dd/MM/yyyy HH:mm')}"></dd>
+    </dl>
+    <p>Vui lòng xuất trình mã vé này tại quầy soát vé.</p>
+    <a class="btn wide" th:href="@{/}">Về trang chủ</a>
+</main>
+</body>
+</html>

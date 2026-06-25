@@ -1,0 +1,227 @@
+package com.group3.cinema.controller;
+
+/*
+ * Added on 2026-06-24: Customer payment endpoints for booking flow.
+ * Updated on 2026-06-26: Public gateway return/cancel pages are normalized for payOS flow.
+ * Created by: HuyPB - HE191335
+ */
+
+import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.Booking;
+import com.group3.cinema.entity.Payment;
+import com.group3.cinema.service.CustomerBookingService;
+import com.group3.cinema.service.PaymentService;
+import com.group3.cinema.service.payment.PaymentGatewayRouter;
+import com.group3.cinema.service.payment.PaymentGatewayService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Controller
+@RequestMapping("/payment")
+public class PaymentController {
+    private final PaymentService paymentService;
+    private final CustomerBookingService bookingService;
+    private final PaymentGatewayRouter gatewayRouter;
+
+    public PaymentController(PaymentService paymentService,
+                             CustomerBookingService bookingService,
+                             PaymentGatewayRouter gatewayRouter) {
+        this.paymentService = paymentService;
+        this.bookingService = bookingService;
+        this.gatewayRouter = gatewayRouter;
+    }
+
+    @GetMapping
+    public String payment(@RequestParam("bookingId") Long bookingId, HttpSession session,
+                          Model model, RedirectAttributes redirectAttributes) {
+        try {
+            Account account = account(session);
+            paymentService.requirePayableBooking(bookingId, account.getAccountID());
+            model.addAttribute("user", account);
+            model.addAttribute("details", bookingService.getBookingDetails(bookingId, account.getAccountID()));
+            return "payment";
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/movies";
+        }
+    }
+
+    @PostMapping("/start")
+    public String start(@RequestParam Long bookingId, @RequestParam String method,
+                        HttpSession session, HttpServletRequest request,
+                        RedirectAttributes redirectAttributes) {
+        try {
+            Account account = account(session);
+            Payment payment = paymentService.createPayment(bookingId, account.getAccountID(), method);
+            var details = bookingService.getBookingDetails(bookingId, account.getAccountID());
+            return "redirect:" + gatewayRouter.createRedirectUrl(payment, details.booking(), request);
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/payment?bookingId=" + bookingId;
+        }
+    }
+
+    @GetMapping("/gateway/{orderCode}")
+    public String gateway(@PathVariable String orderCode, HttpSession session, Model model) {
+        Account account = account(session);
+        Payment payment = paymentService.getPayment(orderCode, account.getAccountID());
+        model.addAttribute("user", account);
+        model.addAttribute("payment", payment);
+        model.addAttribute("details", bookingService.getBookingDetails(payment.getBookingId(), account.getAccountID()));
+        return "payment-gateway";
+    }
+
+    @PostMapping("/gateway/{orderCode}/complete")
+    public String complete(@PathVariable String orderCode, @RequestParam String result,
+                           HttpSession session, RedirectAttributes redirectAttributes) {
+        try {
+            paymentService.processResult(orderCode, account(session).getAccountID(), result);
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/payment/result?orderCode=" + orderCode;
+    }
+
+    @GetMapping("/vnpay/return")
+    public String vnpayReturn(@RequestParam Map<String, String> params,
+                              RedirectAttributes redirectAttributes) {
+        handleGatewayCallback(Payment.Method.VNPAY, params, redirectAttributes);
+        return "redirect:/payment/result?orderCode=" + params.getOrDefault("vnp_TxnRef", "");
+    }
+
+    @GetMapping("/vnpay/ipn")
+    @ResponseBody
+    public Map<String, String> vnpayIpn(@RequestParam Map<String, String> params) {
+        try {
+            handleGatewayCallback(Payment.Method.VNPAY, params, null);
+            return Map.of("RspCode", "00", "Message", "Confirm Success");
+        } catch (IllegalArgumentException ex) {
+            return Map.of("RspCode", "97", "Message", ex.getMessage());
+        }
+    }
+
+    @GetMapping("/momo/return")
+    public String momoReturn(@RequestParam Map<String, String> params,
+                             RedirectAttributes redirectAttributes) {
+        handleGatewayCallback(Payment.Method.MOMO, params, redirectAttributes);
+        return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderId", "");
+    }
+
+    @PostMapping("/momo/ipn")
+    @ResponseBody
+    public Map<String, Object> momoIpn(@RequestBody Map<String, Object> payload) {
+        try {
+            handleGatewayCallback(Payment.Method.MOMO, stringify(payload), null);
+            return Map.of("resultCode", 0, "message", "Success");
+        } catch (IllegalArgumentException ex) {
+            return Map.of("resultCode", 1, "message", ex.getMessage());
+        }
+    }
+
+    @GetMapping("/payos/return")
+    public String payosReturn(@RequestParam Map<String, String> params,
+                              RedirectAttributes redirectAttributes) {
+        safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
+        return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderCode", "");
+    }
+
+    @GetMapping("/payos/cancel")
+    public String payosCancel(@RequestParam Map<String, String> params,
+                              RedirectAttributes redirectAttributes) {
+        safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
+        return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderCode", "");
+    }
+
+    @PostMapping("/payos/webhook")
+    @ResponseBody
+    public Map<String, Object> payosWebhook(@RequestBody Map<String, Object> payload) {
+        try {
+            handleGatewayCallback(Payment.Method.PAYOS, stringifyPayOsWebhook(payload), null);
+            return Map.of("success", true);
+        } catch (IllegalArgumentException ex) {
+            return Map.of("success", false, "message", ex.getMessage());
+        }
+    }
+
+    @GetMapping("/result")
+    public String result(@RequestParam String orderCode, HttpSession session, Model model) {
+        Payment payment = paymentService.getPaymentPublic(orderCode);
+        model.addAttribute("user", session.getAttribute("loggedInUser"));
+        model.addAttribute("payment", payment);
+        model.addAttribute("details", bookingService.getBookingDetails(payment.getBookingId()));
+        return "payment-result";
+    }
+
+    @GetMapping("/ticket/{bookingId}")
+    public String ticket(@PathVariable Long bookingId, HttpSession session, Model model,
+                         RedirectAttributes redirectAttributes) {
+        Account account = account(session);
+        var details = bookingService.getBookingDetails(bookingId, account.getAccountID());
+        if (details.booking().getStatus() != Booking.Status.PAID) {
+            redirectAttributes.addFlashAttribute("error", "Vé chỉ được phát hành sau khi thanh toán thành công.");
+            return "redirect:/movies";
+        }
+        model.addAttribute("user", account);
+        model.addAttribute("details", details);
+        return "ticket-detail";
+    }
+
+    private void handleGatewayCallback(Payment.Method method, Map<String, String> params,
+                                       RedirectAttributes redirectAttributes) {
+        PaymentGatewayService.GatewayCallback callback = gatewayRouter.gateway(method).parseCallback(params);
+        if (!callback.validSignature()) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("error", "Chữ ký thanh toán không hợp lệ.");
+            }
+            throw new IllegalArgumentException("Invalid signature");
+        }
+        paymentService.processGatewayResult(callback.orderCode(), callback.success(),
+                callback.responseCode(), callback.transactionId(), callback.message());
+    }
+
+    private void safelyHandleGatewayCallback(Payment.Method method, Map<String, String> params,
+                                             RedirectAttributes redirectAttributes) {
+        try {
+            handleGatewayCallback(method, params, redirectAttributes);
+        } catch (IllegalArgumentException ex) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            }
+        }
+    }
+
+    private Map<String, String> stringify(Map<String, Object> payload) {
+        Map<String, String> result = new HashMap<>();
+        payload.forEach((key, value) -> result.put(key, value == null ? "" : String.valueOf(value)));
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> stringifyPayOsWebhook(Map<String, Object> payload) {
+        Map<String, String> result = new HashMap<>();
+        Object data = payload.get("data");
+        if (data instanceof Map<?, ?> dataMap) {
+            dataMap.forEach((key, value) -> result.put(String.valueOf(key), value == null ? "" : String.valueOf(value)));
+        }
+        result.put("signature", payload.get("signature") == null ? "" : String.valueOf(payload.get("signature")));
+        result.put("code", payload.get("code") == null ? "" : String.valueOf(payload.get("code")));
+        result.put("desc", payload.get("desc") == null ? "" : String.valueOf(payload.get("desc")));
+        result.put("success", payload.get("success") == null ? "" : String.valueOf(payload.get("success")));
+        return result;
+    }
+
+    private Account account(HttpSession session) {
+        Account account = (Account) session.getAttribute("loggedInUser");
+        if (account == null) {
+            throw new IllegalArgumentException("Vui lòng đăng nhập.");
+        }
+        return account;
+    }
+}

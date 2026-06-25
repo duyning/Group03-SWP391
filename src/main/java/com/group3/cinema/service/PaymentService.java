@@ -1,0 +1,248 @@
+package com.group3.cinema.service;
+
+/*
+ * Added on 2026-06-24: Payment lifecycle for customer ticket booking.
+ * Updated on 2026-06-26: Successful payments trigger booking confirmation email.
+ * Created by: HuyPB - HE191335
+ */
+
+import com.group3.cinema.entity.Booking;
+import com.group3.cinema.entity.BookingTicket;
+import com.group3.cinema.entity.Payment;
+import com.group3.cinema.repository.BookingRepository;
+import com.group3.cinema.repository.BookingTicketRepository;
+import com.group3.cinema.repository.PaymentRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.UUID;
+
+@Service
+public class PaymentService {
+    private final PaymentRepository paymentRepository;
+    private final BookingRepository bookingRepository;
+    private final BookingTicketRepository ticketRepository;
+    private final BookingEmailService bookingEmailService;
+
+    public PaymentService(PaymentRepository paymentRepository,
+                          BookingRepository bookingRepository,
+                          BookingTicketRepository ticketRepository,
+                          BookingEmailService bookingEmailService) {
+        this.paymentRepository = paymentRepository;
+        this.bookingRepository = bookingRepository;
+        this.ticketRepository = ticketRepository;
+        this.bookingEmailService = bookingEmailService;
+    }
+
+    @Transactional
+    public Payment createPayment(Long bookingId, Integer accountId, String method) {
+        Booking booking = requirePayableBooking(bookingId, accountId);
+        Payment existingPending = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(bookingId)
+                .filter(payment -> payment.getStatus() == Payment.Status.PENDING)
+                .orElse(null);
+        if (existingPending != null) {
+            return existingPending;
+        }
+
+        Payment.Method paymentMethod;
+        try {
+            paymentMethod = Payment.Method.valueOf(method.toUpperCase());
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Phương thức thanh toán không hợp lệ.");
+        }
+
+        Payment payment = new Payment();
+        payment.setBookingId(bookingId);
+        payment.setPaymentMethod(paymentMethod);
+        payment.setOrderCode(generateOrderCode(paymentMethod));
+        payment.setAmount(booking.getTotalAmount());
+        payment.setStatus(Payment.Status.PENDING);
+        payment.setCreatedAt(LocalDateTime.now());
+        return paymentRepository.save(payment);
+    }
+
+    @Transactional
+    public Payment processResult(String orderCode, Integer accountId, String result) {
+        Payment payment = paymentRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch thanh toán."));
+        Booking booking = bookingRepository.findByIdAndAccountId(payment.getBookingId(), accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Giao dịch không thuộc tài khoản này."));
+        if (payment.getStatus() != Payment.Status.PENDING) {
+            return payment;
+        }
+
+        String normalized = result == null ? "FAILED" : result.toUpperCase();
+        if ("SUCCESS".equals(normalized)) {
+            if (booking.getStatus() != Booking.Status.PENDING
+                    || booking.getExpiresAt().isBefore(LocalDateTime.now())) {
+                expireBooking(booking);
+                payment.setStatus(Payment.Status.FAILED);
+                payment.setResponseCode("EXPIRED");
+                payment.setErrorMessage("Đơn đặt vé đã hết hạn trước khi thanh toán hoàn tất.");
+                return paymentRepository.save(payment);
+            }
+            payment.setStatus(Payment.Status.SUCCESS);
+            payment.setResponseCode("00");
+            payment.setTransactionId(UUID.randomUUID().toString());
+            payment.setPaidAt(LocalDateTime.now());
+            booking.setStatus(Booking.Status.PAID);
+            booking.setPaidAt(LocalDateTime.now());
+            List<BookingTicket> tickets = ticketRepository.findByBookingId(booking.getId());
+            tickets.forEach(ticket -> {
+                ticket.setStatus(BookingTicket.Status.BOOKED);
+                ticket.setHoldToken(null);
+                ticket.setHoldExpiresAt(null);
+            });
+            ticketRepository.saveAll(tickets);
+        } else if ("CANCELLED".equals(normalized)) {
+            payment.setStatus(Payment.Status.CANCELLED);
+            payment.setResponseCode("24");
+            cancelBookingAndReleaseSeats(booking);
+            payment.setErrorMessage("Khách hàng hủy thanh toán.");
+        } else {
+            payment.setStatus(Payment.Status.FAILED);
+            payment.setResponseCode("99");
+            payment.setErrorMessage("Giao dịch không thành công.");
+            booking.setStatus(Booking.Status.CANCELLED);
+            ticketRepository.deleteByBookingId(booking.getId());
+        }
+
+        bookingRepository.save(booking);
+        Payment savedPayment = paymentRepository.save(payment);
+        sendEmailIfPaid(savedPayment);
+        return savedPayment;
+    }
+
+    @Transactional
+    public Payment processGatewayResult(String orderCode, boolean success, String responseCode,
+                                        String transactionId, String message) {
+        Payment payment = paymentRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch thanh toán."));
+        Booking booking = bookingRepository.findById(payment.getBookingId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt vé."));
+        if (payment.getStatus() != Payment.Status.PENDING) {
+            return payment;
+        }
+
+        if (success) {
+            if (booking.getStatus() != Booking.Status.PENDING
+                    || booking.getExpiresAt().isBefore(LocalDateTime.now())) {
+                expireBooking(booking);
+                payment.setStatus(Payment.Status.FAILED);
+                payment.setResponseCode("EXPIRED");
+                payment.setErrorMessage("Đơn đặt vé đã hết hạn trước khi thanh toán hoàn tất.");
+                return paymentRepository.save(payment);
+            }
+            payment.setStatus(Payment.Status.SUCCESS);
+            payment.setResponseCode(responseCode);
+            payment.setTransactionId(transactionId);
+            payment.setPaidAt(LocalDateTime.now());
+            booking.setStatus(Booking.Status.PAID);
+            booking.setPaidAt(LocalDateTime.now());
+            List<BookingTicket> tickets = ticketRepository.findByBookingId(booking.getId());
+            tickets.forEach(ticket -> {
+                ticket.setStatus(BookingTicket.Status.BOOKED);
+                ticket.setHoldToken(null);
+                ticket.setHoldExpiresAt(null);
+            });
+            ticketRepository.saveAll(tickets);
+        } else if ("CANCELLED".equalsIgnoreCase(responseCode)) {
+            payment.setStatus(Payment.Status.CANCELLED);
+            payment.setResponseCode(responseCode);
+            cancelBookingAndReleaseSeats(booking);
+            payment.setErrorMessage(message == null || message.isBlank() ? "Khách hàng hủy thanh toán." : message);
+        } else if ("PENDING".equalsIgnoreCase(responseCode)) {
+            payment.setResponseCode(responseCode);
+            payment.setErrorMessage(message);
+        } else {
+            payment.setStatus(Payment.Status.FAILED);
+            payment.setResponseCode(responseCode);
+            payment.setErrorMessage(message == null || message.isBlank() ? "Giao dịch không thành công." : message);
+            booking.setStatus(Booking.Status.CANCELLED);
+            ticketRepository.deleteByBookingId(booking.getId());
+        }
+        bookingRepository.save(booking);
+        Payment savedPayment = paymentRepository.save(payment);
+        sendEmailIfPaid(savedPayment);
+        return savedPayment;
+    }
+
+    @Transactional
+    public Payment getPayment(String orderCode, Integer accountId) {
+        Payment payment = paymentRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch."));
+        Booking booking = bookingRepository.findByIdAndAccountId(payment.getBookingId(), accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Bạn không có quyền xem giao dịch này."));
+        if (payment.getStatus() == Payment.Status.PENDING
+                && booking.getStatus() == Booking.Status.PENDING
+                && booking.getExpiresAt().isBefore(LocalDateTime.now())) {
+            expireBooking(booking);
+            payment.setStatus(Payment.Status.FAILED);
+            payment.setResponseCode("EXPIRED");
+            payment.setErrorMessage("Đơn đặt vé đã hết hạn do quá thời gian thanh toán.");
+            return paymentRepository.save(payment);
+        }
+        return payment;
+    }
+
+    @Transactional
+    public Payment getPaymentPublic(String orderCode) {
+        Payment payment = paymentRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch."));
+        Booking booking = bookingRepository.findById(payment.getBookingId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt vé."));
+        if (payment.getStatus() == Payment.Status.PENDING
+                && booking.getStatus() == Booking.Status.PENDING
+                && booking.getExpiresAt().isBefore(LocalDateTime.now())) {
+            expireBooking(booking);
+            payment.setStatus(Payment.Status.FAILED);
+            payment.setResponseCode("EXPIRED");
+            payment.setErrorMessage("Đơn đặt vé đã hết hạn do quá thời gian thanh toán.");
+            return paymentRepository.save(payment);
+        }
+        return payment;
+    }
+
+    @Transactional
+    public Booking requirePayableBooking(Long id, Integer accountId) {
+        Booking booking = bookingRepository.findByIdAndAccountId(id, accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt vé."));
+        if (booking.getStatus() != Booking.Status.PENDING) {
+            throw new IllegalArgumentException("Đơn này không thể thanh toán.");
+        }
+        if (booking.getExpiresAt().isBefore(LocalDateTime.now())) {
+            expireBooking(booking);
+            throw new IllegalArgumentException("Đơn đặt vé đã hết hạn.");
+        }
+        return booking;
+    }
+
+    private void expireBooking(Booking booking) {
+        booking.setStatus(Booking.Status.EXPIRED);
+        bookingRepository.save(booking);
+        ticketRepository.deleteByBookingId(booking.getId());
+    }
+
+    private void cancelBookingAndReleaseSeats(Booking booking) {
+        booking.setStatus(Booking.Status.CANCELLED);
+        ticketRepository.deleteByBookingId(booking.getId());
+    }
+
+    private String generateOrderCode(Payment.Method method) {
+        if (method == Payment.Method.PAYOS) {
+            long epochSeconds = System.currentTimeMillis() / 1000;
+            int suffix = ThreadLocalRandom.current().nextInt(10, 99);
+            return String.valueOf(epochSeconds * 100 + suffix);
+        }
+        return "CF" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+    }
+
+    private void sendEmailIfPaid(Payment payment) {
+        if (payment.getStatus() == Payment.Status.SUCCESS) {
+            bookingEmailService.sendTicketEmail(payment.getBookingId());
+        }
+    }
+}
