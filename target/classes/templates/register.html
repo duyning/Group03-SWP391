@@ -13,12 +13,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký | Beta Cinemas</title>
+    <title>Đăng ký | CineFlow</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css">
     <link rel="stylesheet" th:href="@{/css/register.css}">
     <link rel="stylesheet" th:href="@{/css/customer-account.css}">
+    <style>
+        .ui-datepicker {
+            z-index: 9999 !important;
+            background: #2a2a4a !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 12px !important;
+            padding: 10px !important;
+            color: #fff !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        }
+        .ui-datepicker .ui-datepicker-header {
+            background: transparent !important;
+            border: none !important;
+            color: #fff !important;
+        }
+        .ui-datepicker .ui-datepicker-title select {
+            background: #1e1e38;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            padding: 2px 5px;
+            margin: 0 2px;
+        }
+        .ui-datepicker th { color: #a78bfa !important; }
+        .ui-datepicker td span, .ui-datepicker td a {
+            background: transparent !important;
+            border: 1px solid transparent !important;
+            color: #e0e0e0 !important;
+            text-align: center !important;
+            border-radius: 6px !important;
+        }
+        .ui-datepicker td a:hover {
+            background: rgba(167, 139, 250, 0.2) !important;
+            border: 1px solid #a78bfa !important;
+        }
+        .ui-datepicker-current-day a {
+            background: linear-gradient(135deg, #a78bfa, #ec4899) !important;
+            color: #fff !important;
+            font-weight: bold !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -39,7 +81,7 @@
         </div>
 
         <!-- Success message -->
-        <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show animate-slide-in" role="alert">
+        <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show animate-slide-in" role="alert" data-auto-dismiss="5000">
             <i class="fas fa-check-circle me-2"></i>
             <span th:text="${successMessage != null ? successMessage : 'Đăng ký thành công! Vui lòng đăng nhập.'}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -119,21 +161,21 @@
                 </div>
             </div>
 
-            <!-- Two columns: Age & Gender -->
             <div class="form-row">
                 <div class="form-floating-group">
                     <div class="input-icon-wrapper">
                         <i class="fas fa-calendar input-icon"></i>
-                        <input type="number" th:field="*{age}"
+                        <input type="hidden" name="dob" th:value="*{dob}" id="dobHidden">
+                        <input type="text"
                                class="form-input"
-                               th:classappend="${#fields.hasErrors('age')} ? 'is-invalid' : ''"
-                               placeholder="Tuổi"
-                               id="age" min="17" required>
-                        <label for="age">Tuổi <span class="required">*</span></label>
+                               th:classappend="${#fields.hasErrors('dob')} ? 'is-invalid' : ''"
+                               placeholder="dd/MM/yyyy"
+                               id="dobDisplay" required>
+                        <label for="dobDisplay">Ngày sinh <span class="required">*</span></label>
                     </div>
-                    <div th:if="${#fields.hasErrors('age')}" class="error-message">
+                    <div th:if="${#fields.hasErrors('dob')}" class="error-message">
                         <i class="fas fa-exclamation-circle"></i>
-                        <span th:errors="*{age}"></span>
+                        <span th:errors="*{dob}"></span>
                     </div>
                 </div>
 
@@ -181,7 +223,53 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/auto-dismiss-alerts.js}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        $.datepicker.regional['vi'] = {
+            closeText: 'Đóng',
+            prevText: 'Trước',
+            nextText: 'Tiếp',
+            currentText: 'Hôm nay',
+            monthNames: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+            'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
+            monthNamesShort: ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6',
+            'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12'],
+            dayNames: ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'],
+            dayNamesShort: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+            dayNamesMin: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+            weekHeader: 'Tu',
+            dateFormat: 'dd/mm/yy',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: false,
+            yearSuffix: ''};
+        $.datepicker.setDefaults($.datepicker.regional['vi']);
+
+        $("#dobDisplay").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            yearRange: "-100:-13",
+            defaultDate: "-20y",
+            altField: "#dobHidden",
+            altFormat: "yy-mm-dd",
+            maxDate: "-13y",
+            minDate: "-100y"
+        });
+
+        // Preserve date format in UI if backend validation fails and reloads the page
+        const hiddenVal = $("#dobHidden").val();
+        if (hiddenVal) {
+            const parts = hiddenVal.split('-');
+            if (parts.length === 3) {
+                const formatted = parts[2] + '/' + parts[1] + '/' + parts[0];
+                $("#dobDisplay").val(formatted);
+            }
+        }
+    });
+
     // Toggle password visibility
     function togglePassword() {
         const passwordInput = document.getElementById('password');

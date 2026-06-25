@@ -1,0 +1,62 @@
+%% Cinema System Use Case Diagram
+flowchart LR
+  Customer[Customer]
+  Manager[Manager]
+  Admin[Admin]
+
+  subgraph PublicPortal[PublicPortal]
+    direction TB
+    UC_BrowseMovies([Browse Movies])
+    UC_ViewMovieDetail([View Movie Detail])
+    UC_SearchMovies([Search Movies])
+    UC_ViewShowtimes([View Showtimes])
+    UC_ViewPosts([View Posts])
+    UC_RegisterAccount([Register Account])
+    UC_LoginAccount([Login Account])
+    UC_ResetPassword([Reset Password])
+  end
+
+  subgraph StaffPortal[StaffPortal]
+    direction TB
+    UC_ViewDashboard([View Dashboard])
+    UC_ManageMovies([Manage Movies])
+    UC_ManageShowtimes([Manage Showtimes])
+    UC_ManageRooms([Manage Rooms])
+    UC_ManageSeats([Manage Seats])
+    UC_ManageCombos([Manage Combos])
+    UC_ManagePosts([Manage Posts])
+    UC_ManageBanners([Manage Banners])
+    UC_ManageCatalogs([Manage Catalogs])
+    UC_UploadMedia([Upload Media])
+  end
+
+  Customer --> UC_BrowseMovies
+  Customer --> UC_ViewMovieDetail
+  Customer --> UC_SearchMovies
+  Customer --> UC_ViewShowtimes
+  Customer --> UC_ViewPosts
+  Customer --> UC_RegisterAccount
+  Customer --> UC_LoginAccount
+  Customer --> UC_ResetPassword
+
+  Manager --> UC_ViewDashboard
+  Manager --> UC_ManageMovies
+  Manager --> UC_ManageShowtimes
+  Manager --> UC_ManageRooms
+  Manager --> UC_ManageSeats
+  Manager --> UC_ManageCombos
+  Manager --> UC_ManagePosts
+  Manager --> UC_ManageBanners
+  Manager --> UC_ManageCatalogs
+  Manager --> UC_UploadMedia
+
+  Admin --> UC_ViewDashboard
+  Admin --> UC_ManageMovies
+  Admin --> UC_ManageShowtimes
+  Admin --> UC_ManageRooms
+  Admin --> UC_ManageSeats
+  Admin --> UC_ManageCombos
+  Admin --> UC_ManagePosts
+  Admin --> UC_ManageBanners
+  Admin --> UC_ManageCatalogs
+  Admin --> UC_UploadMedia

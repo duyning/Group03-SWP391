@@ -3,13 +3,16 @@ com\group3\cinema\controller\api\MovieController.class
 com\group3\cinema\service\api\ShowtimeService.class
 com\group3\cinema\controller\PostController.class
 com\group3\cinema\entity\Post.class
+com\group3\cinema\repository\TicketRepository.class
 com\group3\cinema\service\ComboService.class
 com\group3\cinema\service\CustomerBookingService$ComboLine.class
 com\group3\cinema\service\api\MovieService.class
 com\group3\cinema\entity\BookingCombo.class
+com\group3\cinema\service\TicketService.class
 com\group3\cinema\repository\SeatRepository.class
 com\group3\cinema\entity\MembershipLevel.class
 com\group3\cinema\service\SeatHoldingService.class
+com\group3\cinema\controller\AdminManagerController.class
 com\group3\cinema\controller\RoomController.class
 com\group3\cinema\entity\Payment.class
 com\group3\cinema\dto\BookingSeatView.class
@@ -23,6 +26,7 @@ com\group3\cinema\repository\SeatTypeRepository.class
 com\group3\cinema\config\SecurityConfig.class
 com\group3\cinema\repository\BookingTicketRepository.class
 com\group3\cinema\service\payment\PaymentGatewayRouter.class
+com\group3\cinema\config\AccountSeedInitializer.class
 com\group3\cinema\repository\ComboRepository.class
 com\group3\cinema\service\payment\PaymentGatewayService$GatewayCallback.class
 com\group3\cinema\config\PaymentSchemaMigration.class
@@ -55,6 +59,7 @@ com\group3\cinema\service\CatalogService.class
 com\group3\cinema\repository\MovieRepository.class
 com\group3\cinema\service\payment\VnPayGatewayService.class
 com\group3\cinema\service\AccountService.class
+com\group3\cinema\entity\Ticket.class
 com\group3\cinema\Group03Swp391Summer26Application.class
 com\group3\cinema\service\CustomerBookingService$BookingDetails.class
 com\group3\cinema\service\MovieService.class
@@ -65,6 +70,7 @@ com\group3\cinema\dto\BookingShowtimeDateView.class
 com\group3\cinema\entity\Room.class
 com\group3\cinema\service\CustomerBookingService$BookingSummary.class
 com\group3\cinema\service\SeatService.class
+com\group3\cinema\controller\TicketController.class
 com\group3\cinema\config\RoomUnicodeMigration.class
 com\group3\cinema\entity\Payment$Method.class
 com\group3\cinema\entity\RoomType.class

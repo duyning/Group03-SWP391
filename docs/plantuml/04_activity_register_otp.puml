@@ -1,0 +1,53 @@
+@startuml
+title Register With OTP Activity Diagram
+skinparam shadowing false
+
+start
+
+partition Customer {
+  :Open register form;
+  :Submit account data;
+}
+
+partition RegisterController {
+  :Validate input;
+  :Check duplicate email and phone;
+  :Check age rule;
+}
+
+if Data valid? then yes
+  partition AccountService {
+    :Generate OTP;
+    :Send OTP by email;
+  }
+
+  partition RegisterController {
+    :Store pending account in session;
+    :Store OTP in session;
+    :Redirect to OTP page;
+  }
+
+  partition Customer {
+    :Enter OTP;
+  }
+
+  partition RegisterController {
+    :Compare OTP with session value;
+    if OTP valid? then yes
+      partition AccountService {
+        :Save account with customer role;
+      }
+      :Clear session data;
+      :Redirect to login with success;
+    else no
+      :Show OTP error;
+    endif
+  }
+else no
+  partition RegisterController {
+    :Return register form with errors;
+  }
+endif
+
+stop
+@enduml

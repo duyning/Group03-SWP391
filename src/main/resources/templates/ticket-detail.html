@@ -3,12 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Vé điện tử | CineFlow</title>
+    <title th:text="${details != null ? 'Vé điện tử | CineFlow' : 'Chi tiết vé | CineFlow'}">Vé điện tử | CineFlow</title>
     <link rel="stylesheet" th:href="@{/css/booking-flow.css}">
+    <style>
+        .ticket-card { width: min(760px, calc(100% - 28px)); margin: 34px auto 70px; text-align: left; }
+        .ticket-card h1 { margin: 0 0 10px; color: #0054a6; }
+        .ticket-card .poster-row { display: grid; grid-template-columns: 120px 1fr; gap: 18px; align-items: start; }
+        .ticket-card img { width: 120px; height: 170px; border-radius: 12px; object-fit: cover; }
+        .ticket-card .badge { display: inline-flex; padding: 7px 12px; border-radius: 999px; background: #ecfdf3; color: #087443; font-weight: 800; font-size: 13px; }
+        .ticket-card dl { display: grid; grid-template-columns: 150px 1fr; gap: 12px; margin: 22px 0; }
+        .ticket-card dt { color: #68768b; }
+        .ticket-card dd { margin: 0; font-weight: 800; }
+        .ticket-card .ticket-code { margin: 18px 0; padding: 18px; border: 2px dashed #9ab1ca; border-radius: 14px; text-align: center; font-size: 26px; font-weight: 900; color: #0054a6; letter-spacing: 2px; }
+        .ticket-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+        @media (max-width: 640px) {
+            .ticket-card .poster-row { grid-template-columns: 1fr; }
+            .ticket-card dl { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
 <header th:replace="~{fragments/common_header :: flowHeader('Vé điện tử')}"></header>
-<main class="gateway ticket">
+<main class="gateway ticket" th:if="${details != null}">
     <div class="gateway-logo">CINEFLOW E-TICKET</div>
     <h1 th:text="${details.showtime.movie.title}">Vé xem phim</h1>
     <div class="ticket-code" style="width:180px;height:180px;margin:22px auto;display:grid;place-items:center;border:12px solid #172033;background:#0054a6;color:#fff;font-weight:900;font-size:20px" th:text="${'CF-' + details.booking.id}">CF-1</div>
@@ -22,6 +38,43 @@
     </dl>
     <p>Vui lòng xuất trình mã vé này tại quầy soát vé.</p>
     <a class="btn wide" th:href="@{/}">Về trang chủ</a>
+</main>
+<main class="panel ticket-card" th:if="${ticket != null}">
+    <div class="poster-row">
+        <img th:if="${ticket.movie.posterUrl != null && !ticket.movie.posterUrl.isEmpty()}"
+             th:src="${ticket.movie.posterUrl}" th:alt="${ticket.movie.title}">
+        <div>
+            <span class="badge" th:text="${ticket.statusDisplayName}">Đã xác nhận</span>
+            <h1 th:text="${ticket.movie.title}">Tên phim</h1>
+            <p th:if="${ticket.movie.genre != null}" th:text="${ticket.movie.genre}">Thể loại</p>
+            <p th:if="${ticket.movie.duration != null}" th:text="${ticket.movie.duration + ' phút'}">120 phút</p>
+        </div>
+    </div>
+
+    <div class="ticket-code" th:text="${ticket.bookingCode}">CF-20260625-001</div>
+
+    <dl>
+        <dt>Ngày chiếu</dt>
+        <dd th:text="${#temporals.format(ticket.showDate, 'dd/MM/yyyy')}">01/01/2026</dd>
+        <dt>Giờ chiếu</dt>
+        <dd th:text="${#temporals.format(ticket.showTime, 'HH:mm')}">19:30</dd>
+        <dt>Phòng</dt>
+        <dd th:text="${ticket.roomName}">Phòng 01</dd>
+        <dt>Ghế</dt>
+        <dd th:text="${ticket.seatLabel + ' (' + ticket.seatTypeDisplayName + ')'}">A5 (Thường)</dd>
+        <dt>Thanh toán</dt>
+        <dd th:text="${ticket.paymentMethod != null ? ticket.paymentMethod : 'Chưa xác định'}">Momo</dd>
+        <dt>Thời gian đặt</dt>
+        <dd th:text="${#temporals.format(ticket.bookingTime, 'dd/MM/yyyy HH:mm')}">25/06/2026 15:30</dd>
+        <dt>Tổng tiền</dt>
+        <dd th:text="${#numbers.formatDecimal(ticket.price, 0, 'COMMA', 0, 'POINT')} + 'đ'">85,000đ</dd>
+    </dl>
+
+    <p>Vui lòng xuất trình mã vé này tại quầy soát vé.</p>
+    <div class="ticket-actions">
+        <a class="btn secondary" th:href="@{/my-tickets}">Quay lại danh sách vé</a>
+        <a class="btn" th:href="@{/home}">Trang chủ</a>
+    </div>
 </main>
 </body>
 </html>

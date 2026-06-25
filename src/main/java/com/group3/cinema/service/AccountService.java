@@ -8,11 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Lá»›p dá»‹ch vá»¥ (Service) xá»­ lÃ½ cÃ¡c nghiá»‡p vá»¥ logic liÃªn quan Ä‘áº¿n tÃ i khoáº£n (Account).
- * Bao gá»“m Ä‘Äƒng kÃ½, Ä‘Äƒng nháº­p, tÃ¬m kiáº¿m tÃ i khoáº£n, Ä‘á»•i máº­t kháº©u vÃ  xá»­ lÃ½ gá»­i OTP xÃ¡c thá»±c.
+ * Lớp dịch vụ (Service) xử lý các nghiệp vụ logic liên quan đến tài khoản (Account).
+ * Bao gồm đăng ký, đăng nhập, tìm kiếm tài khoản, đổi mật khẩu và xử lý gửi OTP xác thực.
  * 
- * NgÃ y thá»±c hiá»‡n: 04/06/2026
- * Táº¡o bá»Ÿi: DuongND_HE186619
+ * Ngày thực hiện: 04/06/2026
+ * Tạo bởi: DuongND_HE186619
  */
 @Service
 public class AccountService {
@@ -34,6 +34,17 @@ public class AccountService {
         account.setRole(Role.CUSTOMER);
         account.setStatus(true);
         account.setMembershipLevel(MembershipLevel.SILVER);
+        account.setLoyaltyPoint(0);
+        return accountRepository.save(account);
+    }
+
+    /**
+     * Create a new MANAGER account (Used by Admin).
+     */
+    public Account createManagerAccount(Account account) {
+        account.setRole(Role.MANAGER);
+        account.setStatus(true);
+        account.setMembershipLevel(null);
         account.setLoyaltyPoint(0);
         return accountRepository.save(account);
     }
@@ -83,6 +94,17 @@ public class AccountService {
     }
 
     /**
+     * Cập nhật thông tin hồ sơ cá nhân.
+     */
+    public void updateProfile(Account account, String name, java.time.LocalDate dob, String gender, String address) {
+        account.setName(name);
+        account.setDob(dob);
+        account.setGender(gender);
+        account.setAddress(address);
+        accountRepository.save(account);
+    }
+
+    /**
      * Reset (change) the password for a given account.
      * Validates all 6 cases and throws IllegalArgumentException with message on failure.
      *
@@ -124,7 +146,7 @@ public class AccountService {
             throw new IllegalArgumentException("Confirm password does not match");
         }
 
-        // Case 5: All validations passed â€” update password
+        // Case 5: All validations passed — update password
         account.setPassword(newPassword);
         accountRepository.save(account);
     }
@@ -193,5 +215,3 @@ public class AccountService {
         return otp;
     }
 }
-
-

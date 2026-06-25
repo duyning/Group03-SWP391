@@ -1,0 +1,32 @@
+@startuml
+title Cinema Deployment Diagram
+left to right direction
+skinparam shadowing false
+
+node ClientDevice {
+  artifact Browser as BrowserApp
+}
+
+node ApplicationServer {
+  artifact SpringBootApp as AppServer
+  artifact ThymeleafViews as Views
+  artifact StaticAssets as Assets
+}
+
+node DatabaseServer {
+  database SQLServer as DbServer
+}
+
+node FileStorage {
+  folder Uploads as UploadDir
+}
+
+node MailServer {
+  cloud GmailSMTP as SmtpServer
+}
+
+BrowserApp --> AppServer : HTTP
+AppServer --> DbServer : JDBC
+AppServer --> UploadDir : file io
+AppServer --> SmtpServer : SMTP
+@enduml

@@ -6,7 +6,7 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Beta Cinemas | Quản lý Phòng chiếu</title>
+    <title>CineFlow | Quản lý Phòng chiếu</title>
     <meta name="description" content="Trang quản trị phòng chiếu - Beta Cinemas Thái Nguyên">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -70,6 +70,11 @@
         .filter-group label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
         .filter-input { padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; outline: none; font-family: inherit; font-size: 14px; transition: border-color 0.2s; width: 100%; box-sizing: border-box; }
         .filter-input:focus { border-color: var(--primary); }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+        .checkbox-card { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #f8fafc; cursor: pointer; font-size: 14px; font-weight: 700; color: #334155; transition: all 0.2s; }
+        .checkbox-card:hover { border-color: var(--primary); background: #eff6ff; }
+        .checkbox-card input { width: 16px; height: 16px; accent-color: var(--primary); }
+        .field-hint { display: block; margin-top: 8px; font-size: 12px; color: #64748b; line-height: 1.5; }
 
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8fafc; padding: 15px; text-align: left; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -124,37 +129,19 @@
 </head>
 <body>
 
-<!-- ===== SIDEBAR ===== -->
-<aside class="sidebar">
-    <div class="sidebar-header">
-        <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" height="35"
-             style="filter: brightness(0) invert(1);" alt="Beta Cinemas Logo">
-        <span>ADMIN</span>
-    </div>
-    <ul class="sidebar-nav">
-        <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
-        <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
-        <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
-        <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
-        <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
-        <a href="/admin/rooms"><li class="active"><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
-        <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
-        <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
-        <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
-    </ul>
-</aside>
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('rooms')}"></div>
 
 <!-- ===== MAIN CONTENT ===== -->
 <main class="main">
 
     <!-- Flash messages -->
     <div th:if="${successMessage}" id="alertSuccess"
-         class="alert alert-success">
+         class="alert alert-success" data-auto-dismiss="5000">
         <i class="fas fa-check-circle"></i>
         <span th:text="${successMessage}"></span>
     </div>
     <div th:if="${errorMessage}" id="alertError"
-         class="alert alert-error">
+         class="alert alert-error" data-auto-dismiss="5000">
         <i class="fas fa-times-circle"></i>
         <span th:text="${errorMessage}"></span>
     </div>
@@ -216,6 +203,9 @@
                 <label>Tên phòng</label>
                 <input type="text" name="roomName" class="filter-input"
                        placeholder="Phòng số..."
+                       maxlength="100"
+                       pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/-]*"
+                       title="Tên phòng chỉ được chứa chữ, số, khoảng trắng và các ký tự . _ / -"
                        th:value="${filterRoomName}">
             </div>
             <div class="filter-group">
@@ -239,6 +229,8 @@
                 <label>Số ghế tối thiểu</label>
                 <input type="number" name="minSeats" class="filter-input"
                        placeholder="Ví dụ: 50"
+                       min="0"
+                       max="5000"
                        th:value="${filterMinSeats}">
             </div>
             <div class="filter-group">
@@ -313,7 +305,7 @@
                         </button>
                         <!-- Delete form -->
                         <form th:action="@{/admin/rooms/delete}" method="POST" style="display:inline;"
-                              onsubmit="return confirm('Xóa phòng sẽ xóa toàn bộ ghế liên quan. Tiếp tục?')">
+                              onsubmit="return confirm('Chỉ xóa được phòng chưa có lịch chiếu hiện tại/tương lai. Nếu xóa, toàn bộ sơ đồ ghế của phòng cũng sẽ bị xóa. Tiếp tục?')">
                             <input type="hidden" name="id" th:value="${room.id}">
                             <button type="submit" class="btn btn-action btn-delete">
                                 <i class="fas fa-trash"></i> Xóa
@@ -352,23 +344,29 @@
             <button class="btn-close" onclick="closeModal('addRoomModal')"><i class="fas fa-times"></i></button>
         </div>
 
-        <form th:action="@{/admin/rooms/add}" method="POST">
+        <form th:action="@{/admin/rooms/add}" method="POST" id="addRoomForm">
             <div class="modal-body">
 
                 <div class="form-group">
                     <label>Tên phòng chiếu <span class="required-star">*</span></label>
-                    <input type="text" name="roomName" class="filter-input" required placeholder="Ví dụ: Cinema 01">
+                    <input type="text" name="roomName" class="filter-input" required
+                           minlength="2" maxlength="100"
+                           pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/-]*"
+                           title="Tên phòng từ 2-100 ký tự, chỉ gồm chữ, số, khoảng trắng và các ký tự . _ / -"
+                           placeholder="Ví dụ: Cinema 01">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label>Loại phòng <span class="required-star">*</span></label>
-                        <select name="roomType" class="filter-input" required>
-                            <option value="">-- Chọn loại phòng --</option>
-                            <option th:each="type : ${roomTypeOptions}"
-                                    th:value="${type.name}"
-                                    th:text="${type.name}"></option>
-                        </select>
+                        <label>Loại phòng hỗ trợ <span class="required-star">*</span></label>
+                        <div class="checkbox-grid">
+                            <label class="checkbox-card" th:each="type : ${roomTypeOptions}">
+                                <input type="checkbox" name="roomTypes" class="add-room-type"
+                                       th:value="${type.name}">
+                                <span th:text="${type.name}">2D</span>
+                            </label>
+                        </div>
+                        <small class="field-hint">Có thể chọn nhiều loại, ví dụ phòng hỗ trợ cả 2D và 3D.</small>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Công nghệ âm thanh <span class="required-star">*</span></label>
@@ -383,15 +381,15 @@
 
                 <div class="form-group">
                     <label>Trạng thái khởi tạo</label>
-                    <select name="status" class="filter-input">
-                        <option value="Hoạt động">Sẵn sàng hoạt động</option>
+                    <select name="status" class="filter-input" required>
                         <option value="Bảo trì">Đang setup / Bảo trì</option>
+                        <option value="Tạm ngưng">Tạm ngưng</option>
                     </select>
                 </div>
 
                 <div class="info-box info-box-green">
                     <i class="fas fa-info-circle" style="margin-top: 2px; font-size: 18px;"></i>
-                    <p><strong>Số ghế sẽ được cập nhật sau:</strong> Sau khi tạo phòng, vào phần <strong>Thiết kế ghế</strong> để thiết lập sơ đồ. Hệ thống sẽ tính sức chứa dựa trên sơ đồ ghế đã lưu.</p>
+                    <p><strong>Số ghế sẽ được cập nhật sau:</strong> Sau khi tạo phòng, vào phần <strong>Thiết kế ghế</strong> để thiết lập sơ đồ. Phòng chỉ được bật <strong>Hoạt động</strong> khi đã có sơ đồ ghế và sức chứa hợp lệ.</p>
                 </div>
 
             </div>
@@ -423,18 +421,23 @@
 
                 <div class="form-group">
                     <label>Tên phòng chiếu <span class="required-star">*</span></label>
-                    <input type="text" name="roomName" id="editRoomName" class="filter-input" required>
+                    <input type="text" name="roomName" id="editRoomName" class="filter-input" required
+                           minlength="2" maxlength="100"
+                           pattern="[\p{L}\p{N}][\p{L}\p{N}\s._/-]*"
+                           title="Tên phòng từ 2-100 ký tự, chỉ gồm chữ, số, khoảng trắng và các ký tự . _ / -">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label>Loại phòng <span class="required-star">*</span></label>
-                        <select name="roomType" id="editRoomType" class="filter-input" required>
-                            <option value="">-- Chọn loại phòng --</option>
-                            <option th:each="type : ${roomTypeOptions}"
-                                    th:value="${type.name}"
-                                    th:text="${type.name}"></option>
-                        </select>
+                        <label>Loại phòng hỗ trợ <span class="required-star">*</span></label>
+                        <div class="checkbox-grid">
+                            <label class="checkbox-card" th:each="type : ${roomTypeOptions}">
+                                <input type="checkbox" name="roomTypes" class="edit-room-type"
+                                       th:value="${type.name}">
+                                <span th:text="${type.name}">2D</span>
+                            </label>
+                        </div>
+                        <small class="field-hint">Chọn tất cả định dạng chiếu mà phòng này hỗ trợ.</small>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Công nghệ âm thanh <span class="required-star">*</span></label>
@@ -449,7 +452,7 @@
 
                 <div class="form-group">
                     <label>Trạng thái</label>
-                    <select name="status" id="editStatus" class="filter-input">
+                    <select name="status" id="editStatus" class="filter-input" required>
                         <option value="Hoạt động">Hoạt động</option>
                         <option value="Bảo trì">Bảo trì</option>
                         <option value="Tạm ngưng">Tạm ngưng</option>
@@ -458,7 +461,7 @@
 
                 <div class="info-box info-box-yellow">
                     <i class="fas fa-exclamation-triangle" style="margin-top: 2px; font-size: 18px;"></i>
-                    <p><strong>Lưu ý:</strong> Việc thay đổi loại phòng có thể ảnh hưởng đến các suất chiếu đã lên lịch. Số hàng ghế và số ghế không thể thay đổi ở đây, vui lòng dùng chức năng <strong>Thiết kế ghế</strong>.</p>
+                    <p><strong>Lưu ý:</strong> Không thể đổi tên hoặc xóa phòng đang có lịch chiếu hiện tại/tương lai. Số hàng ghế và số ghế không thể thay đổi ở đây, vui lòng dùng chức năng <strong>Thiết kế ghế</strong>.</p>
                 </div>
 
             </div>
@@ -473,6 +476,8 @@
 <script>
     // ─── Modal helpers ────────────────────────────────────────────────────────
     function openAddModal() {
+        const form = document.getElementById('addRoomForm');
+        if (form) form.reset();
         document.getElementById('addRoomModal').style.display = 'flex';
     }
 
@@ -483,7 +488,7 @@
     function openEditModal(id, roomName, roomType, audioTech, status) {
         document.getElementById('editRoomId').value    = id;
         document.getElementById('editRoomName').value  = roomName;
-        setSelectValue('editRoomType',  roomType);
+        setRoomTypeCheckboxes(roomType);
         setSelectValue('editAudioTech', audioTech);
         setSelectValue('editStatus',    status);
         document.getElementById('editRoomModal').style.display = 'flex';
@@ -511,6 +516,35 @@
         }
     }
 
+    function setRoomTypeCheckboxes(roomTypeText) {
+        const selectedTypes = (roomTypeText || '')
+            .split(',')
+            .map(type => type.trim().toLowerCase())
+            .filter(Boolean);
+
+        document.querySelectorAll('.edit-room-type').forEach(function (checkbox) {
+            checkbox.checked = selectedTypes.includes(checkbox.value.trim().toLowerCase());
+        });
+    }
+
+    function hasCheckedRoomType(selector) {
+        return document.querySelectorAll(selector + ':checked').length > 0;
+    }
+
+    function validateRoomTypeSelection(formId, selector) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        form.addEventListener('submit', function (event) {
+            if (!hasCheckedRoomType(selector)) {
+                event.preventDefault();
+                alert('Vui lòng chọn ít nhất một loại phòng chiếu.');
+            }
+        });
+    }
+
+    validateRoomTypeSelection('addRoomForm', '.add-room-type');
+    validateRoomTypeSelection('editRoomForm', '.edit-room-type');
+
     // Đóng modal khi click vùng tối bên ngoài
     window.addEventListener('click', function (e) {
         const addModal  = document.getElementById('addRoomModal');
@@ -519,16 +553,7 @@
         if (e.target === editModal) closeModal('editRoomModal');
     });
 
-    // ─── Tự động ẩn flash message sau 4 giây ─────────────────────────────────
-    ['alertSuccess', 'alertError'].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        setTimeout(() => {
-            el.style.transition = 'opacity 0.5s ease';
-            el.style.opacity = '0';
-            setTimeout(() => el.style.display = 'none', 500);
-        }, 4000);
-    });
 </script>
+<script src="/js/auto-dismiss-alerts.js"></script>
 </body>
 </html>

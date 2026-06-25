@@ -1,3 +1,4 @@
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\AccountSeedInitializer.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\AuthInterceptor.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\CatalogInitializer.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\PaymentSchemaMigration.java
@@ -5,9 +6,11 @@ C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\gr
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\RoleInterceptor.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\RoomUnicodeMigration.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\SecurityConfig.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\TicketSeedInitializer.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\WebConfig.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\AccessDeniedController.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\AdminDashboardController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\AdminManagerController.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\FileUploadController.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\MovieController.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\MoviePersonSuggestionController.java
@@ -29,6 +32,7 @@ C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\gr
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\ResetPasswordController.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\RoomController.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\SeatController.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\TicketController.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\dto\BookingSeatView.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\dto\BookingSelection.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\dto\BookingShowtimeDateView.java
@@ -53,6 +57,7 @@ C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\gr
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Seat.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\SeatType.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Showtime.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Ticket.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\Group03Swp391Summer26Application.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\AccountRepository.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\api\ShowtimeRepository.java
@@ -72,6 +77,7 @@ C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\gr
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\RoomTypeRepository.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\SeatRepository.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\SeatTypeRepository.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\TicketRepository.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\AccountService.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\api\MovieService.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\api\ShowtimeService.java
@@ -94,3 +100,4 @@ C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\gr
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\RoomService.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\SeatHoldingService.java
 C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\SeatService.java
+C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\TicketService.java
