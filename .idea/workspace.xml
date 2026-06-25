@@ -5,14 +5,79 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/Group03Swp391Summer26Application.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/Group03Swp391Summer26Application.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/config/AuthInterceptor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/config/AuthInterceptor.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/config/WebConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/config/WebConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/RegisterController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/RegisterController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/AccountService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/AccountService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/LoginController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/LoginController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/MovieController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/MovieController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ComboRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ComboRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/RoomRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/RoomRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/api/ShowtimeRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/api/ShowtimeRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/MovieService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/MovieService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/example/CinemaApplication.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/customer-post-detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/customer-post-detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/customer-post-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/customer-post-list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/home.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/movie-detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/movie-detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/movie-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/movie-list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/search-result.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/search-result.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/Group03Swp391Summer26Application.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/Group03Swp391Summer26Application.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/CatalogInitializer.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/CatalogInitializer.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/RoomUnicodeMigration.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/RoomUnicodeMigration.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/SecurityConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/SecurityConfig.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/WebConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/WebConfig.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/CatalogController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/CatalogController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/ComboController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/ComboController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/LoginController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/LoginController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/MovieController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/MovieController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/PostController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/PostController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/RoomController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/RoomController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/SeatController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/SeatController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/FileUploadController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/FileUploadController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/MovieController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/MovieController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController$RoomOption.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController$RoomOption.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/ShowtimeController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/ShowtimeController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/AudioTechnology$AudioTechnologyBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/AudioTechnology.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/AudioTechnology.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Combo.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Combo.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Movie$MovieStatus.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Movie$MovieStatus.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Movie.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Movie.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Room$RoomBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Room.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Room.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/RoomType$RoomTypeBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/RoomType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/RoomType.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Seat$SeatBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Seat.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Seat.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/SeatType$SeatTypeBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/SeatType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/SeatType.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/ComboRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/ComboRepository.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/MovieRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/MovieRepository.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/RoomRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/RoomRepository.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/api/ShowtimeRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/api/ShowtimeRepository.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/CatalogService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/CatalogService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/ComboService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/ComboService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/MovieService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/MovieService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/RoomService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/RoomService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/SeatService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/SeatService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/api/MovieService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/api/MovieService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/api/ShowtimeService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/api/ShowtimeService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/example/CinemaApplication.class" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/register.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/register.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/templates/movie-detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/movie-detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/templates/movie-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/movie-list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/templates/search-result.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/search-result.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/surefire-reports/TEST-com.group3.cinema.Group03ApplicationTests.xml" beforeDir="false" afterPath="$PROJECT_DIR$/target/surefire-reports/TEST-com.group3.cinema.Group03ApplicationTests.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/surefire-reports/TEST-com.group3.cinema.Group03Swp391Summer26ApplicationTests.xml" beforeDir="false" afterPath="$PROJECT_DIR$/target/surefire-reports/TEST-com.group3.cinema.Group03Swp391Summer26ApplicationTests.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/surefire-reports/com.group3.cinema.Group03ApplicationTests.txt" beforeDir="false" afterPath="$PROJECT_DIR$/target/surefire-reports/com.group3.cinema.Group03ApplicationTests.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,28 +96,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RequestMappingsPanelOrder0": "0",
-    "RequestMappingsPanelOrder1": "1",
-    "RequestMappingsPanelWidth0": "75",
-    "RequestMappingsPanelWidth1": "75",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "Spring Boot.CinemaApplication.executor": "Run",
-    "Spring Boot.Group03Swp391Summer26Application.executor": "Run",
-    "git-widget-placeholder": "DuongND",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.CinemaApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Group03Swp391Summer26Application.executor&quot;: &quot;Run&quot;,
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;Spring Boot.CinemaApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Spring Boot.Group03Swp391Summer26Application.executor&quot;: &quot;Run&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;HuyPB&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Spring Boot.Group03Swp391Summer26Application">
+}</component>
+  <component name="RunManager">
     <configuration name="CinemaApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
       <module name="cakeshop" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="example.CinemaApplication" />
@@ -74,19 +141,6 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Spring Boot.CinemaApplication" />
-      </list>
-    </recent_temporary>
-  </component>
-  <component name="SharedIndexes">
-    <attachedChunks>
-      <set>
-        <option value="bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.24978.46" />
-        <option value="bundled-js-predefined-d6986cc7102b-76f8388c3a79-JavaScript-IU-243.24978.46" />
-      </set>
-    </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="StructureViewState">

@@ -1,0 +1,74 @@
+<!doctype html>
+<!--
+  Created on 2026-06-09: Customer-facing news detail page.
+  Created by: NinhDD - HE186113
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${post.title} + ' | Beta Cinemas'">Tin tức | Beta Cinemas</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <style>
+        body { margin: 0; font-family: "Be Vietnam Pro", Arial, "Segoe UI", sans-serif; background: #fdfdfd; color: #333; }
+        .top-bar { background: #0054a6; color: white; padding: 8px 0; font-size: 13px; }
+        .top-container, .header-container, .article-container, .footer-container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        .top-container { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+        .top-link { color: white; text-decoration: none; font-weight: 500; }
+        .lang-icon { height: 14px; margin-left: 15px; }
+        .header-main { background: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,.05); position: sticky; top: 0; z-index: 1000; }
+        .header-container { display: flex; align-items: center; gap: 25px; }
+        .logo { height: 55px; display: block; }
+        .nav-menu { display: flex; justify-content: center; flex-grow: 1; gap: 25px; }
+        .nav-menu a { text-decoration: none; color: #333; font-weight: 700; font-size: 16px; white-space: nowrap; }
+        .nav-menu a:hover, .nav-menu a.active { color: #0054a6; }
+        .search-form { display: flex; gap: 8px; }
+        .search-form input { border: 1px solid #ddd; border-radius: 20px; padding: 8px 14px; min-width: 190px; outline: none; }
+        .search-form button { background: #0054a6; color: white; border: none; border-radius: 20px; padding: 8px 14px; font-weight: 800; cursor: pointer; }
+        .article-container { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 36px; margin-top: 45px; margin-bottom: 60px; }
+        .article h1 { color: #0054a6; font-size: 36px; line-height: 1.25; margin: 0 0 12px; }
+        .meta { color: #64748b; font-weight: 700; margin-bottom: 24px; }
+        .cover { width: 100%; max-height: 460px; object-fit: cover; border-radius: 16px; margin-bottom: 28px; background: #eef2f7; }
+        .summary { color: #0f172a; font-size: 18px; line-height: 1.7; font-weight: 700; margin-bottom: 22px; }
+        .content { color: #334155; line-height: 1.85; font-size: 16px; }
+        .sidebar-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; position: sticky; top: 110px; }
+        .sidebar-box h3 { margin: 0 0 16px; color: #0054a6; text-transform: uppercase; }
+        .side-link { display: block; color: #0f172a; text-decoration: none; font-weight: 800; padding: 12px 0; border-top: 1px solid #e2e8f0; }
+        .side-link:hover { color: #0054a6; }
+        .footer { background: #0054a6; color: white; padding: 45px 0; }
+        .footer-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 45px; }
+        @media (max-width: 900px) { .header-container, .nav-menu { flex-wrap: wrap; } .article-container, .footer-container { grid-template-columns: 1fr; } .search-form { width: 100%; } .search-form input { flex: 1; } }
+    </style>
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
+</head>
+<body>
+<div th:replace="~{fragments/common_header :: customerHeader('posts', '')}"></div>
+
+<main class="article-container">
+    <article class="article">
+        <h1 th:text="${post.title}">Tiêu đề tin tức</h1>
+        <div class="meta">
+            <span th:text="${post.category}">Tin tức</span>
+            <span> | </span>
+            <span th:text="${post.author}">Beta Cinemas</span>
+        </div>
+        <img class="cover" th:src="${post.thumbnail}" th:alt="${post.title}">
+        <div class="summary" th:text="${post.summary}">Tóm tắt bài viết</div>
+        <div class="content" th:utext="${post.content}">Nội dung bài viết</div>
+    </article>
+
+    <aside class="sidebar-box" th:if="${latestPosts != null && !#lists.isEmpty(latestPosts)}">
+        <h3>Tin mới</h3>
+        <a class="side-link" th:each="item : ${latestPosts}" th:href="@{/posts/{id}(id=${item.id})}" th:text="${item.title}">Tin mới</a>
+    </aside>
+</main>
+
+<footer class="footer">
+    <div class="footer-container">
+        <div><h4>BETA CINEMAS</h4><p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p></div>
+        <div><h4>LIÊN HỆ</h4><p>Hotline: 1900 636807</p></div>
+        <div><h4>KẾT NỐI</h4><p>Facebook | Youtube | TikTok</p></div>
+    </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Chọn ghế | CineFlow</title>
+    <link rel="stylesheet" th:href="@{/css/booking-flow.css}">
+    <style>
+        .seat-page{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:22px;align-items:start}
+        .showtime-card{background:linear-gradient(135deg,#0054a6,#0d6bc5);color:#fff;border-radius:18px;padding:20px;margin-bottom:22px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+        .showtime-card h1{margin:0 0 8px;color:#fff}
+        .showtime-card p{margin:0;color:#dbeafe}
+        .room-pill{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:10px 14px;font-weight:900}
+        .screen-wrap{padding:12px 0 30px;perspective:600px}
+        .screen{width:min(680px,82%);height:46px;margin:0 auto;color:#fff;background:linear-gradient(90deg,#7da2c4,#213f61,#7da2c4);border-radius:0 0 70% 70%;transform:rotateX(-24deg);box-shadow:0 24px 38px rgba(0,84,166,.22);display:grid;place-items:center;font-weight:900;letter-spacing:2px}
+        .seat-map-shell{background:#f8fbff;border:1px solid #dbe5f0;border-radius:20px;padding:24px;overflow:auto}
+        .seat-map{display:grid;grid-template-columns:repeat(var(--cols),44px);grid-auto-rows:42px;grid-auto-flow:row;gap:10px;justify-content:center;min-width:max-content}
+        .seat{position:relative;width:44px;height:42px;min-width:0;min-height:0;border-radius:12px;border:0;background:#fff;box-shadow:inset 0 -4px 0 rgba(49,80,111,.14),0 2px 7px rgba(31,52,75,.08);color:#31506f;transition:background-color .15s ease,color .15s ease,box-shadow .15s ease}
+        .seat::before{content:"";position:absolute;top:5px;left:9px;right:9px;height:5px;border-radius:999px;background:rgba(49,80,111,.12)}
+        .seat:hover:not(.booked):not(.holding):not(.unavailable){box-shadow:inset 0 -4px 0 rgba(49,80,111,.14),0 8px 16px rgba(0,84,166,.15)}
+        .seat.std{border:2px solid #9ab0c8}
+        .seat.vip{background:#fff7dd;border:2px solid #f4b740;color:#7a4a00}
+        .seat.couple{width:98px;background:#fff0f7;border:2px solid #ec4899;color:#9d174d}
+        .seat.couple::after{content:"";position:absolute;top:9px;bottom:9px;left:50%;width:1px;background:rgba(236,72,153,.28)}
+        .seat.booked,.seat.holding{background:#d94b55!important;color:#fff!important;border-color:#d94b55!important;box-shadow:none;cursor:not-allowed}
+        .seat.unavailable{background:transparent!important;color:transparent!important;border:2px dashed #cbd5e1!important;box-shadow:none;cursor:not-allowed}
+        .seat.selected,.seat:has(input:checked){background:#ffd24d!important;color:#4d3b00!important;border-color:#e2ad00!important;box-shadow:inset 0 -4px 0 #e2ad00,0 8px 16px rgba(226,173,0,.22)}
+        .seat-side{position:sticky;top:92px}
+        .seat-summary h2{margin-top:0;color:#0054a6}
+        .summary-list{display:grid;gap:10px;margin:14px 0}
+        .summary-chip{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#eef5fc;color:#27425f;font-weight:800}
+        .seat-total{font-size:22px;color:#0054a6;display:flex;justify-content:space-between;border-top:2px solid #dce5ef;padding-top:14px;margin-top:14px}
+        .legend{justify-content:flex-start;background:#fff;border:1px solid #dbe5f0;border-radius:14px;padding:14px;margin:20px 0 0;position:sticky;bottom:0;z-index:3;box-shadow:0 -8px 20px rgba(23,42,69,.06)}
+        .legend-item{display:inline-flex;align-items:center;gap:8px}
+        .legend-swatch{width:24px;height:20px;border-radius:7px;border:2px solid #9ab0c8;background:#fff}
+        .legend-swatch.vip{background:#fff7dd;border-color:#f4b740}.legend-swatch.couple{background:#fff0f7;border-color:#ec4899}.legend-swatch.selected{background:#ffd24d;border-color:#e2ad00}.legend-swatch.busy{background:#d94b55;border-color:#d94b55}.legend-swatch.off{background:#fff;border-style:dashed;border-color:#cbd5e1}
+        .seat-help{margin:12px 0 0;color:#68768b;font-size:13px}
+        .mobile-seat-bar{display:none;position:sticky;bottom:0;z-index:6;background:#fff;border:1px solid #dbe5f0;border-radius:16px;padding:12px;margin-top:14px;box-shadow:0 -10px 24px rgba(23,42,69,.12);align-items:center;justify-content:space-between;gap:12px}
+        @media(max-width:980px){.seat-page{grid-template-columns:1fr}.seat-side{position:static}.showtime-card{grid-template-columns:1fr}.seat-map-shell{padding:14px}.seat-map{grid-template-columns:repeat(var(--cols),38px);grid-auto-rows:36px;gap:8px}.seat{width:38px;height:36px;font-size:11px}.seat.couple{width:84px}.mobile-seat-bar{display:flex}.seat-summary .flow-actions button{display:none}}
+    </style>
+</head>
+<body>
+<header th:replace="~{fragments/common_header :: flowHeader('Xin chào, ' + ${user.name})}"></header>
+<main class="flow-page">
+    <div class="steps">
+        <b>1 Suất chiếu</b><b class="active">2 Ghế</b><b>3 Combo</b><b>4 Xác nhận</b><b>5 Thanh toán</b>
+    </div>
+
+    <form method="post" th:action="@{/booking/seats}" id="seatForm" class="seat-page">
+        <section class="panel">
+            <div class="showtime-card">
+                <div>
+                    <h1>Chọn ghế</h1>
+                    <p th:text="${selection.movieTitle} + ' • ' + ${#temporals.format(selection.showDate,'dd/MM/yyyy')} + ' • ' + ${#temporals.format(selection.startTime,'HH:mm')}">Thông tin suất</p>
+                </div>
+                <div class="room-pill" th:text="${selection.roomName}">Phòng 1</div>
+            </div>
+
+            <div class="notice error" th:if="${error}" th:text="${error}"></div>
+            <div class="notice error" id="liveSeatNotice" style="display:none">
+                Sơ đồ ghế vừa thay đổi do người khác thao tác.
+                <a th:href="@{/booking/seats}">Tải lại sơ đồ</a>
+            </div>
+
+            <div class="screen-wrap"><div class="screen">MÀN HÌNH</div></div>
+            <div class="seat-map-shell">
+                <div class="seat-map" th:style="'--cols:' + ${roomCols}">
+                    <label th:each="seat:${seats}"
+                           class="seat"
+                           th:classappend="${' ' + #strings.toLowerCase(seat.status) + ' ' + seat.type}"
+                           th:attr="data-label=${seat.label},data-price=${seat.price},data-seat-id=${seat.id},data-status=${seat.status}"
+                           th:style="|grid-row:${seat.rowIndex + 1};grid-column:${seat.colIndex + 1} / span ${seat.type == 'couple' ? 2 : 1};|"
+                           th:title="${seat.label} + ' - ' + ${#numbers.formatDecimal(seat.price,0,'COMMA',0,'POINT')} + 'đ'">
+                        <input th:if="${seat.status == 'AVAILABLE' || seat.status == 'SELECTED'}"
+                               type="checkbox"
+                               name="seatIds"
+                               th:value="${seat.id}"
+                               th:checked="${seat.status == 'SELECTED'}">
+                        <span th:text="${seat.label != null && !seat.label.isBlank() ? seat.label : '×'}">A1</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="legend">
+                <span class="legend-item"><i class="legend-swatch"></i> Thường</span>
+                <span class="legend-item"><i class="legend-swatch vip"></i> VIP</span>
+                <span class="legend-item"><i class="legend-swatch couple"></i> Ghế đôi</span>
+                <span class="legend-item"><i class="legend-swatch selected"></i> Đang chọn</span>
+                <span class="legend-item"><i class="legend-swatch busy"></i> Đã bán/đang giữ</span>
+                <span class="legend-item"><i class="legend-swatch off"></i> Không bán</span>
+            </div>
+            <p class="seat-help">Bạn có thể chọn tối đa 8 ghế mỗi lần đặt. Ghế được giữ trong 5 phút sau khi bấm tiếp tục.</p>
+            <div class="mobile-seat-bar">
+                <b><span id="mobileSeatCount">0 ghế</span> — <span id="mobileSeatTotal">0đ</span></b>
+                <button class="btn" type="submit">Tiếp tục</button>
+            </div>
+        </section>
+
+        <aside class="panel seat-side seat-summary">
+            <h2>Ghế đã chọn</h2>
+            <p th:text="${selection.format} + ' • ' + ${selection.roomName}">2D • Phòng 1</p>
+            <div class="summary-list" id="selectedSeatList">
+                <div class="summary-chip"><span>Chưa chọn ghế</span><b>0đ</b></div>
+            </div>
+            <div class="seat-total"><span>Tổng</span><b id="seatTotal">0đ</b></div>
+            <div class="flow-actions">
+                <a class="btn secondary" th:href="@{/booking/showtimes(movieId=${selection.movieId},date=${selection.showDate})}">Đổi suất</a>
+                <button class="btn" type="submit">Giữ ghế & tiếp tục</button>
+            </div>
+        </aside>
+    </form>
+</main>
+<script>
+    const money = new Intl.NumberFormat('vi-VN').format;
+    const list = document.getElementById('selectedSeatList');
+    const total = document.getElementById('seatTotal');
+    const mobileCount = document.getElementById('mobileSeatCount');
+    const mobileTotal = document.getElementById('mobileSeatTotal');
+    function refreshSeatSummary() {
+        const selected = [...document.querySelectorAll('.seat input:checked')].map(input => input.closest('.seat'));
+        document.querySelectorAll('.seat input').forEach(input => input.closest('.seat').classList.toggle('selected', input.checked));
+        if (!selected.length) {
+            list.innerHTML = '<div class="summary-chip"><span>Chưa chọn ghế</span><b>0đ</b></div>';
+            total.textContent = '0đ';
+            mobileCount.textContent = '0 ghế';
+            mobileTotal.textContent = '0đ';
+            return;
+        }
+        let sum = 0;
+        list.innerHTML = selected.map(seat => {
+            const price = Number(seat.dataset.price || 0);
+            sum += price;
+            return `<div class="summary-chip"><span>${seat.dataset.label}</span><b>${money(price)}đ</b></div>`;
+        }).join('');
+        total.textContent = money(sum) + 'đ';
+        mobileCount.textContent = selected.length + ' ghế';
+        mobileTotal.textContent = money(sum) + 'đ';
+    }
+    document.querySelectorAll('.seat input').forEach(input => {
+        input.addEventListener('change', () => {
+            const selectedCount = document.querySelectorAll('.seat input:checked').length;
+            if (selectedCount > 8) {
+                input.checked = false;
+                alert('Mỗi lần đặt tối đa 8 ghế.');
+            }
+            refreshSeatSummary();
+        });
+    });
+    refreshSeatSummary();
+    setInterval(async () => {
+        try {
+            const response = await fetch('/booking/seats/status', {headers: {'Accept': 'application/json'}});
+            if (!response.ok) return;
+            const seats = await response.json();
+            const changed = seats.some(seat => {
+                const current = document.querySelector(`.seat[data-seat-id="${seat.id}"]`);
+                return current && current.dataset.status !== seat.status;
+            });
+            if (changed) document.getElementById('liveSeatNotice').style.display = 'block';
+        } catch (ignored) {
+            // Polling is a soft UX improvement; do not interrupt booking when it fails.
+        }
+    }, 12000);
+</script>
+</body>
+</html>

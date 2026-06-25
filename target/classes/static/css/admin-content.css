@@ -1,0 +1,156 @@
+/*
+ * Created on 2026-06-09: Shared admin content polish for combo and post management pages.
+ * Created by: NinhDD - HE186113
+ */
+:root {
+    --admin-primary: #0054a6;
+    --admin-primary-dark: #003f7d;
+    --admin-bg: #f1f5f9;
+    --admin-text: #1e293b;
+    --admin-muted: #64748b;
+    --admin-border: #e2e8f0;
+    --admin-card: #ffffff;
+}
+
+body.admin-page {
+    font-family: "Inter", "Segoe UI", Arial, sans-serif !important;
+    background: var(--admin-bg) !important;
+}
+
+.admin-main {
+    padding: 30px !important;
+}
+
+.admin-main .container {
+    max-width: 1240px !important;
+    padding: 0 !important;
+}
+
+.page-card,
+.form-card {
+    background: var(--admin-card) !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08) !important;
+    padding: 28px !important;
+}
+
+.form-card {
+    max-width: 900px !important;
+}
+
+.page-title,
+.form-title {
+    color: var(--admin-text) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0 !important;
+}
+
+.page-title i,
+.form-title i {
+    color: var(--admin-primary) !important;
+}
+
+.filter-wrapper {
+    background: #f8fafc !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 10px !important;
+    padding: 18px !important;
+}
+
+.form-label {
+    color: #475569 !important;
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.form-control,
+.form-select {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    min-height: 42px;
+    color: var(--admin-text) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--admin-primary) !important;
+    box-shadow: 0 0 0 4px rgba(0, 84, 166, 0.12) !important;
+}
+
+.btn-create,
+.btn-submit,
+.btn-filter,
+.btn.btn-primary {
+    background: var(--admin-primary) !important;
+    border-color: var(--admin-primary) !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+}
+
+.btn-create:hover,
+.btn-submit:hover,
+.btn-filter:hover,
+.btn.btn-primary:hover {
+    background: var(--admin-primary-dark) !important;
+    border-color: var(--admin-primary-dark) !important;
+}
+
+.btn-reset,
+.btn-cancel,
+.btn-outline-light {
+    border-radius: 8px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #fff !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+}
+
+.table {
+    --bs-table-hover-bg: #f8fafc;
+}
+
+.table th {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    font-size: 0.78rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.table td {
+    color: #334155 !important;
+    vertical-align: middle !important;
+}
+
+.post-thumbnail,
+.combo-thumbnail,
+.img-thumbnail-custom,
+.img-combo-custom {
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+    background: #f8fafc;
+}
+
+.badge-status {
+    border-radius: 999px !important;
+    padding: 7px 11px !important;
+}
+
+.action-btn {
+    border-radius: 8px !important;
+}
+
+.custom-file-input {
+    padding: 10px !important;
+    background: #f8fafc !important;
+}
+
+.current-image-wrapper,
+.current-thumbnail-wrapper {
+    border-radius: 10px !important;
+    background: #f8fafc !important;
+}

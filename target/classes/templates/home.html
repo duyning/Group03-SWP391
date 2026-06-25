@@ -338,52 +338,12 @@
       - Uses user from HomeController session model.
       - Keeps the same top-bar and main navigation style as the provided UI file.
     -->
-    <div class="top-bar">
-        <div class="top-container">
-            <th:block th:if="${user == null}">
-                <a th:href="@{/login}" class="top-link">Đăng nhập</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/register}" class="top-link">Đăng ký</a>
-            </th:block>
-            <th:block th:if="${user != null}">
-                <span>Xin chào,</span>
-                <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
-            </th:block>
-            <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
-        </div>
-    </div>
-
-    <header class="header-main">
-        <div class="header-container">
-            <a th:href="@{/}">
-                <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
-            </a>
-
-            <nav class="nav-menu">
-                <a th:href="@{/}" class="active">TRANG CHỦ</a>
-                <a th:href="@{/movies}">PHIM</a>
-                <a href="#">RẠP</a>
-                <a href="#">GIÁ VÉ</a>
-                <a href="#">KHO VOUCHER</a>
-                <a th:href="@{/posts}">TIN TỨC</a>
-                <a href="#">CỘNG ĐỒNG</a>
-            </nav>
-
-            <form class="search-form" th:action="@{/search}" method="get">
-                <input type="search" name="keyword" placeholder="Tìm phim">
-                <button type="submit">Tìm</button>
-            </form>
-        </div>
-    </header>
+    <div th:replace="~{fragments/common_header :: customerHeader('home', '')}"></div>
 
     <!--
       Banner flow:
       - homeBanners comes from admin banner management.
-      - Homepage banners are no longer coupled to movie images.
+      - Set banner linkUrl to /movies/{id} so clicking opens that movie detail page.
     -->
     <div class="banner-container" th:if="${homeBanners != null && !homeBanners.isEmpty()}">
         <div class="banner-slider" id="bannerSlider">
@@ -392,7 +352,7 @@
                 <a class="banner-click-area"
                    th:if="${banner.linkUrl != null && !banner.linkUrl.isEmpty()}"
                    th:href="${banner.linkUrl}"
-                   th:aria-label="${banner.title}">Xem banner</a>
+                   th:aria-label="${banner.title}">Xem chi tiết phim</a>
             </div>
         </div>
         <div class="banner-dots">
@@ -425,7 +385,12 @@
                 <p><b>Thể loại:</b> <span th:text="${movie.genre}">Hành động</span></p>
                 <p><b>Thời lượng:</b> <span th:text="${movie.duration} + ' phút'">120 phút</span></p>
                 <p><b>Khởi chiếu:</b> <span class="date-blue" th:text="${movie.releaseDate}">04/06/2026</span></p>
-                <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Mua vé</a>
+                <a class="buy-btn"
+                   th:if="${movie.status != null && movie.status.name() != 'COMING_SOON'}"
+                   th:href="@{/booking/showtimes(movieId=${movie.id})}">Mua vé</a>
+                <a class="buy-btn"
+                   th:if="${movie.status == null || movie.status.name() == 'COMING_SOON'}"
+                   th:href="@{/movies/{id}(id=${movie.id})}">Chi tiết</a>
             </article>
         </section>
 
