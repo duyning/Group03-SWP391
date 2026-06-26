@@ -66,8 +66,13 @@ public class AdminManagerController {
             bindingResult.rejectValue("phoneNum", "error.account", "Số điện thoại đã được sử dụng");
         }
 
-        if (account.getDob() != null && !account.isValidAge()) {
-            bindingResult.rejectValue("dob", "error.account", "Tuổi không hợp lệ (phải từ 13 đến 100 tuổi).");
+        int managerAge = account.getDob() == null
+                ? -1
+                : java.time.Period.between(account.getDob(), java.time.LocalDate.now()).getYears();
+        if (account.getDob() != null && managerAge < 18) {
+            bindingResult.rejectValue("dob", "error.account", "Ng\u01b0\u1eddi d\u00f9ng ph\u1ea3i t\u1eeb 18 tu\u1ed5i tr\u1edf l\u00ean");
+        } else if (account.getDob() != null && managerAge > 100) {
+            bindingResult.rejectValue("dob", "error.account", "Tu\u1ed5i kh\u00f4ng h\u1ee3p l\u1ec7 (kh\u00f4ng qu\u00e1 100 tu\u1ed5i)");
         }
 
         if (bindingResult.hasErrors()) {
