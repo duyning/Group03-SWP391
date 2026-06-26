@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beta Cinemas | Kho Voucher</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Be Vietnam Pro", Arial, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8fafc;
+            color: #333;
+            text-rendering: optimizeLegibility;
+        }
+
+        .top-bar {
+            background: #0054a6;
+            color: white;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .top-container,
+        .header-container,
+        .content-container,
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .top-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .top-link:hover {
+            text-decoration: underline;
+        }
+
+        .lang-icon {
+            height: 14px;
+            margin-left: 15px;
+        }
+
+        .header-main {
+            background: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .logo {
+            height: 55px;
+            display: block;
+        }
+
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            flex-grow: 1;
+            gap: 25px;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 700;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: #0054a6;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-form input {
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 8px 14px;
+            min-width: 180px;
+            outline: none;
+        }
+
+        .search-form button {
+            border: none;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            background: #0054a6;
+            color: white;
+            padding: 8px 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ================= CẢI TIẾN CỤM TABS ĐẸP HƠN ================= */
+        .tabs {
+            display: inline-flex;
+            background: #e2e8f0;
+            padding: 6px;
+            border-radius: 30px;
+            margin: 40px auto 35px auto;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+        }
+
+        .tabs a {
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 700;
+            color: #4a5568;
+            padding: 10px 28px;
+            border-radius: 25px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tabs a:hover {
+            color: #0054a6;
+        }
+
+        .tabs a.active {
+            background: #0054a6;
+            color: white !important;
+            box-shadow: 0 4px 10px rgba(0, 84, 166, 0.2);
+        }
+
+        /* ================= KHO VOUCHER STYLE RẠP PHIM VIP ================= */
+        .voucher-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .voucher-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 84, 166, 0.04);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+        }
+
+        .voucher-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 84, 166, 0.1);
+        }
+
+        .voucher-card::before,
+        .voucher-card::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            bottom: 65px;
+            z-index: 2;
+        }
+        .voucher-card::before { left: -11px; box-shadow: inset -3px 0 5px rgba(0,0,0,0.01); }
+        .voucher-card::after { right: -11px; box-shadow: inset 3px 0 5px rgba(0,0,0,0.01); }
+
+        .voucher-main {
+            padding: 24px 24px 20px 24px;
+            flex-grow: 1;
+        }
+
+        .voucher-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 18px;
+            gap: 12px;
+        }
+
+        .voucher-title {
+            font-size: 18px;
+            color: #0054a6;
+            font-weight: 800;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .voucher-code {
+            font-family: 'Courier New', Courier, monospace;
+            background: #eef5fc;
+            color: #0054a6;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            border: 1px dashed rgba(0, 84, 166, 0.25);
+            white-space: nowrap;
+        }
+
+        .voucher-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .voucher-info {
+            font-size: 14px;
+            color: #4a5568;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voucher-info i {
+            color: #a0aec0;
+            width: 16px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .voucher-info b {
+            color: #1a202c;
+            font-weight: 600;
+        }
+
+        .date-red {
+            color: #e53e3e !important;
+            font-weight: 700 !important;
+        }
+
+        .voucher-divider {
+            position: relative;
+            height: 1px;
+            border-top: 2px dashed #e2e8f0;
+            margin: 0 12px;
+        }
+
+        .voucher-action {
+            padding: 16px 24px 24px 24px;
+            background: #fafafa;
+        }
+
+        .btn-collect {
+            width: 100%;
+            background: #0054a6;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 84, 166, 0.15);
+        }
+
+        .btn-collect:hover {
+            background: #003f7e;
+            box-shadow: 0 6px 16px rgba(0, 84, 166, 0.25);
+        }
+
+        .btn-collect:active {
+            transform: scale(0.98);
+        }
+
+        .btn-collected {
+            background: #cbd5e1 !important;
+            color: #64748b !important;
+            cursor: not-allowed;
+            box-shadow: none !important;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            padding: 80px 15px;
+            font-size: 16px;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 60px;
+        }
+
+        .footer {
+            background: #0054a6;
+            color: white;
+            padding: 45px 0;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 45px;
+        }
+
+        @media (max-width: 900px) {
+            .header-container,
+            .nav-menu {
+                flex-wrap: wrap;
+            }
+
+            .search-form {
+                width: 100%;
+            }
+
+            .search-form input {
+                flex: 1;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+            }
+
+            .voucher-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                width: calc(100% - 30px);
+                box-sizing: border-box;
+            }
+            .tabs a {
+                flex: 1;
+                padding: 10px 10px;
+                font-size: 13px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="top-bar">
+    <div class="top-container">
+        <th:block th:if="${user == null}">
+            <a th:href="@{/login}" class="top-link">Đăng nhập</a>
+            <span style="opacity: 0.5">|</span>
+            <a th:href="@{/register}" class="top-link">Đăng ký</a>
+        </th:block>
+        <th:block th:if="${user != null}">
+            <span>Xin chào,</span>
+            <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
+            <span style="opacity: 0.5">|</span>
+            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
+            <span style="opacity: 0.5">|</span>
+            <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
+        </th:block>
+        <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
+    </div>
+</div>
+
+<header class="header-main">
+    <div class="header-container">
+        <a th:href="@{/}">
+            <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
+        </a>
+
+        <nav class="nav-menu">
+            <a th:href="@{/}">TRANG CHỦ</a>
+            <a th:href="@{/movies}">PHIM</a>
+            <a href="#">RẠP</a>
+            <a href="#">GIÁ VÉ</a>
+            <a th:href="@{/vouchers}" class="active">KHO VOUCHER</a>
+            <a th:href="@{/posts}">TIN TỨC</a>
+            <a href="#">CỘNG ĐỒNG</a>
+        </nav>
+
+        <form class="search-form" th:action="@{/search}" method="get">
+            <input type="search" name="keyword" placeholder="Tìm phim">
+            <button type="submit">Tìm</button>
+        </form>
+    </div>
+</header>
+
+<main class="content-container">
+    <div class="tabs">
+        <a th:href="@{/vouchers}" class="active">
+            <i class="fa-solid fa-store"></i> Kho Voucher Của Bạn
+        </a>
+        <a th:href="@{/vouchers/my-wallet}">
+            <i class="fa-solid fa-wallet"></i> Ví Voucher Của Tôi
+        </a>
+    </div>
+
+    <section class="voucher-grid" th:if="${vouchers != null && !vouchers.isEmpty()}">
+        <article class="voucher-card" th:each="v : ${vouchers}">
+            <div class="voucher-main">
+                <div class="voucher-header">
+                    <h3 class="voucher-title" th:text="${v.title}">Tiêu đề Voucher</h3>
+                    <span class="voucher-code" th:text="${v.code}">CODE123</span>
+                </div>
+
+                <div class="voucher-body">
+                    <th:block th:if="${v.discountType.name() == 'PERCENTAGE'}">
+                        <p class="voucher-info">
+                            <i class="fa-solid fa-percent"></i>
+                            <span><b>Mức giảm:</b> Giảm <span th:text="${#numbers.formatDecimal(v.discountValue, 0, 'COMMA', 0, 'POINT')}">0</span>%</span>
+                        </p>
+                        <p class="voucher-info" th:if="${v.maxDiscountAmount != null}">
+                            <i class="fa-solid fa-circle-arrow-down"></i>
+                            <span><b>Giảm tối đa:</b> <span th:text="${#numbers.formatDecimal(v.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}">0</span>đ</span>
+                        </p>
+                    </th:block>
+
+                    <th:block th:if="${v.discountType.name() == 'FIXED'}">
+                        <p class="voucher-info">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span><b>Mức giảm:</b> Giảm <span th:text="${#numbers.formatDecimal(v.discountValue, 0, 'COMMA', 0, 'POINT')}">0</span>đ</span>
+                        </p>
+                    </th:block>
+
+                    <p class="voucher-info">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <span><b>Đơn tối thiểu:</b> <span th:text="${#numbers.formatDecimal(v.minOrderValue, 0, 'COMMA', 0, 'POINT')}">0</span>đ</span>
+                    </p>
+                    <p class="voucher-info">
+                        <i class="fa-solid fa-film"></i>
+                        <span><b>Áp dụng cho:</b> <span th:text="${v.serviceScope.getDisplayName()}">Toàn hệ thống</span></span>
+                    </p>
+                    <p class="voucher-info date-red">
+                        <i class="fa-solid fa-clock"></i>
+                        <span><b>HSD:</b> <span th:text="${#temporals.format(v.endDate, 'dd/MM/yyyy HH:mm')}">25/06/2026 23:59</span></span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="voucher-divider"></div>
+
+            <div class="voucher-action">
+                <button th:if="${!savedVoucherIds.contains(v.id)}"
+                        class="btn-collect"
+                        th:id="'btn-' + ${v.id}"
+                        th:onclick="|collectVoucher(${v.id})|">
+                    <i class="fa-solid fa-ticket"></i> Lưu mã
+                </button>
+
+                <button th:if="${savedVoucherIds.contains(v.id)}"
+                        class="btn-collect btn-collected"
+                        th:id="'btn-' + ${v.id}"
+                        disabled>
+                    <i class="fa-solid fa-check"></i> Đã lưu
+                </button>
+            </div>
+        </article>
+    </section>
+
+    <div class="empty-state" th:if="${vouchers == null || vouchers.isEmpty()}">
+        <i class="fa-regular fa-face-frown" style="font-size: 40px; color: #cbd5e1; margin-bottom: 15px; display: block;"></i>
+        Hiện chưa có chương trình ưu đãi nào khả dụng.
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="footer-container">
+        <div>
+            <h4>BETA CINEMAS</h4>
+            <p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p>
+        </div>
+        <div>
+            <h4>LIÊN HỆ</h4>
+            <p>Hotline: 1900 636807</p>
+        </div>
+        <div>
+            <h4>KẾT NỐI</h4>
+            <p>Facebook | Youtube | TikTok</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function collectVoucher(id) {
+        fetch('/vouchers/collect/' + id, { method: 'POST' })
+            .then(res => res.text())
+            .then(data => {
+                if (data === 'success') {
+                    alert("Lưu voucher thành công!");
+                    const btn = document.getElementById('btn-' + id);
+                    btn.innerHTML = "<i class='fa-solid fa-check'></i> Đã lưu";
+                    btn.classList.add('btn-collected');
+                    btn.disabled = true;
+                } else if (data === 'error_login') {
+                    alert("Vui lòng đăng nhập trước khi lưu mã!");
+                    window.location.href = "/login";
+                } else {
+                    alert(data);
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi hệ thống:", err);
+                alert("Không thể kết nối đến server.");
+            });
+    }
+</script>
+</body>
+
+</html>

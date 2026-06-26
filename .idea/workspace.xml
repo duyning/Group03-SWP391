@@ -5,18 +5,42 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="update validate add combo">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/HolidayController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/VoucherController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/VoucherPublicController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Holiday.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Voucher.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/HolidayRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/VoucherRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/HolidayService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/VoucherService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/holiday-management.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/voucher-form.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/voucher-list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/voucher-my-wallet.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/voucher-public-list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/PostController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/PostController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Post.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Post.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/PostRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/PostRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/PostService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/PostService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Account.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Account.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/templates/create-post.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/create-post.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/post-edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/post-edit.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/home.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Account.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Account.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/templates/create-post.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/create-post.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/home.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Interface" />
+        <option value="Class" />
+        <option value="HTML File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
@@ -49,6 +73,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
     &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
     &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
     &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
@@ -118,6 +143,10 @@
       <workItem from="1780971577890" duration="3223000" />
       <workItem from="1781189006719" duration="2813000" />
       <workItem from="1781218856883" duration="3524000" />
+      <workItem from="1781226485239" duration="2172000" />
+      <workItem from="1782050787442" duration="733000" />
+      <workItem from="1782351682177" duration="22189000" />
+      <workItem from="1782408273647" duration="3111000" />
     </task>
     <task id="LOCAL-00001" summary="update validate add combo">
       <option name="closed" value="true" />

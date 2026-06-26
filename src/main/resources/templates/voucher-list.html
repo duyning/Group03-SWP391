@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Voucher - Hệ Thống Rạp Phim</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #f1f3f7;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2d3748;
+            padding: 30px;
+        }
+        .list-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 35px;
+            max-width: 1400px; /* Độ rộng tối ưu cho hiển thị bảng nhiều cột */
+            margin: 0 auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .header-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        .form-title {
+            font-weight: 700;
+            color: #2563eb;
+            font-size: 1.6rem;
+            margin: 0;
+        }
+        .btn-add {
+            background-color: #1d61e1;
+            color: white;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 6px;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.92rem;
+            transition: background-color 0.2s;
+        }
+        .btn-add:hover {
+            background-color: #154ec2;
+            color: white;
+        }
+
+        /* Custom Table Styling chuẩn Dashboard hiện đại */
+        .table-responsive {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .table {
+            margin-bottom: 0;
+            color: #334155;
+        }
+        .table thead {
+            background-color: #f8fafc;
+        }
+        .table th {
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: #475569;
+            padding: 14px 16px;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .table td {
+            font-size: 0.92rem;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            background-color: #ffffff;
+        }
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .table-hover tbody tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* Định dạng các Badge trạng thái */
+        .badge-code {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #1e3a8a;
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 6px 12px;
+            border-radius: 4px;
+        }
+        .badge-type {
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: #334155;
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+
+        /* Thao tác nút Sửa / Xóa tinh tế */
+        .btn-action-edit {
+            color: #d97706;
+            background-color: #fef3c7;
+            border: 1px solid #fde68a;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-action-edit:hover {
+            background-color: #fcd34d;
+            color: #92400e;
+        }
+        .btn-action-delete {
+            color: #dc2626;
+            background-color: #fee2e2;
+            border: 1px solid #fca5a5;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-action-delete:hover {
+            background-color: #fecaca;
+            color: #991b1b;
+        }
+
+        /* Bộ lọc tùy chỉnh */
+        .filter-label {
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+        .filter-control {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            padding: 8px 12px;
+        }
+        .filter-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="list-card">
+
+        <div class="header-wrapper">
+            <div>
+                <h2 class="form-title"><i class="fa-solid fa-ticket-simple me-2"></i>Quản Lý Chương Trình Voucher</h2>
+                <p class="text-muted small mb-0 mt-1">Danh sách cấu hình các mã giảm giá và chương trình khuyến mãi hiện có trên hệ thống</p>
+            </div>
+            <a th:href="@{/admin/vouchers/add}" class="btn-add">
+                <i class="fa-solid fa-plus"></i> Tạo Voucher Mới
+            </a>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="background-color: #f0fdf4; color: #166534; border-left: 4px solid #22c55e !important; border-radius: 4px;">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span th:text="${successMessage}">Thực hiện thành công!</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="background-color: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important; border-radius: 4px;">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi hệ thống!</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <form method="GET" th:action="@{/admin/vouchers/list}" class="p-3 mb-4 rounded" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="filter-label"><i class="fa-solid fa-magnifying-glass me-1 text-secondary"></i> Từ khóa tìm kiếm</label>
+                    <input type="text" name="keyword" th:value="${param.keyword}" class="form-control filter-control" placeholder="Nhập mã code hoặc tên ưu đãi...">
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <label class="filter-label"><i class="fa-solid fa-percent me-1 text-secondary"></i> Loại giảm giá</label>
+                    <select name="discountType" class="form-select filter-control">
+                        <option value="">-- Tất cả --</option>
+                        <option th:each="type : ${discountTypes}"
+                                th:value="${type}"
+                                th:text="${type.displayName}"
+                                th:selected="${param.discountType != null and param.discountType[0] == type.name()}"></option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <label class="filter-label"><i class="fa-solid fa-layer-group me-1 text-secondary"></i> Dịch vụ áp dụng</label>
+                    <select name="serviceScope" class="form-select filter-control">
+                        <option value="">-- Tất cả dịch vụ --</option>
+                        <option th:each="scope : ${serviceScopes}"
+                                th:value="${scope}"
+                                th:text="${scope.displayName}"
+                                th:selected="${param.serviceScope != null and param.serviceScope[0] == scope.name()}"></option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-1" style="background-color: #2563eb; border-color: #2563eb; height: 38px; font-size: 0.9rem;">
+                        <i class="fa-solid fa-filter"></i> Lọc dữ liệu
+                    </button>
+                    <a th:href="@{/admin/vouchers/list}" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" style="height: 38px; width: 45px;" title="Xóa bộ lọc">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr class="text-nowrap">
+                    <th class="text-center" style="width: 70px;">ID</th>
+                    <th>Mã Code</th>
+                    <th>Tên Chương Trình</th>
+                    <th>Loại Hình</th>
+                    <th>Mức Giảm</th>
+                    <th>Điều Kiện Áp Dụng</th>
+                    <th>Số Lượng (Đã dùng/Tổng)</th>
+                    <th>Phạm Vi & Lịch Chạy</th>
+                    <th class="text-center" style="width: 200px;">Hành Động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(voucherList)}">
+                    <td colspan="9" class="text-center py-5 text-muted bg-white">
+                        <i class="fa-regular fa-folder-open display-5 d-block mb-3 text-secondary"></i>
+                        <span class="fw-semibold">Không tìm thấy mã Voucher nào trong cơ sở dữ liệu.</span>
+                    </td>
+                </tr>
+
+                <tr th:each="voucher : ${voucherList}">
+                    <td class="text-center fw-bold text-secondary" th:text="${voucher.id}">1</td>
+                    <td>
+                        <span class="badge-code" th:text="${voucher.code}">BETA2026</span>
+                    </td>
+                    <td class="fw-semibold text-dark"
+                        style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        th:text="${voucher.title}" th:title="${voucher.title}">Tên ưu đãi rạp phim</td>
+                    <td>
+                        <span class="badge-type" th:text="${voucher.discountType.displayName}">Phần trăm</span>
+                    </td>
+                    <td class="fw-bold text-success">
+                        <span th:text="${voucher.discountType.name() == 'PERCENTAGE' ? voucher.discountValue + '%' : #numbers.formatDecimal(voucher.discountValue, 0, 'COMMA', 0, 'POINT') + ' đ'}">10%</span>
+                    </td>
+                    <td class="small text-secondary">
+                        <div><i class="fa-solid fa-basket-shopping text-warning me-1"></i>Đơn tối thiểu:
+                            <span class="fw-semibold text-dark" th:text="${#numbers.formatDecimal(voucher.minOrderValue, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
+                        </div>
+                        <div class="mt-1"><i class="fa-solid fa-hand-holding-dollar text-danger me-1"></i>Giảm tối đa:
+                            <span class="fw-semibold text-dark" th:text="${voucher.maxDiscountAmount != null ? #numbers.formatDecimal(voucher.maxDiscountAmount, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Không giới hạn'}">N/A</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-dark">
+                            <span class="text-primary" th:text="${voucher.usedQuantity}">0</span> /
+                            <span th:text="${voucher.totalQuantity}">100</span>
+                        </div>
+                        <div class="text-muted" style="font-size: 0.8rem;" th:text="'Mỗi khách dùng max: ' + ${voucher.limitPerUser} + ' lần'">Giới hạn</div>
+                    </td>
+                    <td class="small text-secondary">
+                        <div><i class="fa-solid fa-layer-group text-info me-1"></i><span class="text-dark fw-semibold" th:text="${voucher.serviceScope.displayName}">Tất cả</span></div>
+                        <div class="mt-1"><i class="fa-solid fa-calendar-day me-1"></i><span th:text="${voucher.applicableDays.displayName}">Mọi ngày</span></div>
+                        <div class="mt-1">
+                            <span th:if="${voucher.isHolidayApplicable}" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Áp dụng Lễ/Tết</span>
+                            <span th:unless="${voucher.isHolidayApplicable}" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Không dùng ngày Lễ</span>
+                        </div>
+                        <div class="mt-2 pt-1 border-top border-light text-muted" style="font-size: 0.8rem;">
+                            <div><i class="fa-regular fa-clock text-success me-1"></i>Mở: <span th:text="${#temporals.format(voucher.startDate, 'dd/MM/yyyy HH:mm')}">01/01</span></div>
+                            <div class="mt-0.5"><i class="fa-regular fa-clock text-danger me-1"></i>Đóng: <span th:text="${#temporals.format(voucher.endDate, 'dd/MM/yyyy HH:mm')}">31/12</span></div>
+                        </div>
+                    </td>
+                    <td class="text-center text-nowrap">
+                        <a th:href="@{/admin/vouchers/edit/{id}(id=${voucher.id})}" class="btn-action-edit me-1" title="Sửa cấu hình">
+                            <i class="fa-solid fa-pen-to-square"></i> Sửa
+                        </a>
+                        <a th:href="@{/admin/vouchers/delete/{id}(id=${voucher.id})}"
+                           class="btn-action-delete"
+                           th:onclick="return confirm('Cậu có chắc chắn muốn xóa vĩnh viễn mã Voucher [' + ${voucher.code} + '] không?')"                           title="Xóa mã">
+                            <i class="fa-solid fa-trash-can"></i> Xóa
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
