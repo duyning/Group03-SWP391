@@ -87,6 +87,7 @@
             border-radius: 14px;
             padding: 14px 18px;
             transition: background 0.2s, border-color 0.2s;
+            min-width: 0;
         }
 
         .info-item:hover {
@@ -109,6 +110,7 @@
 
         .info-content {
             flex: 1;
+            min-width: 0;
         }
 
         .info-label {
@@ -123,6 +125,10 @@
             font-size: 0.95rem;
             font-weight: 500;
             color: #e0e0f0;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.45;
         }
 
         .info-value.empty {
@@ -268,7 +274,8 @@
     </div>
 
     <div class="profile-actions">
-        <a th:href="@{/home}" class="btn-action btn-back">
+        <a th:href="${account.role != null && (account.role.name() == 'ADMIN' || account.role.name() == 'MANAGER')} ? @{/admin/dashboard} : @{/home}"
+           class="btn-action btn-back">
             <i class="fas fa-arrow-left"></i> Quay lại
         </a>
         <a th:href="@{/reset-password}" class="btn-action btn-edit">

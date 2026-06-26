@@ -1,53 +1,78 @@
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\CatalogInitializer.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\RoomUnicodeMigration.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\SecurityConfig.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\config\WebConfig.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\FileUploadController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\MovieController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\RoomApiController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\ShowtimeController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\CatalogController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\ComboController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\ForgotPasswordController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\HomeController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\LoginController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\MovieController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\PostController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\ProfileController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\RegisterController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\ResetPasswordController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\RoomController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\controller\SeatController.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Account.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\AudioTechnology.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Combo.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\MembershipLevel.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Movie.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Post.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Role.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Room.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\RoomType.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Seat.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\SeatType.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\entity\Showtime.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\Group03Swp391Summer26Application.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\AccountRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\api\ShowtimeRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\AudioTechnologyRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\ComboRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\MovieRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\PostRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\RoomRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\RoomTypeRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\SeatRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\repository\SeatTypeRepository.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\AccountService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\api\MovieService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\api\ShowtimeService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\CatalogService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\ComboService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\MovieService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\PostService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\RoomService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\com\group3\cinema\service\SeatService.java
-C:\Users\ASUS\Downloads\FPT\Ky 8\SWP\Project\Group03-SWP391\src\main\java\example\CinemaApplication.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\config\AuthInterceptor.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\config\CatalogInitializer.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\config\PublicContentInitializer.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\config\RoleInterceptor.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\config\RoomUnicodeMigration.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\config\SecurityConfig.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\config\WebConfig.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\AccessDeniedController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\AdminDashboardController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\FileUploadController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\MovieController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\MoviePersonSuggestionController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\RoomApiController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\ShowtimeController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\api\TicketApiController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\BannerController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\CatalogController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\ComboController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\CustomerPostController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\ForgotPasswordController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\HomeController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\LoginController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\MovieController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\PostController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\ProfileController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\RegisterController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\ResetPasswordController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\RoomController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\controller\SeatController.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Account.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\AudioTechnology.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Banner.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Combo.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\CustomerDiscount.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\FormatSurcharge.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\MembershipLevel.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Movie.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\MoviePersonSuggestion.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Post.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Role.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Room.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\RoomType.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Seat.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\SeatType.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\SeatTypeSurcharge.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Showtime.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\Ticket.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\entity\TicketPriceConfig.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\Group03Swp391Summer26Application.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\AccountRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\api\ShowtimeRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\AudioTechnologyRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\BannerRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\ComboRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\CustomerDiscountRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\FormatSurchargeRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\MoviePersonSuggestionRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\MovieRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\PostRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\RoomRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\RoomTypeRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\SeatRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\SeatTypeRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\SeatTypeSurchargeRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\TicketPriceConfigRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\repository\TicketRepository.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\AccountService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\api\MovieService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\api\ShowtimeService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\BannerService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\CatalogService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\ComboService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\MovieService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\PostService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\RoomService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\SeatService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\com\group3\cinema\service\TicketService.java
+C:\Users\Admin\IdeaProjects\Group03-SWP391\src\main\java\example\CinemaApplication.java

@@ -9,7 +9,10 @@ package com.group3.cinema.service.api;
  *            và thêm lịch chiếu hàng loạt theo dải ngày.
  * Người viết: Group 03 - SWP391
  * Người sửa: TrienLX
- * Ngày sửa: 2026-06-12
+ * Ngày sửa: 2026-06-23
+ * Chi tiết thay đổi:
+ * - [SỬA - TrienLX - 2026-06-23] Viết lại overrideSingleDay() để CẬP NHẬT bản ghi gốc thay vì
+ *   tạo bản ghi mới, giải quyết vấn đề trùng lặp và tổng suất chiếu bị sai.
  */
 
 import com.group3.cinema.entity.Showtime;
@@ -35,11 +38,18 @@ public class ShowtimeService {
 
     private final ShowtimeRepository showtimeRepository;
     private final MovieRepository movieRepository;
+    private final com.group3.cinema.service.TicketService ticketService;
+    private final com.group3.cinema.repository.TicketRepository ticketRepository;
 
     @Autowired
-    public ShowtimeService(ShowtimeRepository showtimeRepository, MovieRepository movieRepository) {
+    public ShowtimeService(ShowtimeRepository showtimeRepository, 
+                            MovieRepository movieRepository,
+                            com.group3.cinema.service.TicketService ticketService,
+                            com.group3.cinema.repository.TicketRepository ticketRepository) {
         this.showtimeRepository = showtimeRepository;
         this.movieRepository = movieRepository;
+        this.ticketService = ticketService;
+        this.ticketRepository = ticketRepository;
     }
 
     public List<Showtime> getAllShowtimes() {
@@ -128,7 +138,9 @@ public class ShowtimeService {
         if (showtime.getShowDate() != null) {
             showtime.setDayType(determineDayType(showtime.getShowDate()));
         }
-        return showtimeRepository.save(showtime);
+        Showtime saved = showtimeRepository.save(showtime);
+        ticketService.generateTicketsForShowtime(saved);
+        return saved;
     }
 
     @Transactional
@@ -147,7 +159,9 @@ public class ShowtimeService {
 
             checkRoomConflict(showtime, id);
 
-            return showtimeRepository.save(showtime);
+            Showtime saved = showtimeRepository.save(showtime);
+            ticketService.generateTicketsForShowtime(saved);
+            return saved;
         }).orElseThrow(() -> new RuntimeException("Showtime not found with id " + id));
     }
 
@@ -213,7 +227,9 @@ public class ShowtimeService {
                 showtime.setDayType(determineDayType(slotDate));
 
                 checkRoomConflict(showtime, null);
-                savedShowtimes.add(showtimeRepository.save(showtime));
+                Showtime saved = showtimeRepository.save(showtime);
+                ticketService.generateTicketsForShowtime(saved);
+                savedShowtimes.add(saved);
 
                 LocalTime nextStart = currentSlotTime.plusMinutes(10 + duration + 20);
                 int minute = nextStart.getMinute();
@@ -230,16 +246,92 @@ public class ShowtimeService {
         return savedShowtimes;
     }
 
+    /**
+     * [SỬA - TrienLX - 2026-06-23]
+     * Điều chỉnh giờ chiếu của 1 ngày cụ thể trong một nhóm lịch chiếu.
+     *
+     * Logic mới (FIX BUG TẠO TRÚNG):
+     *   - Nếu có originalShowtimeId: tìm bản ghi theo ID đó và CẬP NHẬT tại chỗ.
+     *   - Nếu không có: tìm bản ghi gốc theo movieId + targetDate (lấy suất đầu tiên trong ngày)
+     *     và CẬP NHẬT tại chỗ.
+     *   - Đánh dấu isOverride = true và note = "Dã điều chỉnh" cho bản ghi đó.
+     *   - KHÔNG tạo bản ghi mới → tổng suất chiếu luôn đúng.
+     *
+     * @param originalShowtimeId ID của bản ghi gốc cần điều chỉnh (tùy chọn, những ảnh hưởng đến độ chính xác)
+     * @param movieId ID phim
+     * @param targetDate Ngày chiếu cần điều chỉnh
+     * @param newShowTime Giờ chiếu mới
+     * @param room Phòng chiếu mới
+     */
+    @Transactional
+    public Showtime overrideSingleDay(Long originalShowtimeId, Long movieId, LocalDate targetDate,
+                                      LocalTime newShowTime, String room) {
+        if (targetDate == null || newShowTime == null || room == null || movieId == null) {
+            throw new IllegalArgumentException("Vui lòng điền đầy đủ thông tin để điều chỉnh suất chiếu!");
+        }
+
+        // Kiểm tra ngày không được là quá khứ
+        validateDateTimeNotPast(targetDate, newShowTime);
+
+        Showtime target;
+
+        if (originalShowtimeId != null) {
+            // Ưu tiên: tìm chính xác bảng ID của bản ghi cần điều chỉnh
+            target = showtimeRepository.findById(originalShowtimeId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Không tìm thấy suất chiếu gốc có ID = " + originalShowtimeId));
+        } else {
+            // Fallback: tìm theo movieId + ngày, lấy suất đầu tiên trong ngày
+            List<Showtime> candidates = showtimeRepository.findByMovieIdAndShowDate(
+                    movieId.intValue(), targetDate);
+            if (candidates.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Không tìm thấy suất chiếu nào của phim này trong ngày " + targetDate);
+            }
+            // Lấy suất chưa bị override trước (nếu có), hoặc suất đầu tiên
+            target = candidates.stream()
+                    .filter(s -> !s.isOverride())
+                    .findFirst()
+                    .orElse(candidates.get(0));
+        }
+
+        // Cập nhật thông tin: giờ chiếu mới, phòng mới, đánh dấu override
+        target.setShowTime(newShowTime);
+        target.setRoom(room);
+        target.setDayType(determineDayType(targetDate)); // re-calculate dựa ngày gốc (giữ nguyên)
+        target.setOverride(true);                        // Đánh dấu đã điều chỉnh riêng
+        target.setNote("Đã điều chỉnh");              // Hiển thị badge trên UI
+
+        // Kiểm tra xung đột phòng chiếu (loại trừ chính bản ghi này khỏi kiểm tra)
+        checkRoomConflict(target, target.getId());
+
+        Showtime saved = showtimeRepository.save(target);
+        ticketService.generateTicketsForShowtime(saved);
+        return saved;
+    }
+
+    @Transactional
     public void deleteShowtime(Long id) {
+        boolean hasSold = ticketRepository.existsByShowtimeIdAndStatus(id, "Đã bán");
+        if (hasSold) {
+            throw new IllegalStateException("Không thể xóa suất chiếu này vì đã có vé bán ra!");
+        }
+        ticketRepository.deleteUnsoldTicketsByShowtimeId(id);
         showtimeRepository.deleteById(id);
     }
 
     public Map<String, Long> getShowtimeStats() {
         Map<String, Long> stats = new HashMap<>();
-        stats.put("total", showtimeRepository.count());
-        stats.put("weekday", showtimeRepository.countByDayType("Trong tuần"));
-        stats.put("weekend", showtimeRepository.countByDayType("Cuối tuần"));
-        stats.put("holiday", showtimeRepository.countByDayType("Ngày lễ"));
+        LocalDate today = LocalDate.now();
+        // Theo trạng thái thời gian
+        stats.put("total",    showtimeRepository.count());
+        stats.put("active",   showtimeRepository.countByShowDate(today));
+        stats.put("upcoming", showtimeRepository.countByShowDateGreaterThan(today));
+        stats.put("ended",    showtimeRepository.countByShowDateLessThan(today));
+        // Theo loại ngày chiếu
+        stats.put("weekday",  showtimeRepository.countByDayType("Trong tuần"));
+        stats.put("weekend",  showtimeRepository.countByDayType("Cuối tuần"));
+        stats.put("holiday",  showtimeRepository.countByDayType("Ngày lễ"));
         return stats;
     }
 

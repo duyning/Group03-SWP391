@@ -17,7 +17,11 @@ package com.group3.cinema.controller.api;
  * Người viết: TrienLX - HE182285
  * Ngày tạo: 2026-06-04
  * Người sửa: TrienLX
- * Ngày sửa: 2026-06-12
+ * Ngày sửa: 2026-06-23
+ * Chi tiết thay đổi:
+ *   - [SỬA - TrienLX - 2026-06-23] Thêm API POST /api/showtimes/override-day để điều chỉnh lịch chiếu cho một ngày cụ thể.
+ *   - [SỬA - TrienLX - 2026-06-23] Cập nhật OverrideDayRequest: thêm originalShowtimeId để
+ *     override chính xác bản ghi gốc thay vì tạo bản ghi mới (sửa lỗi trùng suất chiếu).
  */
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -183,5 +187,61 @@ public class ShowtimeController {
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    // Endpoint: POST /api/showtimes/override-day
+    // [SỬA - TrienLX - 2026-06-23]: Điều chỉnh giờ chiếu của 1 ngày cụ thể trong một nhóm lịch chiếu.
+    // Cập nhật bản ghi gốc theo originalShowtimeId (hoặc tìm theo movieId+date) thay vì tạo mới.
+    @PostMapping("/override-day")
+    public ResponseEntity<?> overrideSingleDay(@RequestBody OverrideDayRequest req) {
+        try {
+            Showtime result = showtimeService.overrideSingleDay(
+                    req.getOriginalShowtimeId(),
+                    req.getMovieId(),
+                    req.getTargetDate(),
+                    req.getNewShowTime(),
+                    req.getRoom()
+            );
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi hệ thống khi điều chỉnh ngày chiếu: " + ex.getMessage()));
+        }
+    }
+
+    // DTO: OverrideDayRequest
+    // [SỬA - TrienLX - 2026-06-23]: Thêm trường originalShowtimeId để frontend truyền ID bản ghi gốc,
+    // giúp backend tìm chính xác suất cần điều chỉnh mà không tạo bản ghi trùng lặp.
+    public static class OverrideDayRequest {
+        // ID của suất chiếu gốc cần chỉnh sửa (tùy chọn nhưng quan trọng với độ chính xác)
+        private Long originalShowtimeId;
+
+        private Long movieId;
+
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate targetDate;
+
+        @JsonFormat(pattern = "HH:mm:ss")
+        private LocalTime newShowTime;
+
+        private String room;
+
+        public Long getOriginalShowtimeId() { return originalShowtimeId; }
+        public void setOriginalShowtimeId(Long originalShowtimeId) { this.originalShowtimeId = originalShowtimeId; }
+
+        public Long getMovieId() { return movieId; }
+        public void setMovieId(Long movieId) { this.movieId = movieId; }
+
+        public LocalDate getTargetDate() { return targetDate; }
+        public void setTargetDate(LocalDate targetDate) { this.targetDate = targetDate; }
+
+        public LocalTime getNewShowTime() { return newShowTime; }
+        public void setNewShowTime(LocalTime newShowTime) { this.newShowTime = newShowTime; }
+
+        public String getRoom() { return room; }
+        public void setRoom(String room) { this.room = room; }
     }
 }

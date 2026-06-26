@@ -4,6 +4,8 @@
   Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
   Updated on 2026-06-04: Removed English visible text from status, fallback labels, and image alt text.
   Created by: HuyPB - HE191335
+  Updated on 2026-06-23 by: TrienLX
+  Chi tiết thay đổi: Đổi biểu thức hiển thị status sang hiển thị property displayName trực tiếp để hỗ trợ nhãn "Ngừng chiếu".
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
@@ -322,7 +324,7 @@
     <section class="detail-hero"
              th:style="'background-image: url(' + ${movie.bannerUrl != null && !movie.bannerUrl.isEmpty() ? movie.bannerUrl : movie.posterUrl} + ')'">
         <div class="detail-title">
-            <span th:text="${movie.status.name() == 'NOW_SHOWING' ? 'Đang chiếu' : (movie.status.name() == 'COMING_SOON' ? 'Sắp chiếu' : 'Suất chiếu đặc biệt')}">Đang chiếu</span>
+            <span th:text="${movie.status != null ? movie.status.displayName : ''}">Đang chiếu</span>
             <h1 th:text="${movie.title}">Tên phim</h1>
         </div>
     </section>

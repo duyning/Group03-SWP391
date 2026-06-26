@@ -1,7 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!--
     Updated on 2026-06-05: Split admin Quản lý phim from the original static index page.
     Created by: NinhDD - HE186113
+    Updated on 2026-06-23 by: TrienLX
+    Chi tiết thay đổi: Bổ sung tùy chọn trạng thái "Ngừng chiếu" vào dropdown khi chỉnh sửa phim.
 -->
 <html lang="vi">
 <head>
@@ -11,7 +13,7 @@
     <meta name="description" content="Quản lý phim của Cinema 2026.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&subset=vietnamese&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -19,16 +21,18 @@
     <div class="admin-layout">
         <aside class="admin-sidebar">
             <div class="sidebar-header">
-                <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" height="35" style="filter: brightness(0) invert(1);" alt="Beta Cinemas">
+                <img src="/images/cineflow-logo-light.svg" height="35" alt="CineFlow Cinema">
                 <span>ADMIN</span>
             </div>
             <ul class="sidebar-nav">
-                <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
+                <a href="/admin/dashboard"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
                 <a href="/manage_movies.html"><li class="active"><i class="fas fa-film"></i> Quản lý phim</li></a>
                 <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
                 <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
                 <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
+                <a href="/admin/banners"><li><i class="fas fa-images"></i> Quản lý banner</li></a>
                 <a href="/admin/rooms"><li><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
+                <a href="/admin/catalogs"><li><i class="fas fa-list"></i> Danh mục phòng</li></a>
                 <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
                 <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
                 <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
@@ -40,9 +44,6 @@
         <div id="moviesSection" class="tab-section active">
             <header class="app-header">
                 <h1 class="page-title">Quản lý danh sách phim</h1>
-                <button class="btn btn-primary" id="btnOpenAddModal">
-                    <i class="fa-solid fa-plus"></i> Thêm phim mới
-                </button>
             </header>
 
             <section class="stats-grid">
@@ -70,6 +71,12 @@
                         <strong class="stat-value" id="statSpecialShow">0</strong>
                     </div>
                 </div>
+                <div class="stat-card stat-gray">
+                    <div class="stat-info">
+                        <span class="stat-label">Ngừng chiếu</span>
+                        <strong class="stat-value" id="statInactive">0</strong>
+                    </div>
+                </div>
             </section>
 
             <section class="filter-card">
@@ -78,9 +85,9 @@
                         <label for="filterTitle"><i class="fa-solid fa-film"></i> TÊN PHIM</label>
                         <input type="text" id="filterTitle" placeholder="Nhập tên phim cần tìm...">
                     </div>
-                    <div class="form-group">
-                        <label for="filterGenre">THỂ LOẠI</label>
-                        <input type="text" id="filterGenre" placeholder="Hành động, Tình cảm...">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>THỂ LOẠI (Tích chọn)</label>
+                        <div id="filterGenreContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; border: 1px solid #e2e8f0; padding: 0.5rem; border-radius: 6px; background: var(--input-bg);"></div>
                     </div>
                     <div class="form-group">
                         <label for="filterDirector">ĐẠO DIỄN / TÁC GIẢ</label>
@@ -97,6 +104,7 @@
                             <option value="Đang chiếu">Đang chiếu</option>
                             <option value="Sắp chiếu">Sắp chiếu</option>
                             <option value="Suất chiếu đặc biệt">Suất chiếu đặc biệt</option>
+                            <option value="Ngừng chiếu">Ngừng chiếu</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -107,11 +115,8 @@
                 <div class="filter-actions">
                     <span class="results-count" id="resultsCount">Tìm thấy 0 kết quả</span>
                     <div class="action-buttons">
-                        <button class="btn btn-outline" id="btnResetFilter">
-                            <i class="fa-solid fa-rotate-left"></i> Làm mới bộ lọc
-                        </button>
-                        <button class="btn btn-primary" id="btnApplyFilter">
-                            <i class="fa-solid fa-magnifying-glass"></i> Áp dụng bộ lọc
+                        <button class="btn btn-primary" id="btnOpenAddModal" style="background-color: #10b981; border-color: #10b981;">
+                            <i class="fa-solid fa-plus"></i> Thêm phim mới
                         </button>
                     </div>
                 </div>
@@ -122,11 +127,14 @@
                     <table class="movie-table">
                         <thead>
                             <tr>
-                                <th scope="col">PHIM</th>
-                                <th scope="col">THỂ LOẠI</th>
-                                <th scope="col">THỜI LƯỢNG</th>
-                                <th scope="col">TRẠNG THÁI</th>
-                                <th scope="col">KHỞI CHIẾU</th>
+                                <th scope="col" style="cursor: pointer;" onclick="toggleSort('id')">MÃ PHIM <i class="fa-solid fa-sort" id="sort-icon-id" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
+                                <th scope="col" style="cursor: pointer;" onclick="toggleSort('title')">PHIM <i class="fa-solid fa-sort" id="sort-icon-title" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
+                                <th scope="col" style="cursor: pointer;" onclick="toggleSort('genre')">THỂ LOẠI <i class="fa-solid fa-sort" id="sort-icon-genre" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
+                                <th scope="col" style="cursor: pointer;" onclick="toggleSort('duration')">THỜI LƯỢNG <i class="fa-solid fa-sort" id="sort-icon-duration" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
+                                <th scope="col" style="cursor: pointer;" onclick="toggleSort('format')">ĐỊNH DẠNG <i class="fa-solid fa-sort" id="sort-icon-format" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
+                                <th scope="col" style="cursor: pointer;" onclick="toggleSort('status')">TRẠNG THÁI <i class="fa-solid fa-sort" id="sort-icon-status" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
+                                <th scope="col" class="text-center">HIỂN THỊ</th>
+                                <th scope="col" style="cursor: pointer;" onclick="toggleSort('releaseDate')">KHỞI CHIẾU <i class="fa-solid fa-sort" id="sort-icon-releaseDate" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
                                 <th scope="col" class="text-center">HÀNH ĐỘNG</th>
                             </tr>
                         </thead>
@@ -175,7 +183,7 @@
                                 <button type="button" class="btn btn-outline" id="btnSelectVideo">
                                     <i class="fa-solid fa-folder-open"></i> Chọn file video
                                 </button>
-                                <p class="upload-hint-sub">MP4, WebM, MKV, AVI, MOV — Tối đa 500MB</p>
+                                <p class="upload-hint-sub">MP4, WebM, MKV, AVI, MOV — Tối đa 50MB</p>
                             </div>
                             <!-- Thanh tiến trình upload (ẩn ban đầu) -->
                             <div class="upload-progress" id="uploadProgress" style="display:none;">
@@ -199,30 +207,59 @@
                         <textarea id="movieSummary" rows="3" placeholder="Nội dung tóm tắt phim..."></textarea>
                     </div>
                 </div>
-                <div class="form-row split-2">
-                    <div class="form-group">
-                        <label for="movieGenre">Thể loại</label>
-                        <input type="text" id="movieGenre" placeholder="Hành động, Kinh dị...">
-                    </div>
-                    <div class="form-group">
-                        <label for="movieDuration">Thời lượng (phút)</label>
-                        <input type="number" id="movieDuration" placeholder="Ví dụ: 113">
-                    </div>
-                </div>
-                <div class="form-row split-2">
-                    <div class="form-group">
-                        <label for="movieDirector">Đạo diễn</label>
-                        <input type="text" id="movieDirector" placeholder="Ví dụ: Nguyễn Văn A">
-                    </div>
-                    <div class="form-group">
-                        <label for="movieLanguage">Ngôn ngữ</label>
-                        <input type="text" id="movieLanguage" placeholder="2D Phụ đề">
-                    </div>
-                </div>
-                <div class="form-row full-width">
+                <div class="form-row">
                     <div class="form-group full-width">
-                        <label for="movieActors">Diễn viên</label>
-                        <input type="text" id="movieActors" placeholder="Tên các diễn viên...">
+                        <label>Thể loại (Tích chọn) <span class="required">*</span></label>
+                        <div id="movieGenreContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; border: 1px solid #e2e8f0; padding: 0.5rem; border-radius: 6px; background: var(--input-bg);"></div>
+                    </div>
+                </div>
+                <div class="form-row split-2">
+                    <div class="form-group">
+                        <label for="movieDuration">Thời lượng (phút) <span class="required">*</span></label>
+                        <input type="number" id="movieDuration" placeholder="Ví dụ: 113" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieLanguage">Ngôn ngữ <span class="required">*</span></label>
+                        <select id="movieLanguage" required>
+                            <option value="">-- Chọn ngôn ngữ --</option>
+                            <option value="Phụ đề Tiếng Việt">Phụ đề Tiếng Việt</option>
+                            <option value="Lồng tiếng Tiếng Việt">Lồng tiếng Tiếng Việt</option>
+                            <option value="Tiếng Việt">Tiếng Việt</option>
+                            <option value="Phụ đề Tiếng Anh">Phụ đề Tiếng Anh</option>
+                            <option value="Tiếng Anh">Tiếng Anh</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row split-2">
+                    <div class="form-group">
+                        <label for="movieDirector">Đạo diễn <span class="required">*</span></label>
+                        <input type="text" id="movieDirector" placeholder="Ví dụ: Nguyễn Văn A" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieActors">Diễn viên <span class="required">*</span></label>
+                        <input type="text" id="movieActors" placeholder="Tên các diễn viên..." required>
+                    </div>
+                </div>
+                <div class="form-row split-3">
+                    <div class="form-group">
+                        <label for="movieReleaseYear">Năm phát hành <span class="required">*</span></label>
+                        <input type="number" id="movieReleaseYear" placeholder="Ví dụ: 2026" min="1800" max="2100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieProducer">Nhà sản xuất <span class="required">*</span></label>
+                        <input type="text" id="movieProducer" placeholder="Ví dụ: Marvel Studios" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieFormat">Định dạng <span class="required">*</span></label>
+                        <select id="movieFormat" required>
+                            <option value="">-- Chọn định dạng --</option>
+                            <option value="2D">2D</option>
+                            <option value="3D">3D</option>
+                            <option value="IMAX 2D">IMAX 2D</option>
+                            <option value="IMAX 3D">IMAX 3D</option>
+                            <option value="4DX">4DX</option>
+                            <option value="ScreenX">ScreenX</option>
+                        </select>
                     </div>
                 </div>
                 <div class="form-row split-3">
@@ -243,7 +280,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-row split-2">
+                <div class="form-row split-3">
+                    <div class="form-group">
+                        <label for="movieAgeRating">Khuyến cáo độ tuổi <span class="required">*</span></label>
+                        <select id="movieAgeRating" required>
+                            <option value="">-- Chọn độ tuổi --</option>
+                            <option value="P">P - Mọi độ tuổi</option>
+                            <option value="K">K - Dưới 13 tuổi xem cùng phụ huynh</option>
+                            <option value="T13">T13 - Từ 13 tuổi trở lên (13+)</option>
+                            <option value="T16">T16 - Từ 16 tuổi trở lên (16+)</option>
+                            <option value="T18">T18 - Từ 18 tuổi trở lên (18+)</option>
+                            <option value="C">C - Cấm phổ biến</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="movieReleaseDate">Ngày khởi chiếu <span class="required">*</span></label>
                         <input type="date" id="movieReleaseDate" required>
@@ -254,7 +303,9 @@
                             <option value="Đang chiếu">Đang chiếu</option>
                             <option value="Sắp chiếu">Sắp chiếu</option>
                             <option value="Suất chiếu đặc biệt">Suất chiếu đặc biệt</option>
+                            <option value="Ngừng chiếu">Ngừng chiếu</option>
                         </select>
+                        <small id="movieStatusHint" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:2px;"></small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -292,6 +343,22 @@
         </div>
     </div>
 
+
+    <!-- Toast notification container -->
+    <div id="toast-container"></div>
+
+    <!-- Confirm dialog overlay -->
+    <div id="confirmOverlay">
+        <div id="confirmDialog">
+            <i id="confirmIcon" class="fa-solid fa-triangle-exclamation"></i>
+            <h3 id="confirmTitle">Xác nhận</h3>
+            <p id="confirmMessage">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
+            <div class="confirm-buttons">
+                <button type="button" class="btn btn-secondary" id="confirmBtnCancel">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmBtnOk">Xác nhận</button>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/app.js"></script>
 </body>

@@ -4,6 +4,8 @@
   Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
   Updated on 2026-06-04: Removed English visible text from search result status and image alt text.
   Created by: HuyPB - HE191335
+  Updated on 2026-06-23 by: TrienLX
+  Chi tiết thay đổi: Đổi biểu thức hiển thị status sang hiển thị property displayName trực tiếp để hỗ trợ nhãn "Ngừng chiếu".
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
@@ -316,7 +318,7 @@
     <header class="header-main">
         <div class="header-container">
             <a th:href="@{/}">
-                <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
+                <img src="/images/cineflow-logo.svg" alt="CineFlow Cinema" class="logo">
             </a>
             <nav class="nav-menu">
                 <a th:href="@{/}">TRANG CHỦ</a>
@@ -353,7 +355,7 @@
                     </a>
                     <h3 th:text="${movie.title}">Tên phim</h3>
                     <p><b>Thể loại:</b> <span th:text="${movie.genre}">Hành động</span></p>
-                    <p><b>Trạng thái:</b> <span class="date-blue" th:text="${movie.status.name() == 'NOW_SHOWING' ? 'Đang chiếu' : (movie.status.name() == 'COMING_SOON' ? 'Sắp chiếu' : 'Suất chiếu đặc biệt')}">Đang chiếu</span></p>
+                    <p><b>Trạng thái:</b> <span class="date-blue" th:text="${movie.status != null ? movie.status.displayName : ''}">Đang chiếu</span></p>
                     <a class="buy-btn" th:href="@{/movies/{id}(id=${movie.id})}">Mua vé</a>
                 </article>
             </section>

@@ -5,13 +5,19 @@ package com.group3.cinema.repository;
  * Updated on 2026-06-04: Added UC-G03 active movie search by title keyword,
  * genre, and status only.
  * Created by: HuyPB - HE191335
+ * Updated on 2026-06-23 by: TrienLX
+ * Chi tiết thay đổi:
+ * - Hạn chế tự động cập nhật UPCOMING -> NOW_SHOWING đối với phim active = true.
+ * - Cập nhật autoDeactivateExpiredMovies để đặt trạng thái là STOPPED khi ẩn suất chiếu hết hạn.
  */
 
 import com.group3.cinema.entity.Movie;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -67,23 +73,39 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
                                    @Param("status") Movie.MovieStatus status);
 
     @Query("""
-            SELECT m
-            FROM Movie m
-            WHERE (:title IS NULL OR :title = '' OR LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%')))
-              AND (:genre IS NULL OR :genre = '' OR LOWER(m.genre) LIKE LOWER(CONCAT('%', :genre, '%')))
-              AND (:director IS NULL OR :director = '' OR LOWER(m.director) LIKE LOWER(CONCAT('%', :director, '%')))
-              AND (:duration IS NULL OR m.duration = :duration)
-              AND (:status IS NULL OR m.status = :status)
-              AND (:releaseDate IS NULL OR m.releaseDate = :releaseDate)
-            """)
+             SELECT m
+             FROM Movie m
+             WHERE (:title IS NULL OR :title = '' OR LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%')))
+               AND (:genre IS NULL OR :genre = '' OR LOWER(m.genre) LIKE LOWER(CONCAT('%', :genre, '%')))
+               AND (:director IS NULL OR :director = '' OR LOWER(m.director) LIKE LOWER(CONCAT('%', :director, '%')))
+               AND (:duration IS NULL OR m.duration = :duration)
+               AND (:status IS NULL OR m.status = :status)
+               AND (:releaseDate IS NULL OR m.releaseDate = :releaseDate)
+               AND (:active IS NULL OR m.active = :active)
+             """)
     List<Movie> searchMovies(@Param("title") String title,
                              @Param("genre") String genre,
                              @Param("director") String director,
                              @Param("duration") Integer duration,
                              @Param("status") Movie.MovieStatus status,
-                             @Param("releaseDate") LocalDate releaseDate);
+                             @Param("releaseDate") LocalDate releaseDate,
+                             @Param("active") Boolean active);
 
     long countByStatus(Movie.MovieStatus status);
+
+    long countByActiveFalse();
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Movie m SET m.status = :nowShowing WHERE m.active = true AND m.status = :comingSoon AND m.releaseDate <= :today")
+    int autoUpdateUpcomingToNowShowing(@Param("today") LocalDate today,
+                                       @Param("nowShowing") Movie.MovieStatus nowShowing,
+                                       @Param("comingSoon") Movie.MovieStatus comingSoon);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Movie m SET m.active = false, m.status = :stoppedStatus WHERE m.active = true AND m.id IN (SELECT s.movie.id FROM Showtime s GROUP BY s.movie.id HAVING MAX(s.showDate) < :today)")
+    int autoDeactivateExpiredMovies(@Param("today") LocalDate today, @Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
 
     @Query("""
             SELECT DISTINCT m.genre

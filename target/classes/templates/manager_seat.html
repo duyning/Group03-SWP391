@@ -103,13 +103,13 @@
         .canvas-header { padding: 12px 18px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; font-size: 13px; font-weight: 600; color: #475569; flex-shrink: 0; }
         .canvas-header span strong { color: #1e293b; }
 
-        .canvas-body { flex: 1; padding: 30px 20px 20px; overflow: auto; display: flex; flex-direction: column; align-items: center; background: #f1f5f9; user-select: none; }
+        .canvas-body { flex: 1; padding: 30px 20px 20px; overflow: auto; display: flex; flex-direction: column; align-items: flex-start; background: #f1f5f9; user-select: none; }
 
         /* Screen arc */
-        .screen-arc { width: 75%; max-width: 560px; height: 38px; background: linear-gradient(to bottom, #cbd5e1, transparent); border-top: 5px solid #94a3b8; border-radius: 50% 50% 0 0 / 100% 100% 0 0; display: flex; justify-content: center; align-items: center; margin-bottom: 50px; color: #64748b; font-weight: 800; letter-spacing: 5px; font-size: 13px; text-shadow: 0 1px 0 white; flex-shrink: 0; }
+        .screen-arc { width: 75%; min-width: 560px; max-width: 760px; height: 38px; background: linear-gradient(to bottom, #cbd5e1, transparent); border-top: 5px solid #94a3b8; border-radius: 50% 50% 0 0 / 100% 100% 0 0; display: flex; justify-content: center; align-items: center; margin: 0 auto 50px; color: #64748b; font-weight: 800; letter-spacing: 5px; font-size: 13px; text-shadow: 0 1px 0 white; flex-shrink: 0; }
 
         /* Seat grid */
-        .seat-matrix { display: flex; flex-direction: column; gap: 10px; }
+        .seat-matrix { display: flex; flex-direction: column; gap: 10px; width: max-content; min-width: max-content; }
         .seat-row { display: flex; align-items: center; gap: 8px; justify-content: center; }
         .row-label { width: 26px; text-align: center; font-weight: 800; color: #64748b; font-size: 14px; flex-shrink: 0; }
 
@@ -127,10 +127,10 @@
         .seat.empty:hover { border-color: var(--primary); }
 
         /* Instruction */
-        .instruction { font-size: 12px; color: #64748b; margin-top: 25px; text-align: center; background: #e2e8f0; padding: 9px 18px; border-radius: 20px; flex-shrink: 0; }
+        .instruction { font-size: 12px; color: #64748b; margin: 25px auto 0; text-align: center; background: #e2e8f0; padding: 9px 18px; border-radius: 20px; flex-shrink: 0; }
 
         /* Legend */
-        .legend { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+        .legend { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 16px auto 0; }
         .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #64748b; }
         .legend-dot { width: 16px; height: 16px; border-radius: 4px; border-bottom: 3px solid rgba(0,0,0,0.1); }
 
@@ -146,17 +146,18 @@
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar">
     <div class="sidebar-header">
-        <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" height="35"
-             style="filter: brightness(0) invert(1);" alt="Beta Cinemas">
+        <img src="/images/cineflow-logo-light.svg" height="35" alt="CineFlow Cinema">
         <span>ADMIN</span>
     </div>
     <ul class="sidebar-nav">
-        <a href="/home"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
-        <a href="/manage_movies.html"><li class="active"><i class="fas fa-film"></i> Quản lý phim</li></a>
+        <a href="/admin/dashboard"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
+        <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
         <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
         <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
         <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
+        <a href="/admin/banners"><li><i class="fas fa-images"></i> Quản lý banner</li></a>
         <a href="/admin/rooms"><li class="active"><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
+        <a href="/admin/catalogs"><li><i class="fas fa-list"></i> Danh mục phòng</li></a>
         <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
         <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
         <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
@@ -215,11 +216,11 @@
                 <div class="grid-size-row">
                     <div class="grid-size-field">
                         <label>Số hàng</label>
-                        <input type="number" id="rowInput" min="1" max="26" th:value="${room.rows}">
+                        <input type="number" id="rowInput" min="1" max="20" step="1" required th:value="${room.rows}">
                     </div>
                     <div class="grid-size-field">
                         <label>Số cột</label>
-                        <input type="number" id="colInput" min="1" max="50" th:value="${room.cols}">
+                        <input type="number" id="colInput" min="1" max="35" step="1" required th:value="${room.cols}">
                     </div>
                 </div>
                 <button type="button" class="btn btn-outline" style="width: 100%; justify-content: center;"
@@ -350,6 +351,10 @@
     let COLS       = SERVER_COLS;
     const ROOM_ID  = SERVER_ROOM_ID;
     const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const MAX_EDIT_ROWS = 20;
+    const MAX_EDIT_COLS = 35;
+    const MAX_MATRIX_ROWS = 26;
+    const MAX_MATRIX_COLS = 50;
 
     let currentTool = 'std';
     let isDrawing   = false;
@@ -358,6 +363,8 @@
     const matrixEl = document.getElementById('seatMatrix');
     const rowInput = document.getElementById('rowInput');
     const colInput = document.getElementById('colInput');
+    rowInput.max = MAX_EDIT_ROWS;
+    colInput.max = MAX_EDIT_COLS;
     const gridSizeText = document.getElementById('gridSizeText');
     const roomGridInfo = document.getElementById('roomGridInfo');
     const seatTypeList = parseSeatTypes();
@@ -438,8 +445,15 @@
     }
 
     function applyGridSize() {
-        const nextRows = Math.min(26, Math.max(1, parseInt(rowInput.value, 10) || ROWS));
-        const nextCols = Math.min(50, Math.max(1, parseInt(colInput.value, 10) || COLS));
+        const nextRows = parseInt(rowInput.value, 10);
+        const nextCols = parseInt(colInput.value, 10);
+        const sizeError = validateGridSize(nextRows, nextCols);
+        if (sizeError) {
+            showToast('error', '<i class="fas fa-times-circle"></i> ' + sizeError);
+            rowInput.value = ROWS;
+            colInput.value = COLS;
+            return;
+        }
         if (nextRows === ROWS && nextCols === COLS) return;
 
         const oldData = matrixData;
@@ -458,7 +472,7 @@
         matrixData = resized;
         repairCoupleSeats();
         updateGridLabels();
-        renderMatrix();
+        renderMatrix({ resetScroll: true });
     }
 
     function repairCoupleSeats() {
@@ -485,7 +499,22 @@
     // ═══════════════════════════════════════════════════════════════
     //  RENDER GRID
     // ═══════════════════════════════════════════════════════════════
-    function renderMatrix() {
+    function alignMatrix() {
+        const canvasBody = document.getElementById('canvasBody');
+        if (!canvasBody || !matrixEl) return;
+        const extraSpace = canvasBody.clientWidth - matrixEl.offsetWidth;
+        matrixEl.style.marginLeft = extraSpace > 0 ? `${Math.floor(extraSpace / 2)}px` : '0';
+        matrixEl.style.marginRight = extraSpace > 0 ? `${Math.floor(extraSpace / 2)}px` : '0';
+    }
+
+    function resetCanvasScroll() {
+        const canvasBody = document.getElementById('canvasBody');
+        if (!canvasBody) return;
+        canvasBody.scrollLeft = 0;
+        canvasBody.scrollTop = 0;
+    }
+
+    function renderMatrix(options = {}) {
         matrixEl.innerHTML = '';
         for (let r = 0; r < ROWS; r++) {
             const rowDiv = document.createElement('div');
@@ -534,6 +563,10 @@
 
             matrixEl.appendChild(rowDiv);
         }
+        alignMatrix();
+        if (options.resetScroll) {
+            resetCanvasScroll();
+        }
         updateStats();
     }
 
@@ -548,22 +581,51 @@
         }
     }
 
+    function canBecomeCouplePart(type) {
+        const meta = getSeatTypeMeta(type);
+        return type !== 'couple'
+            && type !== 'skip'
+            && meta.sellable === true
+            && Number(meta.capacity) === 1;
+    }
+
+    function getSeatPosition(r, c) {
+        return ALPHABET[r] + (c + 1);
+    }
+
+    function warnInvalidCouple(message) {
+        showToast('error', '<i class="fas fa-times-circle"></i> ' + message);
+    }
+
     // ═══════════════════════════════════════════════════════════════
     //  APPLY TOOL
     // ═══════════════════════════════════════════════════════════════
     function applyTool(r, c) {
+        if (!VALID_SEAT_TYPES.has(currentTool) || currentTool === 'skip') {
+            showToast('error', '<i class="fas fa-times-circle"></i> Loại ghế đang chọn không hợp lệ.');
+            return;
+        }
         const cur = matrixData[r][c].type;
         if (cur === currentTool) return;
 
         if (currentTool === 'couple') {
-            if (c >= COLS - 1) return; // Không đủ chỗ
-            // Nếu ô kế đang là couple khác, bỏ qua
-            if (matrixData[r][c+1].type === 'skip') return;
-            // Nếu ô hiện tại đang là couple, cần giải phóng skip cũ
-            if (cur === 'couple' && c < COLS - 1) {
-                matrixData[r][c+1] = { type: 'std', id: ALPHABET[r] + (c+2) };
+            const position = getSeatPosition(r, c);
+            if (c >= COLS - 1) {
+                warnInvalidCouple(`Không thể đặt ghế couple tại ${position} vì đây là cột cuối.`);
+                return;
             }
-            matrixData[r][c]   = { type: 'couple', id: ALPHABET[r] + (c+1) };
+
+            const next = matrixData[r][c + 1].type;
+            if (!canBecomeCouplePart(cur)) {
+                warnInvalidCouple(`Không thể đặt ghế couple tại ${position} vì ghế này không phải ghế đơn có thể ghép.`);
+                return;
+            }
+            if (!canBecomeCouplePart(next)) {
+                warnInvalidCouple(`Không thể đặt ghế couple tại ${position} vì ô bên phải không phải ghế đơn có thể ghép.`);
+                return;
+            }
+
+            matrixData[r][c]   = { type: 'couple', id: position };
             matrixData[r][c+1] = { type: 'skip',   id: '' };
         } else {
             // Giải phóng couple nếu ô hiện tại là couple
@@ -619,6 +681,7 @@
     // Dừng vẽ khi nhả chuột
     document.addEventListener('mouseup', () => { isDrawing = false; });
     document.getElementById('canvasBody').addEventListener('dragstart', e => e.preventDefault());
+    window.addEventListener('resize', alignMatrix);
 
     // ═══════════════════════════════════════════════════════════════
     //  RESET (local only)
@@ -636,10 +699,15 @@
     //  SAVE (POST JSON → server)
     // ═══════════════════════════════════════════════════════════════
     async function saveMatrix() {
-        showToast('loading', '<i class="fas fa-spinner fa-spin"></i> Đang lưu sơ đồ...');
-
         // Chuyển matrixData thành mảng 2D string để gửi lên
         const typeMatrix = matrixData.map(row => row.map(cell => cell.type));
+        const validationError = validateMatrixClient(typeMatrix);
+        if (validationError) {
+            showToast('error', '<i class="fas fa-times-circle"></i> ' + validationError);
+            return;
+        }
+
+        showToast('loading', '<i class="fas fa-spinner fa-spin"></i> Đang lưu sơ đồ...');
 
         try {
             const resp = await fetch(`/admin/rooms/${ROOM_ID}/seats/save`, {
@@ -677,6 +745,69 @@
         }
     }
 
+    function validateGridSize(rows, cols) {
+        if (!Number.isInteger(rows) || rows < 1 || rows > MAX_EDIT_ROWS) {
+            return `Số hàng ghế phải là số nguyên từ 1 đến ${MAX_EDIT_ROWS}.`;
+        }
+        if (!Number.isInteger(cols) || cols < 1 || cols > MAX_EDIT_COLS) {
+            return `Số cột ghế phải là số nguyên từ 1 đến ${MAX_EDIT_COLS}.`;
+        }
+        return '';
+    }
+
+    function validateMatrixSize(rows, cols) {
+        if (!Number.isInteger(rows) || rows < 1 || rows > MAX_MATRIX_ROWS) {
+            return `Sơ đồ ghế phải có từ 1 đến ${MAX_MATRIX_ROWS} hàng.`;
+        }
+        if (!Number.isInteger(cols) || cols < 1 || cols > MAX_MATRIX_COLS) {
+            return `Sơ đồ ghế phải có từ 1 đến ${MAX_MATRIX_COLS} cột.`;
+        }
+        return '';
+    }
+
+    function validateMatrixClient(typeMatrix) {
+        if (!Array.isArray(typeMatrix) || typeMatrix.length === 0) {
+            return 'Sơ đồ ghế phải có ít nhất 1 hàng.';
+        }
+        const sizeError = validateMatrixSize(typeMatrix.length, Array.isArray(typeMatrix[0]) ? typeMatrix[0].length : 0);
+        if (sizeError) return sizeError;
+
+        let totalCapacity = 0;
+        const cols = typeMatrix[0].length;
+        for (let r = 0; r < typeMatrix.length; r++) {
+            if (!Array.isArray(typeMatrix[r]) || typeMatrix[r].length !== cols) {
+                return 'Các hàng trong sơ đồ ghế phải có cùng số cột.';
+            }
+            for (let c = 0; c < cols; c++) {
+                const type = typeMatrix[r][c];
+                const position = `${ALPHABET[r]}${c + 1}`;
+                if (!type || typeof type !== 'string') {
+                    return `Loại ghế tại ${position} không được để trống.`;
+                }
+                if (!/^[a-z0-9_]+$/.test(type)) {
+                    return `Mã loại ghế tại ${position} không hợp lệ.`;
+                }
+                if (!VALID_SEAT_TYPES.has(type)) {
+                    return `Loại ghế tại ${position} không tồn tại hoặc đang bị tắt.`;
+                }
+                if (type === 'couple') {
+                    if (c >= cols - 1) return `Ghế couple tại ${position} không được nằm ở cột cuối.`;
+                    if (typeMatrix[r][c + 1] !== 'skip') return `Ghế couple tại ${position} phải chiếm ô bên phải.`;
+                }
+                if (type === 'skip' && (c === 0 || typeMatrix[r][c - 1] !== 'couple')) {
+                    return `Ô skip tại ${position} không thuộc ghế couple.`;
+                }
+                if (type !== 'skip') {
+                    totalCapacity += getSeatTypeMeta(type).capacity || 0;
+                }
+            }
+        }
+        if (totalCapacity <= 0) {
+            return 'Sơ đồ ghế phải có ít nhất 1 ghế có sức chứa.';
+        }
+        return '';
+    }
+
     // ═══════════════════════════════════════════════════════════════
     //  AUTO-HIDE FLASH ALERT
     // ═══════════════════════════════════════════════════════════════
@@ -693,10 +824,14 @@
     //  BOOTSTRAP
     // ═══════════════════════════════════════════════════════════════
     window.onload = () => {
+        if (seatTypeList.length === 0) {
+            showToast('error', '<i class="fas fa-times-circle"></i> Chưa có loại ghế đang hoạt động. Vui lòng cấu hình loại ghế trước.');
+            document.getElementById('btnSave').disabled = true;
+        }
         const activeTool = document.querySelector('.tool-btn.active');
         if (activeTool) currentTool = activeTool.dataset.type;
         initData();
-        renderMatrix();
+        renderMatrix({ resetScroll: true });
     };
 </script>
 </body>

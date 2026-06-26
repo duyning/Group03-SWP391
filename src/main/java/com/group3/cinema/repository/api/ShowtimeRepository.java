@@ -1,13 +1,18 @@
 package com.group3.cinema.repository.api;
 
 /**
- * Dá»± Ã¡n: Cinema 2026 â€” SWP391 Group 03
+ * Dự án: Cinema 2026 — SWP391 Group 03
  * File: ShowtimeRepository.java
- * Chá»©c nÄƒng: Lá»›p giao diá»‡n (Interface) Repository quáº£n lÃ½ viá»‡c truy xuáº¥t dá»¯ liá»‡u cá»§a báº£ng "showtimes"
- *            thÃ´ng qua Spring Data JPA. Há»— trá»£ thao tÃ¡c CRUD cÆ¡ báº£n vÃ  Ä‘á»‹nh nghÄ©a truy váº¥n tÃ¬m kiáº¿m
- *            lá»‹ch chiáº¿u nÃ¢ng cao dá»±a trÃªn nhiá»u tiÃªu chÃ­ (ID phim, loáº¡i ngÃ y, khoáº£ng thá»i gian).
- * NgÆ°á»i viáº¿t: TrienLX - HE182285
- * NgÃ y táº¡o: 2026-06-04
+ * Chức năng: Lớp giao diện (Interface) Repository quản lý việc truy xuất dữ liệu của bảng "showtimes"
+ *            thông qua Spring Data JPA. Hỗ trợ thao tác CRUD cơ bản và định nghĩa truy vấn tìm kiếm
+ *            lịch chiếu nâng cao dựa trên nhiều tiêu chí (ID phim, loại ngày, khoảng thời gian).
+ * Người viết: TrienLX - HE182285
+ * Ngày tạo: 2026-06-04
+ * Người sửa: TrienLX
+ * Ngày sửa: 2026-06-23
+ * Chi tiết thay đổi:
+ * - [SỬA - TrienLX - 2026-06-23] Thêm query findByMovieIdAndShowDate để tìm bản ghi gốc theo
+ *   movieId + ngày khi thực hiện override 1 ngày cụ thể (thay vì tạo bản ghi mới).
  */
 
 import com.group3.cinema.entity.Showtime;
@@ -45,4 +50,15 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
     List<Showtime> findByRoomIgnoreCaseAndShowDate(String room, LocalDate showDate);
 
     long countByRoomIgnoreCase(String room);
+
+    long countByShowDate(LocalDate showDate);
+
+    long countByShowDateGreaterThan(LocalDate showDate);
+
+    long countByShowDateLessThan(LocalDate showDate);
+
+    // [SỬA - TrienLX - 2026-06-23]
+    // Tìm suất chiếu theo movieId và ngày chiếu để thực hiện override (cập nhật bản ghi gốc thay vì tạo mới).
+    // Trả về danh sách vì một ngày có thể có nhiều suất chiếu (nhiều slot).
+    List<Showtime> findByMovieIdAndShowDate(int movieId, LocalDate showDate);
 }

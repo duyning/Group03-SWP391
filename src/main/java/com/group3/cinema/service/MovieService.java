@@ -5,12 +5,16 @@ package com.group3.cinema.service;
  * Updated on 2026-06-04: Added UC-G03 searchMovies(keyword, genre, status)
  * limited to movie title, genre, and status.
  * Created by: HuyPB - HE191335
+ * Updated on 2026-06-23 by: TrienLX
+ * Chi tiết thay đổi:
+ * - Truyền thêm tham số MovieStatus.STOPPED khi tự động dọn dẹp/ẩn phim hết hạn.
  */
 
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.repository.MovieRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +32,9 @@ public class MovieService {
      * 2. Shuffle the list so the hero area can vary between requests.
      * 3. Return at most 5 movies for the banner carousel/hero section.
      */
+    @Transactional
     public List<Movie> getRandomBannerMovies() {
+        autoUpdateMovieStatuses();
         List<Movie> movies = movieRepository.findByActiveTrue();
         Collections.shuffle(movies);
         return movies.stream()
@@ -63,14 +69,18 @@ public class MovieService {
      * - Return null when the id does not exist or the movie is hidden.
      * The controller uses null to redirect customers back to the movie list.
      */
+    @Transactional
     public Movie getMovieDetail(int id) {
+        autoUpdateMovieStatuses();
         return movieRepository.findByIdAndActiveTrue(id).orElse(null);
     }
 
     /**
      * Shared status filter used by all status-specific service methods.
      */
+    @Transactional
     public List<Movie> getMoviesByStatus(Movie.MovieStatus status) {
+        autoUpdateMovieStatuses();
         return movieRepository.findByStatusAndActiveTrue(status);
     }
 
@@ -78,7 +88,9 @@ public class MovieService {
      * UC-G03 Search Movies:
      * Search active movies by title keyword, genre, and movie status only.
      */
+    @Transactional
     public List<Movie> searchMovies(String keyword, String genre, String status) {
+        autoUpdateMovieStatuses();
         Movie.MovieStatus movieStatus = parseStatus(status);
         if (trimToNull(status) != null && movieStatus == null) {
             return Collections.emptyList();
@@ -117,5 +129,18 @@ public class MovieService {
         } catch (IllegalArgumentException exception) {
             return null;
         }
+    }
+
+    @Transactional
+    public void autoUpdateMovieStatuses() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        // Cập nhật các phim từ Sắp chiếu sang Đang chiếu nếu ngày chiếu đã đến (chỉ áp dụng với phim active = true)
+        movieRepository.autoUpdateUpcomingToNowShowing(
+                today,
+                Movie.MovieStatus.NOW_SHOWING,
+                Movie.MovieStatus.COMING_SOON
+        );
+        // [SỬA - TrienLX - 2026-06-23]: Truyền thêm tham số MovieStatus.STOPPED để cập nhật trạng thái trong SQL an toàn
+        movieRepository.autoDeactivateExpiredMovies(today, Movie.MovieStatus.STOPPED);
     }
 }

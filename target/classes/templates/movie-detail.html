@@ -4,6 +4,8 @@
   Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
   Updated on 2026-06-04: Removed English visible text from status, fallback labels, and image alt text.
   Created by: HuyPB - HE191335
+  Updated on 2026-06-23 by: TrienLX
+  Chi tiết thay đổi: Đổi biểu thức hiển thị status sang hiển thị property displayName trực tiếp để hỗ trợ nhãn "Ngừng chiếu".
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
@@ -300,7 +302,7 @@
     <header class="header-main">
         <div class="header-container">
             <a th:href="@{/}">
-                <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
+                <img src="/images/cineflow-logo.svg" alt="CineFlow Cinema" class="logo">
             </a>
             <nav class="nav-menu">
                 <a th:href="@{/}">TRANG CHỦ</a>
@@ -322,7 +324,7 @@
     <section class="detail-hero"
              th:style="'background-image: url(' + ${movie.bannerUrl != null && !movie.bannerUrl.isEmpty() ? movie.bannerUrl : movie.posterUrl} + ')'">
         <div class="detail-title">
-            <span th:text="${movie.status.name() == 'NOW_SHOWING' ? 'Đang chiếu' : (movie.status.name() == 'COMING_SOON' ? 'Sắp chiếu' : 'Suất chiếu đặc biệt')}">Đang chiếu</span>
+            <span th:text="${movie.status != null ? movie.status.displayName : ''}">Đang chiếu</span>
             <h1 th:text="${movie.title}">Tên phim</h1>
         </div>
     </section>
@@ -365,13 +367,17 @@
                     <b>Phân loại</b>
                     <span th:text="${movie.ageRating}">T13</span>
                 </div>
+                <div class="meta-item">
+                    <b>Định dạng</b>
+                    <span th:text="${movie.format != null ? movie.format : '2D'}">2D</span>
+                </div>
             </div>
 
             <div class="actions">
                 <a class="buy-btn" href="#">Mua vé</a>
                 <button class="trailer-btn" type="button"
                         th:if="${movie.trailerUrl != null && !movie.trailerUrl.isEmpty()}"
-                        onclick="document.getElementById('movieTrailer').scrollIntoView({ behavior: 'smooth', block: 'center' }); document.getElementById('movieTrailerPlayer').play();">
+                        onclick="document.getElementById('movieTrailer').scrollIntoView({ behavior: 'smooth', block: 'center' }); const player = document.getElementById('movieTrailerPlayer'); if (player) player.play();">
                     Xem trailer
                 </button>
                 <a class="outline-btn" th:href="@{/movies}">Quay lại</a>
@@ -380,10 +386,59 @@
             <section class="trailer-section" id="movieTrailer"
                      th:if="${movie.trailerUrl != null && !movie.trailerUrl.isEmpty()}">
                 <h3>Trailer</h3>
-                <video class="trailer-player" id="movieTrailerPlayer" controls preload="metadata"
-                       th:src="${movie.trailerUrl}">
-                    Trinh duyet cua ban khong ho tro phat video.
-                </video>
+                <div id="trailerContainer"></div>
+                
+                <script th:inline="javascript">
+                    /*<![CDATA[*/
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var url = /*[[${movie.trailerUrl}]]*/ '';
+                        var container = document.getElementById('trailerContainer');
+                        if (!url || !container) return;
+                        
+                        function getYouTubeId(url) {
+                            var m = url.match(/(?:youtu\.be\/|v=|embed\/)([^#&?]{11})/);
+                            return m ? m[1] : null;
+                        }
+                        
+                        var ytId = getYouTubeId(url);
+                        if (ytId) {
+                            var div = document.createElement('div');
+                            div.style.position = 'relative';
+                            div.style.paddingBottom = '56.25%';
+                            div.style.height = '0';
+                            div.style.overflow = 'hidden';
+                            div.style.borderRadius = '12px';
+                            div.style.background = '#0f172a';
+                            
+                            var iframe = document.createElement('iframe');
+                            iframe.style.position = 'absolute';
+                            iframe.style.top = '0';
+                            iframe.style.left = '0';
+                            iframe.style.width = '100%';
+                            iframe.style.height = '100%';
+                            iframe.style.border = '0';
+                            iframe.src = 'https://www.youtube.com/embed/' + ytId;
+                            iframe.title = 'YouTube video player';
+                            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                            iframe.allowFullscreen = true;
+                            
+                            div.appendChild(iframe);
+                            container.appendChild(div);
+                        } else {
+                            var video = document.createElement('video');
+                            video.className = 'trailer-player';
+                            video.id = 'movieTrailerPlayer';
+                            video.controls = true;
+                            video.style.width = '100%';
+                            video.style.maxHeight = '480px';
+                            video.style.borderRadius = '12px';
+                            video.style.background = '#0f172a';
+                            video.src = url;
+                            container.appendChild(video);
+                        }
+                    });
+                    /*]]>*/
+                </script>
             </section>
         </section>
     </main>

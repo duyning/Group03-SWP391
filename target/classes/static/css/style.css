@@ -27,6 +27,10 @@
     --stat-green: #10b981;
     --stat-orange: #f59e0b;
     --stat-red: #ef4444;
+    --stat-gray: #64748b;
+    --stat-purple: #8b5cf6;
+    --stat-teal: #0d9488;
+    --stat-pink: #ec4899;
 
     /* Các bộ thông số đổ bóng đổ mềm mại tạo hiệu ứng nổi */
     --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
@@ -43,7 +47,7 @@
 
 /* Định dạng cơ bản cho toàn trang */
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Be Vietnam Pro', sans-serif;
     background-color: var(--bg-app);
     color: var(--text-main);
     line-height: 1.5;
@@ -226,6 +230,10 @@ body[data-page] {
 .stat-green::before { background-color: var(--stat-green); }
 .stat-orange::before { background-color: var(--stat-orange); }
 .stat-red::before { background-color: var(--stat-red); }
+.stat-gray::before { background-color: var(--stat-gray); }
+.stat-purple::before { background-color: var(--stat-purple); }
+.stat-teal::before { background-color: var(--stat-teal); }
+.stat-pink::before { background-color: var(--stat-pink); }
 
 .stat-info {
     display: flex;
@@ -455,6 +463,8 @@ body[data-page] {
     display: flex;
     justify-content: center;
     gap: 0.8rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
 }
 
 .action-btn {
@@ -490,6 +500,20 @@ body[data-page] {
 .action-btn-delete:hover {
     background-color: #fecdd3;
     color: #be123c;
+}
+
+.showtime-delete-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 9rem;
+    overflow-y: auto;
+}
+
+.showtime-delete-list .action-btn-delete {
+    min-width: 6.5rem;
+    line-height: 1.25;
+    text-align: center;
 }
 
 .text-center {
@@ -1056,6 +1080,17 @@ body[data-page] {
     background-color: #fde68a;
 }
 
+/* Ghế đôi trống */
+.seat-btn.couple.available {
+    background-color: #fce7f3;
+    border-color: #ec4899;
+    color: #9d174d;
+}
+
+.seat-btn.couple.available:hover {
+    background-color: #fbcfe8;
+}
+
 /* Ghế đã bán */
 .seat-btn.is-sold {
     background-color: #fecaca;
@@ -1154,6 +1189,16 @@ body[data-page] {
     display: inline-block;
     background-color: #eef2ff;
     color: #3730a3;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.badge-couple {
+    display: inline-block;
+    background-color: #fce7f3;
+    color: #9d174d;
     padding: 0.2rem 0.55rem;
     border-radius: 4px;
     font-size: 0.78rem;
@@ -1376,3 +1421,222 @@ body[data-page] {
     outline: none;
 }
 
+/* ============================================================
+ * TOAST NOTIFICATION SYSTEM
+ * Người sửa: TrienLX
+ * Ngày sửa: 2026-06-11
+ * Mô tả: Thêm hệ thống thông báo toast tùy chỉnh (thay thế alert/confirm của trình duyệt).
+ *        Hỗ trợ 4 loại: success (xanh lá), error (đỏ), warning (cam), info (xanh biển).
+ *        Toast tự động biến mất sau 3.5 giây và có hiệu ứng trượt vào/ra từ bên phải.
+ * ============================================================ */
+
+/* Vùng chứa tất cả các toast — cố định ở góc trên bên phải màn hình */
+#toast-container {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+
+/* Kiểu dáng chung của mỗi toast */
+.toast-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1.2rem;
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+    min-width: 300px;
+    max-width: 420px;
+    pointer-events: all;
+    border-left: 4px solid transparent;
+    cursor: pointer;
+    animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Hiệu ứng trượt biến mất khi đóng */
+.toast-item.hiding {
+    animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideIn {
+    from { opacity: 0; transform: translateX(110%); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastSlideOut {
+    from { opacity: 1; transform: translateX(0); max-height: 120px; }
+    to   { opacity: 0; transform: translateX(110%); max-height: 0; padding-top: 0; padding-bottom: 0; }
+}
+
+/* Toast thành công — xanh lá */
+.toast-item.toast-success { border-left-color: var(--stat-green); }
+.toast-item.toast-success .toast-icon { color: var(--stat-green); }
+
+/* Toast lỗi — đỏ */
+.toast-item.toast-error { border-left-color: var(--stat-red); }
+.toast-item.toast-error .toast-icon { color: var(--stat-red); }
+
+/* Toast cảnh báo — cam */
+.toast-item.toast-warning { border-left-color: var(--stat-orange); }
+.toast-item.toast-warning .toast-icon { color: var(--stat-orange); }
+
+/* Toast thông tin — xanh biển */
+.toast-item.toast-info { border-left-color: var(--stat-blue); }
+.toast-item.toast-info .toast-icon { color: var(--stat-blue); }
+
+/* Icon biểu tượng loại toast */
+.toast-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* Phần nội dung chữ của toast */
+.toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Tiêu đề toast đậm */
+.toast-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1e293b;
+    margin-bottom: 0.15rem;
+}
+
+/* Nội dung mô tả chi tiết */
+.toast-message {
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+/* Nút X đóng toast */
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 1rem;
+    padding: 0;
+    flex-shrink: 0;
+    line-height: 1;
+    align-self: center;
+    transition: color 0.15s;
+}
+
+.toast-close:hover { color: #334155; }
+
+/* ============================================================
+ * CUSTOM CONFIRM DIALOG
+ * Thay thế hộp thoại confirm() mặc định của trình duyệt.
+ * ============================================================ */
+
+/* Overlay nền mờ */
+#confirmOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+
+#confirmOverlay.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Hộp thoại xác nhận */
+#confirmDialog {
+    background: white;
+    border-radius: 14px;
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#confirmOverlay.show #confirmDialog {
+    transform: scale(1);
+}
+
+/* Icon trong hộp thoại xác nhận */
+#confirmIcon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--stat-orange);
+}
+
+/* Tiêu đề hộp thoại */
+#confirmTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+/* Nội dung mô tả */
+#confirmMessage {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+/* Nhóm nút xác nhận */
+.confirm-buttons {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+/* Nút đồng ý — màu đỏ */
+#confirmBtnOk {
+    background-color: var(--stat-red);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+#confirmBtnOk:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+/* Nút hủy — màu xám */
+#confirmBtnCancel {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#confirmBtnCancel:hover {
+    background-color: #e2e8f0;
+}

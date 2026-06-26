@@ -37,7 +37,8 @@
             margin-bottom: 8px;
         }
         .required {
-            color: #2d3748;
+            color: #dc3545; /* Đổi sang màu đỏ để nổi bật trường bắt buộc */
+            font-weight: bold;
         }
         .form-control, .form-select {
             border: 1px solid #cbd5e1;
@@ -111,80 +112,97 @@
     <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('combos')}"></aside>
     <main class="admin-main">
 
-<div class="container">
-    <div class="form-card">
+        <div class="container">
+            <div class="form-card">
 
-        <h2 class="form-title">Thêm combo bắp nước mới</h2>
+                <h2 class="form-title">Thêm combo bắp nước mới</h2>
 
-        <form th:action="@{/admin/combos/save}"
-              th:object="${combo}"
-              method="post"
-              enctype="multipart/form-data">
+                <form th:action="@{/admin/combos/save}"
+                      th:object="${combo}"
+                      method="post"
+                      enctype="multipart/form-data">
 
-            <div class="mb-4">
-                <label class="form-label">
-                    Tên gói Combo
-                    <span class="required">*</span>
-                </label>
-                <input type="text"
-                       class="form-control"
-                       th:field="*{name}"
-                       placeholder="Ví dụ: Combo Solo X, Combo Couple..." required>
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Tên gói Combo
+                            <span class="required">*</span>
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               th:field="*{name}"
+                               maxlength="100"
+                               pattern=".*\S.*"
+                               title="Tên combo không được chỉ chứa khoảng trắng"
+                               placeholder="Ví dụ: Combo Solo X, Combo Couple..." required>
+
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Giá bán (VNĐ)
+                            <span class="required">*</span>
+                        </label>
+                        <input type="number"
+                               class="form-control"
+                               th:field="*{price}"
+                               min="0"
+                               max="1000000"
+                               placeholder="Nhập giá tiền từ 0 đến 1.000.000" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Chi tiết thành phần combo
+                            <span class="required">*</span>
+                        </label>
+                        <textarea class="form-control"
+                                  rows="3"
+                                  th:field="*{description}"
+                                  maxlength="255"
+                                  placeholder="Ví dụ: 1 bắp ngọt lớn + 1 nước ngọt ly lớn..." required></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Hình ảnh minh họa
+                            <span class="required">*</span>
+                        </label>
+                        <input type="file"
+                               name="imageFile"
+                               class="form-control custom-file-input"
+                               accept="image/png, image/jpeg, image/jpg, image/webp"
+                               required>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label">
+                            Trạng thái bán
+                            <span class="required">*</span>
+                        </label>
+                        <select class="form-select" th:field="*{status}" required>
+                            <option value="ACTIVE">Đang kinh doanh (Mở bán)</option>
+                            <option value="INACTIVE">Ngừng kinh doanh (Tạm ẩn)</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn-submit">
+                            <i class="fa-solid fa-save"></i>
+                            Lưu combo
+                        </button>
+                        <a th:href="@{/admin/combos}" class="btn-cancel">
+                            Hủy
+                        </a>
+                    </div>
+
+                </form>
+
             </div>
+        </div>
 
-            <div class="mb-4">
-                <label class="form-label">
-                    Giá bán (VNĐ)
-                    <span class="required">*</span>
-                </label>
-                <input type="number"
-                       class="form-control"
-                       th:field="*{price}"
-                       placeholder="Nhập giá tiền ví dụ: 85000" required>
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label">Chi tiết thành phần combo</label>
-                <textarea class="form-control"
-                          rows="3"
-                          th:field="*{description}"
-                          placeholder="Ví dụ: 1 bắp ngọt lớn + 1 nước ngọt ly lớn..."></textarea>
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label">Hình ảnh minh họa</label>
-                <input type="file"
-                       name="imageFile"
-                       class="form-control custom-file-input"
-                       accept="image/*">
-            </div>
-
-            <div class="mb-5">
-                <label class="form-label">Trạng thái bán</label>
-                <select class="form-select" th:field="*{status}">
-                    <option value="ACTIVE">Đang kinh doanh (Mở bán)</option>
-                    <option value="INACTIVE">Ngừng kinh doanh (Tạm ẩn)</option>
-                </select>
-            </div>
-
-            <div class="d-flex gap-3">
-                <button type="submit" class="btn-submit">
-                    <i class="fa-solid fa-save"></i>
-                    Lưu combo
-                </button>
-                <a th:href="@{/admin/combos}" class="btn-cancel">
-                    Hủy
-                </a>
-            </div>
-
-        </form>
-
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     </main>
 </div>
 </body>
 </html>
-
