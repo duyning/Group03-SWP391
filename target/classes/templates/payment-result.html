@@ -24,7 +24,7 @@
     </dl>
     <div class="flow-actions">
         <a class="btn secondary" th:href="@{/movies}">Về danh sách phim</a>
-        <a class="btn" th:if="${payment.status.name() == 'SUCCESS'}" th:href="@{/payment/ticket/{id}(id=${details.booking.id})}">Xem vé điện tử</a>
+        <a class="btn" th:if="${payment.status.name() == 'SUCCESS'}" th:href="@{/my-tickets}">Xem vé của tôi</a>
         <a class="btn" th:if="${payment.status.name() == 'PENDING'}" th:href="@{/payment(bookingId=${details.booking.id})}">Thanh toán lại</a>
         <a class="btn" th:if="${payment.status.name() == 'CANCELLED' || payment.status.name() == 'FAILED'}"
            th:href="@{/booking/showtimes(movieId=${details.showtime.movie.id},date=${details.showtime.showDate})}">Đặt lại vé này</a>

@@ -498,67 +498,55 @@
                     <span class="enter-hint">↵ Tìm</span>
                 </div>
 
-                <div class="filter-group">
+                <div class="filter-group" th:if="${!#lists.isEmpty(genres)}">
                     <div class="filter-title">Thể loại</div>
                     <div class="pill-row">
-                        <button type="button" class="filter-pill" data-name="genre" data-value="Hành động"
-                                th:classappend="${#lists.contains(selectedGenres, 'Hành động')} ? ' active'">Hành động</button>
-                        <button type="button" class="filter-pill" data-name="genre" data-value="Hài"
-                                th:classappend="${#lists.contains(selectedGenres, 'Hài')} ? ' active'">Hài</button>
-                        <button type="button" class="filter-pill" data-name="genre" data-value="Kinh dị"
-                                th:classappend="${#lists.contains(selectedGenres, 'Kinh dị')} ? ' active'">Kinh dị</button>
-                        <button type="button" class="filter-pill" data-name="genre" data-value="Lãng mạn"
-                                th:classappend="${#lists.contains(selectedGenres, 'Lãng mạn')} ? ' active'">Lãng mạn</button>
-                        <button type="button" class="filter-pill" data-name="genre" data-value="Hoạt hình"
-                                th:classappend="${#lists.contains(selectedGenres, 'Hoạt hình')} ? ' active'">Hoạt hình</button>
-                        <button type="button" class="filter-pill" data-name="genre" data-value="Tâm lý"
-                                th:classappend="${#lists.contains(selectedGenres, 'Tâm lý')} ? ' active'">Tâm lý</button>
-                        <button type="button" class="filter-pill" data-name="genre" data-value="Sci-Fi"
-                                th:classappend="${#lists.contains(selectedGenres, 'Sci-Fi')} ? ' active'">Sci-Fi</button>
+                        <button type="button" 
+                                th:each="g : ${genres}"
+                                class="filter-pill" 
+                                data-name="genre" 
+                                th:data-value="${g}"
+                                th:classappend="${#lists.contains(selectedGenres, g)} ? ' active'"
+                                th:text="${g}"></button>
                     </div>
                 </div>
 
-                <div class="filter-group">
+                <div class="filter-group" th:if="${!#lists.isEmpty(formats)}">
                     <div class="filter-title">Định dạng chiếu</div>
                     <div class="pill-row">
-                        <button type="button" class="filter-pill" data-name="format" data-value="2D"
-                                th:classappend="${#lists.contains(selectedFormats, '2D')} ? ' active'">2D</button>
-                        <button type="button" class="filter-pill" data-name="format" data-value="3D"
-                                th:classappend="${#lists.contains(selectedFormats, '3D')} ? ' active'">3D</button>
-                        <button type="button" class="filter-pill" data-name="format" data-value="IMAX"
-                                th:classappend="${#lists.contains(selectedFormats, 'IMAX')} ? ' active'">IMAX</button>
-                        <button type="button" class="filter-pill" data-name="format" data-value="4DX"
-                                th:classappend="${#lists.contains(selectedFormats, '4DX')} ? ' active'">4DX</button>
-                        <button type="button" class="filter-pill" data-name="format" data-value="Dolby"
-                                th:classappend="${#lists.contains(selectedFormats, 'Dolby')} ? ' active'">Dolby</button>
+                        <button type="button" 
+                                th:each="f : ${formats}"
+                                class="filter-pill" 
+                                data-name="format" 
+                                th:data-value="${f}"
+                                th:classappend="${#lists.contains(selectedFormats, f)} ? ' active'"
+                                th:text="${f}"></button>
                     </div>
                 </div>
 
-                <div class="filter-group">
+                <div class="filter-group" th:if="${!#lists.isEmpty(languages)}">
                     <div class="filter-title">Ngôn ngữ / Phụ đề</div>
                     <div class="pill-row">
-                        <button type="button" class="filter-pill" data-name="language" data-value="Lồng tiếng"
-                                th:classappend="${#lists.contains(selectedLanguages, 'Lồng tiếng')} ? ' active'">Lồng tiếng</button>
-                        <button type="button" class="filter-pill" data-name="language" data-value="Phụ đề VI"
-                                th:classappend="${#lists.contains(selectedLanguages, 'Phụ đề VI')} ? ' active'">Phụ đề VI</button>
-                        <button type="button" class="filter-pill" data-name="language" data-value="Phụ đề EN"
-                                th:classappend="${#lists.contains(selectedLanguages, 'Phụ đề EN')} ? ' active'">Phụ đề EN</button>
-                        <button type="button" class="filter-pill" data-name="language" data-value="Nguyên gốc"
-                                th:classappend="${#lists.contains(selectedLanguages, 'Nguyên gốc')} ? ' active'">Nguyên gốc</button>
+                        <button type="button" 
+                                th:each="l : ${languages}"
+                                class="filter-pill" 
+                                data-name="language" 
+                                th:data-value="${l}"
+                                th:classappend="${#lists.contains(selectedLanguages, l)} ? ' active'"
+                                th:text="${l}"></button>
                     </div>
                 </div>
 
-                <div class="filter-group">
+                <div class="filter-group" th:if="${!#lists.isEmpty(ageRatings)}">
                     <div class="filter-title">Độ tuổi</div>
                     <div class="pill-row">
-                        <button type="button" class="filter-pill" data-name="age" data-value="P"
-                                th:classappend="${#lists.contains(selectedAges, 'P')} ? ' active'">P</button>
-                        <button type="button" class="filter-pill" data-name="age" data-value="T13"
-                                th:classappend="${#lists.contains(selectedAges, 'T13')} ? ' active'">T13+</button>
-                        <button type="button" class="filter-pill" data-name="age" data-value="T16"
-                                th:classappend="${#lists.contains(selectedAges, 'T16')} ? ' active'">T16+</button>
-                        <button type="button" class="filter-pill" data-name="age" data-value="T18"
-                                th:classappend="${#lists.contains(selectedAges, 'T18')} ? ' active'">T18+</button>
+                        <button type="button" 
+                                th:each="a : ${ageRatings}"
+                                class="filter-pill" 
+                                data-name="age" 
+                                th:data-value="${a}"
+                                th:classappend="${#lists.contains(selectedAges, a)} ? ' active'"
+                                th:text="${a.startsWith('C-') ? a + '+' : (a == 'P' ? 'P - Mọi lứa tuổi' : a)}"></button>
                     </div>
                 </div>
 

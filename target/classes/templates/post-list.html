@@ -124,6 +124,15 @@
             </a>
         </div>
 
+        <div th:if="${successMessage}" class="alert alert-success" data-auto-dismiss="5000">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span th:text="${successMessage}">Đã lưu bài viết.</span>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger" data-auto-dismiss="5000">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <span th:text="${errorMessage}">Có lỗi xảy ra.</span>
+        </div>
+
         <div class="filter-wrapper mb-4">
             <form th:action="@{/admin/posts}" method="GET" class="row g-3 align-items-end">
 
@@ -264,6 +273,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/auto-dismiss-alerts.js}"></script>
     </main>
 </div>
 </body>

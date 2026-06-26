@@ -82,7 +82,10 @@ public class PaymentController {
     public String complete(@PathVariable String orderCode, @RequestParam String result,
                            HttpSession session, RedirectAttributes redirectAttributes) {
         try {
-            paymentService.processResult(orderCode, account(session).getAccountID(), result);
+            Payment payment = paymentService.processResult(orderCode, account(session).getAccountID(), result);
+            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+                return "redirect:/my-tickets";
+            }
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
@@ -92,8 +95,15 @@ public class PaymentController {
     @GetMapping("/vnpay/return")
     public String vnpayReturn(@RequestParam Map<String, String> params,
                               RedirectAttributes redirectAttributes) {
-        handleGatewayCallback(Payment.Method.VNPAY, params, redirectAttributes);
-        return "redirect:/payment/result?orderCode=" + params.getOrDefault("vnp_TxnRef", "");
+        try {
+            Payment payment = handleGatewayCallback(Payment.Method.VNPAY, params, redirectAttributes);
+            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+                return "redirect:/my-tickets";
+            }
+            return "redirect:/payment/result?orderCode=" + (payment != null ? payment.getOrderCode() : params.getOrDefault("vnp_TxnRef", ""));
+        } catch (Exception ex) {
+            return "redirect:/payment/result?orderCode=" + params.getOrDefault("vnp_TxnRef", "");
+        }
     }
 
     @GetMapping("/vnpay/ipn")
@@ -110,8 +120,15 @@ public class PaymentController {
     @GetMapping("/momo/return")
     public String momoReturn(@RequestParam Map<String, String> params,
                              RedirectAttributes redirectAttributes) {
-        handleGatewayCallback(Payment.Method.MOMO, params, redirectAttributes);
-        return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderId", "");
+        try {
+            Payment payment = handleGatewayCallback(Payment.Method.MOMO, params, redirectAttributes);
+            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+                return "redirect:/my-tickets";
+            }
+            return "redirect:/payment/result?orderCode=" + (payment != null ? payment.getOrderCode() : params.getOrDefault("orderId", ""));
+        } catch (Exception ex) {
+            return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderId", "");
+        }
     }
 
     @PostMapping("/momo/ipn")
@@ -128,14 +145,20 @@ public class PaymentController {
     @GetMapping("/payos/return")
     public String payosReturn(@RequestParam Map<String, String> params,
                               RedirectAttributes redirectAttributes) {
-        safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
+        Payment payment = safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
+        if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+            return "redirect:/my-tickets";
+        }
         return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderCode", "");
     }
 
     @GetMapping("/payos/cancel")
     public String payosCancel(@RequestParam Map<String, String> params,
                               RedirectAttributes redirectAttributes) {
-        safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
+        Payment payment = safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
+        if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+            return "redirect:/my-tickets";
+        }
         return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderCode", "");
     }
 
@@ -159,22 +182,8 @@ public class PaymentController {
         return "payment-result";
     }
 
-    @GetMapping("/ticket/{bookingId}")
-    public String ticket(@PathVariable Long bookingId, HttpSession session, Model model,
-                         RedirectAttributes redirectAttributes) {
-        Account account = account(session);
-        var details = bookingService.getBookingDetails(bookingId, account.getAccountID());
-        if (details.booking().getStatus() != Booking.Status.PAID) {
-            redirectAttributes.addFlashAttribute("error", "Vé chỉ được phát hành sau khi thanh toán thành công.");
-            return "redirect:/movies";
-        }
-        model.addAttribute("user", account);
-        model.addAttribute("details", details);
-        return "ticket-detail";
-    }
-
-    private void handleGatewayCallback(Payment.Method method, Map<String, String> params,
-                                       RedirectAttributes redirectAttributes) {
+    private Payment handleGatewayCallback(Payment.Method method, Map<String, String> params,
+                                         RedirectAttributes redirectAttributes) {
         PaymentGatewayService.GatewayCallback callback = gatewayRouter.gateway(method).parseCallback(params);
         if (!callback.validSignature()) {
             if (redirectAttributes != null) {
@@ -182,18 +191,19 @@ public class PaymentController {
             }
             throw new IllegalArgumentException("Invalid signature");
         }
-        paymentService.processGatewayResult(callback.orderCode(), callback.success(),
+        return paymentService.processGatewayResult(callback.orderCode(), callback.success(),
                 callback.responseCode(), callback.transactionId(), callback.message());
     }
 
-    private void safelyHandleGatewayCallback(Payment.Method method, Map<String, String> params,
-                                             RedirectAttributes redirectAttributes) {
+    private Payment safelyHandleGatewayCallback(Payment.Method method, Map<String, String> params,
+                                                RedirectAttributes redirectAttributes) {
         try {
-            handleGatewayCallback(method, params, redirectAttributes);
+            return handleGatewayCallback(method, params, redirectAttributes);
         } catch (IllegalArgumentException ex) {
             if (redirectAttributes != null) {
                 redirectAttributes.addFlashAttribute("error", ex.getMessage());
             }
+            return null;
         }
     }
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title th:text="${details != null ? 'Vé điện tử | CineFlow' : 'Chi tiết vé | CineFlow'}">Vé điện tử | CineFlow</title>
+    <title>Chi tiết vé | CineFlow</title>
     <link rel="stylesheet" th:href="@{/css/booking-flow.css}">
     <style>
         .ticket-card { width: min(760px, calc(100% - 28px)); margin: 34px auto 70px; text-align: left; }
@@ -23,22 +23,7 @@
     </style>
 </head>
 <body>
-<header th:replace="~{fragments/common_header :: flowHeader('Vé điện tử')}"></header>
-<main class="gateway ticket" th:if="${details != null}">
-    <div class="gateway-logo">CINEFLOW E-TICKET</div>
-    <h1 th:text="${details.showtime.movie.title}">Vé xem phim</h1>
-    <div class="ticket-code" style="width:180px;height:180px;margin:22px auto;display:grid;place-items:center;border:12px solid #172033;background:#0054a6;color:#fff;font-weight:900;font-size:20px" th:text="${'CF-' + details.booking.id}">CF-1</div>
-    <dl>
-        <dt>Mã vé</dt><dd th:text="${'#CF' + details.booking.id}"></dd>
-        <dt>Suất chiếu</dt><dd th:text="${#temporals.format(details.showtime.showDate,'dd/MM/yyyy')} + ' • ' + ${#temporals.format(details.showtime.showTime,'HH:mm')}"></dd>
-        <dt>Phòng</dt><dd th:text="${details.showtime.room}"></dd>
-        <dt>Ghế</dt><dd th:text="${#strings.listJoin(details.tickets.![seatLabel], ', ')}"></dd>
-        <dt>Số tiền</dt><dd th:text="${#numbers.formatDecimal(details.booking.totalAmount,0,'COMMA',0,'POINT')} + 'đ'"></dd>
-        <dt>Thanh toán lúc</dt><dd th:text="${#temporals.format(details.booking.paidAt,'dd/MM/yyyy HH:mm')}"></dd>
-    </dl>
-    <p>Vui lòng xuất trình mã vé này tại quầy soát vé.</p>
-    <a class="btn wide" th:href="@{/}">Về trang chủ</a>
-</main>
+<header th:replace="~{fragments/common_header :: flowHeader('Chi tiết vé')}"></header>
 <main class="panel ticket-card" th:if="${ticket != null}">
     <div class="poster-row">
         <img th:if="${ticket.movie.posterUrl != null && !ticket.movie.posterUrl.isEmpty()}"
@@ -73,7 +58,7 @@
     <p>Vui lòng xuất trình mã vé này tại quầy soát vé.</p>
     <div class="ticket-actions">
         <a class="btn secondary" th:href="@{/my-tickets}">Quay lại danh sách vé</a>
-        <a class="btn" th:href="@{/home}">Trang chủ</a>
+        <a class="btn" th:href="@{/}">Trang chủ</a>
     </div>
 </main>
 </body>
