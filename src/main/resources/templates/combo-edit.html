@@ -37,7 +37,7 @@
             margin-bottom: 8px;
         }
         .required {
-            color: #dc3545; /* Đổi sang màu đỏ nổi bật */
+            color: #dc3545;
             font-weight: bold;
         }
         .form-control, .form-select {
@@ -50,6 +50,30 @@
         .form-control:focus, .form-select:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Danh sách chọn món lẻ */
+        .product-selection-list {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+        .product-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        .product-qty-input {
+            width: 80px;
+            padding: 4px 8px;
         }
 
         /* Khung hiển thị ảnh combo hiện tại */
@@ -133,7 +157,8 @@
                 <form th:action="@{/admin/combos/update}"
                       th:object="${combo}"
                       method="post"
-                      enctype="multipart/form-data">
+                      enctype="multipart/form-data"
+                      id="comboForm">
 
                     <input type="hidden" th:field="*{id}">
 
@@ -160,12 +185,44 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Chi tiết thành phần combo <span class="required">*</span></label>
-                        <textarea class="form-control"
-                                  rows="3"
-                                  th:field="*{description}"
-                                  maxlength="255"
-                                  placeholder="Ví dụ: 1 bắp ngọt lớn + 1 nước ngọt ly lớn..." required></textarea>
+                        <label class="form-label">Thành phần gói bắp nước (Chọn từ Menu lẻ) <span class="required">*</span></label>
+                        <div class="product-selection-list">
+
+                            <div class="product-item" th:each="prod : ${products}">
+
+                                <th:block th:each="detail : ${combo.comboDetails}">
+                                    <th:block th:if="${detail.product.id == prod.id}">
+                                        <span th:id="'qty-data-' + ${prod.id}" th:data-quantity="${detail.quantity}" style="display:none;"></span>
+                                    </th:block>
+                                </th:block>
+
+                                <div class="form-check m-0">
+                                    <input class="form-check-input product-checkbox"
+                                           type="checkbox"
+                                           name="productIds[]"
+                                           th:value="${prod.id}"
+                                           th:id="'prod-' + ${prod.id}"
+                                           onchange="toggleQuantityInput(this)">
+                                    <label class="form-check-label ms-1" th:for="'prod-' + ${prod.id}" th:text="${prod.name}">
+                                        Tên sản phẩm lẻ
+                                    </label>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small text-muted">SL:</span>
+                                    <input type="number"
+                                           name="quantities[]"
+                                           class="form-control form-control-sm product-qty-input"
+                                           th:id="'qty-input-' + ${prod.id}"
+                                           min="1"
+                                           max="20"
+                                           value="1"
+                                           disabled>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div id="product-error-msg" class="text-danger small mt-1" style="display: none;">Vui lòng chọn ít nhất một món cho Combo!</div>
                     </div>
 
                     <div class="mb-4" th:if="${combo.image != null}">
@@ -209,6 +266,58 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            // Bật/tắt trạng thái ô input số lượng khi click Checkbox
+            function toggleQuantityInput(checkbox) {
+                const row = checkbox.closest('.product-item');
+                const qtyInput = row.querySelector('.product-qty-input');
+
+                if (checkbox.checked) {
+                    qtyInput.removeAttribute('disabled');
+                    qtyInput.setAttribute('required', 'required');
+                } else {
+                    qtyInput.setAttribute('disabled', 'disabled');
+                    qtyInput.removeAttribute('required');
+                    qtyInput.value = "1";
+                }
+            }
+
+            // Chặn gửi form rỗng nếu admin chưa chọn bất kì món ăn nào
+            document.getElementById('comboForm').addEventListener('submit', function (e) {
+                const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+                const errorMsg = document.getElementById('product-error-msg');
+
+                if (checkedBoxes.length === 0) {
+                    e.preventDefault();
+                    errorMsg.style.display = 'block';
+                } else {
+                    errorMsg.style.display = 'none';
+                }
+            });
+
+            // TỰ ĐỘNG CHẠY KHI TẢI TRANG: Khôi phục trạng thái tích chọn và số lượng cũ từ DB đổ ra
+            document.addEventListener("DOMContentLoaded", function() {
+                // Quét qua toàn bộ thẻ dữ liệu ẩn mà Thymeleaf đã in ra ở trên
+                const dataElements = document.querySelectorAll('[id^="qty-data-"]');
+
+                dataElements.forEach(el => {
+                    const productId = el.id.replace('qty-data-', '');
+                    const savedQuantity = el.getAttribute('data-quantity');
+
+                    // Lọc tìm đúng Checkbox và Ô nhập số lượng dựa theo ID sản phẩm lẻ
+                    const checkbox = document.getElementById('prod-' + productId);
+                    const qtyInput = document.getElementById('qty-input-' + productId);
+
+                    if (checkbox && qtyInput) {
+                        checkbox.checked = true;               // Tích chọn sẵn món cũ
+                        qtyInput.removeAttribute('disabled');  // Mở khóa ô số lượng
+                        qtyInput.setAttribute('required', 'required');
+                        qtyInput.value = savedQuantity;        // Điền chính xác số lượng từ DB
+                    }
+                });
+            });
+        </script>
     </main>
 </div>
 </body>

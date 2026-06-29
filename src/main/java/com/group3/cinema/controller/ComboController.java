@@ -2,27 +2,26 @@ package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Combo;
 import com.group3.cinema.service.ComboService;
+import com.group3.cinema.repository.ProductRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @Controller
 @RequestMapping("/admin/combos")
 public class ComboController {
 
     private final ComboService comboService;
+    private final ProductRepository productRepository;
 
-    public ComboController(ComboService comboService) {
+    public ComboController(ComboService comboService, ProductRepository productRepository) {
         this.comboService = comboService;
+        this.productRepository = productRepository;
     }
 
     @GetMapping
@@ -37,32 +36,36 @@ public class ComboController {
     @GetMapping("/create")
     public String createForm(Model model) {
         model.addAttribute("combo", new Combo());
+        model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
         return "combo-create";
     }
 
     @PostMapping("/save")
     public String saveCombo(
-            @ModelAttribute("combo") Combo combo, // Thêm tên định danh "combo" cho chuẩn với HTML
+            @ModelAttribute("combo") Combo combo,
             BindingResult bindingResult,
+            @RequestParam(value = "productIds[]", required = false) List<Long> productIds,
+            @RequestParam(value = "quantities[]", required = false) List<Integer> quantities,
             @RequestParam("imageFile") MultipartFile file,
-            Model model) throws IOException { // THÊM tham số Model vào đây
+            Model model) throws IOException {
 
-        // 1. Kiểm tra trùng tên khi THÊM MỚI
         if (comboService.existsByName(combo.getName())) {
             bindingResult.rejectValue("name", "error.combo", "Tên gói combo này đã tồn tại trong hệ thống!");
         }
 
-        // Nếu có lỗi, trả về form create (lúc này object combo lỗi vẫn được giữ lại tự động)
         if (bindingResult.hasErrors()) {
+            model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
             return "combo-create";
         }
 
-        comboService.createCombo(combo, file);
+        comboService.createCombo(combo, productIds, quantities, file);
         return "redirect:/admin/combos";
     }
 
+    // TRẢ LẠI HÀM GETMAPPING CHUẨN ĐỂ KHỚP URL NÚT XÓA TRÊN GIAO DIỆN HTML
     @GetMapping("/delete/{id}")
     public String deleteCombo(@PathVariable("id") Long id) {
+        // Gọi sang Service xử lý xóa mềm, không ôm repo xử lý trực tiếp ở đây
         comboService.deleteCombo(id);
         return "redirect:/admin/combos";
     }
@@ -70,29 +73,31 @@ public class ComboController {
     @GetMapping("/edit/{id}")
     public String editForm(@PathVariable("id") Long id, Model model) {
         model.addAttribute("combo", comboService.getCombo(id));
+        model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
         return "combo-edit";
     }
 
     @PostMapping("/update")
     public String updateCombo(
-            @ModelAttribute("combo") Combo combo, // Thêm tên định danh "combo"
+            @ModelAttribute("combo") Combo combo,
             BindingResult bindingResult,
+            @RequestParam(value = "productIds[]", required = false) List<Long> productIds,
+            @RequestParam(value = "quantities[]", required = false) List<Integer> quantities,
             @RequestParam("imageFile") MultipartFile file,
-            Model model) throws IOException { // THÊM tham số Model vào đây
+            Model model) throws IOException {
 
-        // 2. Kiểm tra trùng tên khi CẬP NHẬT (Trừ chính ID đang sửa ra)
         if (comboService.existsByNameAndIdNot(combo.getName(), combo.getId())) {
             bindingResult.rejectValue("name", "error.combo", "Tên gói combo này đã bị trùng với một combo khác!");
         }
 
-        // Nếu có lỗi trùng tên, phải nạp lại dữ liệu cũ (như đường dẫn ảnh) để giao diện edit không bị trống ảnh
         if (bindingResult.hasErrors()) {
             Combo oldCombo = comboService.getCombo(combo.getId());
-            combo.setImage(oldCombo.getImage()); // Giữ lại ảnh cũ của combo hiển thị lên màn hình edit
+            combo.setImage(oldCombo.getImage());
+            model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
             return "combo-edit";
         }
 
-        comboService.updateCombo(combo, file);
+        comboService.updateCombo(combo, productIds, quantities, file);
         return "redirect:/admin/combos";
     }
 }

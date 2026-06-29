@@ -4,31 +4,30 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "combos")
-public class Combo {
+@Table(name = "products")
+public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Tên combo không được để trống")
-    @Size(max = 150, message = "Tên combo không được vượt quá 150 ký tự")
-    @Column(name = "combo_name", nullable = false, length = 150, columnDefinition = "NVARCHAR(150)")
+    @NotBlank(message = "Tên món không được để trống")
+    @Size(max = 150, message = "Tên món không được vượt quá 150 ký tự")
+    @Column(name = "product_name", nullable = false, length = 150, columnDefinition = "NVARCHAR(150)")
     private String name;
 
-    @NotNull(message = "Giá bán combo không được để trống")
-    @DecimalMin(value = "0.0", inclusive = true, message = "Giá combo không được nhỏ hơn 0")
+    @NotNull(message = "Giá bán không được để trống")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Giá bán không được nhỏ hơn 0")
     @Column(name = "price", nullable = false, precision = 15, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "image_url", length = 255, columnDefinition = "NVARCHAR(255)")
-    private String image;
+    @Size(max = 255, message = "Mô tả không được vượt quá 255 ký tự")
+    @Column(name = "description", length = 255, columnDefinition = "NVARCHAR(255)")
+    private String description;
 
-    @NotBlank(message = "Vui lòng chọn trạng thái mở bán")
+    @NotBlank(message = "Vui lòng chọn trạng thái kinh doanh")
     @Size(max = 20)
     @Column(name = "status", nullable = false, length = 20, columnDefinition = "NVARCHAR(20)")
     private String status = "ACTIVE"; // ACTIVE | INACTIVE
@@ -38,10 +37,6 @@ public class Combo {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    // Liên kết Một-Nhiều xuốn bảng chi tiết (Thay thế hoàn toàn cho description dạng chữ cũ)
-    @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ComboDetail> comboDetails = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
@@ -67,8 +62,8 @@ public class Combo {
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
 
-    public String getImage() { return image; }
-    public void setImage(String image) { this.image = image; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
@@ -78,7 +73,4 @@ public class Combo {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
-    public List<ComboDetail> getComboDetails() { return comboDetails; }
-    public void setComboDetails(List<ComboDetail> comboDetails) { this.comboDetails = comboDetails; }
 }

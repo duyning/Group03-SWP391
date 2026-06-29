@@ -37,7 +37,7 @@
             margin-bottom: 8px;
         }
         .required {
-            color: #dc3545; /* Đổi sang màu đỏ để nổi bật trường bắt buộc */
+            color: #dc3545;
             font-weight: bold;
         }
         .form-control, .form-select {
@@ -53,6 +53,30 @@
         }
         .form-control::placeholder {
             color: #94a3b8;
+        }
+
+        /* Danh sách chọn món lẻ */
+        .product-selection-list {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+        .product-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        .product-qty-input {
+            width: 80px;
+            padding: 4px 8px;
         }
 
         /* Tùy biến input file */
@@ -120,7 +144,8 @@
                 <form th:action="@{/admin/combos/save}"
                       th:object="${combo}"
                       method="post"
-                      enctype="multipart/form-data">
+                      enctype="multipart/form-data"
+                      id="comboForm">
 
                     <div class="mb-4">
                         <label class="form-label">
@@ -153,14 +178,46 @@
 
                     <div class="mb-4">
                         <label class="form-label">
-                            Chi tiết thành phần combo
+                            Thành phần gói bắp nước (Chọn từ Menu lẻ)
                             <span class="required">*</span>
                         </label>
-                        <textarea class="form-control"
-                                  rows="3"
-                                  th:field="*{description}"
-                                  maxlength="255"
-                                  placeholder="Ví dụ: 1 bắp ngọt lớn + 1 nước ngọt ly lớn..." required></textarea>
+
+                        <div class="product-selection-list">
+                            <div th:if="${not #lists.isEmpty(products)}">
+                                <div class="product-item" th:each="prod : ${products}">
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input product-checkbox"
+                                               type="checkbox"
+                                               name="productIds[]"
+                                               th:value="${prod.id}"
+                                               th:id="'prod-' + ${prod.id}"
+                                               onchange="toggleQuantityInput(this)">
+                                        <label class="form-check-label ms-1" th:for="'prod-' + ${prod.id}" th:text="${prod.name}">
+                                            Tên sản phẩm lẻ
+                                        </label>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small text-muted">SL:</span>
+                                        <input type="number"
+                                               name="quantities[]"
+                                               class="form-control form-control-sm product-qty-input"
+                                               min="1"
+                                               max="20"
+                                               value="1"
+                                               disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div th:unless="${not #lists.isEmpty(products)}" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-triangle-exclamation text-warning mb-2 fs-4"></i>
+                                <p class="mb-2 small fw-semibold text-secondary">Menu món lẻ hiện tại đang trống hoặc ngừng kinh doanh!</p>
+                                <a th:href="@{/admin/products}" class="btn btn-sm btn-outline-primary py-1 px-3" style="font-size: 0.82rem;">
+                                    <i class="fa-solid fa-plus-circle me-1"></i>Thêm món lẻ ngay
+                                </a>
+                            </div>
+                        </div>
+                        <div id="product-error-msg" class="text-danger small mt-1" style="display: none;">Vui lòng chọn ít nhất một món cho Combo!</div>
                     </div>
 
                     <div class="mb-4">
@@ -187,7 +244,7 @@
                     </div>
 
                     <div class="d-flex gap-3">
-                        <button type="submit" class="btn-submit">
+                        <button type="submit" class="btn-submit" th:disabled="${#lists.isEmpty(products)}">
                             <i class="fa-solid fa-save"></i>
                             Lưu combo
                         </button>
@@ -202,6 +259,34 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            function toggleQuantityInput(checkbox) {
+                const row = checkbox.closest('.product-item');
+                const qtyInput = row.querySelector('.product-qty-input');
+
+                if (checkbox.checked) {
+                    qtyInput.removeAttribute('disabled');
+                    qtyInput.setAttribute('required', 'required');
+                } else {
+                    qtyInput.setAttribute('disabled', 'disabled');
+                    qtyInput.removeAttribute('required');
+                    qtyInput.value = "1";
+                }
+            }
+
+            document.getElementById('comboForm').addEventListener('submit', function (e) {
+                const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+                const errorMsg = document.getElementById('product-error-msg');
+
+                if (checkedBoxes.length === 0) {
+                    e.preventDefault();
+                    errorMsg.style.display = 'block';
+                } else {
+                    errorMsg.style.display = 'none';
+                }
+            });
+        </script>
     </main>
 </div>
 </body>

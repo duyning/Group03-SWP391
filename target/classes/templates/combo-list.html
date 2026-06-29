@@ -28,7 +28,7 @@
 
         .page-title {
             font-weight: 700;
-            color: #1a365d; /* Màu xanh đậm thương hiệu đồng bộ */
+            color: #1a365d;
             font-size: 1.6rem;
             margin: 0;
         }
@@ -78,6 +78,26 @@
         }
         .btn-create:hover {
             background-color: #1d4ed8;
+            color: white;
+        }
+
+        /* NÚT QUẢN LÝ MÓN LẺ MỚI THÊM */
+        .btn-menu-list {
+            background-color: #64748b;
+            color: white;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95rem;
+            transition: background-color 0.2s;
+        }
+        .btn-menu-list:hover {
+            background-color: #475569;
             color: white;
         }
 
@@ -146,7 +166,7 @@
 
         .price-text {
             font-weight: 700;
-            color: #e11d48; /* Màu đỏ nổi bật cho giá tiền */
+            color: #e11d48;
         }
 
         /* Badge Trạng thái */
@@ -172,134 +192,144 @@
     <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('combos')}"></aside>
     <main class="admin-main">
 
-<div class="container">
+        <div class="container">
 
-    <div class="page-card">
+            <div class="page-card">
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="page-title">
-                <i class="fa-solid fa-bucket me-2 text-primary"></i>
-                Quản lý Combo Bắp Nước
-            </h2>
-            <a th:href="@{/admin/combos/create}" class="btn-create">
-                <i class="fa-solid fa-plus"></i>
-                Thêm combo mới
-            </a>
-        </div>
-
-        <div class="filter-wrapper mb-4">
-            <form th:action="@{/admin/combos}" method="GET" class="row g-3 align-items-end">
-
-                <div class="col-md-6">
-                    <label class="form-label">Tìm kiếm tên combo</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white text-muted" style="border-color: #cbd5e1;"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" name="keyword" th:value="${param.keyword}" class="form-control" placeholder="Nhập tên combo bắp nước cần tìm...">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="page-title">
+                        <i class="fa-solid fa-bucket me-2 text-primary"></i>
+                        Quản lý Combo Bắp Nước
+                    </h2>
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/admin/products}" class="btn-menu-list">
+                            <i class="fa-solid fa-utensils"></i>
+                            Quản lý món lẻ
+                        </a>
+                        <a th:href="@{/admin/combos/create}" class="btn-create">
+                            <i class="fa-solid fa-plus"></i>
+                            Thêm combo mới
+                        </a>
                     </div>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Trạng thái</label>
-                    <select name="status" class="form-select">
-                        <option value="">-- Tất cả trạng thái --</option>
-                        <option value="ACTIVE" th:selected="${param.status == 'ACTIVE'}">Đang kinh doanh</option>
-                        <option value="INACTIVE" th:selected="${param.status == 'INACTIVE'}">Ngừng bán</option>
-                    </select>
-                </div>
+                <div class="filter-wrapper mb-4">
+                    <form th:action="@{/admin/combos}" method="GET" class="row g-3 align-items-end">
 
-                <div class="col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn-filter w-100 d-inline-flex align-items-center justify-content-center gap-1">
-                        <i class="fa-solid fa-filter"></i> Lọc
-                    </button>
-                    <a th:href="@{/admin/combos}" class="btn-reset w-100 d-inline-flex align-items-center justify-content-center" title="Xóa bộ lọc">
-                        <i class="fa-solid fa-rotate"></i>
-                    </a>
-                </div>
-
-            </form>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                <tr>
-                    <th width="70">ID</th>
-                    <th width="90">Hình ảnh</th>
-                    <th>Tên Combo & Chi tiết</th>
-                    <th width="150" class="text-end">Giá bán</th>
-                    <th width="180" class="text-center">Trạng thái</th>
-                    <th width="150" class="text-end">Thao tác</th>
-                </tr>
-                </thead>
-
-                <tbody>
-                <tr th:each="combo : ${combos}">
-                    <td class="text-secondary fw-semibold" th:text="${combo.id}">1</td>
-
-                    <td>
-                        <img th:src="${combo.image != null ? combo.image : 'https://placehold.co/100x100?text=Combo'}"
-                             class="combo-thumbnail" alt="Combo Image">
-                    </td>
-
-                    <td>
-                        <p class="combo-name" th:text="${combo.name}">Combo Solo X</p>
-                        <div class="combo-items-details" th:text="${combo.description}">
-                            1 Bắp ngọt lớn 60oz + 1 Nước ngọt ly lớn 32oz (Pepsi/Coke)
+                        <div class="col-md-6">
+                            <label class="form-label">Tìm kiếm tên combo</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white text-muted" style="border-color: #cbd5e1;"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" name="keyword" th:value="${param.keyword}" class="form-control" placeholder="Nhập tên combo bắp nước cần tìm...">
+                            </div>
                         </div>
-                    </td>
 
-                    <td class="text-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Trạng thái</label>
+                            <select name="status" class="form-select">
+                                <option value="">-- Tất cả trạng thái --</option>
+                                <option value="ACTIVE" th:selected="${param.status == 'ACTIVE'}">Đang kinh doanh</option>
+                                <option value="INACTIVE" th:selected="${param.status == 'INACTIVE'}">Ngừng bán</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn-filter w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                                <i class="fa-solid fa-filter"></i> Lọc
+                            </button>
+                            <a th:href="@{/admin/combos}" class="btn-reset w-100 d-inline-flex align-items-center justify-content-center" title="Xóa bộ lọc">
+                                <i class="fa-solid fa-rotate"></i>
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th width="70">ID</th>
+                            <th width="90">Hình ảnh</th>
+                            <th>Tên Combo & Chi tiết</th>
+                            <th width="150" class="text-end">Giá bán</th>
+                            <th width="180" class="text-center">Trạng thái</th>
+                            <th width="150" class="text-end">Thao tác</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        <tr th:each="combo : ${combos}">
+                            <td class="text-secondary fw-semibold" th:text="${combo.id}">1</td>
+
+                            <td>
+                                <img th:src="${combo.image != null ? combo.image : 'https://placehold.co/100x100?text=Combo'}"
+                                     class="combo-thumbnail" alt="Combo Image">
+                            </td>
+
+                            <td>
+                                <p class="combo-name" th:text="${combo.name}">Combo Solo X</p>
+
+                                <div class="combo-items-details">
+                            <span th:each="detail, iterStat : ${combo.comboDetails}">
+                                <span th:text="${detail.quantity} + ' ' + ${detail.product.name}"></span>
+                                <span th:if="${!iterStat.last}"> + </span>
+                            </span>
+                                    <span th:if="${#lists.isEmpty(combo.comboDetails)}" class="text-warning small italic">(Chưa thiết lập món lẻ)</span>
+                                </div>
+                            </td>
+
+                            <td class="text-end">
                         <span class="price-text" th:text="${#numbers.formatDecimal(combo.price, 0, 'POINT', 0, 'COMMA')} + ' đ'">
                             85.000 đ
                         </span>
-                    </td>
+                            </td>
 
-                    <td class="text-center">
-                        <div th:switch="${combo.status}">
+                            <td class="text-center">
+                                <div th:switch="${combo.status}">
                             <span th:case="'ACTIVE'" class="badge badge-status bg-success text-white">
                                 <i class="fa-solid fa-check-circle me-1"></i> Đang bán
                             </span>
-                            <span th:case="'INACTIVE'" class="badge badge-status bg-secondary text-white">
+                                    <span th:case="'INACTIVE'" class="badge badge-status bg-secondary text-white">
                                 <i class="fa-solid fa-ban me-1"></i> Ngừng bán
                             </span>
-                            <span th:case="*" class="badge badge-status bg-light text-dark" th:text="${combo.status}">Unknown</span>
-                        </div>
-                    </td>
+                                    <span th:case="*" class="badge badge-status bg-light text-dark" th:text="${combo.status}">Unknown</span>
+                                </div>
+                            </td>
 
-                    <td class="text-end">
-                        <div class="d-inline-flex">
-                            <a th:href="@{/admin/combos/edit/{id}(id=${combo.id})}"
-                               class="btn btn-warning text-white btn-sm action-btn"
-                               title="Chỉnh sửa combo">
-                                <i class="fa-solid fa-pen"></i>
-                            </a>
+                            <td class="text-end">
+                                <div class="d-inline-flex">
+                                    <a th:href="@{/admin/combos/edit/{id}(id=${combo.id})}"
+                                       class="btn btn-warning text-white btn-sm action-btn"
+                                       title="Chỉnh sửa combo">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
 
-                            <a th:href="@{/admin/combos/delete/{id}(id=${combo.id})}"
-                               class="btn btn-danger btn-sm"
-                               title="Xóa combo"
-                               onclick="return confirm('Bạn có chắc chắn muốn xóa gói combo bắp nước này không?')">
-                                <i class="fa-solid fa-trash"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
+                                    <a th:href="@{/admin/combos/delete/{id}(id=${combo.id})}"
+                                       class="btn btn-danger btn-sm"
+                                       title="Xóa combo"
+                                       onclick="return confirm('Bạn có chắc chắn muốn xóa gói combo bắp nước này không?')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
 
-                <tr th:if="${#lists.isEmpty(combos)}">
-                    <td colspan="6" class="text-center text-muted py-5">
-                        <i class="fa-solid fa-box-open fs-2 d-block mb-2 text-secondary" style="opacity: 0.5;"></i>
-                        Không tìm thấy gói combo bắp nước nào.
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+                        <tr th:if="${#lists.isEmpty(combos)}">
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="fa-solid fa-box-open fs-2 d-block mb-2 text-secondary" style="opacity: 0.5;"></i>
+                                Không tìm thấy gói combo bắp nước nào.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
         </div>
 
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     </main>
 </div>
 </body>
 </html>
-
