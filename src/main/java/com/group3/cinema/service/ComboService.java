@@ -128,8 +128,16 @@ public class ComboService {
     }
 
     @Transactional
+    // Trong ComboService.java
     public void deleteCombo(Long id) {
-        comboRepository.deleteById(id);
+        Combo combo = comboRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy combo với ID: " + id));
+
+        // Chỉ cập nhật trạng thái thành INACTIVE
+        combo.setStatus("INACTIVE");
+
+        // Lưu lại thay đổi
+        comboRepository.save(combo);
     }
 
     private void updateImageIfPresent(Combo combo, MultipartFile file) throws IOException {

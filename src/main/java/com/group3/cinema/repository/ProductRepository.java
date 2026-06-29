@@ -2,6 +2,8 @@ package com.group3.cinema.repository;
 
 import com.group3.cinema.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -14,5 +16,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     List<Product> findByStatus(String status);
 
-    // Nếu cậu dùng Enum cho status ở file Product gốc thì đổi String thành Product.ProductStatus nhé!
+    /**
+     * Tìm kiếm món lẻ theo từ khóa (tên món) và trạng thái.
+     * Thỏa mãn bộ lọc tìm kiếm tại trang danh sách (product-list.html).
+     */
+    @Query("SELECT p FROM Product p WHERE " +
+            "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+            "(:status IS NULL OR p.status = :status) " +
+            "ORDER BY p.createdAt DESC")
+    List<Product> searchProducts(@Param("keyword") String keyword, @Param("status") String status);
 }

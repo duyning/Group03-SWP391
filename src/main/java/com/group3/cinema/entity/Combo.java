@@ -17,7 +17,7 @@ public class Combo {
 
     @NotBlank(message = "Tên combo không được để trống")
     @Size(max = 150, message = "Tên combo không được vượt quá 150 ký tự")
-    @Column(name = "combo_name", nullable = false, length = 150, columnDefinition = "NVARCHAR(150)")
+    @Column(name = "combo_name", nullable = false, length = 150, columnDefinition = "NVARCHAR(150)") // Đảm bảo đúng tên 'combo_name'
     private String name;
 
     @NotNull(message = "Giá bán combo không được để trống")
@@ -40,7 +40,8 @@ public class Combo {
     private LocalDateTime updatedAt;
 
     // Liên kết Một-Nhiều xuốn bảng chi tiết (Thay thế hoàn toàn cho description dạng chữ cũ)
-    @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Sửa FetchType.LAZY thành EAGER
+    @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ComboDetail> comboDetails = new ArrayList<>();
 
     @PrePersist

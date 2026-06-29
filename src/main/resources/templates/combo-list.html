@@ -9,179 +9,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
-        body {
-            background-color: #f1f3f7;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #2d3748;
-            padding: 30px 15px;
-        }
-
-        .page-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            padding: 35px;
-            max-width: 1100px;
-            margin: 0 auto;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .page-title {
-            font-weight: 700;
-            color: #1a365d;
-            font-size: 1.6rem;
-            margin: 0;
-        }
-
-        /* Thanh bộ lọc */
-        .filter-wrapper {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 20px;
-        }
-
-        .form-label {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #2d3748;
-            margin-bottom: 8px;
-        }
-
-        .form-control, .form-select {
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 10px 14px;
-            font-size: 0.95rem;
-            color: #334155;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
-        }
-
-        /* Nút Tạo Combo mới */
-        .btn-create {
-            background-color: #2563eb;
-            color: white;
-            font-weight: 600;
-            padding: 10px 24px;
-            border-radius: 6px;
-            border: none;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.95rem;
-            transition: background-color 0.2s;
-        }
-        .btn-create:hover {
-            background-color: #1d4ed8;
-            color: white;
-        }
-
-        /* NÚT QUẢN LÝ MÓN LẺ MỚI THÊM */
-        .btn-menu-list {
-            background-color: #64748b;
-            color: white;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 6px;
-            border: none;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.95rem;
-            transition: background-color 0.2s;
-        }
-        .btn-menu-list:hover {
-            background-color: #475569;
-            color: white;
-        }
-
-        /* Nút trong bộ lọc */
-        .btn-filter {
-            background-color: #2563eb;
-            color: white;
-            font-weight: 600;
-            padding: 10px;
-            border-radius: 6px;
-            border: none;
-            transition: background-color 0.2s;
-        }
-        .btn-filter:hover {
-            background-color: #1d4ed8;
-        }
-
-        .btn-reset {
-            background-color: #e2e8f0;
-            color: #334155;
-            font-weight: 600;
-            padding: 10px;
-            border-radius: 6px;
-            border: none;
-            text-decoration: none;
-            transition: background-color 0.2s;
-        }
-        .btn-reset:hover {
-            background-color: #cbd5e1;
-            color: #334155;
-        }
-
-        /* Bảng danh sách */
-        .table thead {
-            background-color: #f8fafc;
-        }
-
-        .table th {
-            font-weight: 600;
-            color: #475569;
-            font-size: 0.88rem;
-            padding: 12px 10px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .combo-thumbnail {
-            width: 55px;
-            height: 55px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-        }
-
-        .combo-name {
-            color: #2d3748;
-            font-weight: 600;
-            margin: 0;
-            font-size: 0.95rem;
-        }
-
-        .combo-items-details {
-            font-size: 0.82rem;
-            color: #64748b;
-            margin-top: 2px;
-        }
-
-        .price-text {
-            font-weight: 700;
-            color: #e11d48;
-        }
-
-        /* Badge Trạng thái */
-        .badge-status {
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 4px;
-        }
-
-        .action-btn {
-            margin-right: 4px;
-            padding: 6px 10px;
-            border-radius: 4px;
-        }
+        body { background-color: #f1f3f7; font-family: 'Segoe UI', sans-serif; color: #2d3748; padding: 30px 15px; }
+        .page-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 35px; max-width: 1100px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .page-title { font-weight: 700; color: #1a365d; font-size: 1.6rem; margin: 0; }
+        .filter-wrapper { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 20px; }
+        .btn-create { background-color: #2563eb; color: white; padding: 10px 24px; border-radius: 6px; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+        .btn-create:hover { background-color: #1d4ed8; color: white; }
+        .btn-menu-list { background-color: #64748b; color: white; padding: 10px 20px; border-radius: 6px; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+        .btn-menu-list:hover { background-color: #475569; color: white; }
+        .table thead { background-color: #f8fafc; }
+        .combo-thumbnail { width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; }
+        .combo-name { color: #2d3748; font-weight: 600; margin: 0; font-size: 0.95rem; }
+        .combo-items-details { font-size: 0.82rem; color: #64748b; margin-top: 2px; }
+        .price-text { font-weight: 700; color: #e11d48; }
+        .badge-status { font-size: 0.8rem; font-weight: 600; padding: 6px 12px; border-radius: 4px; }
     </style>
     <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
     <link rel="stylesheet" th:href="@{/css/admin-content.css}">
@@ -191,11 +32,8 @@
 <div class="admin-layout">
     <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('combos')}"></aside>
     <main class="admin-main">
-
         <div class="container">
-
             <div class="page-card">
-
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="page-title">
                         <i class="fa-solid fa-bucket me-2 text-primary"></i>
@@ -203,45 +41,32 @@
                     </h2>
                     <div class="d-flex gap-2">
                         <a th:href="@{/admin/products}" class="btn-menu-list">
-                            <i class="fa-solid fa-utensils"></i>
-                            Quản lý món lẻ
+                            <i class="fa-solid fa-utensils"></i> Món lẻ
                         </a>
                         <a th:href="@{/admin/combos/create}" class="btn-create">
-                            <i class="fa-solid fa-plus"></i>
-                            Thêm combo mới
+                            <i class="fa-solid fa-plus"></i> Thêm combo
                         </a>
                     </div>
                 </div>
 
                 <div class="filter-wrapper mb-4">
                     <form th:action="@{/admin/combos}" method="GET" class="row g-3 align-items-end">
-
                         <div class="col-md-6">
-                            <label class="form-label">Tìm kiếm tên combo</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white text-muted" style="border-color: #cbd5e1;"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                <input type="text" name="keyword" th:value="${param.keyword}" class="form-control" placeholder="Nhập tên combo bắp nước cần tìm...">
-                            </div>
+                            <label class="form-label">Tìm kiếm</label>
+                            <input type="text" name="keyword" th:value="${param.keyword}" class="form-control" placeholder="Nhập tên combo...">
                         </div>
-
                         <div class="col-md-4">
                             <label class="form-label">Trạng thái</label>
                             <select name="status" class="form-select">
-                                <option value="">-- Tất cả trạng thái --</option>
-                                <option value="ACTIVE" th:selected="${param.status == 'ACTIVE'}">Đang kinh doanh</option>
+                                <option value="">-- Tất cả --</option>
+                                <option value="ACTIVE" th:selected="${param.status == 'ACTIVE'}">Đang bán</option>
                                 <option value="INACTIVE" th:selected="${param.status == 'INACTIVE'}">Ngừng bán</option>
                             </select>
                         </div>
-
                         <div class="col-md-2 d-flex gap-2">
-                            <button type="submit" class="btn-filter w-100 d-inline-flex align-items-center justify-content-center gap-1">
-                                <i class="fa-solid fa-filter"></i> Lọc
-                            </button>
-                            <a th:href="@{/admin/combos}" class="btn-reset w-100 d-inline-flex align-items-center justify-content-center" title="Xóa bộ lọc">
-                                <i class="fa-solid fa-rotate"></i>
-                            </a>
+                            <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter"></i> Lọc</button>
+                            <a th:href="@{/admin/combos}" class="btn btn-secondary w-100"><i class="fa-solid fa-rotate"></i></a>
                         </div>
-
                     </form>
                 </div>
 
@@ -249,86 +74,54 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                         <tr>
-                            <th width="70">ID</th>
-                            <th width="90">Hình ảnh</th>
+                            <th>ID</th>
+                            <th>Hình ảnh</th>
                             <th>Tên Combo & Chi tiết</th>
-                            <th width="150" class="text-end">Giá bán</th>
-                            <th width="180" class="text-center">Trạng thái</th>
-                            <th width="150" class="text-end">Thao tác</th>
+                            <th class="text-end">Giá bán</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
                         </tr>
                         </thead>
-
                         <tbody>
                         <tr th:each="combo : ${combos}">
-                            <td class="text-secondary fw-semibold" th:text="${combo.id}">1</td>
-
+                            <td class="fw-semibold text-secondary" th:text="${combo.id}"></td>
                             <td>
-                                <img th:src="${combo.image != null ? combo.image : 'https://placehold.co/100x100?text=Combo'}"
-                                     class="combo-thumbnail" alt="Combo Image">
+                                <img th:src="${combo.image != null && combo.image != '' ? combo.image : 'https://placehold.co/100x100?text=Combo'}"
+                                     class="combo-thumbnail" alt="Image" onerror="this.src='https://placehold.co/100x100?text=Error';">
                             </td>
-
                             <td>
-                                <p class="combo-name" th:text="${combo.name}">Combo Solo X</p>
-
+                                <p class="combo-name" th:text="${combo.name}"></p>
                                 <div class="combo-items-details">
-                            <span th:each="detail, iterStat : ${combo.comboDetails}">
-                                <span th:text="${detail.quantity} + ' ' + ${detail.product.name}"></span>
-                                <span th:if="${!iterStat.last}"> + </span>
-                            </span>
-                                    <span th:if="${#lists.isEmpty(combo.comboDetails)}" class="text-warning small italic">(Chưa thiết lập món lẻ)</span>
+                                        <span th:if="${combo.comboDetails != null}" th:each="detail, iterStat : ${combo.comboDetails}">
+    <span th:if="${detail.product != null}" th:text="${detail.quantity} + 'x ' + ${detail.product.name}"></span>
+    <span th:if="${!iterStat.last}">, </span>
+</span>
                                 </div>
                             </td>
-
                             <td class="text-end">
-                        <span class="price-text" th:text="${#numbers.formatDecimal(combo.price, 0, 'POINT', 0, 'COMMA')} + ' đ'">
-                            85.000 đ
-                        </span>
+                                <span class="price-text"
+                                      th:text="${combo.price != null} ? ${#numbers.formatDecimal(combo.price, 0, 'POINT', 0, 'COMMA')} + ' đ' : '0 đ'">
+</span></span>
                             </td>
-
                             <td class="text-center">
-                                <div th:switch="${combo.status}">
-                            <span th:case="'ACTIVE'" class="badge badge-status bg-success text-white">
-                                <i class="fa-solid fa-check-circle me-1"></i> Đang bán
-                            </span>
-                                    <span th:case="'INACTIVE'" class="badge badge-status bg-secondary text-white">
-                                <i class="fa-solid fa-ban me-1"></i> Ngừng bán
-                            </span>
-                                    <span th:case="*" class="badge badge-status bg-light text-dark" th:text="${combo.status}">Unknown</span>
-                                </div>
+                                <span th:if="${combo.status == 'ACTIVE'}" class="badge badge-status bg-success-subtle text-success">Đang bán</span>
+                                <span th:if="${combo.status == 'INACTIVE'}" class="badge badge-status bg-secondary-subtle text-secondary">Ngừng bán</span>
                             </td>
-
                             <td class="text-end">
-                                <div class="d-inline-flex">
-                                    <a th:href="@{/admin/combos/edit/{id}(id=${combo.id})}"
-                                       class="btn btn-warning text-white btn-sm action-btn"
-                                       title="Chỉnh sửa combo">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </a>
-
-                                    <a th:href="@{/admin/combos/delete/{id}(id=${combo.id})}"
-                                       class="btn btn-danger btn-sm"
-                                       title="Xóa combo"
-                                       onclick="return confirm('Bạn có chắc chắn muốn xóa gói combo bắp nước này không?')">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </a>
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a th:href="@{/admin/combos/edit/{id}(id=${combo.id})}" class="btn btn-outline-warning btn-sm"><i class="fa-solid fa-pen"></i></a>
+                                    <a th:href="@{/admin/combos/delete/{id}(id=${combo.id})}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Xóa combo này?')"><i class="fa-solid fa-trash"></i></a>
                                 </div>
                             </td>
                         </tr>
-
                         <tr th:if="${#lists.isEmpty(combos)}">
-                            <td colspan="6" class="text-center text-muted py-5">
-                                <i class="fa-solid fa-box-open fs-2 d-block mb-2 text-secondary" style="opacity: 0.5;"></i>
-                                Không tìm thấy gói combo bắp nước nào.
-                            </td>
+                            <td colspan="6" class="text-center py-5 text-muted">Không tìm thấy combo nào.</td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
-
             </div>
         </div>
-
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     </main>
 </div>
 </body>

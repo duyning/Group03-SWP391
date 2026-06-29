@@ -49,15 +49,19 @@ public class ComboController {
             @RequestParam("imageFile") MultipartFile file,
             Model model) throws IOException {
 
+        // 1. Kiểm tra logic nghiệp vụ (Tên đã tồn tại)
         if (comboService.existsByName(combo.getName())) {
             bindingResult.rejectValue("name", "error.combo", "Tên gói combo này đã tồn tại trong hệ thống!");
         }
 
+        // 2. Nếu có lỗi (validation hoặc logic), trả về form kèm danh sách sản phẩm
         if (bindingResult.hasErrors()) {
+            // CỰC KỲ QUAN TRỌNG: Phải nạp lại danh sách sản phẩm để bảng chọn món không bị trống
             model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
             return "combo-create";
         }
 
+        // 3. Nếu mọi thứ OK, gọi service lưu dữ liệu
         comboService.createCombo(combo, productIds, quantities, file);
         return "redirect:/admin/combos";
     }

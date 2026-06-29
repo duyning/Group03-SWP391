@@ -4,18 +4,30 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="add, update, edit voucher and add holiday">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/ComboDetail.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Product.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ProductRepository.java" afterDir="false" />
+    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="update combo have menu">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ProductController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ProductService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/product-create.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/product-edit.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/product-list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ComboController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ComboController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Combo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Combo.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ComboRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ComboRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/ComboDetail.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/ComboDetail.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Product.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Product.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ProductRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ProductRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ComboService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ComboService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-create.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-create.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-edit.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/ComboController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/ComboController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Combo.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Combo.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/ComboService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/ComboService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/templates/combo-create.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/combo-create.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/templates/combo-edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/combo-edit.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/templates/combo-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/combo-list.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,9 +37,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="Interface" />
         <option value="HTML File" />
         <option value="Class" />
-        <option value="Interface" />
       </list>
     </option>
   </component>
@@ -137,7 +149,7 @@
       <workItem from="1782351682177" duration="22189000" />
       <workItem from="1782408273647" duration="3111000" />
       <workItem from="1782434497652" duration="2570000" />
-      <workItem from="1782697594492" duration="2365000" />
+      <workItem from="1782697594492" duration="7496000" />
     </task>
     <task id="LOCAL-00001" summary="update validate add combo">
       <option name="closed" value="true" />
@@ -155,7 +167,15 @@
       <option name="project" value="LOCAL" />
       <updated>1782434595574</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="update combo have menu">
+      <option name="closed" value="true" />
+      <created>1782700052158</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1782700052158</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -164,6 +184,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="update validate add combo" />
     <MESSAGE value="add, update, edit voucher and add holiday" />
-    <option name="LAST_COMMIT_MESSAGE" value="add, update, edit voucher and add holiday" />
+    <MESSAGE value="update combo have menu" />
+    <option name="LAST_COMMIT_MESSAGE" value="update combo have menu" />
   </component>
 </project>
