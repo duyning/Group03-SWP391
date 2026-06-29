@@ -33,7 +33,7 @@
                 <a th:href="@{/movies}" th:classappend="${active == 'movies'} ? 'active'">PHIM</a>
                 <a href="#" th:classappend="${active == 'cinema'} ? 'active'">RẠP</a>
                 <a href="#" th:classappend="${active == 'price'} ? 'active'">GIÁ VÉ</a>
-                <a href="#" th:classappend="${active == 'voucher'} ? 'active'">KHO VOUCHER</a>
+                <a th:href="@{/vouchers}" th:classappend="${active == 'voucher'} ? 'active'">KHO VOUCHER</a>
                 <a th:href="@{/posts}" th:classappend="${active == 'posts'} ? 'active'">TIN TỨC</a>
                 <a href="#" th:classappend="${active == 'community'} ? 'active'">CỘNG ĐỒNG</a>
             </nav>

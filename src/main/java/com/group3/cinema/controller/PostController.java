@@ -4,6 +4,7 @@ import com.group3.cinema.entity.Post;
 import com.group3.cinema.service.PostService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,9 +44,17 @@ public class PostController {
 
     @PostMapping("/save")
     public String savePost(
-            @ModelAttribute Post post,
+            @ModelAttribute("post") Post post,
+            BindingResult bindingResult,
             @RequestParam("thumbnailFile") MultipartFile file,
             RedirectAttributes redirectAttributes) throws IOException {
+        if (postService.existsByTitle(post.getTitle())) {
+            bindingResult.rejectValue("title", "error.post", "Tiêu đề bài viết này đã tồn tại trong hệ thống.");
+        }
+        if (bindingResult.hasErrors()) {
+            return "create-post";
+        }
+
         postService.createPost(post, file);
         redirectAttributes.addFlashAttribute("successMessage", "Đã thêm bài viết mới.");
         return "redirect:/admin/posts";
@@ -58,9 +67,21 @@ public class PostController {
     }
 
     @PostMapping("/update")
-    public String updatePost(@ModelAttribute Post post,
-                             RedirectAttributes redirectAttributes) {
-        postService.updatePost(post);
+    public String updatePost(
+            @ModelAttribute("post") Post post,
+            BindingResult bindingResult,
+            @RequestParam(value = "thumbnailFile", required = false) MultipartFile file,
+            RedirectAttributes redirectAttributes) throws IOException {
+        if (postService.existsByTitleAndIdNot(post.getTitle(), post.getId())) {
+            bindingResult.rejectValue("title", "error.post", "Tiêu đề này đã bị trùng với một bài viết khác.");
+        }
+        if (bindingResult.hasErrors()) {
+            Post oldPost = postService.getPost(post.getId());
+            post.setThumbnail(oldPost.getThumbnail());
+            return "post-edit";
+        }
+
+        postService.updatePost(post, file);
         redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật bài viết.");
         return "redirect:/admin/posts";
     }

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beta Cinemas | Ví Voucher Của Tôi</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Be Vietnam Pro", Arial, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8fafc;
+            color: #333;
+            text-rendering: optimizeLegibility;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ================= TOPBAR CHUẨN TRANG CHỦ ================= */
+        .top-bar {
+            background: #0054a6;
+            color: white;
+            padding: 10px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .top-container,
+        .header-container,
+        .content-container,
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .top-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .top-link:hover {
+            text-decoration: underline;
+            color: #ffcc00;
+        }
+
+        .lang-icon {
+            height: 14px;
+            margin-left: 10px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        /* ================= HEADER CHUẨN ĐẦY ĐỦ THANH MENU & SEARCH ================= */
+        .header-main {
+            background: white;
+            padding: 15px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .logo {
+            height: 50px;
+            display: block;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #334155;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.3px;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: #0054a6;
+        }
+
+        .search-form {
+            display: flex;
+            align-items: center;
+            position: relative;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 25px;
+            padding: 4px 6px 4px 16px;
+        }
+
+        .search-form input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 14px;
+            color: #334155;
+            width: 160px;
+            transition: width 0.3s ease;
+        }
+
+        .search-form input:focus {
+            width: 200px;
+        }
+
+        .search-form button {
+            border: none;
+            background: #0054a6;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .search-form button:hover {
+            background: #003d7a;
+        }
+
+        /* ================= TABS KÉN CHUYỂN ĐỔI ================= */
+        .tabs {
+            display: inline-flex;
+            background: #e2e8f0;
+            padding: 6px;
+            border-radius: 30px;
+            margin: 40px auto 35px auto;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+        }
+
+        .tabs a {
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 700;
+            color: #4a5568;
+            padding: 10px 28px;
+            border-radius: 25px;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tabs a:hover {
+            color: #0054a6;
+        }
+
+        .tabs a.active {
+            background: #0054a6;
+            color: white !important;
+            box-shadow: 0 4px 10px rgba(0, 84, 166, 0.2);
+        }
+
+        /* ================= VOUCHER TICKET LAYOUT ================= */
+        .content-container {
+            flex: 1;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 50px;
+        }
+
+        .voucher-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .voucher-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 84, 166, 0.04);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+        }
+
+        .voucher-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 84, 166, 0.1);
+        }
+
+        .voucher-card::before,
+        .voucher-card::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            bottom: 65px;
+            z-index: 2;
+        }
+        .voucher-card::before { left: -11px; }
+        .voucher-card::after { right: -11px; }
+
+        .voucher-main {
+            padding: 24px 24px 20px 24px;
+            flex-grow: 1;
+        }
+
+        .voucher-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 18px;
+            gap: 12px;
+        }
+
+        .voucher-title {
+            font-size: 18px;
+            color: #0054a6;
+            font-weight: 800;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .voucher-code {
+            font-family: 'Courier New', Courier, monospace;
+            background: #eef5fc;
+            color: #0054a6;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 13px;
+            border: 1px dashed rgba(0, 84, 166, 0.25);
+            white-space: nowrap;
+        }
+
+        .voucher-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .voucher-info {
+            font-size: 14px;
+            color: #4a5568;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voucher-info i {
+            color: #a0aec0;
+            width: 16px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .voucher-info b {
+            color: #1a202c;
+            font-weight: 600;
+        }
+
+        .date-red {
+            color: #e53e3e !important;
+            font-weight: 700 !important;
+        }
+
+        .voucher-divider {
+            position: relative;
+            height: 1px;
+            border-top: 2px dashed #e2e8f0;
+            margin: 0 12px;
+        }
+
+        .voucher-action {
+            padding: 16px 24px 24px 24px;
+            background: #fafafa;
+        }
+
+        .btn-use {
+            width: 100%;
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+        }
+
+        .btn-use:hover {
+            background: #16a34a;
+            box-shadow: 0 6px 16px rgba(34, 197, 94, 0.25);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            padding: 80px 15px;
+            font-size: 16px;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* ================= FOOTER CHUẨN BANNER PHÂN CỘT BETA CINEMAS ================= */
+        .footer {
+            background: #0054a6;
+            color: white;
+            padding: 60px 0 30px 0;
+            margin-top: auto;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 40px;
+        }
+
+        .footer-col h4 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 15px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #ffcc00;
+        }
+
+        .footer-col p, .footer-col a {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.8;
+            margin: 0 0 10px 0;
+            text-decoration: none;
+            display: block;
+        }
+
+        .footer-col a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .social-icons a {
+            background: rgba(255, 255, 255, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: background 0.2s;
+        }
+
+        .social-icons a:hover {
+            background: #ffcc00;
+            color: #0054a6;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 20px auto 0 auto;
+            padding: 0 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .header-container { flex-direction: column; gap: 15px; padding: 15px; }
+            .nav-menu { flex-wrap: wrap; justify-content: center; gap: 15px; }
+            .footer-container { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .footer-container { grid-template-columns: 1fr; }
+            .footer-bottom { flex-direction: column; gap: 10px; text-align: center; }
+            .tabs { width: calc(100% - 30px); }
+            .tabs a { flex: 1; padding: 10px 5px; font-size: 13px; justify-content: center; }
+        }
+    </style>
+</head>
+
+<body>
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="top-container">
+        <!-- Kiểm tra Trạng thái thành viên đăng nhập -->
+        <th:block th:if="${user == null}">
+            <a th:href="@{/login}" class="top-link"><i class="fa-solid fa-lock"></i> Đăng nhập</a>
+            <span style="opacity: 0.3">|</span>
+            <a th:href="@{/register}" class="top-link"><i class="fa-solid fa-user-plus"></i> Đăng ký</a>
+        </th:block>
+        <th:block th:if="${user != null}">
+            <span>Xin chào, <b th:text="(${user.name != null} ? ${user.name} : 'Thành viên')">Thành viên</b></span>
+            <span style="opacity: 0.3">|</span>
+            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
+            <span style="opacity: 0.3">|</span>
+            <a th:href="@{/logout}" class="top-link"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
+        </th:block>
+
+        <!-- Chọn ngôn ngữ Đông bộ -->
+        <img src="https://flagcdn.com/w20/vn.png" class="lang-icon" alt="Tiếng Việt">
+        <img src="https://flagcdn.com/w20/us.png" class="lang-icon" alt="Tiếng Anh">
+    </div>
+</div>
+
+<!-- Header Main -->
+<header class="header-main">
+    <div class="header-container">
+        <!-- Logo thương hiệu -->
+        <a th:href="@{/}">
+            <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
+        </a>
+
+        <!-- Đầy đủ menu như trang chủ -->
+        <ul class="nav-menu">
+            <li><a th:href="@{/}">TRANG CHỦ</a></li>
+            <li><a th:href="@{/movies}">PHIM</a></li>
+            <li><a href="#">RẠP</a></li>
+            <li><li><a href="#">GIÁ VÉ</a></li>
+            <li><a th:href="@{/vouchers}" class="active">KHO VOUCHER</a></li>
+            <li><a href="#">TIN TỨC</a></li>
+            <li><a href="#">CỘNG ĐỒNG</a></li>
+        </ul>
+
+        <!-- Thanh Tìm kiếm phim chuẩn form -->
+        <form class="search-form" th:action="@{/search}" method="get">
+            <input type="search" name="keyword" placeholder="Tìm kiếm phim...">
+            <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="content-container">
+    <!-- Cụm chuyển đổi dạng nhộng chuyển vùng -->
+    <div class="tabs">
+        <a th:href="@{/vouchers}">
+            <i class="fa-solid fa-store"></i> Tất Cả Voucher
+        </a>
+        <a th:href="@{/vouchers/my-wallet}" class="active">
+            <i class="fa-solid fa-wallet"></i> Ví Voucher Của Tôi (<span th:text="${myVouchers != null ? myVouchers.size() : 0}">0</span>)
+        </a>
+    </div>
+
+    <!-- Cụm Danh Sách Vé Ưu Đãi -->
+    <section class="voucher-grid" th:if="${myVouchers != null && !myVouchers.isEmpty()}">
+        <article class="voucher-card" th:each="v : ${myVouchers}">
+
+            <div class="voucher-main">
+                <div class="voucher-header">
+                    <h3 class="voucher-title" th:text="${v.title}">Tiêu đề Voucher</h3>
+                    <span class="voucher-code" th:text="${v.code}">CODE123</span>
+                </div>
+
+                <div class="voucher-body">
+                    <p class="voucher-info">
+                        <i class="fa-solid fa-tag"></i>
+                        <span><b>Loại mã:</b>
+                            <span th:text="${v.discountType != null && v.discountType.name() == 'PERCENTAGE' ? 'Giảm theo phần trăm (%)' : 'Giảm theo số tiền cố định'}"></span>
+                        </span>
+                    </p>
+
+                    <!-- Khối PERCENTAGE -->
+                    <th:block th:if="${v.discountType != null && v.discountType.name() == 'PERCENTAGE'}">
+                        <p class="voucher-info">
+                            <i class="fa-solid fa-percent"></i>
+                            <span><b>Mức giảm:</b> Giảm <span th:text="${v.discountValue}">0</span>%</span>
+                        </p>
+                        <p class="voucher-info" th:if="${v.maxDiscountAmount != null}">
+                            <i class="fa-solid fa-circle-arrow-down"></i>
+                            <span><b>Giảm tối đa:</b> <span th:text="${#numbers.formatDecimal(v.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}">0</span>đ</span>
+                        </p>
+                    </th:block>
+
+                    <!-- Khối FIXED -->
+                    <th:block th:if="${v.discountType != null && v.discountType.name() == 'FIXED'}">
+                        <p class="voucher-info">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span><b>Mức giảm:</b> Giảm <span th:text="${#numbers.formatDecimal(v.discountValue, 0, 'COMMA', 0, 'POINT')}">0</span>đ</span>
+                        </p>
+                    </th:block>
+
+                    <p class="voucher-info">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <span><b>Đơn tối thiểu:</b>
+                            <span th:text="${v.minOrderValue != null ? #numbers.formatDecimal(v.minOrderValue, 0, 'COMMA', 0, 'POINT') : '0'}">0</span>đ
+                        </span>
+                    </p>
+
+                    <p class="voucher-info">
+                        <i class="fa-solid fa-film"></i>
+                        <span><b>Áp dụng cho:</b>
+                            <span th:text="${v.serviceScope != null && v.serviceScope.name() == 'ALL' ? 'Toàn bộ dịch vụ' : (v.serviceScope != null && v.serviceScope.name() == 'TICKET' ? 'Vé xem phim' : 'Bắp & Nước')}"></span>
+                        </span>
+                    </p>
+
+                    <p class="voucher-info date-red">
+                        <i class="fa-solid fa-clock"></i>
+                        <span><b>HSD:</b>
+                            <span th:text="${v.endDate != null ? #temporals.format(v.endDate, 'dd/MM/yyyy HH:mm') : 'Vô thời hạn'}">25/06/2026 23:59</span>
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="voucher-divider"></div>
+
+            <div class="voucher-action">
+                <a th:href="@{/movies}" class="btn-use">
+                    <i class="fa-solid fa-paper-plane"></i> Dùng Ngay
+                </a>
+            </div>
+        </article>
+    </section>
+
+    <!-- Trạng thái ví trống -->
+    <div class="empty-state" th:if="${myVouchers == null || myVouchers.isEmpty()}">
+        <i class="fa-regular fa-face-frown" style="font-size: 40px; color: #cbd5e1; margin-bottom: 15px; display: block;"></i>
+        Ví của bạn đang trống. Hãy ra kho voucher để săn mã ưu đãi nhé!
+    </div>
+</main>
+
+<!-- Footer Đầy Đủ Phân Hạng Doanh Nghiệp -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-col">
+            <h4>BETA CINEMAS</h4>
+            <p>Hệ thống rạp chiếu phim giá rẻ tối ưu hàng đầu dành cho giới trẻ và gia đình Việt Nam.</p>
+            <div class="social-icons">
+                <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="#"><i class="fa-brands fa-youtube"></i></a>
+                <a href="#"><i class="fa-brands fa-tiktok"></i></a>
+                <a href="#"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+        </div>
+        <div class="footer-col">
+            <h4>CHÍNH SÁCH</h4>
+            <a href="#">Điều khoản sử dụng</a>
+            <a href="#">Chính sách thanh toán</a>
+            <a href="#">Chính sách bảo mật</a>
+            <a href="#">Câu hỏi thường gặp</a>
+        </div>
+        <div class="footer-col">
+            <h4>LIÊN HỆ</h4>
+            <p><b>Hotline:</b> 1900 636807</p>
+            <p><b>Email:</b> feedback@betacinemas.vn</p>
+            <p><b>Giờ làm việc:</b> 8:00 - 22:00</p>
+        </div>
+        <div class="footer-col">
+            <h4>KẾT NỐI</h4>
+            <p>CÔNG TY CỔ PHẦN BETA MEDIA</p>
+            <p style="font-size: 12px; color: rgba(255,255,255,0.5)">Tầng 3, tòa nhà GP Invest, số 170 Đê La Thành, Ô Chợ Dừa, Đống Đa, Hà Nội.</p>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <span>&copy; 2026 Beta Cinemas. Toàn bộ bản quyền được bảo lưu.</span>
+        <span>Phát triển bởi Group03_SWP391</span>
+    </div>
+</footer>
+</body>
+
+</html>
