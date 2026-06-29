@@ -1,6 +1,14 @@
 /*
  * Updated on 2026-06-04: Added project file ownership metadata.
  * Created by: NinhDD - HE186113
+ * Updated on 2026-06-23 by: TrienLX
+ * Chi tiết thay đổi:
+ * - [SỬA - TrienLX - 2026-06-23] Thêm bước fixMovieStatusConstraint() để xóa constraint cũ
+ *   CK__movie__status__534D60F1 (chỉ cho phép NOW_SHOWING, COMING_SOON, SPECIAL_SCREENING)
+ *   và tạo lại constraint mới bao gồm cả giá trị STOPPED.
+ *   Lý do: Hibernate tự sinh constraint khi khởi tạo schema từ enum cũ (chỉ 3 giá trị).
+ *   Khi thêm STOPPED vào enum Java mà không cập nhật constraint DB sẽ gây lỗi
+ *   DataIntegrityViolationException mỗi khi scheduler tự động ẩn phim hết hạn.
  */
 package com.group3.cinema.config;
 
@@ -29,10 +37,76 @@ public class RoomUnicodeMigration {
             createComboCatalogTablesIfMissing();
             migrateComboPricingColumns();
             seedDefaultFoodItems();
+            addShowtimeOverrideColumnIfMissing();
+            addTicketBasePriceColumnIfMissing();
+            migrateTicketColumns();
             migrateTextColumns();
             normalizeVietnameseValues();
+            // [SỬA - TrienLX - 2026-06-23]: Sửa constraint kiểm tra cột status của bảng movie
+            fixMovieStatusConstraint();
+            // [THÊM - TrienLX - 2026-06-25]: Seed dữ liệu mẫu cho ma trận giá vé
+            seedPricingConfigs();
         } catch (Exception e) {
             log.warn("Không thể tự động chuyển cột tiếng Việt sang NVARCHAR: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * [SỬA - TrienLX - 2026-06-25]
+     * Thêm cột base_price vào bảng tickets nếu chưa tồn tại.
+     * Cột này lưu giá gốc (Adult, trước chiết khấu) để tính lại giá đúng khi sửa đối tượng khách hàng.
+     */
+    private void addTicketBasePriceColumnIfMissing() {
+        if (!tableExists("tickets")) return;
+        if (!columnExists("tickets", "base_price")) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE tickets ADD base_price FLOAT NOT NULL DEFAULT 0.0");
+                // Đồng bộ base_price = price cho vé hiện có (trường hợp vé gốc chưa có chiết khấu)
+                jdbcTemplate.execute("UPDATE tickets SET base_price = price WHERE base_price = 0.0");
+                log.info("[TrienLX - 2026-06-25] Đã bổ sung cột base_price cho bảng tickets");
+            } catch (Exception e) {
+                log.warn("[TrienLX - 2026-06-25] Không thể bổ sung cột base_price: {}", e.getMessage());
+            }
+        }
+    }
+
+    private void migrateTicketColumns() {
+        if (!tableExists("tickets")) {
+            return;
+        }
+
+        addColumnIfMissing("tickets", "showtime_id", "BIGINT NULL");
+        addColumnIfMissing("tickets", "seat_id", "BIGINT NULL");
+        addColumnIfMissing("tickets", "seat_number", "NVARCHAR(20) NULL");
+        addColumnIfMissing("tickets", "customer_type", "NVARCHAR(30) NULL");
+
+        alterColumn("tickets", "room_name", "NVARCHAR(100) NULL");
+        alterColumn("tickets", "seat_label", "NVARCHAR(20) NULL");
+        alterColumn("tickets", "seat_number", "NVARCHAR(20) NULL");
+        alterColumn("tickets", "seat_type", "NVARCHAR(30) NULL");
+        alterColumn("tickets", "status", "NVARCHAR(20) NOT NULL");
+        alterColumn("tickets", "payment_method", "NVARCHAR(50) NULL");
+        alterColumn("tickets", "booking_code", "NVARCHAR(50) NULL");
+        alterColumn("tickets", "customer_type", "NVARCHAR(30) NULL");
+
+        try {
+            if (columnExists("tickets", "account_id")) {
+                jdbcTemplate.execute("ALTER TABLE tickets ALTER COLUMN account_id INT NULL");
+            }
+            if (columnExists("tickets", "movie_id")) {
+                jdbcTemplate.execute("ALTER TABLE tickets ALTER COLUMN movie_id INT NULL");
+            }
+            if (columnExists("tickets", "show_date")) {
+                jdbcTemplate.execute("ALTER TABLE tickets ALTER COLUMN show_date DATE NULL");
+            }
+            if (columnExists("tickets", "show_time")) {
+                jdbcTemplate.execute("ALTER TABLE tickets ALTER COLUMN show_time TIME NULL");
+            }
+            if (columnExists("tickets", "booking_time")) {
+                jdbcTemplate.execute("ALTER TABLE tickets ALTER COLUMN booking_time DATETIME2 NULL");
+            }
+        } catch (Exception e) {
+            log.warn("Không thể nới lỏng ràng buộc null cho bảng tickets: {}", e.getMessage());
         }
     }
 
@@ -54,6 +128,28 @@ public class RoomUnicodeMigration {
                 log.info("Đã bổ sung cột producer cho bảng movie");
             } catch (Exception e) {
                 log.warn("Không thể bổ sung cột producer: {}", e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * [SỬA - TrienLX - 2026-06-23]
+     * Thêm cột is_override vào bảng showtimes nếu chưa tồn tại.
+     * Cột này dùng để đánh dấu các suất chiếu đã được Admin điều chỉnh riêng
+     * so với lịch gốc (isOverride = true), giúp phân biệt trực quan trên giao diện
+     * và tránh ghi đè khi cập nhật nhóm lịch chiếu.
+     * DEFAULT = 0 (false) để tất cả suất chiếu cũ mặc định là "chưa điều chỉnh".
+     */
+    private void addShowtimeOverrideColumnIfMissing() {
+        if (!tableExists("showtimes")) {
+            return;
+        }
+        if (!columnExists("showtimes", "is_override")) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE showtimes ADD is_override BIT NOT NULL DEFAULT 0");
+                log.info("[TrienLX - 2026-06-23] Đã bổ sung cột is_override cho bảng showtimes");
+            } catch (Exception e) {
+                log.warn("[TrienLX - 2026-06-23] Không thể bổ sung cột is_override: {}", e.getMessage());
             }
         }
     }
@@ -204,6 +300,74 @@ public class RoomUnicodeMigration {
         alterColumn("banners", "page", "NVARCHAR(20) NOT NULL");
     }
 
+    /**
+     * [SỬA - TrienLX - 2026-06-23]
+     * Xóa constraint CHECK cũ trên cột movie.status (do Hibernate tự sinh khi khởi tạo
+     * schema lần đầu với enum chỉ có 3 giá trị: NOW_SHOWING, COMING_SOON, SPECIAL_SCREENING)
+     * rồi tạo lại constraint mới có đầy đủ 4 giá trị bao gồm cả STOPPED.
+     *
+     * Nếu constraint cũ không tồn tại (đã bị xóa hoặc chưa bao giờ được tạo),
+     * bước này sẽ bỏ qua mà không gây lỗi.
+     * Nếu constraint mới đã tồn tại, bước tạo mới cũng sẽ bỏ qua.
+     */
+    private void fixMovieStatusConstraint() {
+        if (!tableExists("movie")) {
+            return;
+        }
+        try {
+            // Kiểm tra xem constraint cũ có tồn tại không trước khi xóa
+            Integer oldConstraintCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys.check_constraints WHERE name = 'CK__movie__status__534D60F1'",
+                    Integer.class
+            );
+            if (oldConstraintCount != null && oldConstraintCount > 0) {
+                jdbcTemplate.execute("ALTER TABLE movie DROP CONSTRAINT CK__movie__status__534D60F1");
+                log.info("[TrienLX - 2026-06-23] Đã xóa constraint cũ CK__movie__status__534D60F1 khỏi bảng movie");
+            }
+        } catch (Exception e) {
+            log.warn("[TrienLX - 2026-06-23] Không thể xóa constraint cũ CK__movie__status__534D60F1: {}", e.getMessage());
+        }
+
+        try {
+            // Xóa toàn bộ constraint CHECK trên cột status của bảng movie
+            // (trường hợp constraint có tên khác do tên DB khác nhau giữa các môi trường)
+            String dropAllStatusConstraints = """
+                    DECLARE @constraintName NVARCHAR(256)
+                    SELECT @constraintName = name
+                    FROM sys.check_constraints cc
+                    JOIN sys.columns c ON cc.parent_object_id = c.object_id AND cc.parent_column_id = c.column_id
+                    JOIN sys.tables t ON c.object_id = t.object_id
+                    WHERE t.name = 'movie' AND c.name = 'status'
+                    IF @constraintName IS NOT NULL
+                        EXEC('ALTER TABLE movie DROP CONSTRAINT [' + @constraintName + ']')
+                    """;
+            jdbcTemplate.execute(dropAllStatusConstraints);
+            log.info("[TrienLX - 2026-06-23] Đã xóa tất cả CHECK constraint trên cột movie.status (nếu có)");
+        } catch (Exception e) {
+            log.warn("[TrienLX - 2026-06-23] Không thể xóa CHECK constraint trên cột movie.status: {}", e.getMessage());
+        }
+
+        try {
+            // Kiểm tra xem constraint mới đã tồn tại chưa
+            Integer newConstraintCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys.check_constraints WHERE name = 'CK_movie_status_allowed'",
+                    Integer.class
+            );
+            if (newConstraintCount == null || newConstraintCount == 0) {
+                // Tạo constraint mới với đầy đủ 4 giá trị enum bao gồm STOPPED
+                jdbcTemplate.execute(
+                        "ALTER TABLE movie ADD CONSTRAINT CK_movie_status_allowed "
+                        + "CHECK (status IN ('NOW_SHOWING', 'COMING_SOON', 'SPECIAL_SCREENING', 'STOPPED'))"
+                );
+                log.info("[TrienLX - 2026-06-23] Đã tạo constraint mới CK_movie_status_allowed cho bảng movie với đầy đủ 4 giá trị enum");
+            } else {
+                log.info("[TrienLX - 2026-06-23] Constraint CK_movie_status_allowed đã tồn tại, bỏ qua bước tạo mới");
+            }
+        } catch (Exception e) {
+            log.warn("[TrienLX - 2026-06-23] Không thể tạo constraint mới CK_movie_status_allowed: {}", e.getMessage());
+        }
+    }
+
     private void normalizeVietnameseValues() {
         updateIfTableExists("rooms", """
                 UPDATE rooms
@@ -290,5 +454,75 @@ public class RoomUnicodeMigration {
                 WHERE TABLE_NAME = ? AND COLUMN_NAME = ?
                 """, Integer.class, tableName, columnName);
         return count != null && count > 0;
+    }
+
+    /**
+     * [THÊM - TrienLX - 2026-06-25]
+     * Nạp dữ liệu cấu hình mặc định cho ma trận tính giá vé (Base price, phụ thu, chiết khấu).
+     */
+    private void seedPricingConfigs() {
+        try {
+            // 1. Seed ticket_price_configs
+            if (tableExists("ticket_price_configs")) {
+                Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ticket_price_configs", Integer.class);
+                if (count == null || count == 0) {
+                    // Trong tuần
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Suất sớm', '00:00:00', '11:59:59', 50000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Giờ thường', '12:00:00', '16:59:59', 60000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Giờ vàng', '17:00:00', '21:59:59', 75000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Suất khuya', '22:00:00', '23:59:59', 65000.0)");
+                    
+                    // Cuối tuần
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Suất sớm', '00:00:00', '11:59:59', 65000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Giờ thường', '12:00:00', '16:59:59', 80000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Giờ vàng', '17:00:00', '21:59:59', 95000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Suất khuya', '22:00:00', '23:59:59', 85000.0)");
+                    
+                    // Ngày lễ
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Ngày lễ', N'Suất sớm', '00:00:00', '11:59:59', 80000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Ngày lễ', N'Giờ thường', '12:00:00', '16:59:59', 95000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Ngày lễ', N'Giờ vàng', '17:00:00', '21:59:59', 110000.0)");
+                    jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Ngày lễ', N'Suất khuya', '22:00:00', '23:59:59', 100000.0)");
+                    log.info("[TrienLX - 2026-06-25] Đã seed dữ liệu mẫu cho ticket_price_configs");
+                }
+            }
+
+            // 2. Seed seat_type_surcharges
+            if (tableExists("seat_type_surcharges")) {
+                Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM seat_type_surcharges", Integer.class);
+                if (count == null || count == 0) {
+                    jdbcTemplate.execute("INSERT INTO seat_type_surcharges (seat_type_code, surcharge_amount) VALUES ('std', 0.0)");
+                    jdbcTemplate.execute("INSERT INTO seat_type_surcharges (seat_type_code, surcharge_amount) VALUES ('vip', 15000.0)");
+                    jdbcTemplate.execute("INSERT INTO seat_type_surcharges (seat_type_code, surcharge_amount) VALUES ('couple', 30000.0)");
+                    log.info("[TrienLX - 2026-06-25] Đã seed dữ liệu mẫu cho seat_type_surcharges");
+                }
+            }
+
+            // 3. Seed format_surcharges
+            if (tableExists("format_surcharges")) {
+                Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM format_surcharges", Integer.class);
+                if (count == null || count == 0) {
+                    jdbcTemplate.execute("INSERT INTO format_surcharges (format_code, surcharge_amount) VALUES ('2D', 0.0)");
+                    jdbcTemplate.execute("INSERT INTO format_surcharges (format_code, surcharge_amount) VALUES ('3D', 25000.0)");
+                    jdbcTemplate.execute("INSERT INTO format_surcharges (format_code, surcharge_amount) VALUES ('IMAX', 80000.0)");
+                    jdbcTemplate.execute("INSERT INTO format_surcharges (format_code, surcharge_amount) VALUES ('Premium', 50000.0)");
+                    log.info("[TrienLX - 2026-06-25] Đã seed dữ liệu mẫu cho format_surcharges");
+                }
+            }
+
+            // 4. Seed customer_discounts
+            if (tableExists("customer_discounts")) {
+                Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM customer_discounts", Integer.class);
+                if (count == null || count == 0) {
+                    jdbcTemplate.execute("INSERT INTO customer_discounts (customer_type, discount_rate, fixed_price_weekday) VALUES ('ADULT', 0.0, NULL)");
+                    jdbcTemplate.execute("INSERT INTO customer_discounts (customer_type, discount_rate, fixed_price_weekday) VALUES ('STUDENT', 0.20, 55000.0)");
+                    jdbcTemplate.execute("INSERT INTO customer_discounts (customer_type, discount_rate, fixed_price_weekday) VALUES ('CHILD', 0.30, 45000.0)");
+                    jdbcTemplate.execute("INSERT INTO customer_discounts (customer_type, discount_rate, fixed_price_weekday) VALUES ('ELDERLY', 0.30, NULL)");
+                    log.info("[TrienLX - 2026-06-25] Đã seed dữ liệu mẫu cho customer_discounts");
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi nạp seed data cho ma trận giá vé: {}", e.getMessage());
+        }
     }
 }

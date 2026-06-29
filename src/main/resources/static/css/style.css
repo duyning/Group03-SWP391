@@ -27,6 +27,10 @@
     --stat-green: #10b981;
     --stat-orange: #f59e0b;
     --stat-red: #ef4444;
+    --stat-gray: #64748b;
+    --stat-purple: #8b5cf6;
+    --stat-teal: #0d9488;
+    --stat-pink: #ec4899;
 
     /* Các bộ thông số đổ bóng đổ mềm mại tạo hiệu ứng nổi */
     --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
@@ -43,7 +47,7 @@
 
 /* Định dạng cơ bản cho toàn trang */
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Be Vietnam Pro', sans-serif;
     background-color: var(--bg-app);
     color: var(--text-main);
     line-height: 1.5;
@@ -226,6 +230,10 @@ body[data-page] {
 .stat-green::before { background-color: var(--stat-green); }
 .stat-orange::before { background-color: var(--stat-orange); }
 .stat-red::before { background-color: var(--stat-red); }
+.stat-gray::before { background-color: var(--stat-gray); }
+.stat-purple::before { background-color: var(--stat-purple); }
+.stat-teal::before { background-color: var(--stat-teal); }
+.stat-pink::before { background-color: var(--stat-pink); }
 
 .stat-info {
     display: flex;
@@ -455,6 +463,8 @@ body[data-page] {
     display: flex;
     justify-content: center;
     gap: 0.8rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
 }
 
 .action-btn {
@@ -490,6 +500,20 @@ body[data-page] {
 .action-btn-delete:hover {
     background-color: #fecdd3;
     color: #be123c;
+}
+
+.showtime-delete-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 9rem;
+    overflow-y: auto;
+}
+
+.showtime-delete-list .action-btn-delete {
+    min-width: 6.5rem;
+    line-height: 1.25;
+    text-align: center;
 }
 
 .text-center {
@@ -1056,6 +1080,17 @@ body[data-page] {
     background-color: #fde68a;
 }
 
+/* Ghế đôi trống */
+.seat-btn.couple.available {
+    background-color: #fce7f3;
+    border-color: #ec4899;
+    color: #9d174d;
+}
+
+.seat-btn.couple.available:hover {
+    background-color: #fbcfe8;
+}
+
 /* Ghế đã bán */
 .seat-btn.is-sold {
     background-color: #fecaca;
@@ -1154,6 +1189,16 @@ body[data-page] {
     display: inline-block;
     background-color: #eef2ff;
     color: #3730a3;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.badge-couple {
+    display: inline-block;
+    background-color: #fce7f3;
+    color: #9d174d;
     padding: 0.2rem 0.55rem;
     border-radius: 4px;
     font-size: 0.78rem;

@@ -1,28 +1,41 @@
 package com.group3.cinema.repository;
 
+/*
+ * Repository thao tác với bảng tickets.
+ * Created/updated by: NinhDD - HE186113, TrienLX
+ */
+
 import com.group3.cinema.entity.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository cung cấp các phương thức thao tác dữ liệu với bảng tickets.
- * Hỗ trợ truy vấn vé theo tài khoản người dùng.
- *
- * Ngày thực hiện: 26/06/2026
- */
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
-    /**
-     * Lấy danh sách vé của một tài khoản, sắp xếp theo thời gian đặt mới nhất.
-     */
     List<Ticket> findByAccountAccountIDOrderByBookingTimeDesc(int accountId);
 
-    /**
-     * Lấy chi tiết một vé, đảm bảo vé thuộc về tài khoản đang đăng nhập (bảo mật).
-     */
     Optional<Ticket> findByIdAndAccountAccountID(Long id, int accountId);
+
+    List<Ticket> findByShowtimeId(Long showtimeId);
+
+    long countByShowtimeId(Long showtimeId);
+
+    long countByShowtimeIdAndStatus(Long showtimeId, String status);
+
+    @Query("SELECT SUM(t.price) FROM Ticket t WHERE t.showtime.id = :showtimeId AND t.status = 'Đã bán'")
+    Double calculateRevenueByShowtimeId(@Param("showtimeId") Long showtimeId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Ticket t WHERE t.showtime.id = :showtimeId AND t.status = 'Còn trống'")
+    void deleteUnsoldTicketsByShowtimeId(@Param("showtimeId") Long showtimeId);
+
+    boolean existsByShowtimeIdAndStatus(Long showtimeId, String status);
 }

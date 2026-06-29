@@ -1,11 +1,8 @@
 package com.group3.cinema.controller.api;
 
-/**
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: ShowtimeController.java
- * Chức năng: REST Controller quản lý lịch chiếu, hỗ trợ tạo đơn lẻ và tạo hàng loạt.
- * Người viết: TrienLX - HE182285
- * Người sửa: TrienLX, NinhDD
+/*
+ * REST Controller quản lý lịch chiếu.
+ * Created/updated by: TrienLX - HE182285, NinhDD - HE186113
  */
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -92,6 +89,34 @@ public class ShowtimeController {
         public void setGroupIds(List<Long> groupIds) { this.groupIds = groupIds; }
     }
 
+    public static class OverrideDayRequest {
+        private Long originalShowtimeId;
+        private Long movieId;
+
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate targetDate;
+
+        @JsonFormat(pattern = "HH:mm:ss")
+        private LocalTime newShowTime;
+
+        private String room;
+
+        public Long getOriginalShowtimeId() { return originalShowtimeId; }
+        public void setOriginalShowtimeId(Long originalShowtimeId) { this.originalShowtimeId = originalShowtimeId; }
+
+        public Long getMovieId() { return movieId; }
+        public void setMovieId(Long movieId) { this.movieId = movieId; }
+
+        public LocalDate getTargetDate() { return targetDate; }
+        public void setTargetDate(LocalDate targetDate) { this.targetDate = targetDate; }
+
+        public LocalTime getNewShowTime() { return newShowTime; }
+        public void setNewShowTime(LocalTime newShowTime) { this.newShowTime = newShowTime; }
+
+        public String getRoom() { return room; }
+        public void setRoom(String room) { this.room = room; }
+    }
+
     @GetMapping
     public ResponseEntity<List<Showtime>> searchShowtimes(
             @RequestParam(value = "movieId", required = false) Integer movieId,
@@ -134,7 +159,7 @@ public class ShowtimeController {
 
             Showtime showtime = toShowtime(req);
             return ResponseEntity.ok(showtimeService.saveShowtime(showtime));
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -155,7 +180,7 @@ public class ShowtimeController {
             }
 
             return ResponseEntity.ok(showtimeService.updateShowtime(id, toShowtime(req)));
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
         } catch (RuntimeException ex) {
             return ResponseEntity.notFound().build();
@@ -166,12 +191,33 @@ public class ShowtimeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteShowtime(@PathVariable("id") Long id) {
+    public ResponseEntity<?> deleteShowtime(@PathVariable("id") Long id) {
         try {
             showtimeService.deleteShowtime(id);
             return ResponseEntity.noContent().build();
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/override-day")
+    public ResponseEntity<?> overrideSingleDay(@RequestBody OverrideDayRequest req) {
+        try {
+            Showtime result = showtimeService.overrideSingleDay(
+                    req.getOriginalShowtimeId(),
+                    req.getMovieId(),
+                    req.getTargetDate(),
+                    req.getNewShowTime(),
+                    req.getRoom()
+            );
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorBody("Lỗi hệ thống khi điều chỉnh ngày chiếu: " + ex.getMessage()));
         }
     }
 
