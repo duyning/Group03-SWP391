@@ -298,6 +298,16 @@ public class RoomUnicodeMigration {
         alterColumn("banners", "image_url", "NVARCHAR(500) NOT NULL");
         alterColumn("banners", "link_url", "NVARCHAR(500) NULL");
         alterColumn("banners", "page", "NVARCHAR(20) NOT NULL");
+
+        alterColumn("promotions", "title", "NVARCHAR(180) NOT NULL");
+        alterColumn("promotions", "type", "NVARCHAR(40) NOT NULL");
+        alterColumn("promotions", "target_group", "NVARCHAR(40) NOT NULL");
+        alterColumn("promotions", "discount_rule", "NVARCHAR(1000) NOT NULL");
+        alterColumn("promotions", "description", "NVARCHAR(1200) NOT NULL");
+        alterColumn("promotions", "condition_text", "NVARCHAR(1200) NOT NULL");
+        alterColumn("promotions", "how_to_join", "NVARCHAR(1000) NOT NULL");
+        alterColumn("promotions", "banner_image", "NVARCHAR(500) NULL");
+        alterColumn("promotions", "status", "NVARCHAR(20) NOT NULL");
     }
 
     /**

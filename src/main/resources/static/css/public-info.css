@@ -1,0 +1,392 @@
+/*
+ * Created on 2026-06-25: Public cinema information and contact page styles.
+ * Created by: NinhDD - HE186113
+ */
+body {
+    margin: 0;
+    font-family: "Inter", "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+.top-bar {
+    background: #0054a6;
+    color: #fff;
+    font-size: 13px;
+    padding: 8px 0;
+}
+
+.top-container,
+.header-container,
+.info-container,
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.top-container {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.top-link {
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.lang-icon {
+    height: 14px;
+    margin-left: 12px;
+}
+
+.header-main {
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-container {
+    align-items: center;
+    display: flex;
+    gap: 24px;
+}
+
+.logo {
+    display: block;
+    height: 56px;
+}
+
+.nav-menu {
+    align-items: center;
+    display: flex;
+    flex: 1;
+    gap: 24px;
+    justify-content: center;
+}
+
+.nav-menu a {
+    color: #334155;
+    font-size: 15px;
+    font-weight: 850;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.nav-menu a:hover,
+.nav-menu a.active {
+    color: #0054a6;
+}
+
+.search-form {
+    display: flex;
+    gap: 8px;
+}
+
+.search-form input {
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    min-width: 190px;
+    outline: none;
+    padding: 9px 15px;
+}
+
+.search-form button,
+.contact-submit {
+    background: #0054a6;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 850;
+    padding: 9px 18px;
+}
+
+.info-hero {
+    background: linear-gradient(135deg, #003f7d, #0054a6);
+    color: #fff;
+    padding: 44px 0;
+}
+
+.info-hero h1 {
+    font-size: clamp(30px, 4vw, 48px);
+    letter-spacing: 0;
+    line-height: 1.12;
+    margin: 0 0 12px;
+}
+
+.info-hero p {
+    color: #e0efff;
+    font-size: 17px;
+    line-height: 1.65;
+    margin: 0;
+    max-width: 780px;
+}
+
+.info-layout {
+    align-items: start;
+    display: grid;
+    gap: 28px;
+    grid-template-columns: 285px minmax(0, 1fr);
+    padding-bottom: 60px;
+    padding-top: 38px;
+}
+
+.info-menu {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+    position: sticky;
+    top: 112px;
+}
+
+.info-menu a {
+    align-items: center;
+    background: #eef2f7;
+    border-bottom: 1px solid #fff;
+    color: #475569;
+    display: flex;
+    font-size: 14px;
+    font-weight: 850;
+    min-height: 45px;
+    padding: 0 16px 0 28px;
+    position: relative;
+    text-decoration: none;
+}
+
+.info-menu a::before {
+    border-bottom: 22px solid transparent;
+    border-left: 18px solid #fff;
+    border-top: 22px solid transparent;
+    content: "";
+    left: 0;
+    position: absolute;
+}
+
+.info-menu a:hover,
+.info-menu a.active {
+    background: #e50914;
+    color: #fff;
+}
+
+.info-content,
+.contact-card,
+.map-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+}
+
+.info-content {
+    padding: 32px;
+}
+
+.info-section + .info-section {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 28px;
+    padding-top: 28px;
+}
+
+.info-section h2 {
+    color: #0054a6;
+    font-size: 23px;
+    margin: 0 0 12px;
+}
+
+.info-section p {
+    color: #475569;
+    font-size: 16px;
+    line-height: 1.75;
+    margin: 0 0 12px;
+}
+
+.info-section ul {
+    display: grid;
+    gap: 10px;
+    margin: 14px 0 0;
+    padding: 0;
+}
+
+.info-section li {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #334155;
+    list-style: none;
+    padding: 12px 14px;
+}
+
+.info-section li::before {
+    color: #0054a6;
+    content: "•";
+    font-weight: 900;
+    margin-right: 9px;
+}
+
+.contact-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.map-card,
+.contact-card {
+    overflow: hidden;
+}
+
+.map-body,
+.contact-body {
+    padding: 24px;
+}
+
+.map-frame {
+    border: 0;
+    display: block;
+    height: 360px;
+    width: 100%;
+}
+
+.contact-meta {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.contact-meta div {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.contact-meta strong {
+    color: #0054a6;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.contact-form {
+    display: grid;
+    gap: 16px;
+}
+
+.form-label {
+    color: #334155;
+    display: block;
+    font-size: 13px;
+    font-weight: 850;
+    margin-bottom: 7px;
+    text-transform: uppercase;
+}
+
+.required {
+    color: #e50914;
+}
+
+.contact-form input,
+.contact-form textarea {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font: inherit;
+    outline: none;
+    padding: 12px 13px;
+    width: 100%;
+}
+
+.contact-form textarea {
+    min-height: 130px;
+    resize: vertical;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+    border-color: #0054a6;
+    box-shadow: 0 0 0 4px rgba(0, 84, 166, 0.12);
+}
+
+.alert {
+    border-radius: 10px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    padding: 13px 15px;
+}
+
+.alert-success {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+.alert-danger {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.footer {
+    background: #0054a6;
+    color: #fff;
+    padding: 44px 0;
+}
+
+.footer-container {
+    display: grid;
+    gap: 30px;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr;
+}
+
+.footer h4 {
+    margin: 0 0 12px;
+}
+
+.footer p,
+.footer a {
+    color: #e0efff;
+    line-height: 1.7;
+    margin: 0;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    color: #fff;
+}
+
+.footer-links {
+    display: grid;
+    gap: 6px;
+}
+
+@media (max-width: 980px) {
+    .header-container,
+    .nav-menu {
+        flex-wrap: wrap;
+    }
+
+    .search-form {
+        width: 100%;
+    }
+
+    .search-form input {
+        flex: 1;
+    }
+
+    .info-layout,
+    .contact-grid,
+    .footer-container {
+        grid-template-columns: 1fr;
+    }
+
+    .info-menu {
+        position: static;
+    }
+}

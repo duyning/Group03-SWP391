@@ -2,10 +2,12 @@ package com.group3.cinema.controller;
 
 /*
  * Created on 2026-06-09: Admin controller for homepage and news banner management.
+ * Updated on 2026-06-25: Display linked movie names instead of raw movie URLs.
  * Created by: NinhDD - HE186113
  */
 
 import com.group3.cinema.entity.Banner;
+import com.group3.cinema.entity.Movie;
 import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.service.BannerService;
 import org.springframework.stereotype.Controller;
@@ -20,6 +22,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin/banners")
@@ -36,24 +41,16 @@ public class BannerController {
     @GetMapping
     public String listBanners(@RequestParam(value = "page", required = false) Banner.BannerPage page,
                               Model model) {
-        model.addAttribute("banners", bannerService.getBanners(page));
-        model.addAttribute("banner", new Banner());
-        model.addAttribute("pages", Banner.BannerPage.values());
-        model.addAttribute("movies", movieRepository.findByActiveTrue());
-        model.addAttribute("selectedPage", page);
-        model.addAttribute("selectedMovieId", null);
+        Banner banner = new Banner();
+        banner.setPage(page);
+        populateBannerPage(model, banner, page, null);
         return "banner-list";
     }
 
     @GetMapping("/edit/{id}")
     public String editBanner(@PathVariable("id") Long id, Model model) {
         Banner banner = bannerService.getBanner(id);
-        model.addAttribute("banners", bannerService.getBanners(banner.getPage()));
-        model.addAttribute("banner", banner);
-        model.addAttribute("pages", Banner.BannerPage.values());
-        model.addAttribute("movies", movieRepository.findByActiveTrue());
-        model.addAttribute("selectedPage", banner.getPage());
-        model.addAttribute("selectedMovieId", extractMovieId(banner.getLinkUrl()));
+        populateBannerPage(model, banner, banner.getPage(), extractMovieId(banner.getLinkUrl()));
         return "banner-list";
     }
 
@@ -61,15 +58,18 @@ public class BannerController {
     public String saveBanner(@ModelAttribute Banner banner,
                              @RequestParam(value = "movieId", required = false) Integer movieId,
                              @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
-                             RedirectAttributes redirectAttributes) throws IOException {
-        if (movieId != null) {
-            banner.setLinkUrl("/movies/" + movieId);
-        } else {
-            banner.setLinkUrl(null);
+                             Model model,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            banner.setLinkUrl(resolveMovieLink(movieId));
+            bannerService.saveBanner(banner, imageFile);
+            redirectAttributes.addFlashAttribute("successMessage", "Lưu banner thành công.");
+            return "redirect:/admin/banners?page=" + banner.getPage().name();
+        } catch (IllegalArgumentException | IOException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            populateBannerPage(model, banner, banner.getPage(), movieId);
+            return "banner-list";
         }
-        bannerService.saveBanner(banner, imageFile);
-        redirectAttributes.addFlashAttribute("successMessage", "Lưu banner thành công.");
-        return "redirect:/admin/banners?page=" + banner.getPage().name();
     }
 
     @GetMapping("/delete/{id}")
@@ -82,13 +82,55 @@ public class BannerController {
     }
 
     private Integer extractMovieId(String linkUrl) {
-        if (linkUrl == null || !linkUrl.startsWith("/movies/")) {
+        if (linkUrl == null || !linkUrl.contains("/movies/")) {
             return null;
         }
         try {
-            return Integer.valueOf(linkUrl.substring("/movies/".length()));
+            return Integer.valueOf(linkUrl.substring(linkUrl.lastIndexOf("/movies/") + "/movies/".length()));
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    private String resolveMovieLink(Integer movieId) {
+        if (movieId == null) {
+            return null;
+        }
+        Movie movie = movieRepository.findByIdAndActiveTrue(movieId)
+                .orElseThrow(() -> new IllegalArgumentException("Phim điều hướng không tồn tại hoặc đang bị ẩn."));
+        return "/movies/" + movie.getId();
+    }
+
+    private void populateBannerPage(Model model,
+                                    Banner banner,
+                                    Banner.BannerPage selectedPage,
+                                    Integer selectedMovieId) {
+        List<Banner> banners = bannerService.getBanners(selectedPage);
+        model.addAttribute("banners", banners);
+        model.addAttribute("banner", banner);
+        model.addAttribute("pages", Banner.BannerPage.values());
+        model.addAttribute("movies", movieRepository.findByActiveTrue());
+        model.addAttribute("movieLinkLabels", buildMovieLinkLabels());
+        model.addAttribute("selectedPage", selectedPage);
+        model.addAttribute("selectedMovieId", selectedMovieId);
+        addBannerMetrics(banners, model);
+    }
+
+    private Map<String, String> buildMovieLinkLabels() {
+        Map<String, String> labels = new LinkedHashMap<>();
+        movieRepository.findAll().forEach(movie -> {
+            String relativeLink = "/movies/" + movie.getId();
+            labels.put(relativeLink, movie.getTitle());
+            labels.put("http://localhost:8080" + relativeLink, movie.getTitle());
+            labels.put("https://localhost:8080" + relativeLink, movie.getTitle());
+        });
+        return labels;
+    }
+
+    private void addBannerMetrics(List<Banner> banners, Model model) {
+        long activeCount = banners.stream().filter(Banner::isActive).count();
+        model.addAttribute("totalBanners", banners.size());
+        model.addAttribute("activeBanners", activeCount);
+        model.addAttribute("hiddenBanners", banners.size() - activeCount);
     }
 }

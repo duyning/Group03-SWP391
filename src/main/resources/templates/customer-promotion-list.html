@@ -1,0 +1,173 @@
+<!doctype html>
+<!--
+  Created on 2026-06-25: Customer-facing promotion campaign list.
+  Created by: NinhDD - HE186113
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beta Cinemas | Ưu đãi</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <style>
+        body { margin: 0; font-family: "Be Vietnam Pro", Arial, "Segoe UI", sans-serif; background: #f7fafc; color: #172033; }
+        .top-bar { background: #0054a6; color: white; padding: 8px 0; font-size: 13px; }
+        .top-container, .header-container, .content-container, .footer-container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        .top-container { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+        .top-link { color: white; text-decoration: none; font-weight: 600; }
+        .lang-icon { height: 14px; margin-left: 15px; }
+        .header-main { background: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,.05); position: sticky; top: 0; z-index: 1000; }
+        .header-container { display: flex; align-items: center; gap: 25px; }
+        .logo { height: 55px; display: block; }
+        .nav-menu { display: flex; justify-content: center; flex-grow: 1; gap: 25px; }
+        .nav-menu a { text-decoration: none; color: #333; font-weight: 800; font-size: 16px; white-space: nowrap; }
+        .nav-menu a:hover, .nav-menu a.active { color: #0054a6; }
+        .search-form { display: flex; gap: 8px; }
+        .search-form input { border: 1px solid #ddd; border-radius: 20px; padding: 8px 14px; min-width: 190px; outline: none; }
+        .search-form button { background: #0054a6; color: white; border: none; border-radius: 20px; padding: 8px 14px; font-weight: 800; cursor: pointer; }
+        .hero { background: #0b3768; color: white; padding: 52px 0 44px; }
+        .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: end; }
+        .hero-kicker { color: #bde0ff; font-size: 0.82rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+        .hero h1 { margin: 8px 0 10px; font-size: clamp(34px, 5vw, 56px); line-height: 1.05; }
+        .hero p { color: #d7eaff; line-height: 1.65; margin: 0; max-width: 650px; }
+        .campaign-count { background: rgba(255,255,255,.11); border: 1px solid rgba(255,255,255,.22); border-radius: 14px; padding: 18px 22px; min-width: 170px; }
+        .campaign-count strong { display: block; font-size: 36px; }
+        .filter-tabs { display: flex; gap: 10px; overflow-x: auto; padding: 24px 0 10px; }
+        .filter-tabs a { background: white; border: 1px solid #dbe5ef; border-radius: 999px; color: #334155; font-weight: 800; padding: 10px 16px; text-decoration: none; white-space: nowrap; }
+        .filter-tabs a.active, .filter-tabs a:hover { background: #0054a6; border-color: #0054a6; color: white; }
+        .promotion-grid { display: grid; gap: 18px; margin: 18px 0 60px; }
+        .promotion-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 14px 34px rgba(15, 23, 42, .08); display: grid; grid-template-columns: 165px 280px minmax(0, 1fr); }
+        .campaign-rail { background: #0b3768; color: white; display: grid; align-content: center; gap: 10px; padding: 20px; }
+        .campaign-rail span { color: #bde0ff; font-size: .78rem; font-weight: 900; text-transform: uppercase; }
+        .campaign-rail strong { font-size: 30px; line-height: 1; }
+        .campaign-rail small { color: #d7eaff; font-weight: 800; line-height: 1.45; }
+        .promotion-card img { width: 100%; height: 100%; min-height: 230px; object-fit: cover; display: block; background: #eef2f7; }
+        .promotion-body { padding: 20px; display: grid; gap: 14px; }
+        .campaign-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pill { border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 900; padding: 7px 10px; }
+        .pill-blue { background: #e0f2fe; color: #0369a1; }
+        .pill-green { background: #dcfce7; color: #166534; }
+        .pill-gray { background: #f1f5f9; color: #475569; }
+        .promotion-card h2 { color: #0f3768; font-size: 22px; line-height: 1.25; margin: 0; }
+        .rule { background: #f8fafc; border-left: 4px solid #0054a6; color: #172033; font-weight: 800; line-height: 1.55; padding: 12px 14px; }
+        .desc { color: #64748b; line-height: 1.65; margin: 0; }
+        .condition-line { color: #475569; font-size: .9rem; line-height: 1.55; }
+        .condition-line strong { color: #172033; }
+        .campaign-foot { border-top: 1px solid #eef2f7; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 14px; }
+        .date-range { color: #475569; font-size: .9rem; font-weight: 800; }
+        .detail-btn { background: #0054a6; border-radius: 10px; color: white; font-weight: 900; padding: 10px 14px; text-decoration: none; white-space: nowrap; }
+        .empty-state { text-align: center; color: #64748b; padding: 70px 15px; }
+        .footer { background: #0054a6; color: white; padding: 45px 0; }
+        .footer-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 45px; }
+        @media (max-width: 900px) { .header-container, .nav-menu, .hero-grid { flex-wrap: wrap; grid-template-columns: 1fr; } .promotion-card { grid-template-columns: 1fr; } .promotion-card img { min-height: 210px; } .search-form { width: 100%; } .search-form input { flex: 1; } .footer-container { grid-template-columns: 1fr; } }
+    </style>
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
+</head>
+<body>
+<div class="top-bar">
+    <div class="top-container">
+        <th:block th:if="${user == null}">
+            <a th:href="@{/login}" class="top-link">Đăng nhập</a><span style="opacity:.5">|</span>
+            <a th:href="@{/register}" class="top-link">Đăng ký</a>
+        </th:block>
+        <th:block th:if="${user != null}">
+            <span>Xin chào,</span><a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a><span style="opacity:.5">|</span>
+            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a><span style="opacity:.5">|</span>
+            <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
+        </th:block>
+        <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
+    </div>
+</div>
+
+<header class="header-main">
+    <div class="header-container">
+        <a th:href="@{/}"><img src="/images/cineflow-logo.svg" alt="CineFlow Cinema" class="logo"></a>
+        <nav class="nav-menu">
+            <a th:href="@{/}">TRANG CHỦ</a>
+            <a th:href="@{/movies}">PHIM</a>
+            <a th:href="@{/about}">RẠP</a>
+            <a href="#">GIÁ VÉ</a>
+            <a th:href="@{/promotions}" class="active">ƯU ĐÃI</a>
+            <a th:href="@{/posts}">TIN TỨC</a>
+            <a th:href="@{/contact}">LIÊN HỆ</a>
+        </nav>
+        <form class="search-form" th:action="@{/search}" method="get">
+            <input type="search" name="keyword" placeholder="Tìm phim">
+            <button type="submit">Tìm</button>
+        </form>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="content-container hero-grid">
+        <div>
+            <span class="hero-kicker">Cinema Campaigns</span>
+            <h1>Ưu đãi đang chạy</h1>
+            <p>Các chiến dịch ưu đãi chính thức của rạp, có thời gian áp dụng, nhóm khách hàng và điều kiện tham gia rõ ràng.</p>
+        </div>
+        <div class="campaign-count">
+            <span>Chiến dịch</span>
+            <strong th:text="${promotions != null ? promotions.size() : 0}">4</strong>
+        </div>
+    </div>
+</section>
+
+<main class="content-container">
+    <nav class="filter-tabs" aria-label="Lọc khuyến mãi">
+        <a th:href="@{/promotions(filter='all')}" th:classappend="${activeFilter == 'all'} ? 'active' : ''">Tất cả</a>
+        <a th:href="@{/promotions(filter='running')}" th:classappend="${activeFilter == 'running'} ? 'active' : ''">Đang diễn ra</a>
+        <a th:href="@{/promotions(filter='upcoming')}" th:classappend="${activeFilter == 'upcoming'} ? 'active' : ''">Sắp diễn ra</a>
+        <a th:href="@{/promotions(filter='member')}" th:classappend="${activeFilter == 'member'} ? 'active' : ''">Thành viên</a>
+        <a th:href="@{/promotions(filter='student')}" th:classappend="${activeFilter == 'student'} ? 'active' : ''">Sinh viên</a>
+        <a th:href="@{/promotions(filter='bank')}" th:classappend="${activeFilter == 'bank'} ? 'active' : ''">Ngân hàng</a>
+    </nav>
+
+    <section class="promotion-grid" th:if="${promotions != null && !#lists.isEmpty(promotions)}">
+        <article class="promotion-card" th:each="promotion : ${promotions}">
+            <div class="campaign-rail">
+                <span>Hiệu lực</span>
+                <strong>
+                    <span th:text="${#temporals.format(promotion.startDate, 'dd/MM')}">01/07</span>
+                </strong>
+                <small>
+                    đến <span th:text="${#temporals.format(promotion.endDate, 'dd/MM/yyyy')}">31/07/2026</span>
+                </small>
+                <small th:if="${promotion.remainingDays > 0}">
+                    Còn <span th:text="${promotion.remainingDays}">10</span> ngày
+                </small>
+            </div>
+            <img th:src="${promotion.bannerImage != null ? promotion.bannerImage : 'https://placehold.co/900x450?text=Promotion'}" th:alt="${promotion.title}">
+            <div class="promotion-body">
+                <div class="campaign-meta">
+                    <span class="pill pill-green" th:text="${promotion.campaignStateDisplayName}">Đang diễn ra</span>
+                    <span class="pill pill-blue" th:text="${promotion.targetGroup.displayName}">Thành viên</span>
+                    <span class="pill pill-gray" th:text="${promotion.type.displayName}">Member Day</span>
+                </div>
+                <h2 th:text="${promotion.title}">Happy Monday</h2>
+                <div class="rule" th:text="${promotion.discountRule}">Đồng giá vé vào thứ Hai hàng tuần.</div>
+                <p class="desc" th:text="${promotion.description}">Mô tả chiến dịch khuyến mãi.</p>
+                <div class="condition-line">
+                    <strong>Điều kiện:</strong>
+                    <span th:text="${promotion.conditionText}">Áp dụng theo điều kiện chiến dịch.</span>
+                </div>
+                <div class="campaign-foot">
+                    <a class="detail-btn" th:href="@{/promotions/{id}(id=${promotion.id})}">Xem điều kiện</a>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <div class="empty-state" th:if="${promotions == null || #lists.isEmpty(promotions)}">
+        Hiện chưa có chiến dịch ưu đãi phù hợp.
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="footer-container">
+        <div><h4>BETA CINEMAS</h4><p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p></div>
+        <div><h4>LIÊN HỆ</h4><p>Hotline: 1900 636807</p></div>
+        <div><h4>KẾT NỐI</h4><p>Facebook | Youtube | TikTok</p></div>
+    </div>
+</footer>
+</body>
+</html>

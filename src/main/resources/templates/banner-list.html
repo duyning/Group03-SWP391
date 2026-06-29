@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!--
     Created on 2026-06-09: Banner management screen for homepage and news page.
+    Updated on 2026-06-26: Redesigned banner management UI for a polished admin workflow.
     Created by: NinhDD - HE186113
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
@@ -13,34 +14,372 @@
     <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
     <link rel="stylesheet" th:href="@{/css/admin-content.css}">
     <style>
-        .banner-preview {
-            width: 220px;
-            aspect-ratio: 16 / 7;
-            border-radius: 10px;
-            object-fit: cover;
-            border: 1px solid #d9e2ef;
-            background: #f8fafc;
+        .banner-hero {
+            align-items: center;
+            background: linear-gradient(135deg, #062b54, #0054a6);
+            border-radius: 14px;
+            color: #fff;
+            display: grid;
+            gap: 24px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            margin-bottom: 20px;
+            overflow: hidden;
+            padding: 28px;
+            position: relative;
         }
+
+        .banner-hero::after {
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.18), transparent 65%);
+            content: "";
+            height: 260px;
+            position: absolute;
+            right: -70px;
+            top: -90px;
+            width: 260px;
+        }
+
+        .banner-hero h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 0;
+            margin: 0 0 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .banner-hero p {
+            color: #dbeafe;
+            line-height: 1.6;
+            margin: 0;
+            max-width: 720px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .banner-filter {
+            align-items: center;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 12px;
+            display: flex;
+            gap: 10px;
+            padding: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .banner-filter .form-select {
+            border: 0 !important;
+            min-width: 210px;
+        }
+
+        .metric-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: #fff;
+            border: 1px solid #dbe5ef;
+            border-radius: 12px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+            padding: 18px;
+        }
+
+        .metric-card span {
+            color: #64748b;
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .metric-card strong {
+            color: #0f3768;
+            display: block;
+            font-size: 2rem;
+            line-height: 1;
+            margin-top: 8px;
+        }
+
+        .metric-card i {
+            color: #0054a6;
+            float: right;
+            font-size: 1.25rem;
+            margin-top: 2px;
+        }
+
+        .banner-workspace {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            align-items: center;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .section-title h2 {
+            color: #0f172a;
+            font-size: 1.25rem;
+            font-weight: 900;
+            margin: 0;
+        }
+
+        .section-title p {
+            color: #64748b;
+            margin: 2px 0 0;
+        }
+
+        .section-title i {
+            align-items: center;
+            background: #eaf4ff;
+            border-radius: 10px;
+            color: #0054a6;
+            display: inline-flex;
+            height: 42px;
+            justify-content: center;
+            width: 42px;
+        }
+
         .banner-form-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
         .banner-form-grid .full {
             grid-column: 1 / -1;
         }
-        .image-drop {
-            border: 1px dashed #b9c7da;
+
+        .upload-panel {
+            background: #f8fafc;
+            border: 1px dashed #aebfd4;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .upload-panel .panel-icon {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #dbe5ef;
+            border-radius: 10px;
+            color: #0054a6;
+            display: inline-flex;
+            height: 36px;
+            justify-content: center;
+            margin-bottom: 10px;
+            width: 36px;
+        }
+
+        .preview-stage {
+            background: #0f172a;
+            border-radius: 14px;
+            min-height: 100%;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        .preview-browser {
             background: #f8fafc;
             border-radius: 12px;
-            padding: 18px;
+            overflow: hidden;
         }
-        .image-drop input {
+
+        .preview-bar {
+            align-items: center;
             background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px;
         }
-        @media (max-width: 768px) {
+
+        .preview-dot {
+            background: #cbd5e1;
+            border-radius: 999px;
+            display: block;
+            height: 8px;
+            width: 8px;
+        }
+
+        .preview-image-wrap {
+            align-items: center;
+            aspect-ratio: 16 / 6;
+            background: linear-gradient(135deg, #e2e8f0, #f8fafc);
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-image-wrap img {
+            display: block;
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .preview-placeholder {
+            color: #64748b;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .preview-caption {
+            background: #fff;
+            padding: 14px;
+        }
+
+        .preview-caption strong {
+            color: #0f172a;
+            display: block;
+            font-size: 1rem;
+        }
+
+        .preview-caption span {
+            color: #64748b;
+            display: block;
+            font-size: 0.86rem;
+            margin-top: 4px;
+        }
+
+        .banner-table {
+            border-collapse: separate;
+            border-spacing: 0 12px;
+        }
+
+        .banner-table thead th {
+            border: 0 !important;
+            padding-bottom: 6px !important;
+        }
+
+        .banner-table tbody tr {
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .banner-table tbody td {
+            border-bottom: 1px solid #e8eef5;
+            border-top: 1px solid #e8eef5;
+            padding: 14px !important;
+        }
+
+        .banner-table tbody td:first-child {
+            border-left: 1px solid #e8eef5;
+            border-radius: 12px 0 0 12px;
+        }
+
+        .banner-table tbody td:last-child {
+            border-radius: 0 12px 12px 0;
+            border-right: 1px solid #e8eef5;
+        }
+
+        .banner-preview {
+            aspect-ratio: 16 / 6.5;
+            background: #f8fafc;
+            border: 1px solid #d9e2ef;
+            border-radius: 10px;
+            display: block;
+            object-fit: cover;
+            width: 240px;
+        }
+
+        .banner-name {
+            color: #0f172a;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .banner-note {
+            color: #64748b;
+            font-size: 0.86rem;
+            line-height: 1.45;
+            max-width: 520px;
+        }
+
+        .linked-movie {
+            align-items: center;
+            color: #0054a6;
+            display: inline-flex;
+            font-size: 0.86rem;
+            font-weight: 800;
+            gap: 6px;
+            margin-top: 7px;
+            text-decoration: none;
+        }
+
+        .linked-movie:hover {
+            color: #003f7d;
+        }
+
+        .page-badge,
+        .status-chip {
+            align-items: center;
+            border-radius: 999px;
+            display: inline-flex;
+            font-size: 0.78rem;
+            font-weight: 850;
+            gap: 6px;
+            padding: 7px 10px;
+            white-space: nowrap;
+        }
+
+        .page-badge {
+            background: #eaf4ff;
+            border: 1px solid #cfe8ff;
+            color: #0054a6;
+        }
+
+        .action-group {
+            display: inline-flex;
+            gap: 8px;
+        }
+
+        .action-group .btn {
+            align-items: center;
+            border-radius: 10px;
+            display: inline-flex;
+            height: 36px;
+            justify-content: center;
+            width: 38px;
+        }
+
+        .empty-banner-state {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            color: #64748b;
+            padding: 42px 16px;
+            text-align: center;
+        }
+
+        @media (max-width: 1180px) {
+            .banner-workspace,
+            .banner-hero {
+                grid-template-columns: 1fr;
+            }
+
+            .banner-filter {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 850px) {
+            .metric-grid,
             .banner-form-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .banner-preview {
+                width: 190px;
             }
         }
     </style>
@@ -50,110 +389,184 @@
     <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('banners')}"></aside>
     <main class="admin-main">
         <div class="container">
-            <div class="page-card mb-4">
-                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
-                    <div>
-                        <h2 class="page-title mb-1">
-                            <i class="fa-solid fa-images me-2"></i>
-                            Quản lý banner
-                        </h2>
-                        <p class="text-secondary mb-0">Upload và điều phối banner hiển thị ở trang chủ và trang tin tức.</p>
+            <section class="banner-hero">
+                <div>
+                    <h1>Quản lý banner</h1>
+                    <p>Điều phối ảnh hero cho trang chủ và trang tin tức. Banner nên sắc nét, đúng tỉ lệ và chỉ dẫn khách hàng đến đúng phim hoặc nội dung cần nổi bật.</p>
+                </div>
+                <form th:action="@{/admin/banners}" method="get" class="banner-filter">
+                    <select class="form-select" name="page" aria-label="Lọc vị trí banner">
+                        <option value="">Tất cả vị trí</option>
+                        <option th:each="pageOption : ${pages}"
+                                th:value="${pageOption.name()}"
+                                th:text="${pageOption.displayName}"
+                                th:selected="${selectedPage == pageOption}">Trang chủ</option>
+                    </select>
+                    <button class="btn btn-light fw-bold text-primary" type="submit">
+                        <i class="fa-solid fa-filter me-1"></i>
+                        Lọc
+                    </button>
+                </form>
+            </section>
+
+            <section class="metric-grid" aria-label="Tổng quan banner">
+                <div class="metric-card">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Đang xem</span>
+                    <strong th:text="${totalBanners}">0</strong>
+                </div>
+                <div class="metric-card">
+                    <i class="fa-solid fa-eye"></i>
+                    <span>Đang hiển thị</span>
+                    <strong th:text="${activeBanners}">0</strong>
+                </div>
+                <div class="metric-card">
+                    <i class="fa-solid fa-eye-slash"></i>
+                    <span>Đang ẩn</span>
+                    <strong th:text="${hiddenBanners}">0</strong>
+                </div>
+                <div class="metric-card">
+                    <i class="fa-solid fa-film"></i>
+                    <span>Phim có thể gắn</span>
+                    <strong th:text="${movies != null ? #lists.size(movies) : 0}">0</strong>
+                </div>
+            </section>
+
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}" data-auto-dismiss="5000">
+                Lưu thành công
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger" data-auto-dismiss="5000">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <span th:text="${errorMessage}">Có lỗi xảy ra.</span>
+            </div>
+
+            <section class="banner-workspace">
+                <div class="page-card">
+                    <div class="section-title">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <div>
+                            <h2 th:text="${banner.id != null ? 'Cập nhật banner' : 'Tạo banner mới'}">Tạo banner mới</h2>
+                            <p>Thiết lập ảnh, vị trí, phim điều hướng và trạng thái hiển thị.</p>
+                        </div>
                     </div>
-                    <form th:action="@{/admin/banners}" method="get" class="d-flex gap-2 align-items-center">
-                        <select class="form-select" name="page" style="min-width: 190px;">
-                            <option value="">Tất cả vị trí</option>
-                            <option th:each="pageOption : ${pages}"
-                                    th:value="${pageOption.name()}"
-                                    th:text="${pageOption.displayName}"
-                                    th:selected="${selectedPage == pageOption}">Trang chủ</option>
-                        </select>
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fa-solid fa-filter"></i>
-                            Lọc
-                        </button>
+
+                    <form th:action="@{/admin/banners/save}" th:object="${banner}" method="post" enctype="multipart/form-data">
+                        <input type="hidden" th:field="*{id}">
+
+                        <div class="banner-form-grid">
+                            <div>
+                                <label class="form-label">Tên banner nội bộ <span class="text-danger">*</span></label>
+                                <input class="form-control" th:field="*{title}" id="bannerTitleInput" required minlength="5" maxlength="150"
+                                       placeholder="Ví dụ: Your Name - Trang chủ">
+                            </div>
+                            <div>
+                                <label class="form-label">Vị trí hiển thị <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{page}" required>
+                                    <option value="">Chọn vị trí</option>
+                                    <option th:each="pageOption : ${pages}"
+                                            th:value="${pageOption.name()}"
+                                            th:text="${pageOption.displayName}">Trang chủ</option>
+                                </select>
+                            </div>
+                            <div class="full">
+                                <label class="form-label">Ghi chú nội bộ</label>
+                                <textarea class="form-control" th:field="*{subtitle}" id="bannerSubtitleInput" rows="3" maxlength="500"
+                                          placeholder="Ghi chú mục đích dùng banner, chiến dịch hoặc thời gian chạy. Nội dung này không hiển thị ngoài website."></textarea>
+                            </div>
+                            <div class="full">
+                                <label class="form-label">Phim điều hướng</label>
+                                <select class="form-select" name="movieId">
+                                    <option value="">Không gắn phim</option>
+                                    <option th:each="movie : ${movies}"
+                                            th:value="${movie.id}"
+                                            th:text="${movie.title}"
+                                            th:selected="${selectedMovieId != null && selectedMovieId == movie.id}">
+                                        Tên phim
+                                    </option>
+                                </select>
+                                <small class="text-secondary d-block mt-2">Khi chọn phim, banner sẽ trỏ tới trang chi tiết phim.</small>
+                            </div>
+                            <div class="upload-panel">
+                                <span class="panel-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+                                <label class="form-label d-block">Upload ảnh banner</label>
+                                <input class="form-control" type="file" name="imageFile" id="bannerFileInput" accept="image/png,image/jpeg,image/webp">
+                                <small class="text-secondary d-block mt-2">Khuyến nghị trang chủ 1920x700px, trang tin tức 1920x520px. JPG, PNG hoặc WebP.</small>
+                            </div>
+                            <div class="upload-panel">
+                                <span class="panel-icon"><i class="fa-solid fa-link"></i></span>
+                                <label class="form-label d-block">Hoặc nhập URL ảnh</label>
+                                <input class="form-control" th:field="*{imageUrl}" id="bannerImageUrlInput" maxlength="500"
+                                       pattern="^(https?://.+|/.+)$"
+                                       title="Nhập URL http(s) hoặc đường dẫn nội bộ bắt đầu bằng /, ảnh JPG/PNG/WebP."
+                                       placeholder="https://...">
+                                <small class="text-secondary d-block mt-2">Nếu upload file, hệ thống sẽ ưu tiên ảnh upload.</small>
+                            </div>
+                            <div class="full d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" th:field="*{active}">
+                                    <label class="form-check-label fw-semibold">Cho phép hiển thị ngoài website</label>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a th:href="@{/admin/banners}" class="btn-cancel text-decoration-none">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                        Làm mới
+                                    </a>
+                                    <button type="submit" class="btn-submit">
+                                        <i class="fa-solid fa-floppy-disk"></i>
+                                        <span th:text="${banner.id != null ? 'Cập nhật banner' : 'Thêm banner'}">Thêm banner</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
 
-                <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}" data-auto-dismiss="5000">Lưu thành công</div>
-
-                <form th:action="@{/admin/banners/save}" th:object="${banner}" method="post" enctype="multipart/form-data">
-                    <input type="hidden" th:field="*{id}">
-
-                    <div class="banner-form-grid">
-                        <div>
-                            <label class="form-label">Tên banner nội bộ <span class="text-danger">*</span></label>
-                            <input class="form-control" th:field="*{title}" required maxlength="150"
-                                   placeholder="Ví dụ: Banner phim hè trang chủ">
+                <aside class="preview-stage" aria-label="Xem trước banner">
+                    <div class="preview-browser">
+                        <div class="preview-bar">
+                            <span class="preview-dot"></span>
+                            <span class="preview-dot"></span>
+                            <span class="preview-dot"></span>
                         </div>
-                        <div>
-                            <label class="form-label">Vị trí hiển thị <span class="text-danger">*</span></label>
-                            <select class="form-select" th:field="*{page}" required>
-                                <option value="">Chọn vị trí</option>
-                                <option th:each="pageOption : ${pages}"
-                                        th:value="${pageOption.name()}"
-                                        th:text="${pageOption.displayName}">Trang chủ</option>
-                            </select>
-                        </div>
-                        <div class="full">
-                            <label class="form-label">Ghi chú nội bộ</label>
-                            <textarea class="form-control" th:field="*{subtitle}" rows="2" maxlength="500"
-                                      placeholder="Không hiển thị ngoài website, chỉ dùng để ghi chú trong quản trị"></textarea>
-                        </div>
-                        <div>
-                            <label class="form-label">Phim điều hướng</label>
-                            <select class="form-select" name="movieId">
-                                <option value="">Không gắn phim</option>
-                                <option th:each="movie : ${movies}"
-                                        th:value="${movie.id}"
-                                        th:text="${movie.title}"
-                                        th:selected="${selectedMovieId != null && selectedMovieId == movie.id}">
-                                    Tên phim
-                                </option>
-                            </select>
-                            <small class="text-secondary d-block mt-2">Khi chọn phim, banner sẽ tự trỏ tới trang chi tiết phim.</small>
-                        </div>
-                        <div>
-                            <label class="form-label">Thứ tự</label>
-                            <input class="form-control" type="number" th:field="*{displayOrder}" min="1" value="1">
-                        </div>
-                        <div class="image-drop">
-                            <label class="form-label">Upload ảnh banner</label>
-                            <input class="form-control" type="file" name="imageFile" accept="image/png,image/jpeg,image/webp">
-                            <small class="text-secondary d-block mt-2">Khuyến nghị: trang chủ 1920x700px, trang tin tức 1920x520px. JPG/PNG/WebP. Khi sửa, bỏ trống nếu muốn giữ ảnh cũ.</small>
-                        </div>
-                        <div class="image-drop">
-                            <label class="form-label">Hoặc nhập URL ảnh</label>
-                            <input class="form-control" th:field="*{imageUrl}" maxlength="500"
-                                   placeholder="https://...">
-                            <small class="text-secondary d-block mt-2">Nếu upload file, URL sẽ được thay bằng ảnh upload.</small>
-                        </div>
-                        <div class="full d-flex align-items-center gap-3 flex-wrap">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" th:field="*{active}">
-                                <label class="form-check-label fw-semibold">Đang hiển thị</label>
+                        <div class="preview-image-wrap">
+                            <img id="bannerPreviewImage"
+                                 th:if="${banner.imageUrl != null && !banner.imageUrl.isEmpty()}"
+                                 th:src="${banner.imageUrl}"
+                                 th:alt="${banner.title}">
+                            <div class="preview-placeholder"
+                                 th:if="${banner.imageUrl == null || banner.imageUrl.isEmpty()}">
+                                <i class="fa-solid fa-image d-block mb-2" style="font-size: 2rem;"></i>
+                                Ảnh preview sẽ hiển thị ở đây
                             </div>
-                            <button type="submit" class="btn-submit">
-                                <i class="fa-solid fa-floppy-disk"></i>
-                                <span th:text="${banner.id != null ? 'Cập nhật banner' : 'Thêm banner'}">Thêm banner</span>
-                            </button>
-                            <a th:href="@{/admin/banners}" class="btn-cancel text-decoration-none">
-                                <i class="fa-solid fa-rotate-left"></i>
-                                Làm mới
-                            </a>
+                        </div>
+                        <div class="preview-caption">
+                            <strong id="bannerPreviewTitle" th:text="${banner.title != null && !banner.title.isEmpty() ? banner.title : 'Tên banner nội bộ'}">
+                                Tên banner nội bộ
+                            </strong>
+                            <span id="bannerPreviewSubtitle" th:text="${banner.subtitle != null && !banner.subtitle.isEmpty() ? banner.subtitle : 'Ghi chú giúp đội vận hành hiểu mục đích banner.'}">
+                                Ghi chú giúp đội vận hành hiểu mục đích banner.
+                            </span>
                         </div>
                     </div>
-                </form>
-            </div>
+                </aside>
+            </section>
 
-            <div class="page-card">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+            <section class="page-card">
+                <div class="section-title">
+                    <i class="fa-solid fa-table-list"></i>
+                    <div>
+                        <h2>Danh sách banner</h2>
+                        <p>Quản lý trạng thái, hình ảnh và liên kết phim của từng banner.</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive" th:if="${banners != null && !#lists.isEmpty(banners)}">
+                    <table class="table banner-table align-middle mb-0">
                         <thead>
                         <tr>
-                            <th>Ảnh</th>
-                            <th>Nội dung</th>
+                            <th>Ảnh banner</th>
+                            <th>Nội dung quản trị</th>
                             <th>Vị trí</th>
-                            <th>Thứ tự</th>
                             <th>Trạng thái</th>
                             <th class="text-end">Thao tác</th>
                         </tr>
@@ -164,44 +577,104 @@
                                 <img class="banner-preview" th:src="${item.imageUrl}" th:alt="${item.title}">
                             </td>
                             <td>
-                                <div class="fw-bold text-dark" th:text="${item.title}">Banner title</div>
-                                <div class="text-secondary small" th:text="${item.subtitle}">Mô tả</div>
-                                <a class="small text-decoration-none" th:if="${item.linkUrl != null}" th:href="${item.linkUrl}" th:text="${item.linkUrl}">/movies</a>
+                                <div class="banner-name" th:text="${item.title}">Banner title</div>
+                                <div class="banner-note" th:text="${item.subtitle != null && !item.subtitle.isEmpty() ? item.subtitle : 'Chưa có ghi chú nội bộ.'}">
+                                    Chưa có ghi chú nội bộ.
+                                </div>
+                                <a class="linked-movie" th:if="${item.linkUrl != null}" th:href="${item.linkUrl}"
+                                   th:text="${movieLinkLabels[item.linkUrl] != null ? movieLinkLabels[item.linkUrl] : item.linkUrl}">
+                                    Tên phim
+                                </a>
                             </td>
                             <td>
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle"
-                                      th:text="${item.page.displayName}">Trang chủ</span>
-                            </td>
-                            <td class="fw-bold" th:text="${item.displayOrder}">1</td>
-                            <td>
-                                <span th:if="${item.active}" class="badge badge-status bg-success-subtle text-success border border-success-subtle">
-                                    <i class="fa-solid fa-circle-check me-1"></i> Đang hiển thị
+                                <span class="page-badge">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                    <span th:text="${item.page.displayName}">Trang chủ</span>
                                 </span>
-                                <span th:if="${!item.active}" class="badge badge-status bg-secondary-subtle text-secondary border border-secondary-subtle">
-                                    <i class="fa-solid fa-circle-pause me-1"></i> Đã ẩn
+                            </td>
+                            <td>
+                                <span th:if="${item.active}" class="status-chip bg-success-subtle text-success border border-success-subtle">
+                                    <i class="fa-solid fa-circle-check"></i> Đang hiển thị
+                                </span>
+                                <span th:if="${!item.active}" class="status-chip bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                    <i class="fa-solid fa-circle-pause"></i> Đã ẩn
                                 </span>
                             </td>
                             <td class="text-end">
-                                <a th:href="@{/admin/banners/edit/{id}(id=${item.id})}" class="btn btn-sm btn-outline-primary action-btn">
-                                    <i class="fa-solid fa-pen"></i>
-                                </a>
-                                <a th:href="@{/admin/banners/delete/{id}(id=${item.id})}"
-                                   onclick="return confirm('Bạn có chắc muốn xóa banner này?')"
-                                   class="btn btn-sm btn-outline-danger action-btn">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
+                                <div class="action-group">
+                                    <a th:href="@{/admin/banners/edit/{id}(id=${item.id})}" class="btn btn-outline-primary" title="Sửa banner">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <a th:href="@{/admin/banners/delete/{id}(id=${item.id})}"
+                                       onclick="return confirm('Bạn có chắc muốn xóa banner này?')"
+                                       class="btn btn-outline-danger" title="Xóa banner">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
                             </td>
-                        </tr>
-                        <tr th:if="${banners == null || #lists.isEmpty(banners)}">
-                            <td colspan="6" class="text-center text-secondary py-4">Chưa có banner nào.</td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
-            </div>
+
+                <div class="empty-banner-state" th:if="${banners == null || #lists.isEmpty(banners)}">
+                    <i class="fa-regular fa-images d-block mb-2" style="font-size: 2.4rem;"></i>
+                    <strong>Chưa có banner nào trong vị trí này.</strong>
+                    <div>Hãy tạo banner đầu tiên bằng form phía trên để bắt đầu hiển thị ngoài website.</div>
+                </div>
+            </section>
         </div>
     </main>
 </div>
 <script th:src="@{/js/auto-dismiss-alerts.js}"></script>
+<script>
+    const imageUrlInput = document.getElementById("bannerImageUrlInput");
+    const fileInput = document.getElementById("bannerFileInput");
+    const titleInput = document.getElementById("bannerTitleInput");
+    const subtitleInput = document.getElementById("bannerSubtitleInput");
+    const previewWrap = document.querySelector(".preview-image-wrap");
+    const previewTitle = document.getElementById("bannerPreviewTitle");
+    const previewSubtitle = document.getElementById("bannerPreviewSubtitle");
+
+    function ensurePreviewImage() {
+        let image = document.getElementById("bannerPreviewImage");
+        if (!image) {
+            image = document.createElement("img");
+            image.id = "bannerPreviewImage";
+            previewWrap.innerHTML = "";
+            previewWrap.appendChild(image);
+        }
+        return image;
+    }
+
+    function updatePreviewImage(src) {
+        if (!src) {
+            return;
+        }
+        const image = ensurePreviewImage();
+        image.src = src;
+        image.alt = titleInput?.value || "Banner preview";
+    }
+
+    imageUrlInput?.addEventListener("input", function () {
+        updatePreviewImage(this.value.trim());
+    });
+
+    fileInput?.addEventListener("change", function () {
+        const file = this.files && this.files[0];
+        if (!file) {
+            return;
+        }
+        updatePreviewImage(URL.createObjectURL(file));
+    });
+
+    titleInput?.addEventListener("input", function () {
+        previewTitle.textContent = this.value.trim() || "Tên banner nội bộ";
+    });
+
+    subtitleInput?.addEventListener("input", function () {
+        previewSubtitle.textContent = this.value.trim() || "Ghi chú giúp đội vận hành hiểu mục đích banner.";
+    });
+</script>
 </body>
 </html>

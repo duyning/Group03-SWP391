@@ -1,0 +1,278 @@
+<!doctype html>
+<!--
+  Created on 2026-06-25: Admin inbox for customer contact requests.
+  Updated on 2026-06-25: Added email reply and AI-assisted reply controls.
+  Created by: NinhDD - HE186113
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý liên hệ khách hàng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
+    <link rel="stylesheet" th:href="@{/css/admin-content.css}">
+    <style>
+        .contact-kpi-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin-bottom: 18px;
+        }
+
+        .contact-kpi {
+            background: #f8fafc;
+            border: 1px solid #dbe5ef;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .contact-kpi span {
+            color: #64748b;
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .contact-kpi strong {
+            color: #0f3768;
+            display: block;
+            font-size: 2rem;
+            line-height: 1;
+            margin-top: 6px;
+        }
+
+        .contact-message {
+            color: #475569;
+            line-height: 1.55;
+            max-width: 520px;
+            white-space: pre-line;
+        }
+
+        .contact-meta {
+            color: #64748b;
+            font-size: 0.84rem;
+        }
+
+        .reply-panel {
+            min-width: 360px;
+            text-align: left;
+        }
+
+        .reply-panel summary {
+            color: #0054a6;
+            cursor: pointer;
+            font-size: 0.86rem;
+            font-weight: 850;
+            list-style: none;
+            margin-top: 8px;
+        }
+
+        .reply-panel summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .reply-box {
+            background: #f8fafc;
+            border: 1px solid #dbe5ef;
+            border-radius: 10px;
+            margin-top: 10px;
+            padding: 12px;
+        }
+
+        .reply-box textarea {
+            min-height: 170px;
+            white-space: pre-line;
+        }
+
+        .reply-meta {
+            color: #64748b;
+            font-size: 0.78rem;
+            margin-top: 7px;
+        }
+
+        @media (max-width: 1000px) {
+            .contact-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body class="admin-page">
+<div class="admin-layout">
+    <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('contacts')}"></aside>
+    <main class="admin-main">
+        <div class="container py-4">
+            <section class="page-card">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+                    <div>
+                        <h1 class="page-title mb-1">
+                            <i class="fa-solid fa-envelope-open-text me-2"></i>
+                            Quản lý liên hệ khách hàng
+                        </h1>
+                        <p class="text-secondary mb-0">
+                            Tiếp nhận liên hệ từ khách hàng, dùng gợi ý AI để phản hồi đúng trọng tâm và gửi email khi cần.
+                        </p>
+                    </div>
+                    <a th:href="@{/contact}" target="_blank" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        Xem trang liên hệ
+                    </a>
+                </div>
+
+                <div th:if="${successMessage}" class="alert alert-success" data-auto-dismiss="5000">
+                    <i class="fa-solid fa-circle-check me-2"></i>
+                    <span th:text="${successMessage}">Đã cập nhật liên hệ.</span>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger" data-auto-dismiss="5000">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <span th:text="${errorMessage}">Có lỗi xảy ra.</span>
+                </div>
+
+                <section class="contact-kpi-grid" aria-label="Tổng quan liên hệ">
+                    <div class="contact-kpi">
+                        <span>Đang xem</span>
+                        <strong th:text="${totalContacts}">0</strong>
+                    </div>
+                    <div class="contact-kpi">
+                        <span>Chờ phản hồi</span>
+                        <strong th:text="${processingContacts}">0</strong>
+                    </div>
+                    <div class="contact-kpi">
+                        <span>Đã phản hồi</span>
+                        <strong th:text="${resolvedContacts}">0</strong>
+                    </div>
+                </section>
+
+                <div class="filter-wrapper mb-4">
+                    <form th:action="@{/admin/contacts}" method="get" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Trạng thái xử lý</label>
+                            <select class="form-select" name="status">
+                                <option value="">Tất cả liên hệ</option>
+                                <option th:each="status : ${statuses}"
+                                        th:value="${status}"
+                                        th:text="${status.displayName}"
+                                        th:selected="${selectedStatus == status}">
+                                    Mới
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <button class="btn btn-primary d-inline-flex align-items-center justify-content-center gap-2 w-100" type="submit">
+                                <i class="fa-solid fa-filter"></i>
+                                Lọc
+                            </button>
+                            <a th:href="@{/admin/contacts}" class="btn btn-reset d-inline-flex align-items-center justify-content-center" title="Xóa bộ lọc">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Khách hàng</th>
+                            <th>Nội dung liên hệ</th>
+                            <th>Ngày gửi</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Phản hồi</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="contact : ${contacts}">
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${contact.name}">Nguyễn Văn A</div>
+                                <div class="contact-meta" th:text="${contact.email}">email@example.com</div>
+                                <div class="contact-meta" th:text="${contact.phone != null ? contact.phone : 'Chưa cung cấp số điện thoại'}">
+                                    0987654321
+                                </div>
+                            </td>
+                            <td>
+                                <div class="contact-message" th:text="${contact.message}">
+                                    Nội dung khách hàng cần liên hệ.
+                                </div>
+                            </td>
+                            <td class="text-nowrap" th:text="${contact.createdAt != null ? #temporals.format(contact.createdAt, 'dd/MM/yyyy HH:mm') : ''}">
+                                25/06/2026 09:30
+                            </td>
+                            <td>
+                                <span class="badge badge-status" th:classappend="${contact.status.cssClass}"
+                                      th:text="${contact.status.displayName}">Mới</span>
+                                <div class="reply-meta" th:if="${contact.repliedAt != null}"
+                                     th:text="'Đã gửi email: ' + ${#temporals.format(contact.repliedAt, 'dd/MM/yyyy HH:mm')}">
+                                    Đã gửi email
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2 align-items-start">
+                                    <form th:action="@{/admin/contacts/{id}/reply/auto(id=${contact.id})}" method="post"
+                                          onsubmit="return confirm('Gửi phản hồi AI trực tiếp đến email khách hàng?')">
+                                        <button class="btn btn-sm btn-outline-primary action-btn" type="submit" title="Gửi phản hồi AI">
+                                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/admin/contacts/{id}/delete(id=${contact.id})}" method="post"
+                                          onsubmit="return confirm('Bạn có chắc muốn xóa liên hệ này?')">
+                                        <button class="btn btn-sm btn-outline-danger action-btn" type="submit" title="Xóa liên hệ">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                <details class="reply-panel">
+                                    <summary>
+                                        <i class="fa-solid fa-envelope me-1"></i>
+                                        Soạn email phản hồi
+                                    </summary>
+                                    <div class="reply-box">
+                                        <form th:action="@{/admin/contacts/{id}/reply(id=${contact.id})}" method="post" class="d-grid gap-2">
+                                            <div>
+                                                <label class="form-label">Tiêu đề email</label>
+                                                <input class="form-control form-control-sm" name="replySubject" minlength="8" maxlength="160"
+                                                       th:value="${contact.replySubject != null ? contact.replySubject : suggestedSubjects[contact.id]}"
+                                                       required>
+                                            </div>
+                                            <div>
+                                                <label class="form-label">Nội dung phản hồi</label>
+                                                <textarea class="form-control form-control-sm" name="replyMessage" minlength="20" maxlength="2000" required
+                                                          th:text="${contact.replyMessage != null ? contact.replyMessage : suggestedReplies[contact.id]}"></textarea>
+                                            </div>
+                                            <button class="btn btn-sm btn-primary d-inline-flex align-items-center justify-content-center gap-2" type="submit">
+                                                <i class="fa-solid fa-paper-plane"></i>
+                                                Gửi email
+                                            </button>
+                                        </form>
+                                    </div>
+                                </details>
+                            </td>
+                        </tr>
+                        <tr th:if="${contacts == null || #lists.isEmpty(contacts)}">
+                            <td colspan="5" class="text-center text-secondary py-5">
+                                <i class="fa-regular fa-inbox d-block mb-2" style="font-size: 2rem;"></i>
+                                Chưa có liên hệ nào phù hợp.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+<script>
+    document.querySelectorAll("[data-auto-dismiss]").forEach(function (alert) {
+        setTimeout(function () {
+            alert.style.transition = "opacity .25s ease";
+            alert.style.opacity = "0";
+            setTimeout(function () {
+                alert.remove();
+            }, 260);
+        }, Number(alert.dataset.autoDismiss || 5000));
+    });
+</script>
+</body>
+</html>

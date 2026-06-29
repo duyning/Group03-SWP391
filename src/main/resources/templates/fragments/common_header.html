@@ -31,11 +31,12 @@
             <nav class="nav-menu">
                 <a th:href="@{/}" th:classappend="${active == 'home'} ? 'active'">TRANG CHỦ</a>
                 <a th:href="@{/movies}" th:classappend="${active == 'movies'} ? 'active'">PHIM</a>
-                <a href="#" th:classappend="${active == 'cinema'} ? 'active'">RẠP</a>
+                <a th:href="@{/about}" th:classappend="${active == 'cinema'} ? 'active'">RẠP</a>
                 <a href="#" th:classappend="${active == 'price'} ? 'active'">GIÁ VÉ</a>
+                <a th:href="@{/promotions}" th:classappend="${active == 'promotions'} ? 'active'">ƯU ĐÃI</a>
                 <a th:href="@{/vouchers}" th:classappend="${active == 'voucher'} ? 'active'">KHO VOUCHER</a>
                 <a th:href="@{/posts}" th:classappend="${active == 'posts'} ? 'active'">TIN TỨC</a>
-                <a href="#" th:classappend="${active == 'community'} ? 'active'">CỘNG ĐỒNG</a>
+                <a th:href="@{/contact}" th:classappend="${active == 'contact'} ? 'active'">LIÊN HỆ</a>
             </nav>
             <form class="search-form" th:action="@{/search}" method="get">
                 <input type="search" name="keyword" placeholder="Tìm phim" th:value="${keyword}">
