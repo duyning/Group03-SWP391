@@ -29,7 +29,7 @@
                 <a href="/admin/dashboard"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
                 <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
                 <a href="/manage_showtime.html"><li class="active"><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
-                <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
+                <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý vé</li></a>
                 <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
                 <a href="/admin/banners"><li><i class="fas fa-images"></i> Quản lý banner</li></a>
                 <a href="/admin/rooms"><li><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
@@ -101,10 +101,16 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label for="filterShowtimeRoom"><i class="fa-solid fa-door-open"></i> PHÒNG CHIẾU</label>
+                        <select id="filterShowtimeRoom">
+                            <option value="">-- Tất cả phòng --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="filterShowtimeViewMode"><i class="fa-solid fa-calendar-week"></i> CHẾ ĐỘ XEM</label>
                         <select id="filterShowtimeViewMode">
                             <option value="all">Xem tất cả thời gian</option>
-                            <option value="week">Lịch chiếu tuần này</option>
+                            <option value="week" selected>Lịch chiếu tuần này</option>
                             <option value="month">Lịch chiếu tháng này</option>
                         </select>
                     </div>
@@ -151,7 +157,6 @@
                                 <th scope="col">GIỜ CHIẾU - KẾT THÚC</th>
                                 <th scope="col">PHÒNG CHIẾU</th>
                                 <th scope="col">LOẠI NGÀY</th>
-                                <th scope="col">GHẾ TRỐNG / TỔNG</th>
                                 <th scope="col">TRẠNG THÁI</th>
                                 <th scope="col" class="text-center">HÀNH ĐỘNG</th>
                             </tr>
@@ -243,59 +248,7 @@
 
                 <div class="modal-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                     <button type="submit" class="btn btn-primary" id="btnSaveShowtime">Lưu lịch chiếu</button>
-                    <button type="button" class="btn" id="btnOverrideDayFromEdit" style="background:#fef3c7;color:#d97706;border:1px solid #fcd34d;display:none;">Điều chỉnh riêng 1 ngày</button>
                     <button type="button" class="btn btn-secondary" id="btnCancelShowtimeModal">Hủy</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal 3: Điều chỉnh lịch chiếu cho 1 ngày cụ thể -->
-    <!-- [SỬA - TrienLX - 2026-06-23]: Modal điều chỉnh 1 ngày cụ thể trong dải lịch chiếu -->
-    <div class="modal-overlay" id="overrideDayModal">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h2>Điều chỉnh lịch chiếu 1 ngày</h2>
-                <button class="btn-close-modal" id="btnCloseOverrideDayModal">&times;</button>
-            </div>
-            <form id="overrideDayForm" class="modal-body">
-                <input type="hidden" id="overrideMovieId">
-
-                <!-- Tên phim (Chỉ đọc) -->
-                <div class="form-row">
-                    <div class="form-group full-width">
-                        <label>Phim chiếu</label>
-                        <input type="text" id="overrideMovieTitle" readonly style="background:#f1f5f9; cursor:not-allowed; font-weight:600;">
-                    </div>
-                </div>
-
-                <!-- Ngày chiếu cụ thể -->
-                <div class="form-row">
-                    <div class="form-group full-width">
-                        <label for="overrideTargetDateSelect">Ngày chiếu cụ thể <span class="required">*</span></label>
-                        <select id="overrideTargetDateSelect" required>
-                            <option value="">-- Chọn ngày cần điều chỉnh --</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Giờ chiếu mới & Phòng chiếu mới -->
-                <div class="form-row split-2">
-                    <div class="form-group">
-                        <label for="overrideTimeInput">Giờ chiếu mới <span class="required">*</span></label>
-                        <input type="time" id="overrideTimeInput" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="overrideRoomInput">Phòng chiếu mới <span class="required">*</span></label>
-                        <select id="overrideRoomInput" required>
-                            <option value="">-- Chọn phòng --</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary" id="btnSaveOverrideDay">Lưu điều chỉnh</button>
-                    <button type="button" class="btn btn-secondary" id="btnCancelOverrideDayModal">Hủy</button>
                 </div>
             </form>
         </div>

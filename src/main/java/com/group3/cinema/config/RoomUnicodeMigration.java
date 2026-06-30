@@ -36,8 +36,12 @@ public class RoomUnicodeMigration {
             addMovieColumnsIfMissing();
             // [SỬA - TrienLX - 2026-06-23]: Thêm cột is_override vào bảng showtimes nếu chưa có
             addShowtimeOverrideColumnIfMissing();
+            addShowtimeActiveColumnIfMissing();
             // [SỬA - TrienLX - 2026-06-25]: Thêm cột base_price vào bảng tickets nếu chưa có
             addTicketBasePriceColumnIfMissing();
+            // [SỬA - TrienLX - 2026-06-30]: Thêm cột deleted vào bảng tickets nếu chưa có
+            addTicketDeletedColumnIfMissing();
+            addTicketColumnsIfMissing();
             migrateTextColumns();
             normalizeVietnameseValues();
             // [SỬA - TrienLX - 2026-06-23]: Sửa constraint kiểm tra cột status của bảng movie
@@ -68,6 +72,44 @@ public class RoomUnicodeMigration {
         }
     }
 
+    /**
+     * [SỬA - TrienLX - 2026-06-30]
+     * Thêm cột deleted vào bảng tickets nếu chưa tồn tại.
+     */
+    private void addTicketDeletedColumnIfMissing() {
+        if (!tableExists("tickets")) return;
+        if (!columnExists("tickets", "deleted")) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE tickets ADD deleted BIT NOT NULL DEFAULT 0");
+                log.info("[TrienLX - 2026-06-30] Đã bổ sung cột deleted cho bảng tickets");
+            } catch (Exception e) {
+                log.warn("[TrienLX - 2026-06-30] Không thể bổ sung cột deleted: {}", e.getMessage());
+            }
+        }
+    }
+
+    private void addTicketColumnsIfMissing() {
+        if (!tableExists("tickets")) return;
+        addColumnIfMissing("tickets", "seat_surcharge", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("tickets", "format_surcharge", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("tickets", "discount_amount", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("tickets", "final_price", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("tickets", "created_at", "DATETIME2 NULL");
+        addColumnIfMissing("tickets", "customer_name", "NVARCHAR(255) NULL");
+        addColumnIfMissing("tickets", "customer_phone", "NVARCHAR(50) NULL");
+    }
+
+    private void addColumnIfMissing(String tableName, String columnName, String columnType) {
+        if (!columnExists(tableName, columnName)) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE " + tableName + " ADD " + columnName + " " + columnType);
+                log.info("Đã bổ sung cột {} cho bảng {}", columnName, tableName);
+            } catch (Exception e) {
+                log.warn("Không thể bổ sung cột {} cho bảng {}: {}", columnName, tableName, e.getMessage());
+            }
+        }
+    }
+
     private void addMovieColumnsIfMissing() {
         if (!tableExists("movie")) {
             return;
@@ -86,6 +128,14 @@ public class RoomUnicodeMigration {
                 log.info("Đã bổ sung cột producer cho bảng movie");
             } catch (Exception e) {
                 log.warn("Không thể bổ sung cột producer: {}", e.getMessage());
+            }
+        }
+        if (!columnExists("movie", "deleted")) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE movie ADD deleted BIT NOT NULL DEFAULT 0");
+                log.info("Đã bổ sung cột deleted cho bảng movie");
+            } catch (Exception e) {
+                log.warn("Không thể bổ sung cột deleted: {}", e.getMessage());
             }
         }
     }
@@ -108,6 +158,20 @@ public class RoomUnicodeMigration {
                 log.info("[TrienLX - 2026-06-23] Đã bổ sung cột is_override cho bảng showtimes");
             } catch (Exception e) {
                 log.warn("[TrienLX - 2026-06-23] Không thể bổ sung cột is_override: {}", e.getMessage());
+            }
+        }
+    }
+
+    private void addShowtimeActiveColumnIfMissing() {
+        if (!tableExists("showtimes")) {
+            return;
+        }
+        if (!columnExists("showtimes", "active")) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE showtimes ADD active BIT NOT NULL DEFAULT 1");
+                log.info("Đã bổ sung cột active cho bảng showtimes");
+            } catch (Exception e) {
+                log.warn("Không thể bổ sung cột active cho bảng showtimes: {}", e.getMessage());
             }
         }
     }
@@ -186,6 +250,11 @@ public class RoomUnicodeMigration {
         alterColumn("banners", "image_url", "NVARCHAR(500) NOT NULL");
         alterColumn("banners", "link_url", "NVARCHAR(500) NULL");
         alterColumn("banners", "page", "NVARCHAR(20) NOT NULL");
+
+        // [SỬA - TrienLX - 2026-06-30]: Chuyển đổi các cột cấu hình giá vé sang Unicode
+        alterColumn("ticket_price_configs", "day_type", "NVARCHAR(30) NOT NULL");
+        alterColumn("ticket_price_configs", "slot_name", "NVARCHAR(30) NOT NULL");
+        alterColumn("customer_discounts", "customer_type", "NVARCHAR(50) NOT NULL");
     }
 
     /**
@@ -333,12 +402,16 @@ public class RoomUnicodeMigration {
         return count != null && count > 0;
     }
 
-    /**
-     * [THÊM - TrienLX - 2026-06-25]
-     * Nạp dữ liệu cấu hình mặc định cho ma trận tính giá vé (Base price, phụ thu, chiết khấu).
-     */
     private void seedPricingConfigs() {
         try {
+            // [SỬA - TrienLX - 2026-06-30]: Dọn dẹp các bản ghi bị lỗi hỏi chấm (broken Unicode) trước khi seed
+            if (tableExists("ticket_price_configs")) {
+                jdbcTemplate.execute("DELETE FROM ticket_price_configs WHERE day_type LIKE '%?%' OR slot_name LIKE '%?%'");
+            }
+            if (tableExists("customer_discounts")) {
+                jdbcTemplate.execute("DELETE FROM customer_discounts WHERE customer_type LIKE '%?%'");
+            }
+
             // 1. Seed ticket_price_configs
             if (tableExists("ticket_price_configs")) {
                 Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ticket_price_configs", Integer.class);

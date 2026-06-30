@@ -4,31 +4,28 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="Added ticket management functionality—including the ability to edit ticket details and set prices based on time slots, days of the week, weekends, and holidays, as well as by customer category, seat type, and screening room (e.g., 2D)—and optimized the management of movies and showtimes.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/config/RoomUnicodeMigration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/config/RoomUnicodeMigration.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/api/MovieController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/api/MovieController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/api/ShowtimeController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/api/ShowtimeController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/api/TicketApiController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/api/TicketApiController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/FormatSurcharge.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/FormatSurcharge.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Movie.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Movie.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Showtime.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Showtime.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Ticket.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Ticket.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/TicketPriceConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/TicketPriceConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/FormatSurchargeRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/FormatSurchargeRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/MovieRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/MovieRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/RoomRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/RoomRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/TicketPriceConfigRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/TicketPriceConfigRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/TicketRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/TicketRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/api/ShowtimeRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/api/ShowtimeRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/MovieService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/MovieService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/TicketService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/TicketService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/api/MovieService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/api/MovieService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/api/ShowtimeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/api/ShowtimeService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/css/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/css/style.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/static/js/app.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/js/app.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_movies.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_movies.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_showtime.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_showtime.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_ticket.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_ticket.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/movie-detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/movie-detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/movie-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/movie-list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/Group03_SWP391_Summer26-0.0.1-SNAPSHOT.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/Group03_SWP391_Summer26-0.0.1-SNAPSHOT.jar.original" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_ticket.html" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/Group03Swp391Summer26Application.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/Group03Swp391Summer26Application.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/CatalogInitializer.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/CatalogInitializer.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/RoomUnicodeMigration.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/config/RoomUnicodeMigration.class" afterDir="false" />
@@ -52,7 +49,6 @@
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/RoomApiController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/ShowtimeController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/controller/api/ShowtimeController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Account.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Account.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/AudioTechnology$AudioTechnologyBuilder.class" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/AudioTechnology.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/AudioTechnology.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Combo.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Combo.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/MembershipLevel.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/MembershipLevel.class" afterDir="false" />
@@ -60,13 +56,9 @@
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Movie.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Movie.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Post.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Post.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Role.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Role.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Room$RoomBuilder.class" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Room.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Room.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/RoomType$RoomTypeBuilder.class" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/RoomType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/RoomType.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Seat$SeatBuilder.class" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Seat.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Seat.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/SeatType$SeatTypeBuilder.class" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/SeatType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/SeatType.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Showtime.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/entity/Showtime.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/AccountRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/repository/AccountRepository.class" afterDir="false" />
@@ -89,31 +81,10 @@
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/api/MovieService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/api/MovieService.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/api/ShowtimeService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/group3/cinema/service/api/ShowtimeService.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/example/CinemaApplication.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/example/CinemaApplication.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/static/css/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/static/css/style.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/static/js/app.js" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/static/js/app.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/static/manage_movies.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/static/manage_movies.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/static/manage_showtime.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/static/manage_showtime.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/static/manage_ticket.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/static/manage_ticket.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/combo-create.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/combo-create.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/combo-edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/combo-edit.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/fragments/admin_sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/fragments/admin_sidebar.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/manager_catalog.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/manager_catalog.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/manager_room.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/manager_room.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/manager_seat.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/manager_seat.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/movie-detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/movie-detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/movie-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/movie-list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/profile.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/profile.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/templates/search-result.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/templates/search-result.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-archiver/pom.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/TEST-com.group3.cinema.Group03ApplicationTests.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/TEST-com.group3.cinema.Group03Swp391Summer26ApplicationTests.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/com.group3.cinema.Group03ApplicationTests.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/com.group3.cinema.Group03Swp391Summer26ApplicationTests.txt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/target/test-classes/com/group3/cinema/Group03ApplicationTests.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/test-classes/com/group3/cinema/Group03ApplicationTests.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/test-classes/com/group3/cinema/Group03Swp391Summer26ApplicationTests.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/test-classes/com/group3/cinema/Group03Swp391Summer26ApplicationTests.class" afterDir="false" />
     </list>
@@ -125,6 +96,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;xuantrien2004&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/duyning/Group03-SWP391.git&quot;,
+    &quot;accountId&quot;: &quot;76330dee-8ad4-47d1-9c33-afa135c40245&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 3
@@ -249,10 +232,30 @@
       <workItem from="1782406234626" duration="2138000" />
       <workItem from="1782408877775" duration="1972000" />
       <workItem from="1782435923771" duration="3165000" />
+      <workItem from="1782442010760" duration="502000" />
+      <workItem from="1782789769748" duration="2135000" />
+      <workItem from="1782795217306" duration="1589000" />
+      <workItem from="1782797033372" duration="5000" />
+      <workItem from="1782800139654" duration="493000" />
+      <workItem from="1782830401252" duration="4233000" />
+      <workItem from="1782837074687" duration="1556000" />
     </task>
+    <task id="LOCAL-00001" summary="Added ticket management functionality—including the ability to edit ticket details and set prices based on time slots, days of the week, weekends, and holidays, as well as by customer category, seat type, and screening room (e.g., 2D)—and optimized the management of movies and showtimes.">
+      <option name="closed" value="true" />
+      <created>1782442274873</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1782442274874</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Added ticket management functionality—including the ability to edit ticket details and set prices based on time slots, days of the week, weekends, and holidays, as well as by customer category, seat type, and screening room (e.g., 2D)—and optimized the management of movies and showtimes." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added ticket management functionality—including the ability to edit ticket details and set prices based on time slots, days of the week, weekends, and holidays, as well as by customer category, seat type, and screening room (e.g., 2D)—and optimized the management of movies and showtimes." />
   </component>
 </project>

@@ -1,9 +1,7 @@
 /*
  * Dự án: Cinema 2026 — SWP391 Group 03
  * File: TicketService.java
- * Người tạo: TrienLX
- * Ngày tạo: 2026-06-25
- * Chi tiết: Xử lý logic nghiệp vụ cho Vé phim (sinh vé, tính toán giá vé theo công thức ma trận, thống kê).
+ * Người sửa: TrienLX
  */
 package com.group3.cinema.service;
 
@@ -47,18 +45,19 @@ public class TicketService {
     }
 
     /**
-     * Xác định Khung giờ chiếu (Slot Name) dựa trên giờ chiếu thực tế.
+     * Xác định TimeSlot theo giờ chiếu.
      */
     public String determineTimeSlot(LocalTime time) {
         if (time == null) return "Giờ thường";
-        if (time.isBefore(LocalTime.of(12, 0))) {
-            return "Suất sớm"; // Trước 12:00
-        } else if (time.isBefore(LocalTime.of(17, 0))) {
-            return "Giờ thường"; // 12:00 - 16:59
-        } else if (time.isBefore(LocalTime.of(22, 0))) {
-            return "Giờ vàng"; // 17:00 - 21:59
+        int hour = time.getHour();
+        if (hour < 12) {
+            return "Suất sớm";
+        } else if (hour < 17) {
+            return "Giờ thường";
+        } else if (hour < 22) {
+            return "Giờ vàng";
         } else {
-            return "Suất khuya"; // Sau 22:00
+            return "Suất khuya";
         }
     }
 
@@ -66,6 +65,15 @@ public class TicketService {
      * Tính toán giá vé thực tế dựa trên Showtime, Seat và Đối tượng khách hàng.
      */
     public double calculatePrice(Showtime showtime, Seat seat, String customerType) {
+        Ticket t = new Ticket();
+        populateTicketPriceDetails(t, showtime, seat, customerType);
+        return t.getFinalPrice();
+    }
+
+    /**
+     * Tính toán chi tiết cơ cấu giá vé (basePrice, seatSurcharge, formatSurcharge, discountAmount, finalPrice).
+     */
+    public void populateTicketPriceDetails(Ticket ticket, Showtime showtime, Seat seat, String customerType) {
         // 1. Xác định Giá Cơ Bản theo Ngày chiếu và Khung giờ
         String dayType = showtime.getDayType();
         if (dayType == null || dayType.isEmpty()) {
@@ -74,32 +82,30 @@ public class TicketService {
         String slotName = determineTimeSlot(showtime.getShowTime());
 
         Optional<TicketPriceConfig> configOpt = ticketPriceConfigRepository.findByDayTypeAndSlotName(dayType, slotName);
-        double basePrice = 60000.0; // Giá trị fallback mặc định
+        double basePriceVal = 60000.0;
         if (configOpt.isPresent()) {
-            basePrice = configOpt.get().getBasePrice();
+            basePriceVal = configOpt.get().getBasePrice();
         } else {
-            // Giá trị mặc định nếu chưa seed DB
             if ("Trong tuần".equals(dayType)) {
-                if ("Suất sớm".equals(slotName)) basePrice = 50000.0;
-                else if ("Giờ thường".equals(slotName)) basePrice = 60000.0;
-                else if ("Giờ vàng".equals(slotName)) basePrice = 75000.0;
-                else basePrice = 65000.0;
+                if ("Suất sớm".equals(slotName)) basePriceVal = 50000.0;
+                else if ("Giờ thường".equals(slotName)) basePriceVal = 60000.0;
+                else if ("Giờ vàng".equals(slotName)) basePriceVal = 75000.0;
+                else basePriceVal = 65000.0;
             } else if ("Cuối tuần".equals(dayType)) {
-                if ("Suất sớm".equals(slotName)) basePrice = 65000.0;
-                else if ("Giờ thường".equals(slotName)) basePrice = 80000.0;
-                else if ("Giờ vàng".equals(slotName)) basePrice = 95000.0;
-                else basePrice = 85000.0;
-            } else { // Ngày lễ
-                if ("Suất sớm".equals(slotName)) basePrice = 80000.0;
-                else if ("Giờ thường".equals(slotName)) basePrice = 95000.0;
-                else if ("Giờ vàng".equals(slotName)) basePrice = 110000.0;
-                else basePrice = 100000.0;
+                if ("Suất sớm".equals(slotName)) basePriceVal = 65000.0;
+                else if ("Giờ thường".equals(slotName)) basePriceVal = 80000.0;
+                else if ("Giờ vàng".equals(slotName)) basePriceVal = 95000.0;
+                else basePriceVal = 85000.0;
+            } else {
+                if ("Suất sớm".equals(slotName)) basePriceVal = 80000.0;
+                else if ("Giờ thường".equals(slotName)) basePriceVal = 95000.0;
+                else if ("Giờ vàng".equals(slotName)) basePriceVal = 110000.0;
+                else basePriceVal = 100000.0;
             }
         }
 
         // 2. Xác định Phụ phí theo loại ghế
         String seatType = seat.getSeatType() != null ? seat.getSeatType().toLowerCase() : "std";
-        // Đồng bộ chuẩn hóa code ghế
         if (seatType.equals("standard") || seatType.equals("thường")) {
             seatType = "std";
         } else if (seatType.equals("vip")) {
@@ -109,226 +115,316 @@ public class TicketService {
         }
 
         Optional<SeatTypeSurcharge> seatSurchargeOpt = seatTypeSurchargeRepository.findBySeatTypeCode(seatType);
-        double seatSurcharge = 0.0;
+        double seatSurchargeVal = 0.0;
         if (seatSurchargeOpt.isPresent()) {
-            seatSurcharge = seatSurchargeOpt.get().getSurchargeAmount();
+            seatSurchargeVal = seatSurchargeOpt.get().getSurchargeAmount();
         } else {
-            // Fallback mặc định
-            if ("vip".equals(seatType)) seatSurcharge = 15000.0;
-            else if ("couple".equals(seatType)) seatSurcharge = 30000.0;
+            if ("vip".equals(seatType)) seatSurchargeVal = 15000.0;
+            else if ("couple".equals(seatType)) seatSurchargeVal = 30000.0;
         }
 
         // 3. Xác định Phụ phí theo Định dạng phòng chiếu
-        double formatSurcharge = 0.0;
+        double formatSurchargeVal = 0.0;
         Optional<Room> roomOpt = roomRepository.findFirstByRoomNameIgnoreCaseAndCinemaId(showtime.getRoom(), 1L);
         if (roomOpt.isPresent()) {
             String formatCode = roomOpt.get().getRoomType();
             if (formatCode != null && !formatCode.isEmpty()) {
                 Optional<FormatSurcharge> formatOpt = formatSurchargeRepository.findByFormatCode(formatCode);
                 if (formatOpt.isPresent()) {
-                    formatSurcharge = formatOpt.get().getSurchargeAmount();
+                    formatSurchargeVal = formatOpt.get().getSurchargeAmount();
                 } else if ("3D".equalsIgnoreCase(formatCode)) {
-                    formatSurcharge = 25000.0;
+                    formatSurchargeVal = 25000.0;
                 } else if ("IMAX".equalsIgnoreCase(formatCode) || "Premium".equalsIgnoreCase(formatCode)) {
-                    formatSurcharge = 80000.0;
+                    formatSurchargeVal = 80000.0;
                 }
             }
         }
 
-        // Giá gốc của vé (Người lớn)
-        double finalPrice = basePrice + seatSurcharge + formatSurcharge;
+        double subtotal = basePriceVal + seatSurchargeVal + formatSurchargeVal;
+        double finalPriceVal = subtotal;
+        double discountAmountVal = 0.0;
 
         // 4. Áp dụng Giảm giá theo Đối tượng khách hàng
         if (customerType != null && !customerType.equals("ADULT")) {
             Optional<CustomerDiscount> discountOpt = customerDiscountRepository.findByCustomerType(customerType);
             if (discountOpt.isPresent()) {
                 CustomerDiscount discount = discountOpt.get();
-                // Nếu là ngày thường và có thiết lập đồng giá
                 if ("Trong tuần".equals(dayType) && discount.getFixedPriceWeekday() != null && discount.getFixedPriceWeekday() > 0) {
-                    finalPrice = discount.getFixedPriceWeekday() + seatSurcharge + formatSurcharge;
+                    finalPriceVal = discount.getFixedPriceWeekday() + seatSurchargeVal + formatSurchargeVal;
+                    discountAmountVal = subtotal - finalPriceVal;
                 } else {
-                    finalPrice = finalPrice * (1 - discount.getDiscountRate());
+                    finalPriceVal = subtotal * (1 - discount.getDiscountRate());
+                    discountAmountVal = subtotal * discount.getDiscountRate();
                 }
             }
         }
 
-        return finalPrice;
+        ticket.setBasePrice(basePriceVal);
+        ticket.setSeatSurcharge(seatSurchargeVal);
+        ticket.setFormatSurcharge(formatSurchargeVal);
+        ticket.setDiscountAmount(discountAmountVal);
+        ticket.setFinalPrice(finalPriceVal);
+        ticket.setPrice(finalPriceVal); // Tương thích ngược
+    }
+
+    @Transactional
+    public void generateTicketsForShowtime(Showtime showtime) {
+        // Bỏ trống - vé chỉ tạo khi thực hiện đặt/bán
+    }
+
+    @Transactional(readOnly = true)
+    public List<Ticket> getTicketsByShowtime(Long showtimeId) {
+        return ticketRepository.findByShowtimeIdAndDeletedFalse(showtimeId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Seat> getSeatsForShowtime(Long showtimeId) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        Optional<Room> roomOpt = roomRepository.findFirstByRoomNameIgnoreCaseAndCinemaId(showtime.getRoom(), 1L);
+        if (!roomOpt.isPresent()) {
+            return Collections.emptyList();
+        }
+        return seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(roomOpt.get().getId());
     }
 
     /**
-     * Sinh vé tự động cho suất chiếu.
+     * Giữ chỗ tạm thời (chuyển trạng thái ghế sang PENDING).
      */
     @Transactional
-    public void generateTicketsForShowtime(Showtime showtime) {
-        if (showtime == null || showtime.getId() == null) return;
+    public Ticket holdSeat(Long showtimeId, Long seatId) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
 
-        // Nếu suất chiếu đã bán vé thì không tái tạo lại (tránh hỏng dữ liệu đặt chỗ)
-        boolean hasSold = ticketRepository.existsByShowtimeIdAndStatus(showtime.getId(), "Đã bán");
-        if (hasSold) {
-            return;
+        Optional<Ticket> existing = ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId);
+        if (existing.isPresent()) {
+            throw new IllegalStateException("Ghế này đã được bán hoặc đang giữ chỗ!");
         }
 
-        // Xóa vé trống cũ của suất chiếu này để vẽ sơ đồ mới sạch sẽ
-        ticketRepository.deleteUnsoldTicketsByShowtimeId(showtime.getId());
+        Ticket ticket = new Ticket();
+        ticket.setShowtime(showtime);
+        ticket.setSeat(seat);
+        ticket.setSeatNumber(seat.getSeatLabel());
 
-        // Lấy phòng chiếu để lấy sơ đồ ghế
-        Optional<Room> roomOpt = roomRepository.findFirstByRoomNameIgnoreCaseAndCinemaId(showtime.getRoom(), 1L);
-        if (!roomOpt.isPresent()) {
-            return;
+        String type = seat.getSeatType();
+        String vnType = "Thường";
+        if ("vip".equalsIgnoreCase(type)) vnType = "VIP";
+        else if ("couple".equalsIgnoreCase(type)) vnType = "Đôi";
+        ticket.setSeatType(vnType);
+
+        populateTicketPriceDetails(ticket, showtime, seat, "ADULT");
+        ticket.setStatus("PENDING");
+        ticket.setCreatedAt(java.time.LocalDateTime.now());
+        ticket.setDeleted(false);
+
+        return ticketRepository.save(ticket);
+    }
+
+    /**
+     * Hủy giữ chỗ tạm thời (giải phóng ghế PENDING).
+     */
+    @Transactional
+    public void releaseSeat(Long showtimeId, Long seatId) {
+        Optional<Ticket> existing = ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId);
+        if (existing.isPresent()) {
+            Ticket ticket = existing.get();
+            if ("PENDING".equals(ticket.getStatus())) {
+                ticketRepository.delete(ticket); // Xóa bản ghi giữ chỗ
+            }
         }
+    }
 
-        Room room = roomOpt.get();
-        List<Seat> seats = seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(room.getId());
+    /**
+     * Bán vé mới (Thêm vé mới) - Tương thích ngược.
+     */
+    @Transactional
+    public Ticket sellTicket(Long showtimeId, Long seatId, String customerType) {
+        return sellTicket(showtimeId, seatId, customerType, null, null);
+    }
 
-        List<Ticket> ticketsToSave = new ArrayList<>();
-        for (Seat seat : seats) {
-            // Bỏ qua các vị trí lối đi (empty) hoặc ô trống bị chiếm bởi ghế đôi (skip)
-            String stType = seat.getSeatType();
-            if ("empty".equalsIgnoreCase(stType) || "skip".equalsIgnoreCase(stType) || "broken".equalsIgnoreCase(stType)) {
-                continue;
+    /**
+     * Bán vé mới với thông tin đầy đủ đối tượng khách hàng, tên và số điện thoại.
+     */
+    @Transactional
+    public Ticket sellTicket(Long showtimeId, Long seatId, String customerType, String customerName, String customerPhone) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+
+        Optional<Ticket> existingOpt = ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId);
+        Ticket ticket;
+        if (existingOpt.isPresent()) {
+            ticket = existingOpt.get();
+            if ("BOOKED".equals(ticket.getStatus())) {
+                throw new IllegalStateException("Ghế này đã có vé đặt rồi!");
             }
-
-            // Định dạng loại ghế để tương thích với frontend HTML/JS
-            String ticketSeatType = "Thường";
-            if ("vip".equalsIgnoreCase(stType)) {
-                ticketSeatType = "VIP";
-            } else if ("couple".equalsIgnoreCase(stType)) {
-                ticketSeatType = "Đôi";
-            }
-
-            // Tính giá vé chuẩn (Người lớn)
-            double calculatedPrice = calculatePrice(showtime, seat, "ADULT");
-
-            Ticket ticket = new Ticket();
+            // Nếu trạng thái là PENDING, nâng cấp lên BOOKED
+        } else {
+            ticket = new Ticket();
             ticket.setShowtime(showtime);
             ticket.setSeat(seat);
             ticket.setSeatNumber(seat.getSeatLabel());
-            ticket.setSeatType(ticketSeatType);
-            ticket.setPrice(calculatedPrice);
-            ticket.setBasePrice(calculatedPrice);
-            ticket.setStatus("Còn trống");
-            ticket.setCustomerType("ADULT");
 
-            ticketsToSave.add(ticket);
+            String type = seat.getSeatType();
+            String vnType = "Thường";
+            if ("vip".equalsIgnoreCase(type)) vnType = "VIP";
+            else if ("couple".equalsIgnoreCase(type)) vnType = "Đôi";
+            ticket.setSeatType(vnType);
         }
 
-        if (!ticketsToSave.isEmpty()) {
-            ticketRepository.saveAll(ticketsToSave);
-        }
-    }
-
-    /**
-     * Lấy danh sách vé của 1 suất chiếu.
-     */
-    @Transactional
-    public List<Ticket> getTicketsByShowtime(Long showtimeId) {
-        List<Ticket> tickets = ticketRepository.findByShowtimeId(showtimeId);
-        if (tickets.isEmpty()) {
-            // Tự động sinh vé cho suất chiếu cũ nếu chưa có vé
-            Optional<Showtime> showtimeOpt = showtimeRepository.findById(showtimeId);
-            if (showtimeOpt.isPresent()) {
-                generateTicketsForShowtime(showtimeOpt.get());
-                tickets = ticketRepository.findByShowtimeId(showtimeId);
-            }
-        }
-        return tickets;
-    }
-
-    /**
-     * Bán vé cho khách hàng cụ thể.
-     */
-    @Transactional
-    public Ticket sellTicket(Long ticketId, String customerType) {
-        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
-        if (!ticketOpt.isPresent()) {
-            throw new IllegalArgumentException("Không tìm thấy vé có ID: " + ticketId);
-        }
-
-        Ticket ticket = ticketOpt.get();
-        if ("Đã bán".equals(ticket.getStatus())) {
-            throw new IllegalStateException("Vé này đã được bán trước đó!");
-        }
-
-        // Tính lại giá vé theo đối tượng khách hàng khi bán
-        double finalPrice = calculatePrice(ticket.getShowtime(), ticket.getSeat(), customerType);
-
-        ticket.setStatus("Đã bán");
+        populateTicketPriceDetails(ticket, showtime, seat, customerType);
+        ticket.setStatus("BOOKED");
         ticket.setCustomerType(customerType);
-        ticket.setPrice(finalPrice);
-        if (ticket.getBasePrice() <= 0) {
-            ticket.setBasePrice(calculatePrice(ticket.getShowtime(), ticket.getSeat(), "ADULT"));
-        }
+        ticket.setCustomerName(customerName);
+        ticket.setCustomerPhone(customerPhone);
+        ticket.setCreatedAt(java.time.LocalDateTime.now());
+        ticket.setDeleted(false);
 
         return ticketRepository.save(ticket);
     }
 
     /**
-     * Cập nhật đối tượng khách hàng cho vé đã bán, đồng thời tính lại giá vé.
+     * Đổi ghế cùng suất chiếu cho vé đã đặt.
+     */
+    @Transactional
+    public Ticket changeSeat(Long ticketId, Long newSeatId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+
+        if (ticket.isDeleted() || "REFUNDED".equals(ticket.getStatus())) {
+            throw new IllegalStateException("Vé đã bị hủy hoặc hoàn trả, không thể đổi ghế!");
+        }
+
+        Seat newSeat = seatRepository.findById(newSeatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế mới!"));
+
+        Optional<Ticket> existing = ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(ticket.getShowtime().getId(), newSeatId);
+        if (existing.isPresent()) {
+            throw new IllegalStateException("Ghế mới đã có vé đặt hoặc đang giữ chỗ!");
+        }
+
+        ticket.setSeat(newSeat);
+        ticket.setSeatNumber(newSeat.getSeatLabel());
+        String type = newSeat.getSeatType();
+        String vnType = "Thường";
+        if ("vip".equalsIgnoreCase(type)) vnType = "VIP";
+        else if ("couple".equalsIgnoreCase(type)) vnType = "Đôi";
+        ticket.setSeatType(vnType);
+
+        populateTicketPriceDetails(ticket, ticket.getShowtime(), newSeat, ticket.getCustomerType());
+
+        return ticketRepository.save(ticket);
+    }
+
+    /**
+     * Sửa thông tin vé đã bán (Đổi đối tượng khách hàng).
      */
     @Transactional
     public Ticket updateCustomerType(Long ticketId, String customerType) {
-        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
-        if (!ticketOpt.isPresent()) {
-            throw new IllegalArgumentException("Không tìm thấy vé có ID: " + ticketId);
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+
+        if (ticket.isDeleted() || "REFUNDED".equals(ticket.getStatus())) {
+            throw new IllegalStateException("Vé đã bị hủy hoặc hoàn trả, không thể chỉnh sửa!");
         }
-        Ticket ticket = ticketOpt.get();
-        if (!"Đã bán".equals(ticket.getStatus())) {
-            throw new IllegalStateException("Vé này chưa được bán, không thể cập nhật đối tượng!");
-        }
-        if (ticket.getBasePrice() <= 0) {
-            ticket.setBasePrice(calculatePrice(ticket.getShowtime(), ticket.getSeat(), "ADULT"));
-        }
-        // Tính lại giá vé theo đối tượng mới
-        double newPrice = calculatePrice(ticket.getShowtime(), ticket.getSeat(), customerType);
+
+        populateTicketPriceDetails(ticket, ticket.getShowtime(), ticket.getSeat(), customerType);
         ticket.setCustomerType(customerType);
-        ticket.setPrice(newPrice);
+
         return ticketRepository.save(ticket);
     }
 
     /**
-     * Toggle trạng thái vé (dành cho Admin click bán nhanh trên sơ đồ).
+     * Hủy vé / Hoàn vé (Đổi status thành REFUNDED, deleted = true).
      */
     @Transactional
-    public Ticket toggleTicketStatus(Long ticketId) {
-        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
-        if (!ticketOpt.isPresent()) {
-            throw new IllegalArgumentException("Không tìm thấy vé có ID: " + ticketId);
-        }
+    public Ticket cancelTicket(Long ticketId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
 
-        Ticket ticket = ticketOpt.get();
-        if ("Đã bán".equals(ticket.getStatus())) {
-            ticket.setStatus("Còn trống");
-            ticket.setCustomerType("ADULT");
-            // Khôi phục giá mặc định
-            ticket.setPrice(calculatePrice(ticket.getShowtime(), ticket.getSeat(), "ADULT"));
-        } else {
-            ticket.setStatus("Đã bán");
-            ticket.setCustomerType("ADULT");
-        }
+        ticket.setDeleted(true);
+        ticket.setStatus("REFUNDED");
 
         return ticketRepository.save(ticket);
     }
 
     /**
-     * Thống kê vé của suất chiếu.
+     * Lấy thống kê tỉ lệ lấp đầy & doanh thu.
      */
     public Map<String, Object> getShowtimeStats(Long showtimeId) {
-        long total = ticketRepository.countByShowtimeId(showtimeId);
-        long sold = ticketRepository.countByShowtimeIdAndStatus(showtimeId, "Đã bán");
-        long empty = total - sold;
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+
+        Optional<Room> roomOpt = roomRepository.findFirstByRoomNameIgnoreCaseAndCinemaId(showtime.getRoom(), 1L);
+        long totalCount = 0;
+        if (roomOpt.isPresent()) {
+            List<Seat> seats = seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(roomOpt.get().getId());
+            totalCount = seats.stream().filter(s -> {
+                String type = s.getSeatType();
+                return type != null && !"empty".equalsIgnoreCase(type) && !"skip".equalsIgnoreCase(type) && !"broken".equalsIgnoreCase(type);
+            }).count();
+        }
+
+        long soldCount = ticketRepository.countByShowtimeIdAndStatusAndDeletedFalse(showtimeId, "BOOKED");
+        long emptyCount = totalCount - soldCount;
 
         Double revenueVal = ticketRepository.calculateRevenueByShowtimeId(showtimeId);
         double revenue = revenueVal != null ? revenueVal : 0.0;
 
-        double occupancyRate = total > 0 ? Math.round(((double) sold / total) * 100 * 10) / 10.0 : 0.0;
+        double occupancyRate = totalCount > 0 ? Math.round(((double) soldCount / totalCount) * 100 * 10) / 10.0 : 0.0;
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalCount", total);
-        stats.put("soldCount", sold);
-        stats.put("emptyCount", empty);
+        stats.put("totalCount", totalCount);
+        stats.put("soldCount", soldCount);
+        stats.put("emptyCount", emptyCount);
         stats.put("revenue", revenue);
         stats.put("occupancyRate", occupancyRate);
 
         return stats;
+    }
+
+    /**
+     * Lấy chi tiết phân tích giá vé cho ghế cụ thể.
+     */
+    public Map<String, Object> getPriceBreakdownForSeat(Long showtimeId, Long seatId, String customerType) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+
+        return computeBreakdownMap(showtime, seat, customerType);
+    }
+
+    /**
+     * Lấy chi tiết phân tích giá vé cho vé chỉ định.
+     */
+    public Map<String, Object> getPriceBreakdownForTicket(Long ticketId, String customerType) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+
+        return computeBreakdownMap(ticket.getShowtime(), ticket.getSeat(), customerType);
+    }
+
+    private Map<String, Object> computeBreakdownMap(Showtime showtime, Seat seat, String customerType) {
+        Ticket t = new Ticket();
+        populateTicketPriceDetails(t, showtime, seat, customerType);
+        Map<String, Object> breakdown = new HashMap<>();
+        breakdown.put("basePrice", t.getBasePrice());
+        breakdown.put("seatSurcharge", t.getSeatSurcharge());
+        breakdown.put("formatSurcharge", t.getFormatSurcharge());
+        breakdown.put("discountAmount", t.getDiscountAmount());
+        breakdown.put("finalPrice", t.getFinalPrice());
+        return breakdown;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Ticket> searchTickets(Integer movieId, String room, String status, java.time.LocalDate fromDate, java.time.LocalDate toDate, String searchTerm) {
+        return ticketRepository.searchTickets(movieId, room, status, fromDate, toDate, searchTerm);
     }
 }

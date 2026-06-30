@@ -1,10 +1,3 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: TicketRepository.java
- * Người tạo: TrienLX
- * Ngày tạo: 2026-06-25
- * Chi tiết: Khai báo các câu truy vấn tương tác với thực thể Vé (Ticket).
- */
 package com.group3.cinema.repository;
 
 import com.group3.cinema.entity.Ticket;
@@ -14,25 +7,46 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
-    List<Ticket> findByShowtimeId(Long showtimeId);
+    List<Ticket> findByShowtimeIdAndDeletedFalse(Long showtimeId);
 
-    long countByShowtimeId(Long showtimeId);
+    Optional<Ticket> findByShowtimeIdAndSeatIdAndDeletedFalse(Long showtimeId, Long seatId);
 
-    long countByShowtimeIdAndStatus(Long showtimeId, String status);
+    boolean existsByShowtimeIdAndStatusAndDeletedFalse(Long showtimeId, String status);
 
-    @Query("SELECT SUM(t.price) FROM Ticket t WHERE t.showtime.id = :showtimeId AND t.status = 'Đã bán'")
+    long countByShowtimeIdAndDeletedFalse(Long showtimeId);
+
+    long countByShowtimeIdAndStatusAndDeletedFalse(Long showtimeId, String status);
+
+    @Query("SELECT COALESCE(SUM(t.finalPrice), 0) FROM Ticket t WHERE t.showtime.id = :showtimeId AND t.status = 'BOOKED' AND t.deleted = false")
     Double calculateRevenueByShowtimeId(@Param("showtimeId") Long showtimeId);
+
+    @Query("SELECT t FROM Ticket t WHERE " +
+           "(:movieId IS NULL OR t.showtime.movie.id = :movieId) AND " +
+           "(:room IS NULL OR t.showtime.room = :room) AND " +
+           "(:status IS NULL OR t.status = :status) AND " +
+           "(:fromDate IS NULL OR t.showtime.showDate >= :fromDate) AND " +
+           "(:toDate IS NULL OR t.showtime.showDate <= :toDate) AND " +
+           "(:searchTerm IS NULL OR " +
+           " CAST(t.id AS string) LIKE %:searchTerm% OR " +
+           " t.seatNumber LIKE %:searchTerm% OR " +
+           " t.customerPhone LIKE %:searchTerm% OR " +
+           " t.customerName LIKE %:searchTerm%) " +
+           "ORDER BY t.createdAt DESC, t.id DESC")
+    List<Ticket> searchTickets(@Param("movieId") Integer movieId,
+                               @Param("room") String room,
+                               @Param("status") String status,
+                               @Param("fromDate") java.time.LocalDate fromDate,
+                               @Param("toDate") java.time.LocalDate toDate,
+                               @Param("searchTerm") String searchTerm);
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM Ticket t WHERE t.showtime.id = :showtimeId AND t.status = 'Còn trống'")
-    void deleteUnsoldTicketsByShowtimeId(@Param("showtimeId") Long showtimeId);
-
-    boolean existsByShowtimeIdAndStatus(Long showtimeId, String status);
+    @Query("DELETE FROM Ticket t WHERE t.showtime.id = :showtimeId")
+    void deleteAllByShowtimeId(@Param("showtimeId") Long showtimeId);
 }

@@ -178,14 +178,18 @@ public class ShowtimeController {
     }
 
     // Endpoint: DELETE /api/showtimes/{id}
-    // Xóa lịch chiếu
+    // Xóa lịch chiếu (soft-delete nếu có vé đã bán, hard-delete nếu chưa)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteShowtime(@PathVariable("id") Long id) {
+    public ResponseEntity<?> deleteShowtime(@PathVariable("id") Long id) {
         try {
-            showtimeService.deleteShowtime(id);
+            boolean softDeleted = showtimeService.deleteShowtime(id);
+            if (softDeleted) {
+                return ResponseEntity.ok(Map.of("softDeleted", true, "message", "Lịch chiếu đã được ẩn vì có vé đã bán."));
+            }
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Lỗi khi xóa suất chiếu: " + e.getMessage()));
         }
     }
 
