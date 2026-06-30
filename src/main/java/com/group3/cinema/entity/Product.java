@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -39,10 +37,6 @@ public class Product {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    // Liên kết ngược để có thể truy vấn: Món này đang nằm trong những combo nào?
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    private List<ComboDetail> comboDetails = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
@@ -79,7 +73,4 @@ public class Product {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
-    public List<ComboDetail> getComboDetails() { return comboDetails; }
-    public void setComboDetails(List<ComboDetail> comboDetails) { this.comboDetails = comboDetails; }
 }

@@ -10,12 +10,13 @@ public class ComboDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Sửa FetchType.LAZY thành EAGER ở cả hai liên kết
-    @ManyToOne(fetch = FetchType.EAGER)
+    // Liên kết ngược về Combo
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "combo_id", nullable = false)
     private Combo combo;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    // Liên kết tới Menu món lẻ
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 

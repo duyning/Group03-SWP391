@@ -4,7 +4,7 @@ spring:
     name: Group03_SWP391_Summer26
 
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=test1506;encrypt=false;trustServerCertificate=true
+    url: jdbc:sqlserver://localhost:1433;databaseName=test1516;encrypt=false;trustServerCertificate=true
     username: sa
     password: 123
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver

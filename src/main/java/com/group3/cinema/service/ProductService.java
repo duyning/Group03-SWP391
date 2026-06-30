@@ -1,26 +1,27 @@
 package com.group3.cinema.service;
 
-import com.group3.cinema.entity.Product;
+import com.group3.cinema.entity.Product; // Đã sửa: dùng đúng Entity Product
 import com.group3.cinema.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service // Đánh dấu Bean ở đây để Controller inject qua @Autowired mượt mà
+@Service
 public class ProductService {
 
     private final ProductRepository productRepository;
 
-    // Sử dụng Constructor Injection giống hệt PostService mẫu của cậu
     public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
 
+    // Đã sửa kiểu trả về: List<Product>
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
 
+    // Đã sửa kiểu trả về: List<Product>
     public List<Product> searchProducts(String keyword, String status) {
         String cleanKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
         String cleanStatus = (status != null && !status.trim().isEmpty()) ? status.trim() : null;
@@ -28,13 +29,14 @@ public class ProductService {
         return productRepository.searchProducts(cleanKeyword, cleanStatus);
     }
 
+    // Đã sửa kiểu trả về: Product
     public Product findById(Long id) {
         return productRepository.findById(id)
-                .orElse(null); // Hoặc .orElseThrow(() -> new RuntimeException("Khong tim thay mon le"));
+                .orElse(null);
     }
 
     @Transactional
-    public Product save(Product product) {
+    public Product save(Product product) { // Đã sửa tham số: Product
         return productRepository.save(product);
     }
 

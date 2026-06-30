@@ -16,13 +16,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     List<Product> findByStatus(String status);
 
-    /**
-     * Tìm kiếm món lẻ theo từ khóa (tên món) và trạng thái.
-     * Thỏa mãn bộ lọc tìm kiếm tại trang danh sách (product-list.html).
-     */
+    // Nếu cậu dùng Enum cho status ở file Product gốc thì đổi String thành Product.ProductStatus nhé!
     @Query("SELECT p FROM Product p WHERE " +
-            "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
-            "(:status IS NULL OR p.status = :status) " +
-            "ORDER BY p.createdAt DESC")
+            "(:keyword IS NULL OR p.name LIKE %:keyword%) AND " +
+            "(:status IS NULL OR p.status = :status)")
     List<Product> searchProducts(@Param("keyword") String keyword, @Param("status") String status);
 }

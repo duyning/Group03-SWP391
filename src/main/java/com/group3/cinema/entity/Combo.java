@@ -1,9 +1,7 @@
 package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,71 +13,68 @@ public class Combo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Tên combo không được để trống")
-    @Size(max = 150, message = "Tên combo không được vượt quá 150 ký tự")
-    @Column(name = "combo_name", nullable = false, length = 150, columnDefinition = "NVARCHAR(150)") // Đảm bảo đúng tên 'combo_name'
+    @Column(nullable = false, columnDefinition = "NVARCHAR(150)")
     private String name;
 
-    @NotNull(message = "Giá bán combo không được để trống")
-    @DecimalMin(value = "0.0", inclusive = true, message = "Giá combo không được nhỏ hơn 0")
-    @Column(name = "price", nullable = false, precision = 15, scale = 2)
-    private BigDecimal price;
+    @Column(columnDefinition = "NVARCHAR(500)")
+    private String description;
 
-    @Column(name = "image_url", length = 255, columnDefinition = "NVARCHAR(255)")
+    // DÃ¹ng BigDecimal hoáº·c Double Ä‘á»ƒ lÆ°u giÃ¡ tiá»n cho chuáº©n cáº¥u trÃºc sá»‘
+    @Column(nullable = false)
+    private BigDecimal price = BigDecimal.ZERO;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal originalPrice = BigDecimal.ZERO;
+
+    @Column(precision = 5, scale = 2)
+    private BigDecimal discountPercent = BigDecimal.ZERO;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal costPrice = BigDecimal.ZERO;
+
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String image;
 
-    @NotBlank(message = "Vui lòng chọn trạng thái mở bán")
-    @Size(max = 20)
-    @Column(name = "status", nullable = false, length = 20, columnDefinition = "NVARCHAR(20)")
-    private String status = "ACTIVE"; // ACTIVE | INACTIVE
+    // ACTIVE (Äang bÃ¡n) | INACTIVE (Ngá»«ng bÃ¡n)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
+    private String status = "ACTIVE";
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ComboItem> items = new ArrayList<>();
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    // Liên kết Một-Nhiều xuốn bảng chi tiết (Thay thế hoàn toàn cho description dạng chữ cũ)
-    // Sửa FetchType.LAZY thành EAGER
-    @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<ComboDetail> comboDetails = new ArrayList<>();
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        if (this.status == null) this.status = "ACTIVE";
-        if (this.name != null) this.name = this.name.trim();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-        if (this.name != null) this.name = this.name.trim();
-    }
-
-    // ===== GETTERS AND SETTERS =====
+    // ===== Getters and Setters =====
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
-
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+    public BigDecimal getDiscountPercent() { return discountPercent; }
+    public void setDiscountPercent(BigDecimal discountPercent) { this.discountPercent = discountPercent; }
+    public BigDecimal getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
+    public BigDecimal getCostPrice() { return costPrice; }
+    public void setCostPrice(BigDecimal costPrice) { this.costPrice = costPrice; }
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }
-
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
-    public List<ComboDetail> getComboDetails() { return comboDetails; }
-    public void setComboDetails(List<ComboDetail> comboDetails) { this.comboDetails = comboDetails; }
+    public List<ComboItem> getItems() { return items; }
+    public void setItems(List<ComboItem> items) {
+        this.items.clear();
+        if (items != null) {
+            items.forEach(this::addItem);
+        }
+    }
+    public void addItem(ComboItem item) {
+        item.setCombo(this);
+        this.items.add(item);
+    }
 }

@@ -1,107 +1,183 @@
 package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Combo;
+import com.group3.cinema.entity.FoodItem;
 import com.group3.cinema.service.ComboService;
-import com.group3.cinema.repository.ProductRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin/combos")
 public class ComboController {
 
     private final ComboService comboService;
-    private final ProductRepository productRepository;
 
-    public ComboController(ComboService comboService, ProductRepository productRepository) {
+    public ComboController(ComboService comboService) {
         this.comboService = comboService;
-        this.productRepository = productRepository;
     }
 
     @GetMapping
     public String listCombos(
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "itemKeyword", required = false) String itemKeyword,
+            @RequestParam(value = "itemStatus", required = false) String itemStatus,
             Model model) {
         model.addAttribute("combos", comboService.searchCombos(keyword, status));
+        model.addAttribute("foodItems", comboService.searchFoodItems(itemKeyword, itemStatus));
+        model.addAttribute("foodCategories", comboService.getFoodCategories());
+        if (!model.containsAttribute("foodItem")) {
+            model.addAttribute("foodItem", new FoodItem());
+        }
         return "combo-list";
     }
 
     @GetMapping("/create")
     public String createForm(Model model) {
         model.addAttribute("combo", new Combo());
-        model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
+        prepareComboForm(model, Map.of());
         return "combo-create";
     }
 
     @PostMapping("/save")
     public String saveCombo(
-            @ModelAttribute("combo") Combo combo,
+            @ModelAttribute("combo") Combo combo, // Thêm tên định danh "combo" cho chuẩn với HTML
             BindingResult bindingResult,
-            @RequestParam(value = "productIds[]", required = false) List<Long> productIds,
-            @RequestParam(value = "quantities[]", required = false) List<Integer> quantities,
-            @RequestParam("imageFile") MultipartFile file,
-            Model model) throws IOException {
+            @RequestParam(value = "imageFile", required = false) MultipartFile file,
+            @RequestParam(value = "foodItemIds", required = false) List<Long> foodItemIds,
+            @RequestParam(value = "discountPercent", required = false) BigDecimal discountPercent,
+            @RequestParam Map<String, String> requestParams,
+            Model model) throws IOException { // THÊM tham số Model vào đây
 
-        // 1. Kiểm tra logic nghiệp vụ (Tên đã tồn tại)
-        if (comboService.existsByName(combo.getName())) {
-            bindingResult.rejectValue("name", "error.combo", "Tên gói combo này đã tồn tại trong hệ thống!");
-        }
-
-        // 2. Nếu có lỗi (validation hoặc logic), trả về form kèm danh sách sản phẩm
+        // Nếu có lỗi, trả về form create (lúc này object combo lỗi vẫn được giữ lại tự động)
         if (bindingResult.hasErrors()) {
-            // CỰC KỲ QUAN TRỌNG: Phải nạp lại danh sách sản phẩm để bảng chọn món không bị trống
-            model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
+            prepareComboForm(model, selectedQuantities(foodItemIds, requestParams));
             return "combo-create";
         }
 
-        // 3. Nếu mọi thứ OK, gọi service lưu dữ liệu
-        comboService.createCombo(combo, productIds, quantities, file);
+        try {
+            comboService.createCombo(combo, file, foodItemIds, requestParams, discountPercent);
+        } catch (IllegalArgumentException e) {
+            bindingResult.reject("combo.business", e.getMessage());
+            prepareComboForm(model, selectedQuantities(foodItemIds, requestParams));
+            return "combo-create";
+        }
         return "redirect:/admin/combos";
     }
 
-    // TRẢ LẠI HÀM GETMAPPING CHUẨN ĐỂ KHỚP URL NÚT XÓA TRÊN GIAO DIỆN HTML
     @GetMapping("/delete/{id}")
     public String deleteCombo(@PathVariable("id") Long id) {
-        // Gọi sang Service xử lý xóa mềm, không ôm repo xử lý trực tiếp ở đây
         comboService.deleteCombo(id);
         return "redirect:/admin/combos";
     }
 
     @GetMapping("/edit/{id}")
     public String editForm(@PathVariable("id") Long id, Model model) {
-        model.addAttribute("combo", comboService.getCombo(id));
-        model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
+        Combo combo = comboService.getCombo(id);
+        model.addAttribute("combo", combo);
+        prepareComboForm(model, comboService.getSelectedQuantities(combo));
         return "combo-edit";
     }
 
     @PostMapping("/update")
     public String updateCombo(
-            @ModelAttribute("combo") Combo combo,
+            @ModelAttribute("combo") Combo combo, // Thêm tên định danh "combo"
             BindingResult bindingResult,
-            @RequestParam(value = "productIds[]", required = false) List<Long> productIds,
-            @RequestParam(value = "quantities[]", required = false) List<Integer> quantities,
-            @RequestParam("imageFile") MultipartFile file,
-            Model model) throws IOException {
+            @RequestParam(value = "imageFile", required = false) MultipartFile file,
+            @RequestParam(value = "foodItemIds", required = false) List<Long> foodItemIds,
+            @RequestParam(value = "discountPercent", required = false) BigDecimal discountPercent,
+            @RequestParam Map<String, String> requestParams,
+            Model model) throws IOException { // THÊM tham số Model vào đây
 
-        if (comboService.existsByNameAndIdNot(combo.getName(), combo.getId())) {
-            bindingResult.rejectValue("name", "error.combo", "Tên gói combo này đã bị trùng với một combo khác!");
-        }
-
+        // Nếu có lỗi trùng tên, phải nạp lại dữ liệu cũ (như đường dẫn ảnh) để giao diện edit không bị trống ảnh
         if (bindingResult.hasErrors()) {
             Combo oldCombo = comboService.getCombo(combo.getId());
-            combo.setImage(oldCombo.getImage());
-            model.addAttribute("products", productRepository.findByStatus("ACTIVE"));
+            combo.setImage(oldCombo.getImage()); // Giữ lại ảnh cũ của combo hiển thị lên màn hình edit
+            prepareComboForm(model, selectedQuantities(foodItemIds, requestParams));
             return "combo-edit";
         }
 
-        comboService.updateCombo(combo, productIds, quantities, file);
+        try {
+            comboService.updateCombo(combo, file, foodItemIds, requestParams, discountPercent);
+        } catch (IllegalArgumentException e) {
+            Combo oldCombo = comboService.getCombo(combo.getId());
+            combo.setImage(oldCombo.getImage());
+            bindingResult.reject("combo.business", e.getMessage());
+            prepareComboForm(model, selectedQuantities(foodItemIds, requestParams));
+            return "combo-edit";
+        }
         return "redirect:/admin/combos";
+    }
+
+    @PostMapping("/items/save")
+    public String saveFoodItem(@ModelAttribute("foodItem") FoodItem foodItem,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            comboService.createFoodItem(foodItem);
+            redirectAttributes.addFlashAttribute("itemSuccess", "Đã thêm món vào danh mục.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("itemError", e.getMessage());
+            redirectAttributes.addFlashAttribute("foodItem", foodItem);
+        }
+        return "redirect:/admin/combos";
+    }
+
+    @PostMapping("/items/update")
+    public String updateFoodItem(@ModelAttribute("foodItem") FoodItem foodItem,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            comboService.updateFoodItem(foodItem);
+            redirectAttributes.addFlashAttribute("itemSuccess", "Đã cập nhật món ăn.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("itemError", e.getMessage());
+        }
+        return "redirect:/admin/combos";
+    }
+
+    @GetMapping("/items/delete/{id}")
+    public String deleteFoodItem(@PathVariable("id") Long id,
+                                 RedirectAttributes redirectAttributes) {
+        comboService.deleteFoodItem(id);
+        redirectAttributes.addFlashAttribute("itemSuccess", "Đã xóa hoặc ngừng bán món nếu món đang nằm trong combo.");
+        return "redirect:/admin/combos";
+    }
+
+    private void prepareComboForm(Model model, Map<Long, Integer> selectedQuantities) {
+        model.addAttribute("foodItems", comboService.getSellableFoodItems());
+        model.addAttribute("foodCategories", comboService.getFoodCategories());
+        model.addAttribute("selectedQuantities", selectedQuantities);
+    }
+
+    private Map<Long, Integer> selectedQuantities(List<Long> foodItemIds, Map<String, String> requestParams) {
+        Map<Long, Integer> selectedQuantities = new LinkedHashMap<>();
+        if (foodItemIds == null) {
+            return selectedQuantities;
+        }
+        for (Long foodItemId : foodItemIds) {
+            if (foodItemId == null) {
+                continue;
+            }
+            try {
+                selectedQuantities.put(foodItemId, Integer.parseInt(requestParams.get("quantity_" + foodItemId)));
+            } catch (NumberFormatException e) {
+                selectedQuantities.put(foodItemId, 1);
+            }
+        }
+        return selectedQuantities;
     }
 }

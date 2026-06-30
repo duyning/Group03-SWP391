@@ -1,442 +1,422 @@
 ﻿<!DOCTYPE html>
+
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thêm Combo Mới</title>
-
+    <title>Thêm combo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-    <style>
-        body {
-            background-color: #f1f3f7;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #2d3748;
-            padding: 30px;
-        }
-        .form-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            padding: 35px;
-            max-width: 750px;
-            margin: 0 auto;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .form-title {
-            font-weight: 700;
-            color: #1a365d;
-            font-size: 1.6rem;
-            margin-bottom: 30px;
-        }
-        .form-label {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #2d3748;
-            margin-bottom: 8px;
-        }
-        .required {
-            color: #dc3545;
-            font-weight: bold;
-        }
-        .form-control, .form-select {
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 10px 14px;
-            font-size: 0.95rem;
-            color: #334155;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
-        }
-        .form-control::placeholder {
-            color: #94a3b8;
-        }
-
-        /* Border custom */
-        .border-cbd5e1 {
-            border: 1px solid #cbd5e1 !important;
-        }
-
-        /* Tùy biến input file */
-        .custom-file-input::-webkit-file-upload-button {
-            background-color: #e2e8f0;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            margin-right: 15px;
-            transition: background-color 0.2s;
-        }
-        .custom-file-input::-webkit-file-upload-button:hover {
-            background-color: #cbd5e1;
-        }
-
-        /* Bộ nút hành động */
-        .btn-submit {
-            background-color: #2563eb;
-            color: white;
-            font-weight: 600;
-            padding: 10px 24px;
-            border-radius: 6px;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-submit:hover {
-            background-color: #1d4ed8;
-            color: white;
-        }
-        .btn-cancel {
-            background-color: #e2e8f0;
-            color: #334155;
-            font-weight: 600;
-            padding: 10px 24px;
-            border-radius: 6px;
-            border: none;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-        }
-        .btn-cancel:hover {
-            background-color: #cbd5e1;
-            color: #334155;
-        }
-
-        /* Khóa chặt chiều cao vùng hiển thị danh sách món lẻ cột trái */
-        #availableProductList {
-            max-height: 200px !important;
-            overflow-y: auto !important;
-        }
-
-        /* Đồng bộ chiều cao bảng chứa món đã chọn ở cột phải cân bằng với cột trái */
-        #selectedProductsTable {
-            margin-bottom: 0;
-        }
-        .col-md-7 .table-responsive {
-            max-height: 245px !important;
-            overflow-y: auto !important;
-        }
-
-        /* Định dạng chiều cao đồng đều cho mỗi hàng */
-        .available-item {
-            height: 50px !important;
-            box-sizing: border-box;
-        }
-
-        /* Khung hiển thị toán số tiền thông minh */
-        .price-calculator-box {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 15px 20px;
-        }
-    </style>
     <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
     <link rel="stylesheet" th:href="@{/css/admin-content.css}">
-</head>
+    <style>
+        body {
+            background: #eef3f8;
+            color: #172033;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
+        .combo-shell {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 28px;
+        }
+
+        .page-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .page-heading h1 {
+            color: #0f3768;
+            font-size: 1.65rem;
+            font-weight: 750;
+            margin: 0;
+        }
+
+        .surface {
+            background: #ffffff;
+            border: 1px solid #dbe5ef;
+            border-radius: 8px;
+            box-shadow: 0 10px 24px rgba(15, 55, 104, 0.06);
+            padding: 26px;
+        }
+
+        .section-title {
+            color: #24364f;
+            font-size: 1rem;
+            font-weight: 750;
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            color: #334155;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .form-control,
+        .form-select {
+            border: 1px solid #cfd9e6;
+            border-radius: 7px;
+            color: #172033;
+            min-height: 44px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #0b63b6;
+            box-shadow: 0 0 0 3px rgba(11, 99, 182, 0.13);
+        }
+
+        .required {
+            color: #dc2626;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .metric {
+            background: #f7fafc;
+            border: 1px solid #dbe5ef;
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .metric span {
+            color: #64748b;
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .metric strong {
+            color: #0f3768;
+            display: block;
+            font-size: 1.1rem;
+            margin-top: 5px;
+        }
+
+        .metric.sale strong {
+            color: #d91f3f;
+        }
+
+        .food-table {
+            border: 1px solid #dbe5ef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .food-table table {
+            margin: 0;
+        }
+
+        .food-table th {
+            background: #f4f7fb;
+            color: #50627a;
+            font-size: 0.78rem;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .food-table td,
+        .food-table th {
+            vertical-align: middle;
+        }
+
+        .food-name {
+            color: #172033;
+            font-weight: 750;
+        }
+
+        .food-category {
+            color: #64748b;
+            font-size: 0.82rem;
+        }
+
+        .badge-new {
+            background: #fff2cc;
+            color: #9a5b00;
+        }
+
+        .badge-active {
+            background: #dcfce7;
+            color: #14743b;
+        }
+
+        .quantity-input {
+            max-width: 92px;
+        }
+
+        .btn-primary-soft {
+            align-items: center;
+            background: #075ba8;
+            border: 0;
+            border-radius: 7px;
+            color: #ffffff;
+            display: inline-flex;
+            font-weight: 750;
+            gap: 8px;
+            min-height: 44px;
+            padding: 0 18px;
+            text-decoration: none;
+        }
+
+        .btn-primary-soft:hover {
+            background: #064b8a;
+            color: #ffffff;
+        }
+
+        .btn-muted {
+            align-items: center;
+            background: #e8eef5;
+            border: 0;
+            border-radius: 7px;
+            color: #334155;
+            display: inline-flex;
+            font-weight: 700;
+            min-height: 44px;
+            padding: 0 18px;
+            text-decoration: none;
+        }
+
+        .business-warning {
+            display: none;
+        }
+
+        .business-warning.show {
+            display: block;
+        }
+
+        @media (max-width: 992px) {
+            .metric-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
+            .combo-shell {
+                padding: 18px;
+            }
+
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
 <body class="admin-page">
 <div class="admin-layout">
     <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('combos')}"></aside>
     <main class="admin-main">
-
-        <div class="container">
-            <div class="form-card">
-
-                <h2 class="form-title">Thêm combo bắp nước mới</h2>
-
-                <form th:action="@{/admin/combos/save}"
-                      th:object="${combo}"
-                      method="post"
-                      enctype="multipart/form-data"
-                      id="comboForm">
-
-                    <div class="mb-4">
-                        <label class="form-label">
-                            Tên gói Combo <span class="required">*</span>
-                        </label>
-                        <input type="text"
-                               class="form-control"
-                               th:field="*{name}"
-                               maxlength="100"
-                               pattern=".*\S.*"
-                               title="Tên combo không được chỉ chứa khoảng trắng"
-                               placeholder="Ví dụ: Combo Solo X, Combo Couple..." required>
-
-                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label">
-                            Thành phần gói bắp nước (Chọn từ Menu lẻ) <span class="required">*</span>
-                        </label>
-
-                        <div th:if="${not #lists.isEmpty(products)}" class="row g-3">
-                            <div class="col-md-5">
-                                <div class="card border-cbd5e1 shadow-none rounded">
-                                    <div class="card-header bg-light py-2 border-bottom">
-                                        <input type="text" id="searchProductInput" class="form-control form-control-sm" placeholder="🔍 Tìm nhanh món lẻ...">
-                                    </div>
-                                    <div class="list-group list-group-flush" id="availableProductList">
-                                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 available-item"
-                                             th:each="prod : ${products}"
-                                             th:data-id="${prod.id}"
-                                             th:data-name="${prod.name}"
-                                             th:data-price="${prod.price}">
-                                            <div class="d-flex flex-column text-truncate me-2">
-                                                <span class="small fw-semibold text-secondary text-truncate" th:text="${prod.name}">Tên món</span>
-                                                <small class="text-muted" style="font-size: 0.75rem;" th:text="${#numbers.formatInteger(prod.price,3,'POINT') + ' đ'}">0 đ</small>
-                                            </div>
-                                            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 btn-add-product" onclick="addProductToCombo(this)">
-                                                <i class="fa-solid fa-plus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-7">
-                                <div class="table-responsive border border-cbd5e1 rounded bg-white">
-                                    <table class="table table-sm align-middle mb-0" id="selectedProductsTable">
-                                        <thead class="table-light">
-                                        <tr>
-                                            <th class="ps-3 small text-muted" style="font-weight: 600;">Món đã chọn</th>
-                                            <th width="90" class="small text-muted" style="font-weight: 600;">Đơn giá</th>
-                                            <th width="85" class="small text-muted" style="font-weight: 600;">Số lượng</th>
-                                            <th width="45" class="text-center small text-muted" style="font-weight: 600;">Xóa</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody id="selectedProductsBody">
-                                        <tr class="empty-row">
-                                            <td colspan="4" class="text-center text-muted py-4 small">Chưa có món nào được chọn cho Combo này.</td>
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div th:unless="${not #lists.isEmpty(products)}" class="text-center py-4 text-muted border border-cbd5e1 rounded bg-light">
-                            <i class="fa-solid fa-triangle-exclamation text-warning mb-2 fs-4"></i>
-                            <p class="mb-2 small fw-semibold text-secondary">Menu món lẻ hiện tại đang trống hoặc ngừng kinh doanh!</p>
-                            <a th:href="@{/admin/products}" class="btn btn-sm btn-outline-primary py-1 px-3" style="font-size: 0.82rem;">
-                                <i class="fa-solid fa-plus-circle me-1"></i>Thêm món lẻ ngay
-                            </a>
-                        </div>
-
-                        <div id="product-error-msg" class="text-danger small mt-1" style="display: none;">Vui lòng chọn ít nhất một món cho Combo!</div>
-                    </div>
-
-                    <div class="mb-4 price-calculator-box">
-                        <div class="row align-items-center">
-                            <div class="col-sm-6 mb-2 mb-sm-0">
-                                <div class="small text-secondary mb-1">
-                                    <i class="fa-solid fa-calculator me-1"></i> Tổng giá gốc mua lẻ:
-                                    <span id="label-total-original" class="fw-bold text-dark">0 đ</span>
-                                </div>
-                                <div class="small text-success fw-semibold">
-                                    <i class="fa-solid fa-tags me-1"></i> Gợi ý giá bán Combo (Giảm 15%):
-                                    <span id="label-suggested-combo" class="fw-bold">0 đ</span>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label text-primary mb-1">
-                                    Giá bán Combo chốt áp dụng (VNĐ) <span class="required">*</span>
-                                </label>
-                                <input type="number"
-                                       class="form-control form-control-sm"
-                                       th:field="*{price}"
-                                       min="0"
-                                       max="1000000"
-                                       placeholder="Nhập giá tiền từ 0 đến 1.000.000" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label">
-                            Hình ảnh minh họa <span class="required">*</span>
-                        </label>
-                        <input type="file"
-                               name="imageFile"
-                               class="form-control custom-file-input"
-                               accept="image/png, image/jpeg, image/jpg, image/webp"
-                               required>
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="form-label">
-                            Trạng thái bán <span class="required">*</span>
-                        </label>
-                        <select class="form-select" th:field="*{status}" required>
-                            <option value="ACTIVE">Đang kinh doanh (Mở bán)</option>
-                            <option value="INACTIVE">Ngừng kinh doanh (Tạm ẩn)</option>
-                        </select>
-                    </div>
-
-                    <div class="d-flex gap-3">
-                        <button type="submit" class="btn-submit" th:disabled="${#lists.isEmpty(products)}">
-                            <i class="fa-solid fa-save"></i> Lưu combo
-                        </button>
-                        <a th:href="@{/admin/combos}" class="btn-cancel">Hủy</a>
-                    </div>
-
-                </form>
-
+        <div class="combo-shell">
+            <div class="page-heading">
+                <h1><i class="fa-solid fa-layer-group me-2 text-primary"></i>Thêm combo mới</h1>
+                <a th:href="@{/admin/combos}" class="btn-muted">Quay lại</a>
             </div>
+
+            <form class="surface"
+                  th:action="@{/admin/combos/save}"
+                  th:object="${combo}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  id="comboForm">
+
+                <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}">
+                    <div th:each="err : ${#fields.globalErrors()}" th:text="${err}"></div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="section-title">Thông tin combo</div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tên combo <span class="required">*</span></label>
+                            <input type="text" class="form-control" th:field="*{name}" maxlength="150"
+                                   placeholder="Ví dụ: Combo Couple Weekend" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Chiết khấu combo (%)</label>
+                                <input type="number" class="form-control" name="discountPercent" id="discountPercent"
+                                       min="0" max="80" step="0.5" th:value="${combo.discountPercent != null ? combo.discountPercent : 0}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Trạng thái <span class="required">*</span></label>
+                                <select class="form-select" th:field="*{status}" required>
+                                    <option value="ACTIVE">Đang bán</option>
+                                    <option value="NEW">Món mới</option>
+                                    <option value="INACTIVE">Ngừng bán</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label">Hình ảnh combo <span class="required">*</span></label>
+                            <input type="file" name="imageFile" class="form-control"
+                                   accept="image/png, image/jpeg, image/jpg, image/webp" required>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="section-title">Tự động tính giá</div>
+                            <div class="metric-grid">
+                                <div class="metric">
+                                    <span>Giá món lẻ</span>
+                                    <strong id="originalPriceText">0 đ</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Chiết khấu</span>
+                                    <strong id="discountAmountText">0 đ</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Giá vốn</span>
+                                    <strong id="costPriceText">0 đ</strong>
+                                </div>
+                                <div class="metric sale">
+                                    <span>Giá bán combo</span>
+                                    <strong id="salePriceText">0 đ</strong>
+                                </div>
+                            </div>
+                            <div class="alert alert-warning business-warning mt-3" id="businessWarning"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="section-title mb-0">Chọn món để ghép combo</div>
+                            <span class="text-muted small">Số lượng tối đa 20 mỗi món</span>
+                        </div>
+
+                        <div class="food-table">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                <tr>
+                                    <th width="56"></th>
+                                    <th>Món ăn / đồ uống</th>
+                                    <th width="130" class="text-end">Giá bán lẻ</th>
+                                    <th width="130" class="text-end">Giá vốn</th>
+                                    <th width="110" class="text-center">Số lượng</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr class="food-row" th:each="foodItem : ${foodItems}">
+                                    <td>
+                                        <input class="form-check-input item-check" type="checkbox" name="foodItemIds"
+                                               th:value="${foodItem.id}"
+                                               th:checked="${selectedQuantities.containsKey(foodItem.id)}"
+                                               th:attr="data-price=${foodItem.unitPrice},data-cost=${foodItem.costPrice}">
+                                    </td>
+                                    <td>
+                                        <div class="food-name" th:text="${foodItem.name}">Bắp rang bơ lớn</div>
+                                        <div class="food-category">
+                                            <span th:text="${foodItem.category}">Bắp nước</span>
+                                            <span class="badge badge-new ms-2" th:if="${foodItem.status == 'NEW'}">Món mới</span>
+                                            <span class="badge badge-active ms-2" th:if="${foodItem.status == 'ACTIVE'}">Đang bán</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-semibold" th:text="${#numbers.formatDecimal(foodItem.unitPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">55.000 đ</td>
+                                    <td class="text-end text-muted" th:text="${#numbers.formatDecimal(foodItem.costPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">30.000 đ</td>
+                                    <td class="text-center">
+                                        <input type="number" class="form-control quantity-input item-quantity mx-auto"
+                                               min="1" max="20"
+                                               th:name="${'quantity_' + foodItem.id}"
+                                               th:value="${selectedQuantities[foodItem.id] != null ? selectedQuantities[foodItem.id] : 1}"
+                                               th:disabled="${!selectedQuantities.containsKey(foodItem.id)}">
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(foodItems)}">
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        Chưa có món nào đang bán. Hãy thêm món trong trang Quản lý Combo trước.
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-3 mt-4">
+                    <a th:href="@{/admin/combos}" class="btn-muted">Hủy</a>
+                    <button type="submit" class="btn-primary-soft" id="saveComboButton">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        Lưu combo
+                    </button>
+                </div>
+            </form>
         </div>
-
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-        <script>
-            // 1. Tìm kiếm nhanh món lẻ ở cột trái
-            const searchInput = document.getElementById('searchProductInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    const filter = this.value.toLowerCase().trim();
-                    const items = document.querySelectorAll('.available-item');
-
-                    items.forEach(item => {
-                        const text = item.getAttribute('data-name').toLowerCase();
-                        if (text.includes(filter)) {
-                            item.style.setProperty('display', 'flex', 'important');
-                        } else {
-                            item.style.setProperty('display', 'none', 'important');
-                        }
-                    });
-                });
-            }
-
-            // Hàm format tiền tệ VNĐ sang chuỗi đẹp (ví dụ: 50000 -> 50.000 đ)
-            function formatVND(amount) {
-                return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
-            }
-
-            // Hàm tính toán tổng tiền gốc và giá đề xuất theo công thức rạp phim (Giảm 15%)
-            function calculateComboPrices() {
-                let totalOriginal = 0;
-                const selectedRows = document.querySelectorAll('.selected-product-row');
-
-                selectedRows.forEach(row => {
-                    const price = parseFloat(row.getAttribute('data-price')) || 0;
-                    const qtyInput = row.querySelector('.product-qty-input');
-                    const qty = parseInt(qtyInput.value) || 0;
-                    totalOriginal += price * qty;
-                });
-
-                // Công thức rạp phim: Giá combo tiết kiệm 15% so với mua lẻ từng món và làm tròn trăm đồng
-                let suggestedPrice = Math.round((totalOriginal * 0.85) / 100) * 100;
-
-                // Hiển thị ra giao diện nhãn thông tin
-                document.getElementById('label-total-original').innerText = formatVND(totalOriginal);
-                document.getElementById('label-suggested-combo').innerText = formatVND(suggestedPrice);
-
-                // Tự điền giá trị gợi ý này vào ô nhập dữ liệu thực tế nếu ô đó đang trống hoặc tổng tiền thay đổi
-                const finalPriceInput = document.getElementById('price');
-                if (totalOriginal === 0) {
-                    finalPriceInput.value = '';
-                } else if (finalPriceInput.value === '' || finalPriceInput.dataset.autoSync === 'true' || finalPriceInput.value == 0) {
-                    finalPriceInput.value = suggestedPrice;
-                    finalPriceInput.dataset.autoSync = 'true'; // Đánh dấu tự động đồng bộ hóa
-                }
-            }
-
-            // Nếu người dùng chủ động tự gõ đè giá khác, tắt chế độ tự đồng bộ
-            document.getElementById('price').addEventListener('input', function() {
-                this.dataset.autoSync = 'false';
-            });
-
-            // 2. Thêm món lẻ từ cột trái sang bảng bên phải
-            function addProductToCombo(button) {
-                const item = button.closest('.available-item');
-                const id = item.getAttribute('data-id');
-                const name = item.getAttribute('data-name');
-                const price = item.getAttribute('data-price');
-                const tbody = document.getElementById('selectedProductsBody');
-
-                if (document.getElementById('row-selected-' + id)) {
-                    alert('Món lẻ này đã có trong danh sách chọn!');
-                    return;
-                }
-
-                const emptyRow = tbody.querySelector('.empty-row');
-                if (emptyRow) emptyRow.remove();
-
-                const tr = document.createElement('tr');
-                tr.id = 'row-selected-' + id;
-                tr.className = 'selected-product-row';
-                tr.setAttribute('data-price', price); // Gắn giá trị vào thẻ tr để tính toán
-
-                tr.innerHTML = `
-                    <td class="ps-3 small fw-semibold text-dark text-truncate" style="max-width: 140px;">${name}</td>
-                    <td class="small text-secondary">${formatVND(price)}</td>
-                    <td>
-                        <input type="hidden" name="productIds[]" value="${id}"><input type="number" name="quantities[]" class="form-control form-control-sm product-qty-input" min="1" max="20" value="1" required style="width: 65px;" oninput="calculateComboPrices()">
-                    </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-link btn-sm text-danger p-0" onclick="removeProductFromCombo('${id}')"><i class="fa-solid fa-trash-can"></i></button>
-                    </td>
-                `;
-
-                tbody.appendChild(tr);
-                button.disabled = true;
-                button.classList.replace('btn-outline-primary', 'btn-light');
-
-                // Tính toán lại giá
-                calculateComboPrices();
-            }
-
-            // 3. Xóa món lẻ khỏi danh sách đã chọn
-            function removeProductFromCombo(id) {
-                const row = document.getElementById('row-selected-' + id);
-                if (row) {
-                    row.remove();
-
-                    const tbody = document.getElementById('selectedProductsBody');
-                    if (tbody.children.length === 0) {
-                        tbody.innerHTML = `
-                            <tr class="empty-row">
-                                <td colspan="4" class="text-center text-muted py-4 small">Chưa có món nào được chọn cho Combo này.</td>
-                            </tr>
-                        `;
-                    }
-
-                    const availableItems = document.querySelectorAll('.available-item');
-                    availableItems.forEach(item => {
-                        if (item.getAttribute('data-id') === id) {
-                            const btn = item.querySelector('.btn-add-product');
-                            btn.disabled = false;
-                            btn.classList.replace('btn-light', 'btn-outline-primary');
-                        }
-                    });
-
-                    // Tính toán lại giá khi xóa món
-                    calculateComboPrices();
-                }
-            }
-
-            // 4. Chặn gửi Form nếu chưa chọn món nào
-            document.getElementById('comboForm').addEventListener('submit', function (e) {
-                const tbody = document.getElementById('selectedProductsBody');
-                const errorMsg = document.getElementById('product-error-msg');
-                const hasProducts = tbody.querySelector('tr:not(.empty-row)');
-
-                if (!hasProducts) {
-                    e.preventDefault();
-                    errorMsg.style.display = 'block';
-                    errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else {
-                    errorMsg.style.display = 'none';
-                }
-            });
-        </script>
     </main>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const form = document.getElementById('comboForm');
+    const discountInput = document.getElementById('discountPercent');
+    const saveButton = document.getElementById('saveComboButton');
+    const warning = document.getElementById('businessWarning');
+
+    function money(value) {
+        return new Intl.NumberFormat('vi-VN').format(Math.max(0, Math.round(value))) + ' đ';
+    }
+
+    function calculateCombo() {
+        let originalPrice = 0;
+        let costPrice = 0;
+        let selectedCount = 0;
+
+        document.querySelectorAll('.food-row').forEach(row => {
+            const checkbox = row.querySelector('.item-check');
+            const quantityInput = row.querySelector('.item-quantity');
+            quantityInput.disabled = !checkbox.checked;
+
+            if (checkbox.checked) {
+                selectedCount++;
+                const quantity = Number(quantityInput.value || 1);
+                originalPrice += Number(checkbox.dataset.price || 0) * quantity;
+                costPrice += Number(checkbox.dataset.cost || 0) * quantity;
+            }
+        });
+
+        const discountPercent = Number(discountInput.value || 0);
+        const discountAmount = originalPrice * discountPercent / 100;
+        const salePrice = originalPrice - discountAmount;
+
+        document.getElementById('originalPriceText').textContent = money(originalPrice);
+        document.getElementById('discountAmountText').textContent = money(discountAmount);
+        document.getElementById('costPriceText').textContent = money(costPrice);
+        document.getElementById('salePriceText').textContent = money(salePrice);
+
+        let message = '';
+        if (selectedCount === 0) {
+            message = 'Combo phải có ít nhất 1 món ăn hoặc đồ uống.';
+        } else if (discountPercent < 0 || discountPercent > 80) {
+            message = 'Chiết khấu chỉ được nằm trong khoảng 0% đến 80%.';
+        } else if (salePrice <= 0) {
+            message = 'Giá bán sau chiết khấu phải lớn hơn 0.';
+        } else if (salePrice < costPrice) {
+            message = 'Giá bán sau chiết khấu đang thấp hơn giá vốn, không nên lưu combo này.';
+        }
+
+        warning.textContent = message;
+        warning.classList.toggle('show', Boolean(message));
+        saveButton.disabled = Boolean(message);
+    }
+
+    document.querySelectorAll('.item-check, .item-quantity').forEach(input => {
+        input.addEventListener('input', calculateCombo);
+        input.addEventListener('change', calculateCombo);
+    });
+    discountInput.addEventListener('input', calculateCombo);
+    form.addEventListener('submit', calculateCombo);
+    calculateCombo();
+</script>
 </body>
 </html>
