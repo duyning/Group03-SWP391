@@ -16,11 +16,25 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        :root {
+            --ticket-blue: #0054a6;
+            --ticket-blue-dark: #003b78;
+            --ticket-blue-soft: #eaf3ff;
+            --ticket-cyan: #16a6df;
+            --ticket-bg: #f4f8fd;
+            --ticket-text: #172033;
+            --ticket-muted: #667085;
+            --ticket-border: #d9e6f5;
+            --ticket-card: #ffffff;
+        }
+
         body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            background:
+                radial-gradient(circle at top left, rgba(22,166,223,0.16), transparent 30%),
+                linear-gradient(135deg, #ffffff 0%, var(--ticket-bg) 48%, #eaf3ff 100%);
             min-height: 100vh;
             font-family: 'Inter', sans-serif;
-            color: #fff;
+            color: var(--ticket-text);
             padding: 40px 20px;
         }
 
@@ -45,7 +59,7 @@
         .page-title {
             font-size: 1.8rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #a78bfa, #ec4899);
+            background: linear-gradient(135deg, var(--ticket-blue), var(--ticket-cyan));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -53,7 +67,7 @@
 
         .ticket-count {
             font-size: 0.85rem;
-            color: rgba(255,255,255,0.5);
+            color: var(--ticket-muted);
             margin-top: 4px;
         }
 
@@ -62,19 +76,22 @@
             align-items: center;
             gap: 8px;
             padding: 10px 20px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: var(--ticket-card);
+            border: 1px solid var(--ticket-border);
             border-radius: 12px;
-            color: rgba(255,255,255,0.7);
+            color: var(--ticket-blue);
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 500;
             transition: all 0.25s;
+            box-shadow: 0 10px 24px rgba(0,84,166,0.08);
         }
 
         .btn-back-home:hover {
-            background: rgba(255,255,255,0.1);
+            background: var(--ticket-blue);
+            border-color: var(--ticket-blue);
             color: white;
+            transform: translateY(-1px);
         }
 
         /* Filter tabs */
@@ -92,16 +109,18 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.25s;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.04);
-            color: rgba(255,255,255,0.6);
+            border: 1px solid var(--ticket-border);
+            background: var(--ticket-card);
+            color: var(--ticket-muted);
+            box-shadow: 0 8px 18px rgba(15,35,75,0.05);
         }
 
         .filter-tab:hover,
         .filter-tab.active {
-            background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(236,72,153,0.2));
-            border-color: rgba(167,139,250,0.4);
+            background: linear-gradient(135deg, var(--ticket-blue), var(--ticket-cyan));
+            border-color: transparent;
             color: #fff;
+            box-shadow: 0 12px 24px rgba(0,84,166,0.18);
         }
 
         /* Ticket cards */
@@ -114,12 +133,11 @@
         .ticket-card {
             display: flex;
             gap: 20px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: var(--ticket-card);
+            border: 1px solid var(--ticket-border);
             border-radius: 18px;
             padding: 20px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 16px 40px rgba(15,35,75,0.08);
             transition: all 0.3s ease;
             text-decoration: none;
             color: inherit;
@@ -135,15 +153,15 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(167,139,250,0.05), rgba(236,72,153,0.05));
+            background: linear-gradient(135deg, rgba(0,84,166,0.05), rgba(22,166,223,0.08));
             opacity: 0;
             transition: opacity 0.3s;
         }
 
         .ticket-card:hover {
-            border-color: rgba(167,139,250,0.3);
+            border-color: rgba(0,84,166,0.24);
             transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(167,139,250,0.15);
+            box-shadow: 0 20px 48px rgba(0,84,166,0.16);
         }
 
         .ticket-card:hover::before {
@@ -156,7 +174,7 @@
             border-radius: 12px;
             object-fit: cover;
             flex-shrink: 0;
-            background: rgba(255,255,255,0.05);
+            background: var(--ticket-blue-soft);
             position: relative;
             z-index: 1;
         }
@@ -165,7 +183,7 @@
             width: 90px;
             height: 130px;
             border-radius: 12px;
-            background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(236,72,153,0.15));
+            background: linear-gradient(135deg, #eaf3ff, #d7f0fb);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -176,7 +194,7 @@
 
         .ticket-poster-placeholder i {
             font-size: 2rem;
-            color: rgba(255,255,255,0.2);
+            color: rgba(0,84,166,0.28);
         }
 
         .ticket-info {
@@ -192,7 +210,7 @@
         .ticket-movie-title {
             font-size: 1.1rem;
             font-weight: 700;
-            color: #fff;
+            color: var(--ticket-text);
             margin-bottom: 8px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -211,11 +229,11 @@
             align-items: center;
             gap: 6px;
             font-size: 0.82rem;
-            color: rgba(255,255,255,0.6);
+            color: var(--ticket-muted);
         }
 
         .ticket-meta-item i {
-            color: #a78bfa;
+            color: var(--ticket-blue);
             font-size: 0.75rem;
             width: 14px;
             text-align: center;
@@ -231,7 +249,7 @@
         .ticket-booking-code {
             font-family: 'Courier New', monospace;
             font-size: 0.78rem;
-            color: rgba(255,255,255,0.4);
+            color: #7a8ca5;
             letter-spacing: 1px;
         }
 
@@ -269,33 +287,34 @@
         .ticket-price {
             font-size: 1.05rem;
             font-weight: 700;
-            color: #fbbf24;
+            color: var(--ticket-blue-dark);
         }
 
         /* Empty state */
         .empty-state {
             text-align: center;
             padding: 80px 20px;
-            background: rgba(255,255,255,0.03);
-            border: 1px dashed rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.86);
+            border: 1px dashed #b8cbe3;
             border-radius: 20px;
+            box-shadow: 0 16px 40px rgba(15,35,75,0.06);
         }
 
         .empty-state i {
             font-size: 3.5rem;
-            color: rgba(255,255,255,0.1);
+            color: rgba(0,84,166,0.18);
             margin-bottom: 20px;
         }
 
         .empty-state h3 {
             font-size: 1.2rem;
-            color: rgba(255,255,255,0.4);
+            color: var(--ticket-text);
             margin-bottom: 8px;
         }
 
         .empty-state p {
             font-size: 0.85rem;
-            color: rgba(255,255,255,0.25);
+            color: var(--ticket-muted);
         }
 
         /* View detail arrow */
@@ -306,8 +325,8 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: rgba(167,139,250,0.1);
-            color: #a78bfa;
+            background: var(--ticket-blue-soft);
+            color: var(--ticket-blue);
             font-size: 0.85rem;
             flex-shrink: 0;
             transition: all 0.25s;
@@ -317,7 +336,7 @@
         }
 
         .ticket-card:hover .view-arrow {
-            background: linear-gradient(135deg, #a78bfa, #ec4899);
+            background: linear-gradient(135deg, var(--ticket-blue), var(--ticket-cyan));
             color: #fff;
             transform: translateX(3px);
         }
