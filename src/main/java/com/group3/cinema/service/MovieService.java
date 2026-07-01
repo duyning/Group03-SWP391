@@ -141,6 +141,6 @@ public class MovieService {
                 Movie.MovieStatus.COMING_SOON
         );
         // [SỬA - TrienLX - 2026-06-23]: Truyền thêm tham số MovieStatus.STOPPED để cập nhật trạng thái trong SQL an toàn
-        movieRepository.autoDeactivateExpiredMovies(today, Movie.MovieStatus.STOPPED);
+        movieRepository.autoDeactivateExpiredMovies(today, today.minusDays(7), Movie.MovieStatus.STOPPED);
     }
 }

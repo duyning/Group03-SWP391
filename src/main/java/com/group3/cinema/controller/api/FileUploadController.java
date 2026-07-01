@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -73,9 +74,10 @@ public class FileUploadController {
             Path uploadPath = Paths.get(videoUploadDir);
             Files.createDirectories(uploadPath);
 
-            // Táº¡o tÃªn file duy nháº¥t báº±ng UUID Ä‘á»ƒ trÃ¡nh trÃ¹ng tÃªn
+            // Tạo tên file duy nhất bằng MD5 hash của file để phát hiện và tránh trùng lặp nội dung video trailer
             String suffix   = originalName.substring(originalName.lastIndexOf('.'));
-            String uniqueName = UUID.randomUUID().toString() + suffix;
+            String hash     = calculateMD5(file.getBytes());
+            String uniqueName = hash + suffix;
             Path targetPath   = uploadPath.resolve(uniqueName);
 
             // Sao chÃ©p dá»¯ liá»‡u file vÃ o Ä‘Æ°á»ng dáº«n Ä‘Ã­ch, ghi Ä‘Ã¨ náº¿u tá»“n táº¡i
@@ -159,6 +161,20 @@ public class FileUploadController {
         } catch (IOException e) {
             response.put("error", "Lỗi khi xóa file: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    private String calculateMD5(byte[] bytes) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hashBytes = md.digest(bytes);
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return UUID.randomUUID().toString();
         }
     }
 }

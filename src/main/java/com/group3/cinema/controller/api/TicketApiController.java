@@ -243,4 +243,36 @@ public class TicketApiController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping
+    public ResponseEntity<?> createTicket(@RequestBody Map<String, Object> payload) {
+        try {
+            Long showtimeId = Long.valueOf(payload.get("showtimeId").toString());
+            Long seatId = Long.valueOf(payload.get("seatId").toString());
+            String customerType = payload.get("customerType").toString();
+            String customerName = payload.get("customerName") != null ? payload.get("customerName").toString() : null;
+            String customerPhone = payload.get("customerPhone") != null ? payload.get("customerPhone").toString() : null;
+            String status = payload.get("status") != null ? payload.get("status").toString() : "BOOKED";
+
+            return ResponseEntity.ok(ticketService.createTicket(showtimeId, seatId, customerType, customerName, customerPhone, status));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTicket(@PathVariable("id") Long id, @RequestBody Map<String, Object> payload) {
+        try {
+            Long showtimeId = Long.valueOf(payload.get("showtimeId").toString());
+            Long seatId = Long.valueOf(payload.get("seatId").toString());
+            String customerType = payload.get("customerType").toString();
+            String customerName = payload.get("customerName") != null ? payload.get("customerName").toString() : null;
+            String customerPhone = payload.get("customerPhone") != null ? payload.get("customerPhone").toString() : null;
+            String status = payload.get("status") != null ? payload.get("status").toString() : "BOOKED";
+
+            return ResponseEntity.ok(ticketService.updateTicket(id, showtimeId, seatId, customerType, customerName, customerPhone, status));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

@@ -423,6 +423,76 @@ public class TicketService {
         return breakdown;
     }
 
+    @Transactional
+    public Ticket createTicket(Long showtimeId, Long seatId, String customerType, String customerName, String customerPhone, String status) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+
+        Optional<Ticket> existingOpt = ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId);
+        if (existingOpt.isPresent()) {
+            throw new IllegalStateException("Ghế này đã có vé đặt hoặc đang giữ chỗ!");
+        }
+
+        Ticket ticket = new Ticket();
+        ticket.setShowtime(showtime);
+        ticket.setSeat(seat);
+        ticket.setSeatNumber(seat.getSeatLabel());
+
+        String type = seat.getSeatType();
+        String vnType = "Thường";
+        if ("vip".equalsIgnoreCase(type)) vnType = "VIP";
+        else if ("couple".equalsIgnoreCase(type)) vnType = "Đôi";
+        ticket.setSeatType(vnType);
+
+        populateTicketPriceDetails(ticket, showtime, seat, customerType);
+        ticket.setStatus(status != null ? status : "BOOKED");
+        ticket.setCustomerType(customerType);
+        ticket.setCustomerName(customerName);
+        ticket.setCustomerPhone(customerPhone);
+        ticket.setCreatedAt(java.time.LocalDateTime.now());
+        ticket.setDeleted(false);
+
+        return ticketRepository.save(ticket);
+    }
+
+    @Transactional
+    public Ticket updateTicket(Long ticketId, Long showtimeId, Long seatId, String customerType, String customerName, String customerPhone, String status) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+
+        Optional<Ticket> existingOpt = ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId);
+        if (existingOpt.isPresent() && !existingOpt.get().getId().equals(ticketId)) {
+            throw new IllegalStateException("Ghế này đã có vé đặt bởi khách hàng khác!");
+        }
+
+        ticket.setShowtime(showtime);
+        ticket.setSeat(seat);
+        ticket.setSeatNumber(seat.getSeatLabel());
+
+        String type = seat.getSeatType();
+        String vnType = "Thường";
+        if ("vip".equalsIgnoreCase(type)) vnType = "VIP";
+        else if ("couple".equalsIgnoreCase(type)) vnType = "Đôi";
+        ticket.setSeatType(vnType);
+
+        populateTicketPriceDetails(ticket, showtime, seat, customerType);
+        ticket.setStatus(status != null ? status : "BOOKED");
+        ticket.setCustomerType(customerType);
+        ticket.setCustomerName(customerName);
+        ticket.setCustomerPhone(customerPhone);
+
+        return ticketRepository.save(ticket);
+    }
+
     @Transactional(readOnly = true)
     public List<Ticket> searchTickets(Integer movieId, String room, String status, java.time.LocalDate fromDate, java.time.LocalDate toDate, String searchTerm) {
         return ticketRepository.searchTickets(movieId, room, status, fromDate, toDate, searchTerm);

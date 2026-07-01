@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!--
     Dự án: Cinema 2026 — SWP391 Group 03
     File: manage_ticket.html
@@ -193,184 +193,7 @@
 
         <main class="admin-main">
             <div class="app-container">
-                <div id="ticketsSection" class="tab-section active">
-                    <!-- Tab Navigation -->
-                    <div class="sub-tab-nav" style="display: flex; gap: 1rem; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; padding-bottom: 0.2rem;">
-                        <button class="sub-tab-btn active" id="btnSubTabSell" onclick="switchTicketSubTab('sell')" style="background: none; border: none; border-bottom: 3px solid var(--primary-color); padding: 0.5rem 1rem; cursor: pointer; font-size: 1rem; font-weight: 600; color: var(--primary-color);">
-                            <i class="fa-solid fa-ticket"></i> Sơ đồ bán vé & Quản lý ghế
-                        </button>
-                        <button class="sub-tab-btn" id="btnSubTabList" onclick="switchTicketSubTab('list')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 0.5rem 1rem; cursor: pointer; font-size: 1rem; font-weight: 600; color: var(--text-muted);">
-                            <i class="fa-solid fa-table-list"></i> Tra cứu & Bộ lọc danh sách vé
-                        </button>
-                        <button class="sub-tab-btn" id="btnSubTabConfig" onclick="switchTicketSubTab('config')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 0.5rem 1rem; cursor: pointer; font-size: 1rem; font-weight: 600; color: var(--text-muted);">
-                            <i class="fa-solid fa-sliders"></i> Cấu hình bảng giá
-                        </button>
-                    </div>
-
-                    <!-- ================= SUB-TAB 1: SƠ ĐỒ BÁN VÉ ================= -->
-                    <div id="ticketSubTabSell">
-                        <header class="app-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-                            <div>
-                                <h1 class="page-title">Quản lý bán vé</h1>
-                                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">Chọn phim và suất chiếu để mở sơ đồ ghế và thực hiện nghiệp vụ bán vé.</p>
-                            </div>
-                            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <label for="ticketMovieSelect" style="font-weight: 600; color: var(--text-main); font-size: 0.88rem;"><i class="fa-solid fa-film"></i> Phim:</label>
-                                    <select id="ticketMovieSelect" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-family: inherit;">
-                                        <option value="">-- Chọn phim --</option>
-                                    </select>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <label for="ticketShowtimeSelect" style="font-weight: 600; color: var(--text-main); font-size: 0.88rem;"><i class="fa-solid fa-calendar-check"></i> Suất chiếu:</label>
-                                    <select id="ticketShowtimeSelect" style="min-width: 250px; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-family: inherit;" disabled>
-                                        <option value="">-- Chọn phim trước --</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </header>
-
-                        <!-- Empty State khi chưa chọn suất chiếu -->
-                        <div id="seatMapEmpty" class="empty-state" style="padding: 4rem; text-align: center; background: var(--bg-card); border-radius: 12px;">
-                            <i class="fa-solid fa-ticket" style="font-size: 3.5rem; color: var(--text-muted); margin-bottom: 1.5rem;"></i>
-                            <h3>Chọn suất chiếu để hiển thị sơ đồ</h3>
-                            <p style="color: var(--text-muted); max-width: 450px; margin: 0.5rem auto 0 auto;">Vui lòng chọn phim và suất chiếu tương ứng ở thanh công cụ phía trên để xem sơ đồ phòng rạp và thao tác giữ chỗ/bán vé.</p>
-                        </div>
-
-                        <!-- Sơ đồ ghế và form thông tin bán vé -->
-                        <div id="seatMapSection" class="ticket-workflow-grid" style="display: none;">
-                            <div class="seat-map-card">
-                                <div class="screen-bar"></div>
-                                <div class="screen-label"><i class="fa-solid fa-display"></i> MÀN HÌNH CHIẾU</div>
-                                
-                                <div class="seat-legend">
-                                    <span class="legend-item"><span class="legend-dot seat-empty-standard"></span> chuẩn (trống)</span>
-                                    <span class="legend-item"><span class="legend-dot seat-empty-vip"></span> VIP (trống)</span>
-                                    <span class="legend-item"><span class="legend-dot seat-empty-couple"></span> Đôi (trống)</span>
-                                    <span class="legend-item"><span class="legend-dot seat-state-pending"></span> Đang giữ chỗ</span>
-                                    <span class="legend-item"><span class="legend-dot seat-state-booked"></span> Đã bán</span>
-                                </div>
-
-                                <div class="seat-grid" id="seatGrid"></div>
-                            </div>
-
-                            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-                                <!-- Thống kê tỉ lệ lấp đầy trực quan -->
-                                <section class="stats-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1rem; width: 100%; margin-bottom: 0;">
-                                    <div class="stat-card stat-blue" style="padding: 1rem;">
-                                        <div class="stat-info">
-                                            <span class="stat-label">Ghế đã bán</span>
-                                            <strong class="stat-value" id="ticketStatSold" style="font-size: 1.5rem;">0</strong>
-                                        </div>
-                                    </div>
-                                    <div class="stat-card stat-orange" style="padding: 1rem;">
-                                        <div class="stat-info">
-                                            <span class="stat-label">Tỉ lệ lấp đầy</span>
-                                            <strong class="stat-value" id="ticketStatOccupancy" style="font-size: 1.5rem;">0%</strong>
-                                            <span style="font-size:0.68rem; color:var(--text-muted); margin-top:4px; display:block; line-height:1.2;">
-                                                Công thức: (Ghế đã bán &divide; Tổng số ghế) &times; 100%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <!-- Panel Thao Tác Bán Vé/Xem thông tin -->
-                                <div class="panel-booking-info" id="panelBookingDetails">
-                                    <h3 id="panelActionTitle" style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-                                        Thông tin chọn ghế
-                                    </h3>
-                                    
-                                    <div id="bookingFormContainer">
-                                        <!-- Form bán vé / giữ chỗ -->
-                                        <form id="sellTicketForm" onsubmit="event.preventDefault();">
-                                            <div class="form-group" style="margin-bottom: 0.8rem;">
-                                                <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; display: block;">Ghế đang chọn:</label>
-                                                <input type="text" id="sellSeatLabel" class="form-control" readonly style="background: var(--bg-app); font-weight: 700; color: var(--primary-color);">
-                                                <input type="hidden" id="sellSeatId">
-                                            </div>
-                                            <div class="form-group" style="margin-bottom: 0.8rem;">
-                                                <label for="sellCustomerName" style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; display: block;">Tên khách hàng:</label>
-                                                <input type="text" id="sellCustomerName" class="form-control" placeholder="Nhập tên khách (tùy chọn)">
-                                            </div>
-                                            <div class="form-group" style="margin-bottom: 0.8rem;">
-                                                <label for="sellCustomerPhone" style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; display: block;">Số điện thoại:</label>
-                                                <input type="text" id="sellCustomerPhone" class="form-control" placeholder="Nhập SĐT khách (tùy chọn)">
-                                            </div>
-                                            <div class="form-group" style="margin-bottom: 0.8rem;">
-                                                <label for="sellCustomerType" style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; display: block;">Đối tượng khách:</label>
-                                                <select id="sellCustomerType" class="form-control">
-                                                    <option value="ADULT">ADULT - Người lớn</option>
-                                                    <option value="STUDENT">STUDENT - Học sinh / Sinh viên</option>
-                                                    <option value="CHILD">CHILD - Trẻ em</option>
-                                                    <option value="VIP">VIP - Khách hàng VIP</option>
-                                                </select>
-                                            </div>
-
-                                            <div class="price-breakdown-box">
-                                                <div class="breakdown-row">
-                                                    <span>Giá cơ bản suất chiếu:</span>
-                                                    <span id="breakdownBasePrice">0đ</span>
-                                                </div>
-                                                <div class="breakdown-row">
-                                                    <span>Phụ thu loại ghế:</span>
-                                                    <span id="breakdownSeatSurcharge">0đ</span>
-                                                </div>
-                                                <div class="breakdown-row">
-                                                    <span>Phụ thu định dạng:</span>
-                                                    <span id="breakdownFormatSurcharge">0đ</span>
-                                                </div>
-                                                <div class="breakdown-row">
-                                                    <span>Giảm trừ đối tượng:</span>
-                                                    <span id="breakdownDiscount" style="color: #ef4444;">-0đ</span>
-                                                </div>
-                                                <div class="breakdown-row total-row">
-                                                    <span>Tổng cộng phải trả:</span>
-                                                    <span id="breakdownTotal">0đ</span>
-                                                </div>
-                                            </div>
-
-                                            <div style="display: flex; gap: 0.5rem; margin-top: 1.2rem;">
-                                                <button class="btn btn-primary" id="btnActionConfirmSell" style="flex: 1;"><i class="fa-solid fa-cart-shopping"></i> Bán vé</button>
-                                                <button class="btn btn-outline" id="btnActionConfirmHold" style="border-color: #ca8a04; color: #ca8a04;"><i class="fa-solid fa-clock"></i> Giữ chỗ</button>
-                                            </div>
-                                        </form>
-                                    </div>
-
-                                    <div id="bookingDetailContainer" style="display: none;">
-                                        <!-- Chi tiết vé đã bán -->
-                                        <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.88rem;">
-                                            <div><strong>Mã vé:</strong> <span id="detailTicketId" style="color: var(--primary-color); font-weight: 700;">--</span></div>
-                                            <div><strong>Số ghế:</strong> <span id="detailSeatLabel" style="font-weight: 600;">--</span></div>
-                                            <div><strong>Trạng thái:</strong> <span id="detailStatus" class="badge">--</span></div>
-                                            <div><strong>Khách hàng:</strong> <span id="detailCustName">--</span></div>
-                                            <div><strong>Số điện thoại:</strong> <span id="detailCustPhone">--</span></div>
-                                            <div><strong>Đối tượng:</strong> <span id="detailCustType">--</span></div>
-                                            <div><strong>Thời điểm bán:</strong> <span id="detailBookingTime">--</span></div>
-                                            <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.25rem;">
-                                                <div class="breakdown-row"><span>Giá cơ bản:</span><span id="detailPriceBase">--</span></div>
-                                                <div class="breakdown-row"><span>Phụ thu ghế:</span><span id="detailPriceSeat">--</span></div>
-                                                <div class="breakdown-row"><span>Phụ thu định dạng:</span><span id="detailPriceFormat">--</span></div>
-                                                <div class="breakdown-row"><span>Giảm trừ:</span><span id="detailPriceDiscount">--</span></div>
-                                                <div class="breakdown-row total-row"><span>Tổng số tiền:</span><span id="detailPriceTotal">--</span></div>
-                                            </div>
-                                            
-                                            <!-- Thao tác nghiệp vụ nâng cao (Đổi ghế, Hoàn vé) -->
-                                            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.2rem;">
-                                                <div style="display: flex; gap: 0.5rem;">
-                                                    <button class="btn btn-outline" id="btnActionOpenChangeSeat" style="flex: 1;"><i class="fa-solid fa-shuffle"></i> Đổi ghế</button>
-                                                    <button class="btn btn-outline" id="btnActionOpenUpdateCustomer" style="flex: 1;"><i class="fa-solid fa-user-pen"></i> Sửa đối tượng</button>
-                                                </div>
-                                                <button class="btn btn-danger" id="btnActionRefundTicket" style="background-color: #ef4444; border-color: #ef4444; color: white;"><i class="fa-solid fa-trash-can"></i> Hủy vé & Hoàn tiền</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ================= SUB-TAB 2: DANH SÁCH & BỘ LỌC VÉ TOÀN CỤC ================= -->
-                    <div id="ticketSubTabList" style="display: none;">
+                    <!-- ================= SUB-TAB: DANH SÁCH & BỘ LỌC VÉ TOÀN CỤC ================= -->
                         <header class="app-header">
                             <h1 class="page-title">Tra cứu danh sách vé</h1>
                             <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">Tra cứu, lọc vé nâng cao theo ngày, trạng thái, phim, phòng, hoặc tìm kiếm theo mã vé, số điện thoại khách hàng.</p>
@@ -429,6 +252,7 @@
                                 <div style="display: flex; gap: 0.5rem;">
                                     <button class="btn btn-outline" onclick="resetGlobalTicketFilter()"><i class="fa-solid fa-arrows-rotate"></i> Thiết lập lại</button>
                                     <button class="btn btn-primary" onclick="searchGlobalTickets(1)"><i class="fa-solid fa-filter"></i> Lọc danh sách</button>
+                                    <button class="btn btn-primary" onclick="openCreateTicketModal()" style="background: #10b981; border-color: #10b981;"><i class="fa-solid fa-plus"></i> Thêm vé mới</button>
                                 </div>
                             </div>
                         </section>
@@ -467,95 +291,6 @@
                         </main>
                     </div>
 
-                    <!-- ================= SUB-TAB 3: CẤU HÌNH BẢNG GIÁ VÉ ================= -->
-                    <div id="ticketSubTabConfig" style="display: none;">
-                        <header class="app-header">
-                            <h1 class="page-title">Cấu hình bảng giá vé</h1>
-                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
-                                Thiết lập các hệ số giá vé nền theo khung giờ, phụ thu phòng định dạng 3D/IMAX, phụ thu loại ghế ngồi và chiết khấu các đối tượng khách hàng.
-                            </p>
-                        </header>
-
-                        <div class="pricing-config-grid" style="display: grid; grid-template-columns: 1.2fr 1.1fr; gap: 1.5rem; margin-top: 1rem; align-items: start;">
-                            <!-- 1. Giá cơ bản -->
-                            <div class="filter-card" style="margin: 0; padding: 1.5rem;">
-                                <h3 style="font-size:1.15rem; font-weight:700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-                                    <i class="fa-solid fa-calendar-days"></i> 1. Giá vé cơ bản theo ngày & khung giờ
-                                </h3>
-                                <div class="table-responsive">
-                                    <table class="movie-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Loại ngày</th>
-                                                <th>Khung giờ</th>
-                                                <th>Thời gian</th>
-                                                <th>Giá cơ bản</th>
-                                                <th class="text-center">Sửa</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="configBasePriceBody"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Phụ thu và Chiết khấu -->
-                            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-                                <div class="filter-card" style="margin: 0; padding: 1.5rem;">
-                                    <h3 style="font-size:1.15rem; font-weight:700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-                                        <i class="fa-solid fa-chair"></i> 2. Phụ thu theo loại ghế
-                                    </h3>
-                                    <div class="table-responsive">
-                                        <table class="movie-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Mã ghế</th>
-                                                    <th>Phụ thu (VND)</th>
-                                                    <th class="text-center">Sửa</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="configSeatSurchargeBody"></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="filter-card" style="margin: 0; padding: 1.5rem;">
-                                    <h3 style="font-size:1.15rem; font-weight:700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-                                        <i class="fa-solid fa-circle-play"></i> 3. Phụ thu định dạng phòng
-                                    </h3>
-                                    <div class="table-responsive">
-                                        <table class="movie-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Định dạng</th>
-                                                    <th>Phụ thu (VND)</th>
-                                                    <th class="text-center">Sửa</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="configFormatSurchargeBody"></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="filter-card" style="margin: 0; padding: 1.5rem;">
-                                    <h3 style="font-size:1.15rem; font-weight:700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-                                        <i class="fa-solid fa-tags"></i> 4. Giảm giá theo đối tượng khách hàng
-                                    </h3>
-                                    <div class="table-responsive">
-                                        <table class="movie-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Đối tượng</th>
-                                                    <th>Tỉ lệ giảm</th>
-                                                    <th>Đồng giá thường</th>
-                                                    <th class="text-center">Sửa</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="configDiscountBody"></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -651,6 +386,139 @@
             <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
                 <button class="btn btn-outline" id="btnCancelEditConfig">Hủy</button>
                 <button class="btn btn-primary" id="btnSaveConfig"><i class="fa-solid fa-save"></i> Lưu cấu hình</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Thêm / Sửa Vé -->
+    <div class="modal-overlay" id="ticketCrudModal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999;">
+        <div class="modal-box" style="width: 550px; background: var(--bg-card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+                <h2 style="font-size:1.2rem; font-weight:700; color:var(--text-main);" id="ticketCrudModalTitle">Thêm vé mới</h2>
+                <button class="btn-close-modal" id="btnCloseTicketCrudModal" onclick="closeTicketCrudModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            </div>
+            <form id="ticketCrudForm" class="modal-body" onsubmit="event.preventDefault();">
+                <input type="hidden" id="ticketCrudId">
+                
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="ticketCrudMovie" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Chọn Phim <span class="required">*</span></label>
+                    <select id="ticketCrudMovie" class="form-control" style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);" onchange="handleCrudMovieChange()">
+                        <option value="">-- Chọn phim --</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="ticketCrudShowtime" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Chọn Suất chiếu <span class="required">*</span></label>
+                    <select id="ticketCrudShowtime" class="form-control" style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);" disabled onchange="handleCrudShowtimeChange()">
+                        <option value="">-- Chọn phim trước --</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="ticketCrudSeat" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Chọn Vị trí ghế <span class="required">*</span></label>
+                    <select id="ticketCrudSeat" class="form-control" style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);" disabled onchange="handlePriceBreakdownTrigger()">
+                        <option value="">-- Chọn suất chiếu trước --</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label for="ticketCrudCustomerType" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Đối tượng khách <span class="required">*</span></label>
+                        <select id="ticketCrudCustomerType" class="form-control" style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);" onchange="handlePriceBreakdownTrigger()">
+                            <option value="ADULT">ADULT - Người lớn</option>
+                            <option value="STUDENT">STUDENT - Học sinh/Sinh viên</option>
+                            <option value="CHILD">CHILD - Trẻ em</option>
+                            <option value="VIP">VIP - Khách hàng VIP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ticketCrudStatus" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Trạng thái vé <span class="required">*</span></label>
+                        <select id="ticketCrudStatus" class="form-control" style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);">
+                            <option value="BOOKED">BOOKED - Đã bán</option>
+                            <option value="PENDING">PENDING - Giữ chỗ</option>
+                            <option value="REFUNDED">REFUNDED - Đã hoàn trả</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label for="ticketCrudCustomerName" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Tên khách hàng</label>
+                        <input type="text" id="ticketCrudCustomerName" class="form-control" placeholder="Nhập tên khách..." style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);">
+                    </div>
+                    <div class="form-group">
+                        <label for="ticketCrudCustomerPhone" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Số điện thoại</label>
+                        <input type="text" id="ticketCrudCustomerPhone" class="form-control" placeholder="Nhập số điện thoại..." style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);">
+                    </div>
+                </div>
+
+                <!-- Phân tích cơ cấu giá vé tự động -->
+                <div class="price-breakdown-box" id="crudPriceBreakdownBox" style="display: none; background: var(--bg-app); border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color); font-size: 0.88rem; margin-bottom: 1.5rem;">
+                    <h4 style="font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-main);"><i class="fa-solid fa-calculator"></i> Chi tiết tính giá vé tự động:</h4>
+                    <div class="breakdown-row" style="display: flex; justify-content: space-between; margin-bottom: 0.3rem; color: var(--text-main);"><span>Giá vé cơ bản (theo khung giờ/ngày):</span><span id="crudBasePrice">0đ</span></div>
+                    <div class="breakdown-row" style="display: flex; justify-content: space-between; margin-bottom: 0.3rem; color: var(--text-main);"><span>Phụ thu loại ghế:</span><span id="crudSeatSurcharge">0đ</span></div>
+                    <div class="breakdown-row" style="display: flex; justify-content: space-between; margin-bottom: 0.3rem; color: var(--text-main);"><span>Phụ thu định dạng phòng:</span><span id="crudFormatSurcharge">0đ</span></div>
+                    <div class="breakdown-row" style="display: flex; justify-content: space-between; margin-bottom: 0.3rem; color: var(--text-main);"><span>Giảm trừ đối tượng khách:</span><span id="crudDiscount" style="color:#ef4444;">-0đ</span></div>
+                    <div class="breakdown-row total-row" style="display: flex; justify-content: space-between; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.5rem; font-size: 1rem; color: var(--primary-color);"><span>Tổng tiền thực tế:</span><span id="crudFinalPrice">0đ</span></div>
+                </div>
+            </form>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                <button class="btn btn-outline" onclick="closeTicketCrudModal()">Hủy bỏ</button>
+                <button class="btn btn-primary" onclick="handleSaveTicketCrud()"><i class="fa-solid fa-save"></i> Lưu vé</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes pulse-seat {
+            0% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                transform: scale(1.15);
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+            100% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+    </style>
+
+    <!-- Modal 5: Xem vị trí ghế trên sơ đồ -->
+    <div class="modal-overlay" id="viewSeatMapModal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999;">
+        <div class="modal-box" style="width: 700px; max-width: 95%; background: var(--bg-card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+                <h2 style="font-size:1.2rem; font-weight:700; color:var(--text-main);"><i class="fa-solid fa-map-location-dot"></i> Vị trí ghế trên sơ đồ</h2>
+                <button class="btn-close-modal" onclick="closeViewSeatMapModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Thông tin suất chiếu & phòng -->
+                <div style="background: var(--bg-app); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; border: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem;">
+                    <div style="color: var(--text-main);"><strong>Phim:</strong> <span id="vsmMovie">--</span></div>
+                    <div style="color: var(--text-main);"><strong>Suất chiếu:</strong> <span id="vsmShowtime">--</span></div>
+                    <div style="color: var(--text-main);"><strong>Phòng:</strong> <span id="vsmRoom">--</span> (<span id="vsmRoomType" style="font-weight:700; color:var(--primary-color);">--</span>)</div>
+                    <div style="color: var(--text-main);"><strong>Ghế đang xem:</strong> <span id="vsmTargetSeat" style="font-weight:700; color:var(--primary-color);">--</span> (<span id="vsmTargetSeatType">--</span>)</div>
+                </div>
+
+                <!-- Chú thích sơ đồ ghế -->
+                <div class="seat-legend" style="display:flex; gap:1.2rem; justify-content:center; margin-bottom:1.5rem; flex-wrap:wrap; font-size:0.8rem;">
+                    <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:var(--primary-color);border-radius:4px;display:inline-block;box-shadow:0 0 10px var(--primary-color);"></span> <span>Ghế đang chọn</span></div>
+                    <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#475569;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Ghế trống (Thường)</span></div>
+                    <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#8b5cf6;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Ghế trống (VIP)</span></div>
+                    <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ec4899;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Ghế trống (Đôi)</span></div>
+                    <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ef4444;border-radius:4px;display:inline-block;"></span> <span>Ghế đã bán</span></div>
+                </div>
+
+                <!-- Grid hiển thị sơ đồ -->
+                <div style="background:var(--bg-app); padding:2rem 1rem; border-radius:10px; border:1px solid var(--border-color); display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:220px; overflow-x:auto;">
+                    <div style="width:100%; max-width:400px; height:4px; background:#94a3b8; border-radius:4px; margin-bottom:2rem; box-shadow:0 4px 10px rgba(0,0,0,0.2); text-align:center; color:#fff; font-size:0.7rem; font-weight:700; line-height:4px;">MÀN HÌNH</div>
+                    <div id="vsmSeatGrid" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
+                <button class="btn btn-primary" onclick="closeViewSeatMapModal()">Đóng lại</button>
             </div>
         </div>
     </div>

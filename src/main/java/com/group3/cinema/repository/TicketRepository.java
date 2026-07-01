@@ -26,7 +26,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     @Query("SELECT COALESCE(SUM(t.finalPrice), 0) FROM Ticket t WHERE t.showtime.id = :showtimeId AND t.status = 'BOOKED' AND t.deleted = false")
     Double calculateRevenueByShowtimeId(@Param("showtimeId") Long showtimeId);
 
-    @Query("SELECT t FROM Ticket t WHERE " +
+    @Query("SELECT t FROM Ticket t WHERE t.deleted = false AND " +
            "(:movieId IS NULL OR t.showtime.movie.id = :movieId) AND " +
            "(:room IS NULL OR t.showtime.room = :room) AND " +
            "(:status IS NULL OR t.status = :status) AND " +
