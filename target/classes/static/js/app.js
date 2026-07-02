@@ -42,6 +42,7 @@ const API_ROOMS     = '/api/rooms';
 // ==================== TRẠNG THÁI TOÀN CỤC ====================
 let moviesData      = [];   // Toàn bộ phim sau khi lọc
 let showtimesData   = [];   // Toàn bộ lịch chiếu sau khi lọc
+let currentPreviewSlots = []; // Danh sách các suất chiếu xem trước đang hiển thị
 let ticketsData     = [];   // Vé của suất chiếu đang xem
 let ticketsFiltered = [];   // Vé sau khi lọc theo trạng thái
 let seatsData       = [];   // Danh sách ghế của phòng chiếu đang xem
@@ -52,6 +53,11 @@ const PAGE_SIZE   = 6;      // Số dòng mỗi trang
 
 let activeShowtimeId = null; // ID suất chiếu đang mở sơ đồ ghế
 let currentEditingGroupIds = []; // Danh sách IDs suất chiếu của nhóm đang sửa
+
+// Global variables for Ticket Price Configs and Selling Map
+let _cachedPricingConfigs = null;
+let selectedMapSeat = null;
+let selectedMapShowtime = null;
 
 // Cache dữ liệu dropdown để tránh fetch lại nhiều lần (giảm lag)
 let _cachedMovieList = null;
@@ -1289,6 +1295,12 @@ function initShowtimeEvents() {
             }
         }
     });
+
+    // Cập nhật xem trước các suất chiếu khi thay đổi thông tin đầu vào
+    ['showtimeMovieSelect', 'showtimeTimeInput', 'showtimeSlotCount'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', recalculateShowtimeSlotsPreview);
+        document.getElementById(id)?.addEventListener('change', recalculateShowtimeSlotsPreview);
+    });
 }
 
 // --- Thống kê lịch chiếu ---
@@ -1338,13 +1350,12 @@ async function populateMovieDropdowns(forceRefresh = false) {
 }
 
 // --- Nạp phòng chiếu (có cache để không bị lag) ---
-// --- Nạp phòng chiếu (có cache để không bị lag) ---
 // [SỬA - TrienLX - 2026-06-23]: Hỗ trợ nạp phòng cho cả form điều chỉnh 1 ngày
 async function populateRoomDropdown(selectedRoomName = '', forceRefresh = false) {
-    const roomSel = document.getElementById('showtimeRoomInput');
+    const roomContainer = document.getElementById('showtimeRoomsCheckboxContainer');
     const overrideSel = document.getElementById('overrideRoomInput');
     const filterSel = document.getElementById('filterShowtimeRoom');
-    if (!roomSel && !overrideSel && !filterSel) return;
+    if (!roomContainer && !overrideSel && !filterSel) return;
 
     try {
         if (!_cachedRoomList || forceRefresh) {
@@ -1353,6 +1364,39 @@ async function populateRoomDropdown(selectedRoomName = '', forceRefresh = false)
             _cachedRoomList = await r.json();
         }
         const rooms = _cachedRoomList;
+
+        // Nạp checkbox cho form Thêm/Sửa suất chiếu chính
+        if (roomContainer) {
+            roomContainer.innerHTML = '';
+            rooms.forEach(room => {
+                const label = document.createElement('label');
+                label.style.cssText = 'display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding:0.4rem 0.6rem; border-radius:6px; background:var(--bg-app); border:1px solid var(--border-color); font-size:0.85rem; color:var(--text-main); font-weight:500; transition:all 0.2s;';
+                label.className = 'room-checkbox-label';
+                
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.name = 'showtimeRoom';
+                input.value = room.roomName || '';
+                input.style.cssText = 'cursor:pointer; width:16px; height:16px; border-radius:4px;';
+                
+                const details = [room.roomType, room.audioTech, room.totalSeats ? `${room.totalSeats} ghế` : '']
+                    .filter(Boolean).join(' · ');
+                const textSpan = document.createElement('span');
+                textSpan.textContent = details ? `${room.roomName} (${details})` : room.roomName;
+                
+                label.appendChild(input);
+                label.appendChild(textSpan);
+                roomContainer.appendChild(label);
+            });
+            
+            // Nếu có phòng được chọn sẵn (khi sửa)
+            if (selectedRoomName) {
+                const selectedRooms = selectedRoomName.split(',').map(r => r.trim());
+                document.querySelectorAll('input[name="showtimeRoom"]').forEach(cb => {
+                    cb.checked = selectedRooms.includes(cb.value);
+                });
+            }
+        }
 
         const populateOptions = (sel, isFilter = false) => {
             if (!sel) return;
@@ -1370,15 +1414,113 @@ async function populateRoomDropdown(selectedRoomName = '', forceRefresh = false)
             }
         };
 
-        populateOptions(roomSel);
         populateOptions(overrideSel);
         populateOptions(filterSel, true);
     } catch (e) {
         console.error('Lỗi nạp danh sách phòng chiếu:', e);
-        if (roomSel) roomSel.innerHTML = '<option value="">Không thể tải danh sách phòng</option>';
+        if (roomContainer) roomContainer.innerHTML = '<span style="color:var(--stat-red);">Không thể tải danh sách phòng</span>';
         if (overrideSel) overrideSel.innerHTML = '<option value="">Không thể tải danh sách phòng</option>';
         if (filterSel) filterSel.innerHTML = '<option value="">Không thể tải danh sách phòng</option>';
     }
+}
+
+// --- Tính toán và hiển thị danh sách suất chiếu xem trước ---
+function recalculateShowtimeSlotsPreview() {
+    const movieSel = document.getElementById('showtimeMovieSelect');
+    const timeInputEl = document.getElementById('showtimeTimeInput');
+    if (!movieSel || !timeInputEl) return;
+
+    const movieId = movieSel.value;
+    const timeInput = timeInputEl.value;
+    const slotCountInput = document.getElementById('showtimeSlotCount');
+    const slotCountVal = slotCountInput && slotCountInput.style.display !== 'none' && slotCountInput.closest('#slotCountGroup')?.style.display !== 'none'
+        ? (parseInt(slotCountInput.value) || 1) : 1;
+
+    const previewRow = document.getElementById('showtimeSlotsPreviewRow');
+    const previewList = document.getElementById('showtimeSlotsPreviewList');
+    if (!previewRow || !previewList) return;
+
+    if (!movieId || !timeInput) {
+        previewRow.style.display = 'none';
+        currentPreviewSlots = [];
+        return;
+    }
+
+    const movie = _cachedMovieList ? _cachedMovieList.find(m => m.id == movieId) : null;
+    const duration = movie ? (movie.duration || 120) : 120;
+
+    currentPreviewSlots = [];
+    let currentSlotTime = timeInput; // format: "HH:mm"
+
+    for (let i = 0; i < slotCountVal; i++) {
+        const parts = currentSlotTime.split(':');
+        const startHrs = parseInt(parts[0]);
+        const startMins = parseInt(parts[1]);
+
+        const startTotalMinutes = startHrs * 60 + startMins;
+        const endTotalMinutes = startTotalMinutes + duration;
+
+        const endHrs = Math.floor(endTotalMinutes / 60) % 24;
+        const endMins = endTotalMinutes % 60;
+        const endTimeStr = String(endHrs).padStart(2, '0') + ':' + String(endMins).padStart(2, '0');
+
+        currentPreviewSlots.push({
+            id: i,
+            start: currentSlotTime,
+            end: endTimeStr
+        });
+
+        // Tính giờ suất tiếp theo: thời điểm bắt đầu + 10m + duration + 20m
+        let nextStartTotalMinutes = startTotalMinutes + 10 + duration + 20;
+        const rem = nextStartTotalMinutes % 5;
+        if (rem > 0) nextStartTotalMinutes += (5 - rem);
+
+        const nextHrs = Math.floor(nextStartTotalMinutes / 60) % 24;
+        const nextMins = nextStartTotalMinutes % 60;
+        currentSlotTime = String(nextHrs).padStart(2, '0') + ':' + String(nextMins).padStart(2, '0');
+    }
+
+    renderShowtimeSlotsPreview();
+}
+
+function renderShowtimeSlotsPreview() {
+    const previewRow = document.getElementById('showtimeSlotsPreviewRow');
+    const previewList = document.getElementById('showtimeSlotsPreviewList');
+    if (!previewRow || !previewList) return;
+
+    if (currentPreviewSlots.length === 0) {
+        previewRow.style.display = 'none';
+        return;
+    }
+
+    previewRow.style.display = 'flex';
+    previewList.innerHTML = '';
+
+    currentPreviewSlots.forEach((slot, index) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:var(--bg-app); border:1px solid var(--border-color); border-radius:6px; padding:0.4rem 0.6rem; font-size:0.85rem; transition:all 0.2s; width:100%;';
+        item.className = 'preview-slot-item';
+
+        const info = document.createElement('span');
+        info.style.cssText = 'font-weight:500; color:var(--text-main);';
+        info.innerHTML = `<span style="color:var(--text-muted); font-size:0.75rem;">Suất ${index + 1}:</span> <strong style="color:var(--primary-color);">${slot.start}</strong> - <strong>${slot.end}</strong>`;
+
+        const btnDel = document.createElement('button');
+        btnDel.type = 'button';
+        btnDel.className = 'btn btn-outline';
+        btnDel.style.cssText = 'padding:0.2rem 0.4rem; font-size:0.75rem; color:var(--stat-red); border-color:transparent; background:transparent; cursor:pointer;';
+        btnDel.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+        btnDel.onclick = () => deletePreviewSlot(index);
+
+        item.appendChild(info);
+        item.appendChild(btnDel);
+        previewList.appendChild(item);
+    });
+}
+
+function deletePreviewSlot(index) {
+    currentPreviewSlots.splice(index, 1);
+    renderShowtimeSlotsPreview();
 }
 
 // --- Tải lịch chiếu ---
@@ -1663,6 +1805,7 @@ function openShowtimeModal(isEdit) {
         document.getElementById('showtimeParamId').value        = '';
         document.getElementById('showtimeDayTypeDisplay').value = 'Chưa xác định ngày';
         document.getElementById('showtimeSlotCount').value      = '1';
+        document.querySelectorAll('input[name="showtimeRoom"]').forEach(cb => cb.checked = false);
         
         if (timeSlotRow) timeSlotRow.classList.add('split-2');
         if (slotCountGroup) slotCountGroup.style.display = '';
@@ -1681,6 +1824,7 @@ function openShowtimeModal(isEdit) {
 
     populateMovieDropdowns();
     populateRoomDropdown();
+    recalculateShowtimeSlotsPreview();
     document.getElementById('showtimeModal').classList.add('show');
 }
 function closeShowtimeModal() { document.getElementById('showtimeModal').classList.remove('show'); }
@@ -1697,9 +1841,10 @@ async function handleShowtimeSave(e) {
         return;
     }
 
-    const roomVal = document.getElementById('showtimeRoomInput').value;
+    const checkedRoomCbs = Array.from(document.querySelectorAll('input[name="showtimeRoom"]:checked'));
+    const roomVal = checkedRoomCbs.map(cb => cb.value).join(', ');
     if (!timeVal || !roomVal) {
-        showToast('warning', 'Thiếu thông tin', 'Vui lòng điền đầy đủ các trường bắt buộc (*)');
+        showToast('warning', 'Thiếu thông tin', 'Vui lòng chọn ít nhất một phòng chiếu và điền đầy đủ các trường bắt buộc (*)');
         return;
     }
 
@@ -1741,13 +1886,20 @@ async function handleShowtimeSave(e) {
             return;
         }
 
+        const showTimes = currentPreviewSlots.map(slot => slot.start + ':00');
+        if (showTimes.length === 0) {
+            showToast('warning', 'Thiếu suất chiếu', 'Danh sách suất chiếu không được trống. Vui lòng thêm/để lại ít nhất một suất chiếu.');
+            return;
+        }
+
         body = {
             movieId:   parseInt(movieId),
             startDate: startDate,
             endDate:   endDate,
             showTime:  timeVal + ':00',
             room:      roomVal,
-            slotCount: slotCount
+            slotCount: slotCount,
+            showTimes: showTimes
         };
     } else {
         // Chế độ chỉnh sửa (hỗ trợ dải ngày)
@@ -1777,13 +1929,20 @@ async function handleShowtimeSave(e) {
             }
         }
 
+        const showTimes = currentPreviewSlots.map(slot => slot.start + ':00');
+        if (showTimes.length === 0) {
+            showToast('warning', 'Thiếu suất chiếu', 'Danh sách suất chiếu không được trống. Vui lòng thêm/để lại ít nhất một suất chiếu.');
+            return;
+        }
+
         body = {
             movieId:   parseInt(movieId),
             startDate: startDate,
             endDate:   endDate,
             showTime:  timeVal + ':00',
             room:      roomVal,
-            groupIds:  currentEditingGroupIds
+            groupIds:  currentEditingGroupIds,
+            showTimes: showTimes
         };
     }
 
@@ -1857,8 +2016,12 @@ async function editShowtime(id, groupIds = []) {
             }
         }
         document.getElementById('showtimeTimeInput').value       = timeStr;
-        document.getElementById('showtimeRoomInput').value       = st.room      || '';
+        const selectedRooms = (st.room || '').split(',').map(r => r.trim());
+        document.querySelectorAll('input[name="showtimeRoom"]').forEach(cb => {
+            cb.checked = selectedRooms.includes(cb.value);
+        });
         document.getElementById('showtimeDayTypeDisplay').value  = st.dayType   || '—';
+        recalculateShowtimeSlotsPreview();
     } catch(e) {
         showToast('error', 'Lỗi tải dữ liệu', 'Không thể tải thông tin lịch chiếu.');
     }
@@ -1988,9 +2151,7 @@ function initTicketEvents() {
     const elBSaveC = document.getElementById('btnSaveConfig');
     if (elBSaveC) elBSaveC.addEventListener('click', savePricingConfig);
 
-    populateTicketMovieDropdown();
-    loadPricingConfigs();
-    switchTicketSubTab('list');
+    switchMainTicketTab('sell');
 }
 
 async function populateTicketMovieDropdown() {
@@ -2019,7 +2180,23 @@ async function populateTicketShowtimes(movieId) {
         const showtimeSelect = document.getElementById('ticketShowtimeSelect');
         if (!showtimeSelect) return;
         showtimeSelect.innerHTML = '<option value="">-- Chọn suất chiếu --</option>';
+
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('sv'); // format: YYYY-MM-DD
+        const nowTimeStr = now.toTimeString().substring(0, 5); // format: HH:MM
+
         list.forEach(function(st) {
+            let showTimeStr = '';
+            if (st.showTime) {
+                if (typeof st.showTime === 'string') {
+                    showTimeStr = st.showTime.substring(0, 5);
+                } else if (Array.isArray(st.showTime)) {
+                    showTimeStr = String(st.showTime[0]).padStart(2, '0') + ':' + String(st.showTime[1]).padStart(2, '0');
+                }
+            }
+            const isExpired = st.showDate < todayStr || (st.showDate === todayStr && showTimeStr < nowTimeStr);
+            if (isExpired) return;
+
             const opt = document.createElement('option');
             opt.value = st.id;
             const dateStr = formatDate ? formatDate(st.showDate) : (st.showDate || '');
@@ -2524,8 +2701,24 @@ async function searchGlobalTickets(page) {
 function renderGlobalTicketTable(list, startIdx) {
     const tbody = document.getElementById('globalTicketTableBody');
     tbody.innerHTML = '';
+
+    // Reset select all checkbox
+    const selectAllBox = document.getElementById('selectAllTickets');
+    if (selectAllBox) selectAllBox.checked = false;
+    updateBatchDeleteButtonState();
+
     if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding:2.5rem;color:var(--text-muted);">Không có vé nào thỏa mãn điều kiện lọc.</td></tr>';
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center" style="padding: 4rem 2rem; color: var(--text-muted);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"><i class="fa-solid fa-folder-open"></i></div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">Không tìm thấy dữ liệu vé</div>
+                    <div style="font-size: 0.88rem; max-width: 400px; margin: 0 auto; line-height: 1.4;">
+                        Không có vé nào thỏa mãn điều kiện tìm kiếm hiện tại của bạn. Vui lòng thử thay đổi từ khóa hoặc các bộ lọc bên trên.
+                    </div>
+                </td>
+            </tr>
+        `;
         return;
     }
     const statusColors = { 'BOOKED':'background:#d1fae5;color:#065f46;', 'PENDING':'background:#fef3c7;color:#92400e;', 'REFUNDED':'background:#fee2e2;color:#991b1b;' };
@@ -2541,8 +2734,10 @@ function renderGlobalTicketTable(list, startIdx) {
         const statusStyle = statusColors[t.status] || 'background:#e2e8f0;color:#475569;';
         const movieTitle  = (t.showtime && t.showtime.movie) ? t.showtime.movie.title : '--';
         const roomName    = t.showtime ? (t.showtime.room || '--') : '--';
+        
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td><strong>TK-' + String(t.id).padStart(5,'0') + '</strong></td>'
+        tr.innerHTML = '<td style="text-align: center;"><input type="checkbox" class="ticket-select-checkbox" value="' + t.id + '" onchange="updateBatchDeleteButtonState()" style="cursor: pointer;"></td>'
+            + '<td><strong>TK-' + String(t.id).padStart(5,'0') + '</strong></td>'
             + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(movieTitle) + '"><strong>' + esc(movieTitle) + '</strong></td>'
             + '<td>' + esc(roomName) + '</td>'
             + '<td>' + showtimeStr + '</td>'
@@ -2563,6 +2758,63 @@ function renderGlobalTicketTable(list, startIdx) {
             + '</td>';
         tbody.appendChild(tr);
     });
+}
+
+function toggleSelectAllTickets(isChecked) {
+    const checkboxes = document.querySelectorAll('.ticket-select-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+    });
+    updateBatchDeleteButtonState();
+}
+
+function updateBatchDeleteButtonState() {
+    const checkboxes = document.querySelectorAll('.ticket-select-checkbox');
+    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    const btn = document.getElementById('btnBatchDelete');
+    if (btn) {
+        btn.style.display = checkedCount > 0 ? 'inline-block' : 'none';
+        btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Hủy ${checkedCount} vé đã chọn`;
+    }
+    
+    const selectAllBox = document.getElementById('selectAllTickets');
+    if (selectAllBox && checkboxes.length > 0) {
+        selectAllBox.checked = (checkedCount === checkboxes.length);
+    }
+}
+
+function handleBatchDeleteTickets() {
+    const checkedBoxes = Array.from(document.querySelectorAll('.ticket-select-checkbox:checked'));
+    const ids = checkedBoxes.map(cb => parseInt(cb.value));
+    if (ids.length === 0) return;
+
+    showConfirm(
+        'Hủy vé hàng loạt',
+        `Bạn có chắc chắn muốn hủy/hoàn trả ${ids.length} vé đang chọn? Ghế của các vé này sẽ được giải phóng lập tức.`,
+        async function() {
+            try {
+                const promises = ids.map(id => 
+                    fetch('/api/tickets/' + id, { method: 'DELETE' })
+                        .then(async r => {
+                            if (!r.ok) {
+                                const data = await r.json().catch(() => ({}));
+                                throw new Error(data.error || `Lỗi hủy vé TK-${String(id).padStart(5,'0')}`);
+                            }
+                        })
+                );
+                await Promise.all(promises);
+                showToast('success', 'Thành công', `Đã hủy thành công ${ids.length} vé.`);
+                searchGlobalTickets(globalCurrentPage);
+                updateBatchDeleteButtonState();
+            } catch (e) {
+                showToast('error', 'Lỗi', e.message);
+            }
+        }
+    );
+}
+
+function initQueryTabFilters() {
+    populateGlobalMoviesAndRooms();
 }
 
 async function openCreateTicketModal() {
@@ -2703,7 +2955,23 @@ async function handleCrudMovieChange() {
         const r = await fetch(API_SHOWTIMES + '?movieId=' + movieId);
         const list = await r.json();
         showtimeSelect.innerHTML = '<option value="">-- Chọn suất chiếu --</option>';
+
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('sv'); // format: YYYY-MM-DD
+        const nowTimeStr = now.toTimeString().substring(0, 5); // format: HH:MM
+
         list.forEach(st => {
+            let showTimeStr = '';
+            if (st.showTime) {
+                if (typeof st.showTime === 'string') {
+                    showTimeStr = st.showTime.substring(0, 5);
+                } else if (Array.isArray(st.showTime)) {
+                    showTimeStr = String(st.showTime[0]).padStart(2, '0') + ':' + String(st.showTime[1]).padStart(2, '0');
+                }
+            }
+            const isExpired = st.showDate < todayStr || (st.showDate === todayStr && showTimeStr < nowTimeStr);
+            if (isExpired) return;
+
             const opt = document.createElement('option');
             opt.value = st.id;
             const dateStr = formatDate(st.showDate);
@@ -2842,9 +3110,12 @@ async function handleSaveTicketCrud() {
 }
 
 async function handleDeleteTicket(ticketId) {
-    if (!confirm('Bạn có chắc chắn muốn xóa/hoàn trả vé này không? Dữ liệu vé sẽ vẫn được lưu trong cơ sở dữ liệu và chuyển trạng thái thành REFUNDED.')) {
-        return;
-    }
+    const confirmed = await showConfirm(
+        'Xác nhận hoàn trả vé',
+        'Bạn có chắc chắn muốn xóa/hoàn trả vé này không? Dữ liệu vé sẽ vẫn được lưu trong cơ sở dữ liệu và chuyển trạng thái thành REFUNDED.',
+        'Hủy vé'
+    );
+    if (!confirmed) return;
 
     try {
         const res = await fetch(`/api/tickets/${ticketId}`, {
@@ -2999,4 +3270,1265 @@ async function viewSeatMapForTicket(ticketId) {
 function closeViewSeatMapModal() {
     document.getElementById('viewSeatMapModal').classList.remove('show');
     document.getElementById('viewSeatMapModal').style.display = 'none';
+}
+
+// =========================================================================
+//   TABS & SƠ ĐỒ BÁN VÉ & CẤU HÌNH GIÁ VÉ TẬP TRUNG
+// =========================================================================
+
+let currentActiveMainTab = 'sell';
+let selectedMapMovieId = null;
+let localPricingInfo = {
+    basePrice: 60000,
+    formatSurcharge: 0,
+    vipSurcharge: 15000,
+    coupleSurcharge: 30000
+};
+
+// 1. Chuyển đổi Tab chính
+function switchMainTicketTab(tab) {
+    currentActiveMainTab = tab;
+    ['Sell', 'Pricing'].forEach(t => {
+        const btn = document.getElementById('tab' + t + 'Btn');
+        if (btn) {
+            if (t.toLowerCase() === tab) {
+                btn.classList.add('active');
+                btn.style.color = 'var(--primary-color)';
+                btn.style.borderBottom = '3px solid var(--primary-color)';
+            } else {
+                btn.classList.remove('active');
+                btn.style.color = 'var(--text-muted)';
+                btn.style.borderBottom = 'none';
+            }
+        }
+    });
+
+    ['sell', 'pricing'].forEach(t => {
+        const div = document.getElementById(t + 'TabContent');
+        if (div) div.style.display = (t === tab) ? 'block' : 'none';
+    });
+
+    if (tab === 'sell') {
+        populateMapMovies();
+    } else if (tab === 'pricing') {
+        loadPricingDashboard();
+    }
+}
+
+// 2. Tab 1: Sơ đồ giá ghế (Chế độ Xem & Kiểm tra giá)
+async function populateMapMovies() {
+    try {
+        const r = await fetch(API_MOVIES);
+        const list = await r.json();
+        _cachedMovieList = list; // Cache lại danh sách phim
+        const sel = document.getElementById('mapMovieSelect');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">-- Chọn phim --</option>';
+        list.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.title;
+            sel.appendChild(opt);
+        });
+        document.getElementById('mapShowtimeSelect').innerHTML = '<option value="">-- Chọn phim trước --</option>';
+        document.getElementById('mapShowtimeSelect').disabled = true;
+        
+        // Clear visual seat map display state
+        document.getElementById('mapSeatGridArea').style.display = 'none';
+        document.getElementById('mapSeatGridEmpty').style.display = 'flex';
+        
+        resetMapBookingPanel();
+    } catch (e) {
+        console.error('Lỗi nạp phim cho sơ đồ:', e);
+    }
+}
+
+async function handleMapMovieChange() {
+    const movieId = document.getElementById('mapMovieSelect').value;
+    selectedMapMovieId = movieId ? parseInt(movieId) : null;
+    const sel = document.getElementById('mapShowtimeSelect');
+    sel.innerHTML = '<option value="">-- Chọn suất chiếu --</option>';
+    sel.disabled = true;
+    resetMapBookingPanel();
+    document.getElementById('mapSeatGridArea').style.display = 'none';
+    document.getElementById('mapSeatGridEmpty').style.display = 'flex';
+
+    if (!movieId) return;
+
+    try {
+        const r = await fetch(API_SHOWTIMES + '?movieId=' + movieId);
+        const list = await r.json();
+
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('sv');
+        const nowTimeStr = now.toTimeString().substring(0, 5);
+
+        list.forEach(st => {
+            let showTimeStr = '';
+            if (st.showTime) {
+                if (typeof st.showTime === 'string') {
+                    showTimeStr = st.showTime.substring(0, 5);
+                } else if (Array.isArray(st.showTime)) {
+                    showTimeStr = String(st.showTime[0]).padStart(2, '0') + ':' + String(st.showTime[1]).padStart(2, '0');
+                }
+            }
+            const isExpired = st.showDate < todayStr || (st.showDate === todayStr && showTimeStr < nowTimeStr);
+            if (isExpired) return;
+
+            const opt = document.createElement('option');
+            opt.value = st.id;
+            opt.textContent = `${formatDate(st.showDate)} ${formatTime(st.showTime)} | ${st.room || '?'}`;
+            sel.appendChild(opt);
+        });
+        sel.disabled = false;
+    } catch (e) {
+        showToast('error', 'Lỗi', 'Không thể tải suất chiếu.');
+    }
+}
+
+// Phân cấp so khớp Giá cơ bản (Hierarchical Matching) ở phía Client
+function calculateBasePriceForShowtime(showtime) {
+    if (!_cachedPricingConfigs || !_cachedPricingConfigs.basePrices) {
+        return 60000;
+    }
+    const dateStr = showtime.showDate || ''; // YYYY-MM-DD
+    const dayType = showtime.dayType || 'Trong tuần';
+    const slotName = jsDetermineTimeSlot(showtime.showTime);
+    const movieId = selectedMapMovieId;
+
+    // Ưu tiên 1: Giá riêng cho Phim + Ngày cụ thể (Ví dụ ngày lễ đặc biệt cho phim hot)
+    if (movieId) {
+        const p1 = _cachedPricingConfigs.basePrices.find(bp => bp.movieId === movieId && bp.dayType === dateStr && bp.slotName === slotName);
+        if (p1) return p1.basePrice;
+    }
+
+    // Ưu tiên 2: Giá riêng cho Phim + Loại ngày (Trong tuần / Cuối tuần / Ngày lễ)
+    if (movieId) {
+        const p2 = _cachedPricingConfigs.basePrices.find(bp => bp.movieId === movieId && bp.dayType.toLowerCase() === dayType.toLowerCase() && bp.slotName === slotName);
+        if (p2) return p2.basePrice;
+    }
+
+    // Ưu tiên 3: Giá chung + Ngày cụ thể (Ví dụ ngày lễ đặc biệt áp dụng cho mọi phim)
+    const p3 = _cachedPricingConfigs.basePrices.find(bp => !bp.movieId && bp.dayType === dateStr && bp.slotName === slotName);
+    if (p3) return p3.basePrice;
+
+    // Ưu tiên 4: Giá chung + Loại ngày (Trong tuần / Cuối tuần / Ngày lễ mặc định)
+    const p4 = _cachedPricingConfigs.basePrices.find(bp => !bp.movieId && bp.dayType.toLowerCase() === dayType.toLowerCase() && bp.slotName === slotName);
+    if (p4) return p4.basePrice;
+
+    // Dự phòng mặc định
+    if (dayType === 'Trong tuần') {
+        if (slotName === 'Suất sớm') return 50000;
+        if (slotName === 'Giờ thường') return 60000;
+        if (slotName === 'Giờ vàng') return 75000;
+        return 65000;
+    } else if (dayType === 'Cuối tuần') {
+        if (slotName === 'Suất sớm') return 65000;
+        if (slotName === 'Giờ thường') return 80000;
+        if (slotName === 'Giờ vàng') return 95000;
+        return 85000;
+    } else {
+        if (slotName === 'Suất sớm') return 80000;
+        if (slotName === 'Giờ thường') return 95000;
+        if (slotName === 'Giờ vàng') return 110000;
+        return 100000;
+    }
+}
+
+async function handleMapShowtimeChange() {
+    const showtimeId = document.getElementById('mapShowtimeSelect').value;
+    resetMapBookingPanel();
+    document.getElementById('mapSeatGridArea').style.display = 'none';
+    document.getElementById('mapSeatGridEmpty').style.display = 'flex';
+
+    if (!showtimeId) return;
+
+    try {
+        const showtimeRes = await fetch(`${API_SHOWTIMES}/${showtimeId}`);
+        selectedMapShowtime = await showtimeRes.json();
+
+        // 1. Tải cấu hình giá vé để tính toán giá cục bộ
+        const configRes = await fetch('/api/tickets/configs');
+        const configs = await configRes.json();
+        _cachedPricingConfigs = configs;
+
+        // Tính giá cơ bản sử dụng thuật toán phân cấp
+        localPricingInfo.basePrice = calculateBasePriceForShowtime(selectedMapShowtime);
+
+        // Tính phụ thu phòng
+        const roomOpt = _cachedRoomList ? _cachedRoomList.find(r => (r.roomName || '').toLowerCase() === (selectedMapShowtime.room || '').toLowerCase()) : null;
+        const formatCode = roomOpt ? roomOpt.roomType : '2D';
+        const formatConfig = configs.formatSurcharges.find(fs => (fs.formatCode || '').toUpperCase() === (formatCode || '').toUpperCase());
+        localPricingInfo.formatSurcharge = formatConfig ? formatConfig.surchargeAmount : 0;
+
+        // Tính phụ thu ghế
+        const vipConfig = configs.seatSurcharges.find(ss => ss.seatTypeCode === 'vip');
+        localPricingInfo.vipSurcharge = vipConfig ? vipConfig.surchargeAmount : 15000;
+        const coupleConfig = configs.seatSurcharges.find(ss => ss.seatTypeCode === 'couple');
+        localPricingInfo.coupleSurcharge = coupleConfig ? coupleConfig.surchargeAmount : 30000;
+
+        // 2. Tải danh sách ghế và vé đã bán
+        const seatsRes = await fetch(API_TICKETS + '/seats?showtimeId=' + showtimeId);
+        const seats = await seatsRes.json();
+        const ticketRes = await fetch(API_TICKETS + '/showtime/' + showtimeId);
+        const soldTickets = await ticketRes.json();
+
+        renderMapSeatGrid(seats, soldTickets);
+    } catch (e) {
+        showToast('error', 'Lỗi', 'Không thể tải sơ đồ ghế.');
+    }
+}
+
+function jsDetermineTimeSlot(timeVal) {
+    if (!timeVal) return 'Giờ thường';
+    let timeStr = '';
+    if (typeof timeVal === 'string') {
+        timeStr = timeVal.substring(0, 5);
+    } else if (Array.isArray(timeVal)) {
+        timeStr = String(timeVal[0]).padStart(2, '0') + ':' + String(timeVal[1]).padStart(2, '0');
+    }
+    const parts = timeStr.split(':');
+    const hrs = parseInt(parts[0]);
+    const mins = parseInt(parts[1]);
+    const totalMins = hrs * 60 + mins;
+    if (totalMins < 12 * 60) return 'Suất sớm';
+    if (totalMins < 17 * 60) return 'Giờ thường';
+    if (totalMins < 22 * 60) return 'Giờ vàng';
+    return 'Suất khuya';
+}
+
+function renderMapSeatGrid(seats, soldTickets) {
+    const grid = document.getElementById('mapSeatGridContainer');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const rowMap = {};
+    seats.forEach(s => {
+        const row = s.seatLabel.charAt(0);
+        if (!rowMap[row]) rowMap[row] = [];
+        rowMap[row].push(s);
+    });
+
+    Object.keys(rowMap).sort().forEach(row => {
+        const rowSeats = rowMap[row].sort((a, b) => parseInt(a.seatLabel.slice(1)) - parseInt(b.seatLabel.slice(1)));
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'seat-row';
+        rowDiv.style.cssText = 'display:flex; gap:10px; margin-bottom:8px; align-items:center; justify-content:center;';
+
+        const lbl = document.createElement('span');
+        lbl.textContent = row;
+        lbl.style.cssText = 'font-weight:700; width:24px; color:var(--text-muted); text-align:center;';
+        rowDiv.appendChild(lbl);
+
+        rowSeats.forEach(seat => {
+            const ticket = soldTickets.find(t => t.seat && t.seat.id === seat.id && t.status !== 'REFUNDED');
+            const isVIP = seat.seatType === 'vip';
+            const isCouple = seat.seatType === 'couple';
+
+            let stateClass = 'seat-empty-standard';
+            if (isVIP) stateClass = 'seat-empty-vip';
+            else if (isCouple) stateClass = 'seat-empty-couple';
+
+            if (ticket) {
+                if (ticket.status === 'BOOKED') stateClass = 'seat-state-booked';
+                else if (ticket.status === 'PENDING') stateClass = 'seat-state-pending';
+            }
+
+            const btn = document.createElement('div');
+            btn.className = 'seat-item ' + stateClass;
+            btn.dataset.seatId = seat.id;
+            btn.textContent = seat.seatLabel;
+
+            // Tính giá ghế cục bộ để hiển thị tooltip nhanh
+            let seatPrice = localPricingInfo.basePrice + localPricingInfo.formatSurcharge;
+            if (isVIP) seatPrice += localPricingInfo.vipSurcharge;
+            else if (isCouple) seatPrice += localPricingInfo.coupleSurcharge;
+
+            let tooltip = `Ghế ${seat.seatLabel} - ${isVIP ? 'VIP' : (isCouple ? 'Đôi' : 'Thường')}`;
+            if (ticket) {
+                tooltip += ` [${ticket.status === 'BOOKED' ? 'Đã bán' : 'Đang giữ chỗ'}]`;
+                if (ticket.customerName) tooltip += ` - Khách: ${ticket.customerName}`;
+            } else {
+                tooltip += ` - Giá vé: ${formatVND(seatPrice)}`;
+            }
+            btn.title = tooltip;
+
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#mapSeatGridContainer .seat-item').forEach(el => {
+                    el.style.outline = 'none';
+                    el.style.outlineOffset = '0px';
+                });
+                btn.style.outline = '3px solid var(--primary-color)';
+                btn.style.outlineOffset = '2px';
+                selectMapSeat(seat, ticket);
+            });
+
+            rowDiv.appendChild(btn);
+        });
+
+        grid.appendChild(rowDiv);
+    });
+
+    document.getElementById('mapSeatGridArea').style.display = 'flex';
+    document.getElementById('mapSeatGridEmpty').style.display = 'none';
+}
+
+function calculateLocalPriceForType(subtotal, seatSurchargeVal, formatSurchargeVal, dayType, customerType) {
+    if (customerType === 'ADULT') {
+        return { finalPrice: subtotal, discountAmount: 0 };
+    }
+    if (!_cachedPricingConfigs || !_cachedPricingConfigs.customerDiscounts) {
+        return { finalPrice: subtotal, discountAmount: 0 };
+    }
+    const discount = _cachedPricingConfigs.customerDiscounts.find(cd => cd.customerType === customerType);
+    if (!discount) {
+        return { finalPrice: subtotal, discountAmount: 0 };
+    }
+
+    // Kiểm tra ngưỡng tiền tối thiểu để áp dụng chiết khấu
+    if (subtotal < discount.minPriceToApply) {
+        return { finalPrice: subtotal, discountAmount: 0 };
+    }
+
+    let discountAmount = 0;
+    if (dayType === 'Trong tuần' && discount.fixedPriceWeekday && discount.fixedPriceWeekday > 0) {
+        const flatPrice = discount.fixedPriceWeekday + seatSurchargeVal + formatSurchargeVal;
+        const potentialDiscount = subtotal - flatPrice;
+        if (potentialDiscount > 0) {
+            discountAmount = potentialDiscount;
+        }
+    } else {
+        discountAmount = subtotal * discount.discountRate;
+    }
+
+    // Giới hạn giảm giá tối đa
+    if (discountAmount > discount.maxDiscountAmount) {
+        discountAmount = discount.maxDiscountAmount;
+    }
+
+    return { finalPrice: subtotal - discountAmount, discountAmount: discountAmount };
+}
+
+function selectMapSeat(seat, ticket) {
+    selectedMapSeat = seat;
+    document.getElementById('bookSeatLabel').textContent = seat.seatLabel;
+    let typeLabel = 'Standard (Thường)';
+    if (seat.seatType === 'vip') typeLabel = 'VIP (Vip)';
+    else if (seat.seatType === 'couple') typeLabel = 'Sweetbox (Đôi)';
+    document.getElementById('bookSeatType').textContent = typeLabel;
+
+    document.getElementById('bookRoomLabel').textContent = selectedMapShowtime.room || '--';
+    document.getElementById('bookShowtimeLabel').textContent = `${formatDate(selectedMapShowtime.showDate)} ${formatTime(selectedMapShowtime.showTime)}`;
+
+    document.getElementById('bookingPanelActive').style.display = 'block';
+    document.getElementById('bookingPanelEmpty').style.display = 'none';
+
+    // 1. Tính giá gốc (Adult)
+    const isVIP = seat.seatType === 'vip';
+    const isCouple = seat.seatType === 'couple';
+    const seatSurchargeVal = isVIP ? localPricingInfo.vipSurcharge : (isCouple ? localPricingInfo.coupleSurcharge : 0);
+    const formatSurchargeVal = localPricingInfo.formatSurcharge;
+
+    const subtotal = localPricingInfo.basePrice + seatSurchargeVal + formatSurchargeVal;
+
+    document.getElementById('bookBasePrice').textContent = formatVND(localPricingInfo.basePrice);
+    document.getElementById('bookSeatSurcharge').textContent = formatVND(seatSurchargeVal);
+    document.getElementById('bookFormatSurcharge').textContent = formatVND(formatSurchargeVal);
+    document.getElementById('bookFinalPrice').textContent = formatVND(subtotal);
+
+
+}
+
+function resetMapBookingPanel() {
+    selectedMapSeat = null;
+    document.getElementById('bookingPanelActive').style.display = 'none';
+    document.getElementById('bookingPanelEmpty').style.display = 'flex';
+}
+
+
+// 3. Tab 2: Cấu hình bảng giá vé (Dashboard CRUD)
+async function populatePriceMovieFilter() {
+    const sel = document.getElementById('filterPriceMovie');
+    if (!sel) return;
+
+    if (!_cachedMovieList || _cachedMovieList.length === 0) {
+        try {
+            const r = await fetch(API_MOVIES);
+            _cachedMovieList = await r.json();
+        } catch (e) {
+            console.error('Lỗi nạp phim cho bộ lọc cấu hình:', e);
+        }
+    }
+
+    const currentVal = sel.value;
+    sel.innerHTML = `
+        <option value="">-- Tất cả phim --</option>
+        <option value="all_movies">Áp dụng cho mọi phim</option>
+    `;
+
+    if (_cachedMovieList) {
+        _cachedMovieList.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.title;
+            sel.appendChild(opt);
+        });
+    }
+
+    sel.value = currentVal;
+}
+
+function populatePriceSlotFilter() {
+    const sel = document.getElementById('filterPriceSlot');
+    if (!sel) return;
+
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">-- Tất cả khung giờ --</option>';
+
+    if (_cachedPricingConfigs && _cachedPricingConfigs.basePrices) {
+        const uniqueSlots = [...new Set(_cachedPricingConfigs.basePrices.map(c => c.slotName).filter(Boolean))];
+        uniqueSlots.sort().forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            sel.appendChild(opt);
+        });
+    }
+
+    if (Array.from(sel.options).some(opt => opt.value === currentVal)) {
+        sel.value = currentVal;
+    } else {
+        sel.value = '';
+    }
+}
+
+function filterBasePrices() {
+    const movieVal = document.getElementById('filterPriceMovie')?.value || '';
+    const slotVal = document.getElementById('filterPriceSlot')?.value || '';
+    const dayVal = document.getElementById('filterPriceDayType')?.value.trim().toLowerCase() || '';
+
+    if (!_cachedPricingConfigs || !_cachedPricingConfigs.basePrices) return;
+
+    let filteredList = _cachedPricingConfigs.basePrices;
+
+    if (movieVal) {
+        if (movieVal === 'all_movies') {
+            filteredList = filteredList.filter(c => !c.movieId);
+        } else {
+            filteredList = filteredList.filter(c => c.movieId === parseInt(movieVal));
+        }
+    }
+    if (slotVal) {
+        filteredList = filteredList.filter(c => c.slotName === slotVal);
+    }
+    if (dayVal) {
+        filteredList = filteredList.filter(c => {
+            const dayType = (c.dayType || '').toLowerCase();
+            const note = (c.note || '').toLowerCase();
+            return dayType.includes(dayVal) || note.includes(dayVal);
+        });
+    }
+
+    renderPricingBaseTable(filteredList);
+}
+
+function toggleSelectAllBaseConfigs(checked) {
+    const checkboxes = document.querySelectorAll('.base-config-checkbox');
+    checkboxes.forEach(cb => cb.checked = checked);
+    updateBatchDeleteConfigsButtonState();
+}
+
+function updateBatchDeleteConfigsButtonState() {
+    const checkboxes = document.querySelectorAll('.base-config-checkbox');
+    const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
+    const btnBatch = document.getElementById('btnBatchDeleteConfigs');
+    if (btnBatch) {
+        if (checkedBoxes.length > 0) {
+            btnBatch.style.display = 'inline-block';
+            btnBatch.innerHTML = `<i class="fa-solid fa-trash-can"></i> Xóa ${checkedBoxes.length} mục đã chọn`;
+        } else {
+            btnBatch.style.display = 'none';
+        }
+    }
+}
+
+async function handleBatchDeleteConfigs() {
+    const checkboxes = document.querySelectorAll('.base-config-checkbox:checked');
+    const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    if (ids.length === 0) return;
+
+    const confirmed = await showConfirm(
+        'Xác nhận xóa hàng loạt', 
+        `Bạn có chắc chắn muốn xóa ${ids.length} cấu hình giá vé cơ bản đã chọn không?`, 
+        'Đồng ý xóa'
+    );
+    if (!confirmed) return;
+
+    try {
+        const responses = await Promise.all(ids.map(id => 
+            fetch('/api/tickets/configs/base/' + id, { method: 'DELETE' })
+        ));
+        
+        let okCount = 0;
+        responses.forEach(r => {
+            if (r.ok) okCount++;
+        });
+
+        if (okCount > 0) {
+            showToast('success', 'Xóa thành công', `Đã xóa thành công ${okCount}/${ids.length} cấu hình giá vé cơ bản!`);
+        } else {
+            showToast('error', 'Lỗi', 'Không thể xóa các cấu hình đã chọn.');
+        }
+        await loadPricingDashboard();
+    } catch (e) {
+        console.error('Lỗi khi xóa nhiều cấu hình:', e);
+        showToast('error', 'Lỗi', 'Có lỗi xảy ra khi xóa các cấu hình giá vé!');
+    }
+}
+
+async function loadPricingDashboard() {
+    try {
+        const r = await fetch('/api/tickets/configs');
+        const data = await r.json();
+        _cachedPricingConfigs = data;
+
+        await populatePriceMovieFilter();
+        populatePriceSlotFilter();
+        filterBasePrices();
+        renderPricingSeatsTable(data.seatSurcharges);
+        renderPricingFormatsTable(data.formatSurcharges);
+        renderPricingDiscountsTable(data.customerDiscounts);
+    } catch (e) {
+        console.error('Lỗi nạp cấu hình giá:', e);
+    }
+}
+
+function renderPricingBaseTable(list) {
+    const tbody = document.getElementById('tblPricingBase');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    // Check if any filters are active
+    const movieVal = document.getElementById('filterPriceMovie')?.value || '';
+    const slotVal = document.getElementById('filterPriceSlot')?.value || '';
+    const dayVal = document.getElementById('filterPriceDayType')?.value.trim() || '';
+    const isFiltered = (movieVal !== '' || slotVal !== '' || dayVal !== '');
+
+    if (!list || list.length === 0) {
+        if (isFiltered) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="color:var(--stat-red); padding:2rem; font-weight:500;"><i class="fa-solid fa-circle-info"></i> Không tìm thấy cấu hình giá vé phù hợp với bộ lọc.</td></tr>';
+        } else {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Chưa có cấu hình giá cơ bản.</td></tr>';
+        }
+        const chkSelectAll = document.getElementById('selectAllBaseConfigs');
+        if (chkSelectAll) chkSelectAll.checked = false;
+        updateBatchDeleteConfigsButtonState();
+        return;
+    }
+
+    const chkSelectAll = document.getElementById('selectAllBaseConfigs');
+    if (chkSelectAll) chkSelectAll.checked = false;
+
+    list.forEach(c => {
+        let movieTitle = 'Tất cả phim';
+        if (c.movieId && _cachedMovieList) {
+            const mv = _cachedMovieList.find(m => m.id === c.movieId);
+            if (mv) movieTitle = mv.title;
+        }
+
+        let dayTypeDisplay = esc(c.dayType);
+        if (c.note) {
+            dayTypeDisplay += ` <span style="color:var(--text-muted); font-size:0.8rem; font-weight:normal;">(${esc(c.note)})</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="text-align: center;"><input type="checkbox" class="base-config-checkbox" value="${c.id}" onchange="updateBatchDeleteConfigsButtonState()" style="cursor: pointer;"></td>
+            <td>${c.id}</td>
+            <td><strong style="color:var(--primary-color);">${esc(movieTitle)}</strong></td>
+            <td><strong>${dayTypeDisplay}</strong></td>
+            <td><span class="badge-daytype badge-weekday" style="background:var(--primary-color); padding:2px 8px; border-radius:12px; color:#fff; font-size:0.75rem;">${esc(c.slotName)}</span></td>
+            <td>${c.startTime}</td>
+            <td>${c.endTime}</td>
+            <td><strong style="color:var(--primary-color);">${formatVND(c.basePrice)}</strong></td>
+            <td class="text-center">
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.8rem; margin-right:4px;" onclick="openEditConfigModal('base', ${c.id})"><i class="fa-solid fa-pen"></i> Sửa</button>
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.8rem; color:var(--stat-red); border-color:transparent;" onclick="deletePricingConfig('base', ${c.id})"><i class="fa-solid fa-trash-can"></i> Xóa</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    updateBatchDeleteConfigsButtonState();
+}
+
+function renderPricingSeatsTable(list) {
+    const tbody = document.getElementById('tblPricingSeats');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--text-muted);">Chưa có phụ thu loại ghế.</td></tr>';
+        return;
+    }
+    list.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${esc(c.seatTypeCode.toUpperCase())}</strong></td>
+            <td><strong style="color:var(--primary-color);">${formatVND(c.surchargeAmount)}</strong></td>
+            <td class="text-center">
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.8rem; margin-right:4px;" onclick="openEditConfigModal('seats', ${c.id})"><i class="fa-solid fa-pen"></i> Sửa</button>
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.8rem; color:var(--stat-red); border-color:transparent;" onclick="deletePricingConfig('seats', ${c.id})"><i class="fa-solid fa-trash-can"></i> Xóa</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function renderPricingFormatsTable(list) {
+    const tbody = document.getElementById('tblPricingFormats');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--text-muted);">Chưa có phụ thu định dạng phòng.</td></tr>';
+        return;
+    }
+    list.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${esc(c.formatCode.toUpperCase())}</strong></td>
+            <td><strong style="color:var(--primary-color);">${formatVND(c.surchargeAmount)}</strong></td>
+            <td class="text-center">
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.8rem; margin-right:4px;" onclick="openEditConfigModal('formats', ${c.id})"><i class="fa-solid fa-pen"></i> Sửa</button>
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.8rem; color:var(--stat-red); border-color:transparent;" onclick="deletePricingConfig('formats', ${c.id})"><i class="fa-solid fa-trash-can"></i> Xóa</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function renderPricingDiscountsTable(list) {
+    const tbody = document.getElementById('tblPricingDiscounts');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color:var(--text-muted);">Chưa có chiết khấu đối tượng.</td></tr>';
+        return;
+    }
+    list.forEach(c => {
+        const tr = document.createElement('tr');
+        const rateLabel = (c.discountRate * 100).toFixed(0) + '%';
+        const fixedLabel = c.fixedPriceWeekday ? formatVND(c.fixedPriceWeekday) : '—';
+        const minPriceLabel = formatVND(c.minPriceToApply || 0);
+        const maxDiscLabel = c.maxDiscountAmount >= 999999 ? 'Không giới hạn' : formatVND(c.maxDiscountAmount);
+
+        tr.innerHTML = `
+            <td><strong>${esc(c.customerType)}</strong></td>
+            <td><span style="color:#ef4444; font-weight:700;">-${rateLabel}</span></td>
+            <td>${fixedLabel}</td>
+            <td>${minPriceLabel}</td>
+            <td><strong style="color:#ef4444;">${maxDiscLabel}</strong></td>
+            <td class="text-center">
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.8rem; margin-right:4px;" onclick="openEditConfigModal('discounts', ${c.id})"><i class="fa-solid fa-pen"></i> Sửa</button>
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; font-size:0.8rem; color:var(--stat-red); border-color:transparent;" onclick="deletePricingConfig('discounts', ${c.id})"><i class="fa-solid fa-trash-can"></i> Xóa</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openAddConfigModal(type) {
+    document.getElementById('editConfigType').value = type;
+    document.getElementById('editConfigId').value = '';
+    document.getElementById('editConfigTitle').textContent = 'Thêm cấu hình giá mới';
+    document.getElementById('editConfigForm').reset();
+
+    renderDynamicConfigFields(type);
+    if (type === 'base') {
+        const selectEl = document.getElementById('cfgDayTypeSelect');
+        const customEl = document.getElementById('cfgDayType');
+        if (selectEl && customEl) {
+            customEl.value = selectEl.value;
+            customEl.style.display = 'none';
+        }
+    }
+    document.getElementById('editConfigModal').classList.add('show');
+    document.getElementById('editConfigModal').style.display = 'flex';
+}
+
+function toggleCfgDayTypeInput() {
+    const sel = document.getElementById('cfgDayTypeSelect');
+    const inp = document.getElementById('cfgDayType');
+    if (!sel || !inp) return;
+    if (sel.value === 'custom') {
+        inp.style.display = 'block';
+        inp.value = '';
+        inp.placeholder = 'Ví dụ: 2026-09-02';
+        inp.required = true;
+    } else {
+        inp.style.display = 'none';
+        inp.value = sel.value;
+        inp.required = false;
+    }
+}
+
+async function handleCfgMovieChange() {
+    const movieId = document.getElementById('cfgMovieId').value;
+    const container = document.getElementById('cfgDayTypeWrapper');
+    const slotWrapper = document.getElementById('cfgSlotWrapper');
+    const noteWrapper = document.getElementById('cfgNoteWrapper');
+    if (!container) return;
+
+    if (movieId) {
+        // Show note input wrapper for movie-specific config
+        if (noteWrapper) noteWrapper.style.display = 'block';
+
+        // Hide slot selection since base prices apply to all showtimes of the movie on selected dates
+        if (slotWrapper) slotWrapper.style.display = 'none';
+
+        try {
+            const r = await fetch(API_SHOWTIMES + '?movieId=' + movieId);
+            const list = await r.json();
+            // Extract unique show dates
+            const uniqueDates = [...new Set(list.map(st => st.showDate))].sort();
+            
+            if (uniqueDates.length === 0) {
+                container.innerHTML = `
+                    <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Ngày chiếu áp dụng:</label>
+                    <div style="color:var(--text-muted); font-size:0.85rem; padding:0.8rem; border:1px dashed var(--border-color); border-radius:6px; background:var(--bg-app);">
+                        Phim hiện chưa có lịch chiếu nào để chọn ngày.
+                    </div>
+                    <input type="hidden" id="cfgDayType" value="">
+                `;
+            } else {
+                let checkboxes = '';
+                uniqueDates.forEach((date, idx) => {
+                    const labelId = `lbl_date_${idx}`;
+                    checkboxes += `
+                        <label class="date-chip-label" id="${labelId}">
+                            <input type="checkbox" name="cfgDayTypeDates" value="${date}" onchange="toggleDateChipActive('${labelId}', this.checked)">
+                            <i class="fa-regular fa-calendar date-chip-icon"></i>
+                            <span class="date-chip-text">${formatDate(date)}</span>
+                            <span class="date-chip-subtext">${date}</span>
+                        </label>
+                    `;
+                });
+                container.innerHTML = `
+                    <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Chọn ngày chiếu áp dụng (chọn một hoặc nhiều):</label>
+                    <div class="date-chip-grid" style="max-height: 220px; overflow-y: auto; padding: 0.2rem;">
+                        ${checkboxes}
+                    </div>
+                `;
+            }
+        } catch (e) {
+            showToast('error', 'Lỗi', 'Không thể tải ngày chiếu của phim.');
+        }
+    } else {
+        // Hide note input wrapper when not specific to 1 movie
+        if (noteWrapper) {
+            noteWrapper.style.display = 'none';
+            const noteInp = document.getElementById('cfgNote');
+            if (noteInp) noteInp.value = '';
+        }
+
+        // Show slot selection when setting prices for all movies
+        if (slotWrapper) slotWrapper.style.display = 'block';
+
+        container.innerHTML = `
+            <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Loại ngày / Ngày đặc biệt:</label>
+            <select id="cfgDayTypeSelect" class="form-control" onchange="toggleCfgDayTypeInput()">
+                <option value="Trong tuần">Trong tuần</option>
+                <option value="Cuối tuần">Cuối tuần</option>
+                <option value="Ngày lễ">Ngày lễ</option>
+                <option value="custom">-- Nhập ngày cụ thể (YYYY-MM-DD) --</option>
+            </select>
+            <input type="text" id="cfgDayType" class="form-control" style="margin-top: 0.5rem; display: none;" placeholder="Trong tuần" required>
+        `;
+        const selectEl = document.getElementById('cfgDayTypeSelect');
+        const customEl = document.getElementById('cfgDayType');
+        if (selectEl && customEl) customEl.value = selectEl.value;
+    }
+}
+
+function toggleSlotChipActive(labelId, isChecked) {
+    const label = document.getElementById(labelId);
+    if (!label) return;
+    if (isChecked) {
+        label.classList.add('active');
+    } else {
+        label.classList.remove('active');
+    }
+}
+
+function toggleDateChipActive(labelId, isChecked) {
+    const label = document.getElementById(labelId);
+    if (!label) return;
+    if (isChecked) {
+        label.classList.add('active');
+    } else {
+        label.classList.remove('active');
+    }
+}
+
+async function openEditConfigModal(type, id) {
+    document.getElementById('editConfigType').value = type;
+    document.getElementById('editConfigId').value = id;
+    document.getElementById('editConfigTitle').textContent = 'Chỉnh sửa cấu hình giá';
+    document.getElementById('editConfigForm').reset();
+
+    renderDynamicConfigFields(type, true);
+
+    try {
+        const r = await fetch('/api/tickets/configs');
+        const data = await r.json();
+
+        if (type === 'base') {
+            const c = data.basePrices.find(bp => bp.id === id);
+            if (c) {
+                document.getElementById('cfgMovieId').value = c.movieId || '';
+                
+                // Synchronously populate dates list
+                await handleCfgMovieChange();
+
+                if (c.movieId) {
+                    const noteInp = document.getElementById('cfgNote');
+                    if (noteInp) noteInp.value = c.note || '';
+
+                    const cb = document.querySelector(`input[name="cfgDayTypeDates"][value="${c.dayType}"]`);
+                    if (cb) {
+                        cb.checked = true;
+                        const label = cb.closest('.date-chip-label');
+                        if (label) label.classList.add('active');
+                    }
+                } else {
+                    const selectEl = document.getElementById('cfgDayTypeSelect');
+                    const customEl = document.getElementById('cfgDayType');
+                    if (['Trong tuần', 'Cuối tuần', 'Ngày lễ'].includes(c.dayType)) {
+                        selectEl.value = c.dayType;
+                        customEl.value = c.dayType;
+                        customEl.style.display = 'none';
+                    } else {
+                        selectEl.value = 'custom';
+                        customEl.value = c.dayType;
+                        customEl.style.display = 'block';
+                    }
+                }
+
+                // Check slot name
+                const checkboxes = document.querySelectorAll('input[name="cfgSlotNames"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = (cb.value === c.slotName);
+                    const label = cb.closest('.slot-chip-label');
+                    if (label) {
+                        if (cb.checked) label.classList.add('active');
+                        else label.classList.remove('active');
+                    }
+                });
+
+                document.getElementById('editConfigValue').value = c.basePrice;
+            }
+        } else if (type === 'seats') {
+            const c = data.seatSurcharges.find(ss => ss.id === id);
+            if (c) {
+                document.getElementById('cfgSeatTypeCode').value = c.seatTypeCode;
+                document.getElementById('editConfigValue').value = c.surchargeAmount;
+            }
+        } else if (type === 'formats') {
+            const c = data.formatSurcharges.find(fs => fs.id === id);
+            if (c) {
+                document.getElementById('cfgFormatCode').value = c.formatCode;
+                document.getElementById('editConfigValue').value = c.surchargeAmount;
+            }
+        } else if (type === 'discounts') {
+            const c = data.customerDiscounts.find(cd => cd.id === id);
+            if (c) {
+                document.getElementById('cfgCustomerType').value = c.customerType;
+                document.getElementById('editConfigDiscountRate').value = c.discountRate;
+                document.getElementById('editConfigFixedPriceWeekday').value = c.fixedPriceWeekday || '';
+                document.getElementById('editConfigMinPriceToApply').value = c.minPriceToApply || 0;
+                document.getElementById('editConfigMaxDiscountAmount').value = c.maxDiscountAmount || 999999;
+                document.getElementById('editConfigValue').value = 0; // Không dùng
+            }
+        }
+
+        document.getElementById('editConfigModal').classList.add('show');
+        document.getElementById('editConfigModal').style.display = 'flex';
+    } catch (e) {
+        showToast('error', 'Lỗi', 'Không thể tải cấu hình chỉnh sửa.');
+    }
+}
+
+function renderDynamicConfigFields(type, isEdit = false) {
+    const container = document.getElementById('dynamicConfigFields');
+    container.innerHTML = '';
+
+    const groupPrice = document.getElementById('groupEditPrice');
+    const groupRate = document.getElementById('groupEditDiscountRate');
+    const groupFixed = document.getElementById('groupEditFixedPriceWeekday');
+    const groupMinPrice = document.getElementById('groupEditMinPriceToApply');
+    const groupMaxDisc = document.getElementById('groupEditMaxDiscountAmount');
+
+    groupPrice.style.display = 'block';
+    groupRate.style.display = 'none';
+    groupFixed.style.display = 'none';
+    groupMinPrice.style.display = 'none';
+    groupMaxDisc.style.display = 'none';
+
+    if (type === 'base') {
+        let movieOptions = '<option value="">-- Áp dụng cho tất cả phim --</option>';
+        if (_cachedMovieList) {
+            _cachedMovieList.forEach(m => {
+                movieOptions += `<option value="${m.id}">${esc(m.title)}</option>`;
+            });
+        }
+
+        container.innerHTML = `
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Áp dụng cho Phim:</label>
+                <select id="cfgMovieId" class="form-control" onchange="handleCfgMovieChange()">
+                    ${movieOptions}
+                </select>
+            </div>
+            <div id="cfgNoteWrapper" class="form-group" style="margin-bottom: 1rem; display: none;">
+                <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Tên loại ngày (Ví dụ: ngày Tết, khởi chiếu...):</label>
+                <input type="text" id="cfgNote" class="form-control" placeholder="Ví dụ: Tết Nguyên Đán, Valentine..." maxlength="100">
+            </div>
+            <div id="cfgDayTypeWrapper" class="form-group" style="margin-bottom: 1rem;">
+                <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Loại ngày / Ngày đặc biệt:</label>
+                <select id="cfgDayTypeSelect" class="form-control" onchange="toggleCfgDayTypeInput()">
+                    <option value="Trong tuần">Trong tuần</option>
+                    <option value="Cuối tuần">Cuối tuần</option>
+                    <option value="Ngày lễ">Ngày lễ</option>
+                    <option value="custom">-- Nhập ngày cụ thể (YYYY-MM-DD) --</option>
+                </select>
+                <input type="text" id="cfgDayType" class="form-control" style="margin-top: 0.5rem; display: none;" placeholder="Trong tuần" required>
+            </div>
+            <div id="cfgSlotWrapper" class="form-group" style="margin-bottom: 1rem;">
+                <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Khung giờ áp dụng (chọn một hoặc nhiều):</label>
+                <div class="slot-chip-grid">
+                    <label class="slot-chip-label" id="lbl_slot_suatsom">
+                        <input type="checkbox" name="cfgSlotNames" value="Suất sớm" onchange="toggleSlotChipActive('lbl_slot_suatsom', this.checked)">
+                        <span class="slot-chip-title">Suất sớm</span>
+                        <span class="slot-chip-subtitle">00:00 - 11:59</span>
+                    </label>
+                    <label class="slot-chip-label" id="lbl_slot_giothuong">
+                        <input type="checkbox" name="cfgSlotNames" value="Giờ thường" onchange="toggleSlotChipActive('lbl_slot_giothuong', this.checked)">
+                        <span class="slot-chip-title">Giờ thường</span>
+                        <span class="slot-chip-subtitle">12:00 - 16:59</span>
+                    </label>
+                    <label class="slot-chip-label" id="lbl_slot_giovang">
+                        <input type="checkbox" name="cfgSlotNames" value="Giờ vàng" onchange="toggleSlotChipActive('lbl_slot_giovang', this.checked)">
+                        <span class="slot-chip-title">Giờ vàng</span>
+                        <span class="slot-chip-subtitle">17:00 - 21:59</span>
+                    </label>
+                    <label class="slot-chip-label" id="lbl_slot_suatkhuya">
+                        <input type="checkbox" name="cfgSlotNames" value="Suất khuya" onchange="toggleSlotChipActive('lbl_slot_suatkhuya', this.checked)">
+                        <span class="slot-chip-title">Suất khuya</span>
+                        <span class="slot-chip-subtitle">22:00 - 23:59</span>
+                    </label>
+                </div>
+            </div>
+        `;
+    } else if (type === 'seats') {
+        container.innerHTML = `
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Mã loại ghế:</label>
+                <input type="text" id="cfgSeatTypeCode" class="form-control" placeholder="Ví dụ: vip, couple..." required>
+            </div>
+        `;
+    } else if (type === 'formats') {
+        container.innerHTML = `
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Mã định dạng phòng:</label>
+                <input type="text" id="cfgFormatCode" class="form-control" placeholder="Ví dụ: 3D, IMAX, PREMIUM..." required>
+            </div>
+        `;
+    } else if (type === 'discounts') {
+        groupPrice.style.display = 'none';
+        groupRate.style.display = 'block';
+        groupFixed.style.display = 'block';
+        groupMinPrice.style.display = 'block';
+        groupMaxDisc.style.display = 'block';
+
+        container.innerHTML = `
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="font-weight:500; display:block; margin-bottom:0.5rem; color:var(--text-main);">Đối tượng khách hàng:</label>
+                <input type="text" id="cfgCustomerType" class="form-control" placeholder="Ví dụ: STUDENT, CHILD..." required>
+            </div>
+        `;
+    }
+}
+
+async function savePricingConfig() {
+    const type = document.getElementById('editConfigType').value;
+    const id = document.getElementById('editConfigId').value;
+    const baseVal = parseFloat(document.getElementById('editConfigValue').value) || 0;
+
+    let body = {};
+    let url = '';
+
+    if (id) body.id = parseInt(id);
+
+    if (type === 'base') {
+        url = '/api/tickets/configs/base';
+        const movieIdVal = document.getElementById('cfgMovieId').value ? parseInt(document.getElementById('cfgMovieId').value) : null;
+        const noteVal = document.getElementById('cfgNote') ? document.getElementById('cfgNote').value.trim() : '';
+
+        let checkedSlots = [];
+        if (movieIdVal) {
+            // Apply price to all showtimes of that day by checking all 4 standard slots
+            checkedSlots = ['Suất sớm', 'Giờ thường', 'Giờ vàng', 'Suất khuya'];
+        } else {
+            checkedSlots = Array.from(document.querySelectorAll('input[name="cfgSlotNames"]:checked')).map(el => el.value);
+            if (checkedSlots.length === 0) {
+                showToast('error', 'Lỗi', 'Vui lòng chọn ít nhất một khung giờ.');
+                return;
+            }
+        }
+
+        // Xác định danh sách ngày áp dụng (nếu chọn phim thì đọc checkbox, nếu ko thì đọc input)
+        let targetDates = [];
+        if (movieIdVal) {
+            targetDates = Array.from(document.querySelectorAll('input[name="cfgDayTypeDates"]:checked')).map(el => el.value);
+            if (targetDates.length === 0) {
+                showToast('error', 'Lỗi', 'Vui lòng chọn ít nhất một ngày chiếu áp dụng của phim.');
+                return;
+            }
+        } else {
+            const dayTypeVal = document.getElementById('cfgDayType').value.trim();
+            if (!dayTypeVal) {
+                showToast('error', 'Lỗi', 'Vui lòng điền loại ngày hoặc ngày đặc biệt.');
+                return;
+            }
+            targetDates = [dayTypeVal];
+        }
+
+        if (id) {
+            const date = targetDates[0];
+            if (movieIdVal) {
+                try {
+                    // Update all 4 slots of this movie on this date in sync
+                    const rConfigs = await fetch('/api/tickets/configs');
+                    const dataConfigs = await rConfigs.json();
+                    
+                    const matchedConfigs = dataConfigs.basePrices.filter(bp => bp.movieId === movieIdVal && bp.dayType === date);
+                    const promises = [];
+                    
+                    checkedSlots.forEach(slot => {
+                        let start = "12:00:00", end = "16:59:59";
+                        if (slot === 'Suất sớm') { start = '00:00:00'; end = '11:59:59'; }
+                        else if (slot === 'Giờ thường') { start = '12:00:00'; end = '16:59:59'; }
+                        else if (slot === 'Giờ vàng') { start = '17:00:00'; end = '21:59:59'; }
+                        else if (slot === 'Suất khuya') { start = '22:00:00'; end = '23:59:59'; }
+
+                        const existing = matchedConfigs.find(mc => mc.slotName === slot);
+                        const reqBody = {
+                            movieId: movieIdVal,
+                            dayType: date,
+                            slotName: slot,
+                            startTime: start,
+                            endTime: end,
+                            basePrice: baseVal,
+                            note: noteVal || null
+                        };
+                        if (existing) {
+                            reqBody.id = existing.id;
+                        }
+
+                        promises.push(fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(reqBody)
+                        }));
+                    });
+
+                    await Promise.all(promises);
+                    showToast('success', 'Lưu thành công', 'Cấu hình giá vé đã được cập nhật.');
+                    closeEditConfigModal();
+                    loadPricingDashboard();
+                } catch (e) {
+                    showToast('error', 'Lỗi', e.getMessage ? e.getMessage() : e.message);
+                }
+            } else {
+                const slot = checkedSlots[0];
+                let start = "12:00:00", end = "16:59:59";
+                if (slot === 'Suất sớm') { start = '00:00:00'; end = '11:59:59'; }
+                else if (slot === 'Giờ thường') { start = '12:00:00'; end = '16:59:59'; }
+                else if (slot === 'Giờ vàng') { start = '17:00:00'; end = '21:59:59'; }
+                else if (slot === 'Suất khuya') { start = '22:00:00'; end = '23:59:59'; }
+
+                body.movieId = movieIdVal;
+                body.dayType = date;
+                body.slotName = slot;
+                body.startTime = start;
+                body.endTime = end;
+                body.basePrice = baseVal;
+                body.note = noteVal || null;
+
+                try {
+                    const r = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    if (!r.ok) {
+                        const data = await r.json().catch(() => ({}));
+                        throw new Error(data.error || 'Không thể cập nhật cấu hình.');
+                    }
+                    showToast('success', 'Lưu thành công', 'Cấu hình giá vé đã được cập nhật.');
+                    closeEditConfigModal();
+                    loadPricingDashboard();
+                } catch (e) {
+                    showToast('error', 'Lỗi', e.getMessage ? e.getMessage() : e.message);
+                }
+            }
+        } else {
+            try {
+                let allShowtimes = [];
+                if (movieIdVal) {
+                    // Fetch actual showtimes of that movie to determine active slots on chosen days
+                    const r = await fetch(API_SHOWTIMES + '?movieId=' + movieIdVal);
+                    allShowtimes = await r.json();
+                }
+
+                const promises = [];
+                targetDates.forEach(date => {
+                    let slotsToCreateForDate = [];
+
+                    if (movieIdVal) {
+                        // Find showtimes of this movie on this date
+                        const dayShowtimes = allShowtimes.filter(st => st.showDate === date);
+                        
+                        // Check which slots actually have showtimes
+                        const slotsSet = new Set();
+                        dayShowtimes.forEach(st => {
+                            let showTimeStr = '';
+                            if (st.showTime) {
+                                if (typeof st.showTime === 'string') {
+                                    showTimeStr = st.showTime;
+                                } else if (Array.isArray(st.showTime)) {
+                                    showTimeStr = String(st.showTime[0]).padStart(2, '0') + ':' + String(st.showTime[1]).padStart(2, '0') + ':00';
+                                }
+                            }
+                            if (showTimeStr >= '00:00:00' && showTimeStr <= '11:59:59') slotsSet.add('Suất sớm');
+                            else if (showTimeStr >= '12:00:00' && showTimeStr <= '16:59:59') slotsSet.add('Giờ thường');
+                            else if (showTimeStr >= '17:00:00' && showTimeStr <= '21:59:59') slotsSet.add('Giờ vàng');
+                            else if (showTimeStr >= '22:00:00' && showTimeStr <= '23:59:59') slotsSet.add('Suất khuya');
+                        });
+                        slotsToCreateForDate = Array.from(slotsSet);
+                    } else {
+                        slotsToCreateForDate = checkedSlots;
+                    }
+
+                    slotsToCreateForDate.forEach(slot => {
+                        let start = "12:00:00", end = "16:59:59";
+                        if (slot === 'Suất sớm') { start = '00:00:00'; end = '11:59:59'; }
+                        else if (slot === 'Giờ thường') { start = '12:00:00'; end = '16:59:59'; }
+                        else if (slot === 'Giờ vàng') { start = '17:00:00'; end = '21:59:59'; }
+                        else if (slot === 'Suất khuya') { start = '22:00:00'; end = '23:59:59'; }
+
+                        const reqBody = {
+                            movieId: movieIdVal,
+                            dayType: date,
+                            slotName: slot,
+                            startTime: start,
+                            endTime: end,
+                            basePrice: baseVal,
+                            note: noteVal || null
+                        };
+
+                        const promise = fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(reqBody)
+                        }).then(async r => {
+                            if (!r.ok) {
+                                const data = await r.json().catch(() => ({}));
+                                throw new Error(data.error || `Lỗi tạo ngày ${date} khung giờ ${slot}`);
+                            }
+                        });
+                        promises.push(promise);
+                    });
+                });
+
+                if (promises.length === 0) {
+                    showToast('error', 'Lỗi', 'Không tìm thấy suất chiếu thực tế nào của phim vào các ngày được chọn.');
+                    return;
+                }
+
+                await Promise.all(promises);
+                showToast('success', 'Lưu thành công', 'Đã tạo cấu hình giá vé cho các ngày chiếu.');
+                closeEditConfigModal();
+                loadPricingDashboard();
+            } catch (e) {
+                showToast('error', 'Lỗi', e.getMessage ? e.getMessage() : e.message);
+            }
+        }
+        return;
+    } else if (type === 'seats') {
+        url = '/api/tickets/configs/seats';
+        body.seatTypeCode = document.getElementById('cfgSeatTypeCode').value.trim().toLowerCase();
+        body.surchargeAmount = baseVal;
+    } else if (type === 'formats') {
+        url = '/api/tickets/configs/formats';
+        body.formatCode = document.getElementById('cfgFormatCode').value.trim().toUpperCase();
+        body.surchargeAmount = baseVal;
+    } else if (type === 'discounts') {
+        url = '/api/tickets/configs/discounts';
+        body.customerType = document.getElementById('cfgCustomerType').value.trim().toUpperCase();
+        body.discountRate = parseFloat(document.getElementById('editConfigDiscountRate').value) || 0;
+        const fixedVal = document.getElementById('editConfigFixedPriceWeekday').value;
+        body.fixedPriceWeekday = fixedVal ? parseFloat(fixedVal) : null;
+        body.minPriceToApply = parseFloat(document.getElementById('editConfigMinPriceToApply').value) || 0;
+        body.maxDiscountAmount = parseFloat(document.getElementById('editConfigMaxDiscountAmount').value) || 999999;
+    }
+
+    try {
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!r.ok) {
+            const data = await r.json().catch(() => ({}));
+            throw new Error(data.error || 'Không thể lưu cấu hình.');
+        }
+        showToast('success', 'Lưu thành công', 'Cấu hình giá vé đã được cập nhật.');
+        closeEditConfigModal();
+        loadPricingDashboard(); // Refresh
+    } catch (e) {
+        showToast('error', 'Lỗi', e.getMessage ? e.getMessage() : e.message);
+    }
+}
+
+async function deletePricingConfig(type, id) {
+    const confirmed = await showConfirm(
+        'Xác nhận xóa', 
+        'Bạn có chắc chắn muốn xóa cấu hình giá này không?', 
+        'Đồng ý xóa'
+    );
+    if (!confirmed) return;
+
+    let url = '';
+    if (type === 'base') url = `/api/tickets/configs/base/${id}`;
+    else if (type === 'seats') url = `/api/tickets/configs/seats/${id}`;
+    else if (type === 'formats') url = `/api/tickets/configs/formats/${id}`;
+    else if (type === 'discounts') url = `/api/tickets/configs/discounts/${id}`;
+
+    try {
+        const r = await fetch(url, { method: 'DELETE' });
+        if (!r.ok) {
+            const data = await r.json().catch(() => ({}));
+            throw new Error(data.error || 'Không thể xóa cấu hình.');
+        }
+        showToast('success', 'Xóa thành công', 'Cấu hình giá vé đã được xóa.');
+        loadPricingDashboard(); // Refresh
+    } catch (e) {
+        showToast('error', 'Lỗi', e.getMessage ? e.getMessage() : e.message);
+    }
+}
+
+function closeEditConfigModal() {
+    document.getElementById('editConfigModal').classList.remove('show');
+    document.getElementById('editConfigModal').style.display = 'none';
 }

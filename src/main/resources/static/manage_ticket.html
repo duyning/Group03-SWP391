@@ -10,7 +10,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý vé - Cinema 2026</title>
+    <title>Quản lý bán vé - Cinema 2026</title>
     <meta name="description" content="Quản lý bán vé và cấu hình giá của Cinema 2026.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -179,8 +179,8 @@
             <ul class="sidebar-nav">
                 <a href="/admin/dashboard"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
                 <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
-                <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Lịch chiếu</li></a>
-                <a href="/manage_ticket.html"><li class="active"><i class="fas fa-ticket-alt"></i> Quản lý vé</li></a>
+                <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
+                <a href="/manage_ticket.html"><li class="active"><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
                 <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
                 <a href="/admin/banners"><li><i class="fas fa-images"></i> Quản lý banner</li></a>
                 <a href="/admin/rooms"><li><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
@@ -193,103 +193,227 @@
 
         <main class="admin-main">
             <div class="app-container">
-                    <!-- ================= SUB-TAB: DANH SÁCH & BỘ LỌC VÉ TOÀN CỤC ================= -->
-                        <header class="app-header">
-                            <h1 class="page-title">Tra cứu danh sách vé</h1>
-                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">Tra cứu, lọc vé nâng cao theo ngày, trạng thái, phim, phòng, hoặc tìm kiếm theo mã vé, số điện thoại khách hàng.</p>
-                        </header>
+                <!-- Tab Navigation Bar -->
+                <div class="tabs-container" style="display:flex; gap:1rem; margin-bottom:2rem; border-bottom:2px solid var(--border-color); padding-bottom:0.5rem;">
+                    <button class="btn-tab active" id="tabSellBtn" onclick="switchMainTicketTab('sell')" style="background:none; border:none; padding:0.6rem 1.2rem; font-size:0.95rem; font-weight:700; color:var(--primary-color); border-bottom:3px solid var(--primary-color); cursor:pointer; transition:all 0.2s;">
+                        <i class="fa-solid fa-map-location-dot"></i> Sơ đồ giá ghế
+                    </button>
+                    <button class="btn-tab" id="tabPricingBtn" onclick="switchMainTicketTab('pricing')" style="background:none; border:none; padding:0.6rem 1.2rem; font-size:0.95rem; font-weight:700; color:var(--text-muted); cursor:pointer; transition:all 0.2s;">
+                        <i class="fa-solid fa-sliders"></i> Cấu hình bảng giá vé
+                    </button>
+                </div>
 
-                        <!-- Thanh bộ lọc linh hoạt -->
-                        <section class="filter-card">
-                            <form id="globalTicketFilterForm" class="filter-grid" onsubmit="event.preventDefault();" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
-                                <div class="form-group">
-                                    <label for="filterGlobalMovie"><i class="fa-solid fa-film"></i> CHỌN PHIM</label>
-                                    <select id="filterGlobalMovie">
-                                        <option value="">-- Tất cả phim --</option>
+                <!-- ================= TAB 1: SƠ ĐỒ GIÁ GHẾ ================= -->
+                <div id="sellTabContent" class="ticket-tab-content">
+                    <header class="app-header">
+                        <h1 class="page-title">Sơ đồ giá ghế trực quan</h1>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">Chọn Phim và Suất chiếu để hiển thị sơ đồ ghế. Di chuột hoặc click vào ghế để hiển thị thông tin và chi tiết cơ cấu tính giá vé.</p>
+                    </header>
+
+                    <div class="ticket-workflow-grid" style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.5rem; align-items: start; margin-top: 1.5rem;">
+                        <!-- Sơ đồ ghế bên trái -->
+                        <div class="seat-map-card" style="background: var(--bg-card); border-radius: 12px; padding: 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.05);">
+                            <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label for="mapMovieSelect" style="font-weight: 700; font-size: 0.8rem; margin-bottom: 0.5rem; display: block; color: var(--text-main);"><i class="fa-solid fa-film"></i> CHỌN PHIM</label>
+                                    <select id="mapMovieSelect" class="form-control" style="width: 100%;" onchange="handleMapMovieChange()">
+                                        <option value="">-- Chọn phim --</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
-                                    <label for="filterGlobalRoom"><i class="fa-solid fa-door-open"></i> PHÒNG CHIẾU</label>
-                                    <select id="filterGlobalRoom">
-                                        <option value="">-- Tất cả phòng --</option>
+                                <div class="form-group" style="flex: 1;">
+                                    <label for="mapShowtimeSelect" style="font-weight: 700; font-size: 0.8rem; margin-bottom: 0.5rem; display: block; color: var(--text-main);"><i class="fa-solid fa-clock"></i> CHỌN SUẤT CHIẾU</label>
+                                    <select id="mapShowtimeSelect" class="form-control" style="width: 100%;" disabled onchange="handleMapShowtimeChange()">
+                                        <option value="">-- Chọn phim trước --</option>
                                     </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="filterGlobalStatus"><i class="fa-solid fa-circle-info"></i> TRẠNG THÁI VÉ</label>
-                                    <select id="filterGlobalStatus">
-                                        <option value="">-- Tất cả trạng thái --</option>
-                                        <option value="BOOKED">BOOKED - Đã bán</option>
-                                        <option value="PENDING">PENDING - Đang giữ chỗ</option>
-                                        <option value="REFUNDED">REFUNDED - Đã hoàn trả</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="filterGlobalTimeShortcut"><i class="fa-solid fa-calendar-day"></i> THỜI GIAN</label>
-                                    <select id="filterGlobalTimeShortcut" onchange="handleGlobalTimeShortcutChange()">
-                                        <option value="all">Xem tất cả thời gian</option>
-                                        <option value="today">Hôm nay</option>
-                                        <option value="tomorrow">Ngày mai</option>
-                                        <option value="range">Khoảng ngày cụ thể...</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" id="groupGlobalDateRange" style="display: none; grid-column: span 2; gap: 0.5rem; align-items: center;">
-                                    <div style="flex: 1;">
-                                        <label for="filterGlobalStartDate">Từ ngày</label>
-                                        <input type="date" id="filterGlobalStartDate" class="form-control">
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <label for="filterGlobalEndDate">Đến ngày</label>
-                                        <input type="date" id="filterGlobalEndDate" class="form-control">
-                                    </div>
-                                </div>
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label for="filterGlobalSearchTerm"><i class="fa-solid fa-magnifying-glass"></i> TÌM KIẾM THÔNG MINH</label>
-                                    <input type="text" id="filterGlobalSearchTerm" placeholder="Tìm theo Mã vé, Số ghế (ví dụ: A02), Tên hoặc SĐT khách hàng...">
-                                </div>
-                            </form>
-                            <div class="filter-actions" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                                <span class="results-count" id="globalTicketsCount">Tìm thấy 0 vé</span>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button class="btn btn-outline" onclick="resetGlobalTicketFilter()"><i class="fa-solid fa-arrows-rotate"></i> Thiết lập lại</button>
-                                    <button class="btn btn-primary" onclick="searchGlobalTickets(1)"><i class="fa-solid fa-filter"></i> Lọc danh sách</button>
-                                    <button class="btn btn-primary" onclick="openCreateTicketModal()" style="background: #10b981; border-color: #10b981;"><i class="fa-solid fa-plus"></i> Thêm vé mới</button>
                                 </div>
                             </div>
-                        </section>
 
-                        <!-- Bảng hiển thị danh sách vé có phân trang -->
-                        <main class="table-card" style="margin-top: 1.5rem;">
+                            <!-- Chú thích sơ đồ ghế -->
+                            <div class="seat-legend" style="display:flex; gap:1.2rem; justify-content:center; margin-bottom:1.5rem; flex-wrap:wrap; font-size:0.8rem; background:var(--bg-app); padding: 10px; border-radius:8px;">
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#475569;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Standard (Thường)</span></div>
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#8b5cf6;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>VIP (Vip)</span></div>
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ec4899;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Sweetbox (Đôi)</span></div>
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ef4444;border-radius:4px;display:inline-block;"></span> <span>Đã bán / Giữ chỗ</span></div>
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:var(--primary-color);border-radius:4px;display:inline-block;box-shadow:0 0 10px var(--primary-color);"></span> <span>Đang chọn</span></div>
+                            </div>
+
+                            <!-- Vùng hiển thị sơ đồ -->
+                            <div id="mapSeatGridArea" style="display: none; flex-direction: column; align-items: center; background:var(--bg-app); padding: 3rem 1rem; border-radius: 10px; border: 1px solid var(--border-color); position: relative; min-height: 250px; overflow-x: auto;">
+                                <div class="screen-bar" style="width:100%; max-width:400px; height:4px; background:#94a3b8; border-radius:4px; margin-bottom:2rem; box-shadow:0 4px 10px rgba(0,0,0,0.2); text-align:center; color:#fff; font-size:0.7rem; font-weight:700; line-height:4px;">MÀN HÌNH</div>
+                                <div id="mapSeatGridContainer" style="display:flex; flex-direction:column; gap:8px;"></div>
+                            </div>
+
+                            <div id="mapSeatGridEmpty" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background:var(--bg-app); padding: 4rem 1rem; border-radius: 10px; border: 1px dashed var(--border-color); color: var(--text-muted); font-weight: 500;">
+                                <i class="fa-solid fa-map-location-dot" style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.6;"></i>
+                                <span>Vui lòng chọn phim và suất chiếu để hiển thị sơ đồ ghế.</span>
+                            </div>
+                        </div>
+
+                        <!-- Panel thông tin & tính giá bên phải -->
+                        <div class="panel-booking-info" style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.05); min-height: 300px;">
+                            <h3 style="font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-top:0; color: var(--text-main);"><i class="fa-solid fa-ticket-alt"></i> Thông tin giá ghế</h3>
+                            
+                            <div id="bookingPanelActive" style="display: none; margin-top: 1rem;">
+                                <div style="font-size: 0.9rem; line-height: 1.6rem; color: var(--text-main); margin-bottom: 1.2rem; background: var(--bg-app); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <div><strong>Ghế chọn:</strong> <span id="bookSeatLabel" style="font-weight: 700; color: var(--primary-color);">--</span> (<span id="bookSeatType">--</span>)</div>
+                                    <div><strong>Phòng:</strong> <span id="bookRoomLabel">--</span></div>
+                                    <div><strong>Suất chiếu:</strong> <span id="bookShowtimeLabel">--</span></div>
+                                </div>
+
+                                <!-- Chi tiết cơ cấu giá gốc -->
+                                <div class="price-breakdown-box" id="bookPriceBreakdown" style="background: var(--bg-app); border-radius: 8px; padding: 1rem; border: 1px dashed var(--border-color); font-size: 0.85rem; margin-bottom: 1.2rem;">
+                                    <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Giá cơ bản (Giờ/Ngày):</span><span id="bookBasePrice">0đ</span></div>
+                                    <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Phụ thu loại ghế:</span><span id="bookSeatSurcharge">0đ</span></div>
+                                    <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Phụ thu định dạng:</span><span id="bookFormatSurcharge">0đ</span></div>
+                                    <div class="breakdown-row total-row" style="display:flex; justify-content:space-between; font-weight:700; font-size:1.05rem; color:var(--primary-color); border-top:1px solid var(--border-color); padding-top:0.6rem; margin-top:0.6rem;"><span>Tổng tiền vé:</span><span id="bookFinalPrice">0đ</span></div>
+                                </div>
+                            </div>
+
+                            <div id="bookingPanelEmpty" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 250px; color: var(--text-muted); font-size: 0.88rem; text-align: center;">
+                                <i class="fa-solid fa-calculator" style="font-size: 2.2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                                <span>Chọn một ghế trống trên sơ đồ để xem thông tin chi tiết và giá vé.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!-- ================= TAB 2: CẤU HÌNH BẢNG GIÁ VÉ ================= -->
+                <div id="pricingTabContent" class="ticket-tab-content" style="display:none;">
+                    <header class="app-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h1 class="page-title">Cấu hình bảng giá vé</h1>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">Quản lý giá vé cơ bản theo khung giờ/loại ngày, phụ thu loại ghế, phụ thu định dạng phòng và giảm giá theo đối tượng khách hàng.</p>
+                        </div>
+                    </header>
+
+                    <!-- Section 1: Giá vé cơ bản -->
+                    <section class="panel" style="margin-top: 1.5rem;">
+                        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+                            <span style="font-size:1.05rem; font-weight:700; color:var(--text-main);"><i class="fa-solid fa-calendar-day"></i> 1. Giá vé cơ bản theo Khung giờ & Loại ngày</span>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <button class="btn btn-primary" id="btnBatchDeleteConfigs" onclick="handleBatchDeleteConfigs()" style="padding:0.4rem 0.8rem; font-size:0.8rem; background: var(--stat-red); border-color: var(--stat-red); display: none;"><i class="fa-solid fa-trash-can"></i> Xóa các mục đã chọn</button>
+                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:#10b981; border-color:#10b981;" onclick="openAddConfigModal('base')"><i class="fa-solid fa-plus"></i> Thêm giá cơ bản</button>
+                            </div>
+                        </div>
+
+                        <!-- Bộ lọc cấu hình giá cơ bản -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; background: var(--bg-app); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; align-items: end;">
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: block; color: var(--text-main);"><i class="fa-solid fa-film"></i> LỌC THEO PHIM</label>
+                                <select id="filterPriceMovie" class="form-control" onchange="filterBasePrices()" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; height: 36px;">
+                                    <option value="">-- Tất cả phim --</option>
+                                    <option value="all_movies">Áp dụng cho mọi phim</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: block; color: var(--text-main);"><i class="fa-solid fa-clock"></i> LỌC KHUNG GIỜ</label>
+                                <select id="filterPriceSlot" class="form-control" onchange="filterBasePrices()" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; height: 36px;">
+                                    <option value="">-- Tất cả khung giờ --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: block; color: var(--text-main);"><i class="fa-solid fa-magnifying-glass"></i> TÌM THEO NGÀY / LOẠI NGÀY / GHI CHÚ</label>
+                                <input type="text" id="filterPriceDayType" class="form-control" placeholder="Nhập loại ngày, ngày chiếu hoặc ghi chú..." oninput="filterBasePrices()" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; height: 36px;">
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="movie-table" style="font-size:0.88rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllBaseConfigs" onchange="toggleSelectAllBaseConfigs(this.checked)" style="cursor: pointer;"></th>
+                                        <th>ID</th>
+                                        <th>Áp dụng cho Phim</th>
+                                        <th>Loại ngày / Ngày đặc biệt</th>
+                                        <th>Tên khung giờ</th>
+                                        <th>Giờ bắt đầu</th>
+                                        <th>Giờ kết thúc</th>
+                                        <th>Giá cơ bản</th>
+                                        <th class="text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tblPricingBase">
+                                    <tr><td colspan="9" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Đang tải cấu hình...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+                        <!-- Section 2: Phụ thu ghế -->
+                        <section class="panel">
+                            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+                                <span style="font-size:1.02rem; font-weight:700; color:var(--text-main);"><i class="fa-solid fa-chair"></i> 2. Phụ thu Loại ghế</span>
+                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:#10b981; border-color:#10b981;" onclick="openAddConfigModal('seats')"><i class="fa-solid fa-plus"></i> Thêm phụ thu ghế</button>
+                            </div>
                             <div class="table-responsive">
-                                <table class="movie-table">
+                                <table class="movie-table" style="font-size:0.88rem;">
                                     <thead>
                                         <tr>
-                                            <th>Mã vé</th>
-                                            <th>Phim chiếu</th>
-                                            <th>Phòng</th>
-                                            <th>Suất chiếu</th>
-                                            <th>Ghế</th>
-                                            <th>Đối tượng</th>
-                                            <th>Tổng tiền</th>
-                                            <th>Trạng thái</th>
+                                            <th>Mã loại ghế</th>
+                                            <th>Số tiền phụ thu</th>
                                             <th class="text-center">Thao tác</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="globalTicketTableBody">
-                                        <tr>
-                                            <td colspan="9" class="text-center" style="padding: 3rem; color: var(--text-muted);">
-                                                <i class="fa-solid fa-magnifying-glass" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                                                Chưa có dữ liệu tìm kiếm. Hãy nhấn Lọc danh sách.
-                                            </td>
-                                        </tr>
+                                    <tbody id="tblPricingSeats">
+                                        <tr><td colspan="3" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Đang tải cấu hình...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-                                <span class="pagination-info" id="globalTicketPaginationInfo">Hiển thị trang 1 / 1</span>
-                                <div class="pagination-controls" id="globalTicketPaginationControls" style="display: flex; gap: 0.3rem;"></div>
+                        </section>
+
+                        <!-- Section 3: Phụ thu phòng -->
+                        <section class="panel">
+                            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+                                <span style="font-size:1.02rem; font-weight:700; color:var(--text-main);"><i class="fa-solid fa-door-open"></i> 3. Phụ thu Định dạng phòng</span>
+                                <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:#10b981; border-color:#10b981;" onclick="openAddConfigModal('formats')"><i class="fa-solid fa-plus"></i> Thêm phụ thu phòng</button>
                             </div>
-                        </main>
+                            <div class="table-responsive">
+                                <table class="movie-table" style="font-size:0.88rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã định dạng</th>
+                                            <th>Số tiền phụ thu</th>
+                                            <th class="text-center">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tblPricingFormats">
+                                        <tr><td colspan="3" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Đang tải cấu hình...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
                     </div>
+
+                    <!-- Section 4: Đối tượng khách hàng -->
+                    <section class="panel" style="margin-top: 1.5rem;">
+                        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+                            <span style="font-size:1.05rem; font-weight:700; color:var(--text-main);"><i class="fa-solid fa-user-tag"></i> 4. Chiết khấu theo Đối tượng khách hàng</span>
+                            <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:#10b981; border-color:#10b981;" onclick="openAddConfigModal('discounts')"><i class="fa-solid fa-plus"></i> Thêm chiết khấu</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="movie-table" style="font-size:0.88rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Đối tượng</th>
+                                        <th>Tỷ lệ giảm giá</th>
+                                        <th>Đồng giá ngày thường</th>
+                                        <th>Ngưỡng tiền áp dụng (tiền vé ≥)</th>
+                                        <th>Số tiền giảm tối đa</th>
+                                        <th class="text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tblPricingDiscounts">
+                                    <tr><td colspan="6" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Đang tải cấu hình...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
 
                     </div>
                 </div>
@@ -360,19 +484,22 @@
         </div>
     </div>
 
-    <!-- Modal 3: Sửa Cấu hình Giá Vé -->
+    <!-- Modal 3: Thêm / Sửa Cấu hình Giá Vé -->
     <div class="modal-overlay" id="editConfigModal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999;">
-        <div class="modal-box" style="width: 400px; background: var(--bg-card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <div class="modal-box" style="width: 480px; max-width: 90%; background: var(--bg-card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
             <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 1rem;">
-                <h2 style="font-size:1.2rem; font-weight:700; color:var(--text-main);" id="editConfigTitle">Sửa cấu hình giá</h2>
+                <h2 style="font-size:1.2rem; font-weight:700; color:var(--text-main);" id="editConfigTitle">Thêm/Sửa cấu hình giá</h2>
                 <button class="btn-close-modal" id="btnCloseEditConfigModal" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
             </div>
             <form id="editConfigForm" class="modal-body" onsubmit="event.preventDefault();">
                 <input type="hidden" id="editConfigType">
                 <input type="hidden" id="editConfigId">
+
+                <div id="dynamicConfigFields"></div>
+
                 <div class="form-group" id="groupEditPrice" style="margin-bottom: 1rem;">
-                    <label for="editConfigValue" id="labelEditConfigValue" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Giá trị mới (VND):</label>
-                        <input type="number" id="editConfigValue" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-app); color: var(--text-main);" min="0" step="5000">
+                    <label for="editConfigValue" id="labelEditConfigValue" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Giá trị mới / Số tiền phụ thu (VND):</label>
+                    <input type="number" id="editConfigValue" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-app); color: var(--text-main);" min="0" step="5000">
                 </div>
                 <div class="form-group" id="groupEditDiscountRate" style="display: none; margin-bottom: 1rem;">
                     <label for="editConfigDiscountRate" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Tỷ lệ giảm giá (0.0 → 1.0):</label>
@@ -381,6 +508,14 @@
                 <div class="form-group" id="groupEditFixedPriceWeekday" style="display: none; margin-bottom: 1rem;">
                     <label for="editConfigFixedPriceWeekday" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Đồng giá ngày thường (VND, bỏ trống nếu không áp dụng):</label>
                     <input type="number" id="editConfigFixedPriceWeekday" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-app); color: var(--text-main);" min="0" step="5000">
+                </div>
+                <div class="form-group" id="groupEditMinPriceToApply" style="display: none; margin-bottom: 1rem;">
+                    <label for="editConfigMinPriceToApply" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Ngưỡng tiền vé tối thiểu để áp dụng (VND):</label>
+                    <input type="number" id="editConfigMinPriceToApply" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-app); color: var(--text-main);" min="0" step="5000">
+                </div>
+                <div class="form-group" id="groupEditMaxDiscountAmount" style="display: none; margin-bottom: 1rem;">
+                    <label for="editConfigMaxDiscountAmount" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Số tiền giảm giá tối đa (VND):</label>
+                    <input type="number" id="editConfigMaxDiscountAmount" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-app); color: var(--text-main);" min="0" step="5000">
                 </div>
             </form>
             <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
@@ -484,6 +619,98 @@
                 box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
             }
         }
+        
+        .slot-chip-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .slot-chip-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.8rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-card);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            user-select: none;
+        }
+        .slot-chip-label:hover {
+            border-color: var(--primary-color);
+            background: rgba(59, 130, 246, 0.05);
+        }
+        .slot-chip-label input[type="checkbox"] {
+            display: none;
+        }
+        .slot-chip-label.active {
+            border-color: var(--primary-color);
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+        }
+        .slot-chip-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            margin-bottom: 0.2rem;
+        }
+        .slot-chip-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .date-chip-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .date-chip-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.8rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-card);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            user-select: none;
+            position: relative;
+        }
+        .date-chip-label:hover {
+            border-color: var(--primary-color);
+            background: rgba(59, 130, 246, 0.05);
+        }
+        .date-chip-label input[type="checkbox"] {
+            display: none;
+        }
+        .date-chip-label.active {
+            border-color: var(--primary-color);
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+        }
+        .date-chip-icon {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 0.3rem;
+        }
+        .date-chip-text {
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--text-main);
+        }
+        .date-chip-subtext {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.1rem;
+        }
     </style>
 
     <!-- Modal 5: Xem vị trí ghế trên sơ đồ -->
@@ -519,6 +746,19 @@
             </div>
             <div class="modal-footer" style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
                 <button class="btn btn-primary" onclick="closeViewSeatMapModal()">Đóng lại</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm dialog overlay -->
+    <div id="confirmOverlay">
+        <div id="confirmDialog">
+            <i id="confirmIcon" class="fa-solid fa-triangle-exclamation"></i>
+            <h3 id="confirmTitle">Xác nhận</h3>
+            <p id="confirmMessage">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
+            <div class="confirm-buttons">
+                <button type="button" class="btn btn-secondary" id="confirmBtnCancel">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmBtnOk">Xác nhận</button>
             </div>
         </div>
     </div>

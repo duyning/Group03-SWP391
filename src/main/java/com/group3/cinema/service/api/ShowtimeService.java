@@ -179,15 +179,71 @@ public class ShowtimeService {
         showtimeRepository.flush();
 
         // 2. Tạo dải lịch chiếu mới
-        return saveShowtimeBatch(
-                req.getMovieId(),
-                req.getStartDate(),
-                req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
-                req.getShowTime(),
-                req.getRoom(),
-                1, // Khóa slotCount = 1 khi chỉnh sửa dải ngày
-                true // skipPastValidation = true
-        );
+        if (req.getShowTimes() != null && !req.getShowTimes().isEmpty()) {
+            return saveShowtimeBatch(
+                    req.getMovieId(),
+                    req.getStartDate(),
+                    req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
+                    req.getShowTimes(),
+                    req.getRoom(),
+                    true // skipPastValidation = true
+            );
+        } else {
+            return saveShowtimeBatch(
+                    req.getMovieId(),
+                    req.getStartDate(),
+                    req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
+                    req.getShowTime(),
+                    req.getRoom(),
+                    1, // Khóa slotCount = 1 khi chỉnh sửa dải ngày
+                    true // skipPastValidation = true
+            );
+        }
+    }
+
+    @Transactional
+    public List<Showtime> saveShowtimeBatch(Long movieId, LocalDate startDate, LocalDate endDate,
+                                            List<LocalTime> showTimes, String room, boolean skipPastValidation) {
+        if (startDate == null || endDate == null || showTimes == null || showTimes.isEmpty() || room == null || movieId == null) {
+            throw new IllegalArgumentException("Vui lòng điền đầy đủ thông tin!");
+        }
+
+        if (endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("Ngày kết thúc không được nhỏ hơn ngày bắt đầu!");
+        }
+
+        Movie movie = movieRepository.findById(movieId.intValue())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bộ phim!"));
+
+        List<Showtime> savedShowtimes = new ArrayList<>();
+        String[] rooms = room.split(",");
+
+        for (String r : rooms) {
+            String trimmedRoom = r.trim();
+            if (trimmedRoom.isEmpty()) continue;
+
+            LocalDate current = startDate;
+            while (!current.isAfter(endDate)) {
+                for (LocalTime time : showTimes) {
+                    if (!skipPastValidation) {
+                        validateDateTimeNotPast(current, time);
+                    }
+
+                    Showtime showtime = new Showtime();
+                    showtime.setMovie(movie);
+                    showtime.setShowDate(current);
+                    showtime.setShowTime(time);
+                    showtime.setRoom(trimmedRoom);
+                    showtime.setDayType(determineDayType(current));
+
+                    checkRoomConflict(showtime, null);
+                    Showtime saved = showtimeRepository.save(showtime);
+                    savedShowtimes.add(saved);
+                }
+                current = current.plusDays(1);
+            }
+        }
+        return savedShowtimes;
     }
 
     @Transactional
@@ -214,37 +270,45 @@ public class ShowtimeService {
         int duration = movie.getDuration() != null && movie.getDuration() > 0 ? movie.getDuration() : 120;
         List<Showtime> savedShowtimes = new ArrayList<>();
 
-        LocalDate current = startDate;
-        while (!current.isAfter(endDate)) {
-            LocalTime currentSlotTime = showTime;
-            LocalDate slotDate = current;
-            for (int i = 0; i < count; i++) {
-                if (!skipPastValidation) {
-                    validateDateTimeNotPast(slotDate, currentSlotTime);
+        // Hỗ trợ chọn nhiều phòng cùng lúc bằng cách tách chuỗi theo dấu phẩy
+        String[] rooms = room.split(",");
+
+        for (String r : rooms) {
+            String trimmedRoom = r.trim();
+            if (trimmedRoom.isEmpty()) continue;
+
+            LocalDate current = startDate;
+            while (!current.isAfter(endDate)) {
+                LocalTime currentSlotTime = showTime;
+                LocalDate slotDate = current;
+                for (int i = 0; i < count; i++) {
+                    if (!skipPastValidation) {
+                        validateDateTimeNotPast(slotDate, currentSlotTime);
+                    }
+
+                    Showtime showtime = new Showtime();
+                    showtime.setMovie(movie);
+                    showtime.setShowDate(slotDate);
+                    showtime.setShowTime(currentSlotTime);
+                    showtime.setRoom(trimmedRoom);
+                    showtime.setDayType(determineDayType(slotDate));
+
+                    checkRoomConflict(showtime, null);
+                    Showtime saved = showtimeRepository.save(showtime);
+                    savedShowtimes.add(saved);
+
+                    LocalTime nextStart = currentSlotTime.plusMinutes(10 + duration + 20);
+                    int minute = nextStart.getMinute();
+                    int rem = minute % 5;
+                    if (rem > 0) nextStart = nextStart.plusMinutes(5 - rem);
+                    
+                    if (nextStart.isBefore(currentSlotTime)) {
+                        slotDate = slotDate.plusDays(1);
+                    }
+                    currentSlotTime = nextStart;
                 }
-
-                Showtime showtime = new Showtime();
-                showtime.setMovie(movie);
-                showtime.setShowDate(slotDate);
-                showtime.setShowTime(currentSlotTime);
-                showtime.setRoom(room);
-                showtime.setDayType(determineDayType(slotDate));
-
-                checkRoomConflict(showtime, null);
-                Showtime saved = showtimeRepository.save(showtime);
-                savedShowtimes.add(saved);
-
-                LocalTime nextStart = currentSlotTime.plusMinutes(10 + duration + 20);
-                int minute = nextStart.getMinute();
-                int rem = minute % 5;
-                if (rem > 0) nextStart = nextStart.plusMinutes(5 - rem);
-
-                if (nextStart.isBefore(currentSlotTime)) {
-                    slotDate = slotDate.plusDays(1);
-                }
-                currentSlotTime = nextStart;
+                current = current.plusDays(1);
             }
-            current = current.plusDays(1);
         }
         return savedShowtimes;
     }

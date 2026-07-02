@@ -75,23 +75,70 @@ public class TicketService {
      */
     public void populateTicketPriceDetails(Ticket ticket, Showtime showtime, Seat seat, String customerType) {
         // 1. Xác định Giá Cơ Bản theo Ngày chiếu và Khung giờ
-        String dayType = showtime.getDayType();
-        if (dayType == null || dayType.isEmpty()) {
-            dayType = "Trong tuần";
-        }
+        final String dayType = (showtime.getDayType() == null || showtime.getDayType().isEmpty())
+            ? "Trong tuần" : showtime.getDayType();
         String slotName = determineTimeSlot(showtime.getShowTime());
 
-        Optional<TicketPriceConfig> configOpt = ticketPriceConfigRepository.findByDayTypeAndSlotName(dayType, slotName);
+        // Lấy tất cả cấu hình giá cơ bản từ DB để thực hiện so khớp phân cấp (Hierarchical matching)
+        List<TicketPriceConfig> allConfigs = ticketPriceConfigRepository.findAll();
+        String dateStr = showtime.getShowDate() != null ? showtime.getShowDate().toString() : ""; // YYYY-MM-DD
+        Long movieId = showtime.getMovie() != null ? (long) showtime.getMovie().getId() : null;
+
         double basePriceVal = 60000.0;
-        if (configOpt.isPresent()) {
-            basePriceVal = configOpt.get().getBasePrice();
-        } else {
-            if ("Trong tuần".equals(dayType)) {
+        boolean matched = false;
+
+        // Ưu tiên 1: Giá riêng cho Phim + Ngày cụ thể (Ví dụ ngày lễ đặc biệt cho phim hot)
+        if (movieId != null && !dateStr.isEmpty()) {
+            Optional<TicketPriceConfig> p1 = allConfigs.stream()
+                .filter(c -> movieId.equals(c.getMovieId()) && dateStr.equals(c.getDayType()) && slotName.equals(c.getSlotName()))
+                .findFirst();
+            if (p1.isPresent()) {
+                basePriceVal = p1.get().getBasePrice();
+                matched = true;
+            }
+        }
+
+        // Ưu tiên 2: Giá riêng cho Phim + Loại ngày (Trong tuần / Cuối tuần / Ngày lễ)
+        if (!matched && movieId != null) {
+            Optional<TicketPriceConfig> p2 = allConfigs.stream()
+                .filter(c -> movieId.equals(c.getMovieId()) && dayType.equalsIgnoreCase(c.getDayType()) && slotName.equals(c.getSlotName()))
+                .findFirst();
+            if (p2.isPresent()) {
+                basePriceVal = p2.get().getBasePrice();
+                matched = true;
+            }
+        }
+
+        // Ưu tiên 3: Giá chung (không theo phim) + Ngày cụ thể (Ví dụ ngày lễ đặc biệt áp dụng cho mọi phim)
+        if (!matched && !dateStr.isEmpty()) {
+            Optional<TicketPriceConfig> p3 = allConfigs.stream()
+                .filter(c -> c.getMovieId() == null && dateStr.equals(c.getDayType()) && slotName.equals(c.getSlotName()))
+                .findFirst();
+            if (p3.isPresent()) {
+                basePriceVal = p3.get().getBasePrice();
+                matched = true;
+            }
+        }
+
+        // Ưu tiên 4: Giá chung (không theo phim) + Loại ngày (Mặc định hệ thống)
+        if (!matched) {
+            Optional<TicketPriceConfig> p4 = allConfigs.stream()
+                .filter(c -> c.getMovieId() == null && dayType.equalsIgnoreCase(c.getDayType()) && slotName.equals(c.getSlotName()))
+                .findFirst();
+            if (p4.isPresent()) {
+                basePriceVal = p4.get().getBasePrice();
+                matched = true;
+            }
+        }
+
+        // Dự phòng mặc định nếu không khớp cấu hình nào
+        if (!matched) {
+            if ("Trong tuần".equalsIgnoreCase(dayType)) {
                 if ("Suất sớm".equals(slotName)) basePriceVal = 50000.0;
                 else if ("Giờ thường".equals(slotName)) basePriceVal = 60000.0;
                 else if ("Giờ vàng".equals(slotName)) basePriceVal = 75000.0;
                 else basePriceVal = 65000.0;
-            } else if ("Cuối tuần".equals(dayType)) {
+            } else if ("Cuối tuần".equalsIgnoreCase(dayType)) {
                 if ("Suất sớm".equals(slotName)) basePriceVal = 65000.0;
                 else if ("Giờ thường".equals(slotName)) basePriceVal = 80000.0;
                 else if ("Giờ vàng".equals(slotName)) basePriceVal = 95000.0;
@@ -144,17 +191,30 @@ public class TicketService {
         double finalPriceVal = subtotal;
         double discountAmountVal = 0.0;
 
-        // 4. Áp dụng Giảm giá theo Đối tượng khách hàng
+        // 4. Áp dụng Giảm giá theo Đối tượng khách hàng kèm kiểm tra ngưỡng áp dụng & giới hạn giảm tối đa
         if (customerType != null && !customerType.equals("ADULT")) {
             Optional<CustomerDiscount> discountOpt = customerDiscountRepository.findByCustomerType(customerType);
             if (discountOpt.isPresent()) {
                 CustomerDiscount discount = discountOpt.get();
-                if ("Trong tuần".equals(dayType) && discount.getFixedPriceWeekday() != null && discount.getFixedPriceWeekday() > 0) {
-                    finalPriceVal = discount.getFixedPriceWeekday() + seatSurchargeVal + formatSurchargeVal;
-                    discountAmountVal = subtotal - finalPriceVal;
-                } else {
-                    finalPriceVal = subtotal * (1 - discount.getDiscountRate());
-                    discountAmountVal = subtotal * discount.getDiscountRate();
+                
+                // Chỉ áp dụng giảm giá nếu tổng tiền vé chưa giảm >= ngưỡng tối thiểu để áp dụng
+                if (subtotal >= discount.getMinPriceToApply()) {
+                    if ("Trong tuần".equalsIgnoreCase(dayType) && discount.getFixedPriceWeekday() != null && discount.getFixedPriceWeekday() > 0) {
+                        double flatPrice = discount.getFixedPriceWeekday() + seatSurchargeVal + formatSurchargeVal;
+                        double potentialDiscount = subtotal - flatPrice;
+                        if (potentialDiscount > 0) {
+                            discountAmountVal = potentialDiscount;
+                        }
+                    } else {
+                        discountAmountVal = subtotal * discount.getDiscountRate();
+                    }
+
+                    // Giới hạn số tiền giảm tối đa của vé
+                    if (discountAmountVal > discount.getMaxDiscountAmount()) {
+                        discountAmountVal = discount.getMaxDiscountAmount();
+                    }
+
+                    finalPriceVal = subtotal - discountAmountVal;
                 }
             }
         }

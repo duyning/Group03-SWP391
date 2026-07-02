@@ -144,58 +144,150 @@ public class TicketApiController {
         return ResponseEntity.ok(data);
     }
 
+    @GetMapping("/price-calculation")
+    public ResponseEntity<?> getPriceCalculation(@RequestParam("showtimeId") Long showtimeId,
+                                                 @RequestParam("seatId") Long seatId,
+                                                 @RequestParam("customerType") String customerType) {
+        try {
+            return ResponseEntity.ok(ticketService.getPriceBreakdownForSeat(showtimeId, seatId, customerType));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/configs/base")
     public ResponseEntity<?> updateBasePrice(@RequestBody TicketPriceConfig req) {
-        Optional<TicketPriceConfig> configOpt = ticketPriceConfigRepository.findById(req.getId());
-        if (!configOpt.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
+        if (req.getId() != null) {
+            Optional<TicketPriceConfig> configOpt = ticketPriceConfigRepository.findById(req.getId());
+            if (!configOpt.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
+            }
+            TicketPriceConfig config = configOpt.get();
+            config.setDayType(req.getDayType());
+            config.setSlotName(req.getSlotName());
+            config.setStartTime(req.getStartTime());
+            config.setEndTime(req.getEndTime());
+            config.setBasePrice(req.getBasePrice());
+            config.setMovieId(req.getMovieId());
+            config.setNote(req.getNote());
+            return ResponseEntity.ok(ticketPriceConfigRepository.save(config));
+        } else {
+            List<TicketPriceConfig> all = ticketPriceConfigRepository.findAll();
+            Optional<TicketPriceConfig> existing = all.stream()
+                .filter(c -> c.getDayType().equals(req.getDayType()) 
+                          && c.getSlotName().equals(req.getSlotName())
+                          && java.util.Objects.equals(c.getMovieId(), req.getMovieId()))
+                .findFirst();
+            if (existing.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", 
+                    "Cấu hình cho loại ngày/ngày '" + req.getDayType() + "', khung giờ '" + req.getSlotName() + 
+                    "' và " + (req.getMovieId() != null ? "phim này" : "mọi phim") + " đã tồn tại!"));
+            }
+            return ResponseEntity.ok(ticketPriceConfigRepository.save(req));
         }
-        TicketPriceConfig config = configOpt.get();
-        config.setBasePrice(req.getBasePrice());
-        return ResponseEntity.ok(ticketPriceConfigRepository.save(config));
+    }
+
+    @DeleteMapping("/configs/base/{id}")
+    public ResponseEntity<?> deleteBasePrice(@PathVariable("id") Long id) {
+        try {
+            ticketPriceConfigRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Không thể xóa cấu hình này!"));
+        }
     }
 
     @PostMapping("/configs/seats")
     public ResponseEntity<?> updateSeatSurcharge(@RequestBody SeatTypeSurcharge req) {
-        Optional<SeatTypeSurcharge> surchargeOpt = seatTypeSurchargeRepository.findBySeatTypeCode(req.getSeatTypeCode());
-        if (!surchargeOpt.isPresent()) {
-            surchargeOpt = seatTypeSurchargeRepository.findById(req.getId());
+        if (req.getId() != null) {
+            Optional<SeatTypeSurcharge> surchargeOpt = seatTypeSurchargeRepository.findById(req.getId());
+            if (!surchargeOpt.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
+            }
+            SeatTypeSurcharge surcharge = surchargeOpt.get();
+            surcharge.setSeatTypeCode(req.getSeatTypeCode());
+            surcharge.setSurchargeAmount(req.getSurchargeAmount());
+            return ResponseEntity.ok(seatTypeSurchargeRepository.save(surcharge));
+        } else {
+            Optional<SeatTypeSurcharge> existing = seatTypeSurchargeRepository.findBySeatTypeCode(req.getSeatTypeCode());
+            if (existing.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Mã loại ghế '" + req.getSeatTypeCode() + "' đã có cấu hình phụ thu!"));
+            }
+            return ResponseEntity.ok(seatTypeSurchargeRepository.save(req));
         }
-        if (!surchargeOpt.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
+    }
+
+    @DeleteMapping("/configs/seats/{id}")
+    public ResponseEntity<?> deleteSeatSurcharge(@PathVariable("id") Long id) {
+        try {
+            seatTypeSurchargeRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Không thể xóa phụ thu loại ghế này!"));
         }
-        SeatTypeSurcharge surcharge = surchargeOpt.get();
-        surcharge.setSurchargeAmount(req.getSurchargeAmount());
-        return ResponseEntity.ok(seatTypeSurchargeRepository.save(surcharge));
     }
 
     @PostMapping("/configs/formats")
     public ResponseEntity<?> updateFormatSurcharge(@RequestBody FormatSurcharge req) {
-        Optional<FormatSurcharge> surchargeOpt = formatSurchargeRepository.findByFormatCode(req.getFormatCode());
-        if (!surchargeOpt.isPresent()) {
-            surchargeOpt = formatSurchargeRepository.findById(req.getId());
+        if (req.getId() != null) {
+            Optional<FormatSurcharge> surchargeOpt = formatSurchargeRepository.findById(req.getId());
+            if (!surchargeOpt.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
+            }
+            FormatSurcharge surcharge = surchargeOpt.get();
+            surcharge.setFormatCode(req.getFormatCode());
+            surcharge.setSurchargeAmount(req.getSurchargeAmount());
+            return ResponseEntity.ok(formatSurchargeRepository.save(surcharge));
+        } else {
+            Optional<FormatSurcharge> existing = formatSurchargeRepository.findByFormatCode(req.getFormatCode());
+            if (existing.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Mã định dạng '" + req.getFormatCode() + "' đã có cấu hình phụ thu!"));
+            }
+            return ResponseEntity.ok(formatSurchargeRepository.save(req));
         }
-        if (!surchargeOpt.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
+    }
+
+    @DeleteMapping("/configs/formats/{id}")
+    public ResponseEntity<?> deleteFormatSurcharge(@PathVariable("id") Long id) {
+        try {
+            formatSurchargeRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Không thể xóa phụ thu định dạng này!"));
         }
-        FormatSurcharge surcharge = surchargeOpt.get();
-        surcharge.setSurchargeAmount(req.getSurchargeAmount());
-        return ResponseEntity.ok(formatSurchargeRepository.save(surcharge));
     }
 
     @PostMapping("/configs/discounts")
     public ResponseEntity<?> updateCustomerDiscount(@RequestBody CustomerDiscount req) {
-        Optional<CustomerDiscount> discountOpt = customerDiscountRepository.findByCustomerType(req.getCustomerType());
-        if (!discountOpt.isPresent()) {
-            discountOpt = customerDiscountRepository.findById(req.getId());
+        if (req.getId() != null) {
+            Optional<CustomerDiscount> discountOpt = customerDiscountRepository.findById(req.getId());
+            if (!discountOpt.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
+            }
+            CustomerDiscount discount = discountOpt.get();
+            discount.setCustomerType(req.getCustomerType());
+            discount.setDiscountRate(req.getDiscountRate());
+            discount.setFixedPriceWeekday(req.getFixedPriceWeekday());
+            discount.setMinPriceToApply(req.getMinPriceToApply());
+            discount.setMaxDiscountAmount(req.getMaxDiscountAmount());
+            return ResponseEntity.ok(customerDiscountRepository.save(discount));
+        } else {
+            Optional<CustomerDiscount> existing = customerDiscountRepository.findByCustomerType(req.getCustomerType());
+            if (existing.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Đối tượng '" + req.getCustomerType() + "' đã có cấu hình chiết khấu!"));
+            }
+            return ResponseEntity.ok(customerDiscountRepository.save(req));
         }
-        if (!discountOpt.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
+    }
+
+    @DeleteMapping("/configs/discounts/{id}")
+    public ResponseEntity<?> deleteCustomerDiscount(@PathVariable("id") Long id) {
+        try {
+            customerDiscountRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Không thể xóa chiết khấu đối tượng này!"));
         }
-        CustomerDiscount discount = discountOpt.get();
-        discount.setDiscountRate(req.getDiscountRate());
-        discount.setFixedPriceWeekday(req.getFixedPriceWeekday());
-        return ResponseEntity.ok(customerDiscountRepository.save(discount));
     }
 
     @GetMapping("/search")

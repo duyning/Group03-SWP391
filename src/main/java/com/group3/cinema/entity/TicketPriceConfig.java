@@ -10,8 +10,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "ticket_price_configs",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"day_type", "slot_name"}))
+@Table(name = "ticket_price_configs")
 public class TicketPriceConfig {
 
     @Id
@@ -34,6 +33,12 @@ public class TicketPriceConfig {
 
     @Column(name = "base_price", nullable = false)
     private double basePrice;
+
+    @Column(name = "movie_id", nullable = true)
+    private Long movieId;
+
+    @Column(name = "note", columnDefinition = "NVARCHAR(100) NULL")
+    private String note;
 
     public TicketPriceConfig() {}
 
@@ -62,4 +67,10 @@ public class TicketPriceConfig {
 
     public double getBasePrice() { return basePrice; }
     public void setBasePrice(double basePrice) { this.basePrice = basePrice; }
+
+    public Long getMovieId() { return movieId; }
+    public void setMovieId(Long movieId) { this.movieId = movieId; }
+
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 }

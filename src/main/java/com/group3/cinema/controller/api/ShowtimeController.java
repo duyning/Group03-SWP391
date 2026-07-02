@@ -73,6 +73,11 @@ public class ShowtimeController {
 
         private List<Long> groupIds;
 
+        private List<LocalTime> showTimes;
+
+        public List<LocalTime> getShowTimes() { return showTimes; }
+        public void setShowTimes(List<LocalTime> showTimes) { this.showTimes = showTimes; }
+
         public Long getMovieId() { return movieId; }
         public void setMovieId(Long movieId) { this.movieId = movieId; }
 
@@ -130,14 +135,26 @@ public class ShowtimeController {
         try {
             if (req.getMovieId() != null && req.getStartDate() != null) {
                 // Chế độ thêm hàng loạt theo dải ngày
-                List<Showtime> saved = showtimeService.saveShowtimeBatch(
-                        req.getMovieId(),
-                        req.getStartDate(),
-                        req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
-                        req.getShowTime(),
-                        req.getRoom(),
-                        req.getSlotCount()
-                );
+                List<Showtime> saved;
+                if (req.getShowTimes() != null && !req.getShowTimes().isEmpty()) {
+                    saved = showtimeService.saveShowtimeBatch(
+                            req.getMovieId(),
+                            req.getStartDate(),
+                            req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
+                            req.getShowTimes(),
+                            req.getRoom(),
+                            false
+                    );
+                } else {
+                    saved = showtimeService.saveShowtimeBatch(
+                            req.getMovieId(),
+                            req.getStartDate(),
+                            req.getEndDate() != null ? req.getEndDate() : req.getStartDate(),
+                            req.getShowTime(),
+                            req.getRoom(),
+                            req.getSlotCount()
+                    );
+                }
                 return ResponseEntity.ok(saved);
             } else {
                 // Chế độ đơn (backward-compatible)

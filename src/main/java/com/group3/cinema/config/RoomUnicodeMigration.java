@@ -42,6 +42,33 @@ public class RoomUnicodeMigration {
             // [SỬA - TrienLX - 2026-06-30]: Thêm cột deleted vào bảng tickets nếu chưa có
             addTicketDeletedColumnIfMissing();
             addTicketColumnsIfMissing();
+            
+            // [THÊM - TrienLX - 2026-07-02]: Cột movie_id cho cấu hình giá phim riêng và ngưỡng áp dụng/tối đa chiết khấu đối tượng
+            addColumnIfMissing("ticket_price_configs", "movie_id", "BIGINT NULL");
+            addColumnIfMissing("ticket_price_configs", "note", "NVARCHAR(100) NULL");
+            addColumnIfMissing("customer_discounts", "min_price_to_apply", "FLOAT NOT NULL DEFAULT 0.0");
+            addColumnIfMissing("customer_discounts", "max_discount_amount", "FLOAT NOT NULL DEFAULT 999999.0");
+
+            // Xóa unique index/constraint cũ trên ticket_price_configs để cho phép cấu hình giá riêng theo phim
+            try {
+                jdbcTemplate.execute("DECLARE @constraintName NVARCHAR(256)\n" +
+                        "SELECT @constraintName = name\n" +
+                        "FROM sys.key_constraints\n" +
+                        "WHERE parent_object_id = OBJECT_ID('ticket_price_configs') AND type = 'UQ'\n" +
+                        "IF @constraintName IS NOT NULL\n" +
+                        "    EXEC('ALTER TABLE ticket_price_configs DROP CONSTRAINT [' + @constraintName + ']')");
+                
+                jdbcTemplate.execute("DECLARE @indexName NVARCHAR(256)\n" +
+                        "SELECT @indexName = name\n" +
+                        "FROM sys.indexes\n" +
+                        "WHERE object_id = OBJECT_ID('ticket_price_configs') AND is_unique = 1 AND is_primary_key = 0\n" +
+                        "IF @indexName IS NOT NULL\n" +
+                        "    EXEC('DROP INDEX [' + @indexName + '] ON ticket_price_configs')");
+                log.info("[TrienLX - 2026-07-02] Đã dọn dẹp unique index/constraint trên ticket_price_configs");
+            } catch (Exception e) {
+                log.warn("Không thể xóa unique constraint/index trên ticket_price_configs: {}", e.getMessage());
+            }
+
             migrateTextColumns();
             normalizeVietnameseValues();
             // [SỬA - TrienLX - 2026-06-23]: Sửa constraint kiểm tra cột status của bảng movie
@@ -255,6 +282,8 @@ public class RoomUnicodeMigration {
         alterColumn("ticket_price_configs", "day_type", "NVARCHAR(30) NOT NULL");
         alterColumn("ticket_price_configs", "slot_name", "NVARCHAR(30) NOT NULL");
         alterColumn("customer_discounts", "customer_type", "NVARCHAR(50) NOT NULL");
+        alterColumn("seat_type_surcharges", "seat_type_code", "NVARCHAR(30) NOT NULL");
+        alterColumn("format_surcharges", "format_code", "NVARCHAR(30) NOT NULL");
     }
 
     /**
@@ -404,12 +433,18 @@ public class RoomUnicodeMigration {
 
     private void seedPricingConfigs() {
         try {
-            // [SỬA - TrienLX - 2026-06-30]: Dọn dẹp các bản ghi bị lỗi hỏi chấm (broken Unicode) trước khi seed
+            // [SỬA - TrienLX - 2026-07-02]: Dọn dẹp các bản ghi bị lỗi hỏi chấm (broken Unicode) trước khi seed bằng CHARINDEX để tránh JDBC parameter placeholder issue
             if (tableExists("ticket_price_configs")) {
-                jdbcTemplate.execute("DELETE FROM ticket_price_configs WHERE day_type LIKE '%?%' OR slot_name LIKE '%?%'");
+                jdbcTemplate.execute("DELETE FROM ticket_price_configs WHERE CHARINDEX('?', day_type) > 0 OR CHARINDEX('?', slot_name) > 0");
             }
             if (tableExists("customer_discounts")) {
-                jdbcTemplate.execute("DELETE FROM customer_discounts WHERE customer_type LIKE '%?%'");
+                jdbcTemplate.execute("DELETE FROM customer_discounts WHERE CHARINDEX('?', customer_type) > 0");
+            }
+            if (tableExists("seat_type_surcharges")) {
+                jdbcTemplate.execute("DELETE FROM seat_type_surcharges WHERE CHARINDEX('?', seat_type_code) > 0");
+            }
+            if (tableExists("format_surcharges")) {
+                jdbcTemplate.execute("DELETE FROM format_surcharges WHERE CHARINDEX('?', format_code) > 0");
             }
 
             // 1. Seed ticket_price_configs
