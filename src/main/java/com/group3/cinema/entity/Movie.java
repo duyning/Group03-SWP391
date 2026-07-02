@@ -98,6 +98,8 @@ public class Movie {
      */
     private boolean active = true;
 
+    private boolean deleted = false;
+
     public Movie() {
     }
 
@@ -259,6 +261,14 @@ public class Movie {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 
     public enum MovieStatus {

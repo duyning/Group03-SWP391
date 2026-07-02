@@ -26,6 +26,12 @@ public class CustomerDiscount {
     @Column(name = "fixed_price_weekday")
     private Double fixedPriceWeekday; // Đồng giá ngày thường (nếu có, e.g., 55000.0)
 
+    @Column(name = "min_price_to_apply", nullable = false)
+    private double minPriceToApply = 0.0;
+
+    @Column(name = "max_discount_amount", nullable = false)
+    private double maxDiscountAmount = 999999.0;
+
     public CustomerDiscount() {
     }
 
@@ -65,5 +71,21 @@ public class CustomerDiscount {
 
     public void setFixedPriceWeekday(Double fixedPriceWeekday) {
         this.fixedPriceWeekday = fixedPriceWeekday;
+    }
+
+    public double getMinPriceToApply() {
+        return minPriceToApply;
+    }
+
+    public void setMinPriceToApply(double minPriceToApply) {
+        this.minPriceToApply = minPriceToApply;
+    }
+
+    public double getMaxDiscountAmount() {
+        return maxDiscountAmount;
+    }
+
+    public void setMaxDiscountAmount(double maxDiscountAmount) {
+        this.maxDiscountAmount = maxDiscountAmount;
     }
 }

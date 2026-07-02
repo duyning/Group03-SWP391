@@ -5,6 +5,7 @@ package com.group3.cinema.entity;
  * Created/updated by: NinhDD - HE186113, TrienLX
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -38,6 +39,7 @@ public class Ticket {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "showtime_id")
+    @JsonIgnoreProperties({"movie", "room", "dayType", "note", "override", "active"})
     private Showtime showtime;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -62,14 +64,29 @@ public class Ticket {
     @Column(name = "show_time")
     private LocalTime showTime;
 
-    @Column(name = "base_price")
+    @Column(name = "base_price", nullable = false)
     private double basePrice;
 
     @Column(name = "price", nullable = false)
     private double price;
 
+    @Column(name = "seat_surcharge", nullable = false)
+    private double seatSurcharge;
+
+    @Column(name = "format_surcharge", nullable = false)
+    private double formatSurcharge;
+
+    @Column(name = "discount_amount", nullable = false)
+    private double discountAmount;
+
+    @Column(name = "final_price", nullable = false)
+    private double finalPrice;
+
     @Column(name = "booking_time")
     private LocalDateTime bookingTime;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
     private String status = "CONFIRMED";
@@ -77,11 +94,20 @@ public class Ticket {
     @Column(name = "customer_type", columnDefinition = "NVARCHAR(30)")
     private String customerType = "ADULT";
 
+    @Column(name = "customer_name", columnDefinition = "NVARCHAR(255)")
+    private String customerName;
+
+    @Column(name = "customer_phone", columnDefinition = "NVARCHAR(50)")
+    private String customerPhone;
+
     @Column(name = "payment_method", columnDefinition = "NVARCHAR(50)")
     private String paymentMethod;
 
     @Column(name = "booking_code", columnDefinition = "NVARCHAR(50)")
     private String bookingCode;
+
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted = false;
 
     public Ticket() {
     }
@@ -116,6 +142,12 @@ public class Ticket {
 
     public void setShowtime(Showtime showtime) {
         this.showtime = showtime;
+        if (showtime != null) {
+            this.movie = showtime.getMovie();
+            this.roomName = showtime.getRoom();
+            this.showDate = showtime.getShowDate();
+            this.showTime = showtime.getShowTime();
+        }
     }
 
     public Seat getSeat() {
@@ -124,6 +156,9 @@ public class Ticket {
 
     public void setSeat(Seat seat) {
         this.seat = seat;
+        if (seat != null) {
+            setSeatNumber(seat.getSeatLabel());
+        }
     }
 
     public String getRoomName() {
@@ -194,14 +229,49 @@ public class Ticket {
 
     public void setPrice(double price) {
         this.price = price;
+        if (this.finalPrice <= 0) {
+            this.finalPrice = price;
+        }
     }
 
     public void setPrice(BigDecimal price) {
-        this.price = price != null ? price.doubleValue() : 0.0;
+        setPrice(price != null ? price.doubleValue() : 0.0);
     }
 
     public BigDecimal getPriceAsBigDecimal() {
         return BigDecimal.valueOf(price);
+    }
+
+    public double getSeatSurcharge() {
+        return seatSurcharge;
+    }
+
+    public void setSeatSurcharge(double seatSurcharge) {
+        this.seatSurcharge = seatSurcharge;
+    }
+
+    public double getFormatSurcharge() {
+        return formatSurcharge;
+    }
+
+    public void setFormatSurcharge(double formatSurcharge) {
+        this.formatSurcharge = formatSurcharge;
+    }
+
+    public double getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(double discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
+    public double getFinalPrice() {
+        return finalPrice > 0 ? finalPrice : price;
+    }
+
+    public void setFinalPrice(double finalPrice) {
+        this.finalPrice = finalPrice;
     }
 
     public LocalDateTime getBookingTime() {
@@ -210,6 +280,17 @@ public class Ticket {
 
     public void setBookingTime(LocalDateTime bookingTime) {
         this.bookingTime = bookingTime;
+        if (this.createdAt == null) {
+            this.createdAt = bookingTime;
+        }
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public String getStatus() {
@@ -228,6 +309,22 @@ public class Ticket {
         this.customerType = customerType;
     }
 
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+
     public String getPaymentMethod() {
         return paymentMethod;
     }
@@ -244,6 +341,14 @@ public class Ticket {
         this.bookingCode = bookingCode;
     }
 
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
     public String getStatusDisplayName() {
         if (status == null) {
             return "Không xác định";
@@ -252,6 +357,9 @@ public class Ticket {
             case "CONFIRMED" -> "Đã xác nhận";
             case "USED" -> "Đã sử dụng";
             case "CANCELLED" -> "Đã hủy";
+            case "BOOKED" -> "Đã bán";
+            case "PENDING" -> "Đang giữ";
+            case "REFUNDED" -> "Đã hoàn";
             case "Còn trống" -> "Còn trống";
             case "Đã bán" -> "Đã bán";
             default -> status;

@@ -112,10 +112,46 @@ public class MovieService {
 
     @Transactional
     public Movie saveMovie(Movie movie) {
-        validateMovie(movie, 0);
-        Movie savedMovie = movieRepository.save(movie);
-        saveSuggestions(savedMovie);
-        return savedMovie;
+        Optional<Movie> softDeletedOpt = movieRepository.findSoftDeletedByTitle(movie.getTitle().trim());
+        if (softDeletedOpt.isPresent()) {
+            Movie existing = softDeletedOpt.get();
+            existing.setTrailerUrl(movie.getTrailerUrl());
+            existing.setSummary(movie.getSummary());
+            existing.setGenre(movie.getGenre());
+            existing.setDuration(movie.getDuration());
+            existing.setDirector(movie.getDirector());
+            existing.setLanguage(movie.getLanguage());
+            existing.setActors(movie.getActors());
+            existing.setPosterUrl(movie.getPosterUrl());
+            existing.setReleaseDate(movie.getReleaseDate());
+            existing.setBannerUrl(movie.getBannerUrl());
+            existing.setAgeRating(movie.getAgeRating());
+            existing.setReleaseYear(movie.getReleaseYear());
+            existing.setProducer(movie.getProducer());
+            existing.setFormat(movie.getFormat());
+            
+            // Khôi phục trạng thái hoạt động
+            existing.setActive(true);
+            existing.setDeleted(false);
+            
+            // Tính trạng thái phim theo ngày hiện tại
+            LocalDate today = LocalDate.now();
+            if (movie.getReleaseDate() != null && movie.getReleaseDate().isAfter(today)) {
+                existing.setStatus(Movie.MovieStatus.COMING_SOON);
+            } else {
+                existing.setStatus(Movie.MovieStatus.NOW_SHOWING);
+            }
+            
+            validateMovie(existing, existing.getId()); // validate sử dụng chính ID của nó để loại trừ trùng lặp tự thân
+            Movie savedMovie = movieRepository.save(existing);
+            saveSuggestions(savedMovie);
+            return savedMovie;
+        } else {
+            validateMovie(movie, 0);
+            Movie savedMovie = movieRepository.save(movie);
+            saveSuggestions(savedMovie);
+            return savedMovie;
+        }
     }
 
     @Transactional
@@ -154,7 +190,7 @@ public class MovieService {
     @Transactional
     public void deleteMovie(Integer id) {
         movieRepository.findById(id).ifPresent(movie -> {
-            // [SỬA - TrienLX - 2026-06-23]: Khi xóa mềm phim, set active = false và đồng bộ trạng thái STOPPED
+            movie.setDeleted(true);
             movie.setActive(false);
             movie.setStatus(Movie.MovieStatus.STOPPED);
             movieRepository.save(movie);
@@ -209,6 +245,6 @@ public class MovieService {
                 Movie.MovieStatus.COMING_SOON
         );
         // [SỬA - TrienLX - 2026-06-23]: Truyền thêm tham số MovieStatus.STOPPED để cập nhật trạng thái trong SQL an toàn
-        movieRepository.autoDeactivateExpiredMovies(today, Movie.MovieStatus.STOPPED);
+        movieRepository.autoDeactivateExpiredMovies(today, today.minusDays(7), Movie.MovieStatus.STOPPED);
     }
 }

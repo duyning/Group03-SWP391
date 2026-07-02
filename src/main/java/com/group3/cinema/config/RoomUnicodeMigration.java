@@ -39,8 +39,11 @@ public class RoomUnicodeMigration {
         runMigrationStep("migrate combo pricing columns", this::migrateComboPricingColumns);
         runMigrationStep("seed default food items", this::seedDefaultFoodItems);
         runMigrationStep("add showtime override column", this::addShowtimeOverrideColumnIfMissing);
+        runMigrationStep("add showtime active column", this::addShowtimeActiveColumnIfMissing);
         runMigrationStep("add ticket base price column", this::addTicketBasePriceColumnIfMissing);
         runMigrationStep("migrate ticket columns", this::migrateTicketColumns);
+        runMigrationStep("migrate ticket pricing config columns", this::migrateTicketPricingConfigColumns);
+        runMigrationStep("cleanup ticket pricing unique constraints", this::cleanupTicketPricingUniqueConstraints);
         runMigrationStep("migrate text columns", this::migrateTextColumns);
         runMigrationStep("normalize Vietnamese values", this::normalizeVietnameseValues);
         runMigrationStep("fix movie status constraint", this::fixMovieStatusConstraint);
@@ -83,6 +86,14 @@ public class RoomUnicodeMigration {
         addColumnIfMissing("tickets", "seat_id", "BIGINT NULL");
         addColumnIfMissing("tickets", "seat_number", "NVARCHAR(20) NULL");
         addColumnIfMissing("tickets", "customer_type", "NVARCHAR(30) NULL");
+        addColumnIfMissing("tickets", "deleted", "BIT NOT NULL DEFAULT 0");
+        addColumnIfMissing("tickets", "seat_surcharge", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("tickets", "format_surcharge", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("tickets", "discount_amount", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("tickets", "final_price", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("tickets", "created_at", "DATETIME2 NULL");
+        addColumnIfMissing("tickets", "customer_name", "NVARCHAR(255) NULL");
+        addColumnIfMissing("tickets", "customer_phone", "NVARCHAR(50) NULL");
 
         alterColumn("tickets", "room_name", "NVARCHAR(100) NULL");
         alterColumn("tickets", "seat_label", "NVARCHAR(20) NULL");
@@ -134,6 +145,7 @@ public class RoomUnicodeMigration {
                 log.warn("Không thể bổ sung cột producer: {}", e.getMessage());
             }
         }
+        addColumnIfMissing("movie", "deleted", "BIT NOT NULL DEFAULT 0");
     }
 
     private void addAccountDobColumnIfMissing() {
@@ -196,6 +208,46 @@ public class RoomUnicodeMigration {
             } catch (Exception e) {
                 log.warn("[TrienLX - 2026-06-23] Không thể bổ sung cột is_override: {}", e.getMessage());
             }
+        }
+    }
+
+    private void addShowtimeActiveColumnIfMissing() {
+        addColumnIfMissing("showtimes", "active", "BIT NOT NULL DEFAULT 1");
+    }
+
+    private void migrateTicketPricingConfigColumns() {
+        addColumnIfMissing("ticket_price_configs", "movie_id", "BIGINT NULL");
+        addColumnIfMissing("ticket_price_configs", "note", "NVARCHAR(100) NULL");
+        addColumnIfMissing("customer_discounts", "min_price_to_apply", "FLOAT NOT NULL DEFAULT 0.0");
+        addColumnIfMissing("customer_discounts", "max_discount_amount", "FLOAT NOT NULL DEFAULT 999999.0");
+    }
+
+    private void cleanupTicketPricingUniqueConstraints() {
+        if (!tableExists("ticket_price_configs")) {
+            return;
+        }
+
+        try {
+            jdbcTemplate.execute("""
+                    DECLARE @constraintName NVARCHAR(256)
+                    SELECT @constraintName = name
+                    FROM sys.key_constraints
+                    WHERE parent_object_id = OBJECT_ID('ticket_price_configs') AND type = 'UQ'
+                    IF @constraintName IS NOT NULL
+                        EXEC('ALTER TABLE ticket_price_configs DROP CONSTRAINT [' + @constraintName + ']')
+                    """);
+            jdbcTemplate.execute("""
+                    DECLARE @indexName NVARCHAR(256)
+                    SELECT @indexName = name
+                    FROM sys.indexes
+                    WHERE object_id = OBJECT_ID('ticket_price_configs')
+                      AND is_unique = 1
+                      AND is_primary_key = 0
+                    IF @indexName IS NOT NULL
+                        EXEC('DROP INDEX [' + @indexName + '] ON ticket_price_configs')
+                    """);
+        } catch (Exception e) {
+            log.warn("Không thể xóa unique constraint/index trên ticket_price_configs: {}", e.getMessage());
         }
     }
 
@@ -353,6 +405,13 @@ public class RoomUnicodeMigration {
         alterColumn("promotions", "how_to_join", "NVARCHAR(1000) NOT NULL");
         alterColumn("promotions", "banner_image", "NVARCHAR(500) NULL");
         alterColumn("promotions", "status", "NVARCHAR(20) NOT NULL");
+
+        alterColumn("ticket_price_configs", "day_type", "NVARCHAR(30) NOT NULL");
+        alterColumn("ticket_price_configs", "slot_name", "NVARCHAR(30) NOT NULL");
+        alterColumn("ticket_price_configs", "note", "NVARCHAR(100) NULL");
+        alterColumn("customer_discounts", "customer_type", "NVARCHAR(50) NOT NULL");
+        alterColumn("seat_type_surcharges", "seat_type_code", "NVARCHAR(30) NOT NULL");
+        alterColumn("format_surcharges", "format_code", "NVARCHAR(30) NOT NULL");
     }
 
     /**
@@ -517,6 +576,19 @@ public class RoomUnicodeMigration {
      */
     private void seedPricingConfigs() {
         try {
+            if (tableExists("ticket_price_configs")) {
+                jdbcTemplate.execute("DELETE FROM ticket_price_configs WHERE CHARINDEX('?', day_type) > 0 OR CHARINDEX('?', slot_name) > 0");
+            }
+            if (tableExists("customer_discounts")) {
+                jdbcTemplate.execute("DELETE FROM customer_discounts WHERE CHARINDEX('?', customer_type) > 0");
+            }
+            if (tableExists("seat_type_surcharges")) {
+                jdbcTemplate.execute("DELETE FROM seat_type_surcharges WHERE CHARINDEX('?', seat_type_code) > 0");
+            }
+            if (tableExists("format_surcharges")) {
+                jdbcTemplate.execute("DELETE FROM format_surcharges WHERE CHARINDEX('?', format_code) > 0");
+            }
+
             // 1. Seed ticket_price_configs
             if (tableExists("ticket_price_configs")) {
                 Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ticket_price_configs", Integer.class);

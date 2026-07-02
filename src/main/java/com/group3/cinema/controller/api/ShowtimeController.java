@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.service.api.ShowtimeService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +35,6 @@ public class ShowtimeController {
 
     private final ShowtimeService showtimeService;
 
-    @Autowired
     public ShowtimeController(ShowtimeService showtimeService) {
         this.showtimeService = showtimeService;
     }
@@ -57,6 +55,7 @@ public class ShowtimeController {
         @JsonFormat(pattern = "HH:mm:ss")
         private LocalTime showTime;
 
+        private List<LocalTime> showTimes;
         private String room;
         private Integer slotCount;
         private List<Long> groupIds;
@@ -78,6 +77,9 @@ public class ShowtimeController {
 
         public LocalTime getShowTime() { return showTime; }
         public void setShowTime(LocalTime showTime) { this.showTime = showTime; }
+
+        public List<LocalTime> getShowTimes() { return showTimes; }
+        public void setShowTimes(List<LocalTime> showTimes) { this.showTimes = showTimes; }
 
         public String getRoom() { return room; }
         public void setRoom(String room) { this.room = room; }
@@ -145,20 +147,29 @@ public class ShowtimeController {
             Long movieId = resolveMovieId(req);
             LocalDate startDate = resolveStartDate(req);
 
+            if (req.getShowTimes() != null && !req.getShowTimes().isEmpty()) {
+                return ResponseEntity.ok(showtimeService.saveShowtimeBatch(
+                        movieId,
+                        startDate,
+                        req.getEndDate() != null ? req.getEndDate() : startDate,
+                        req.getShowTimes(),
+                        req.getRoom(),
+                        false
+                ));
+            }
+
             if (req.getEndDate() != null || req.getSlotCount() != null || req.getStartDate() != null) {
-                List<Showtime> saved = showtimeService.saveShowtimeBatch(
+                return ResponseEntity.ok(showtimeService.saveShowtimeBatch(
                         movieId,
                         startDate,
                         req.getEndDate() != null ? req.getEndDate() : startDate,
                         req.getShowTime(),
                         req.getRoom(),
                         req.getSlotCount()
-                );
-                return ResponseEntity.ok(saved);
+                ));
             }
 
-            Showtime showtime = toShowtime(req);
-            return ResponseEntity.ok(showtimeService.saveShowtime(showtime));
+            return ResponseEntity.ok(showtimeService.saveShowtime(toShowtime(req)));
         } catch (IllegalArgumentException | IllegalStateException ex) {
             return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
         } catch (Exception ex) {
@@ -170,7 +181,8 @@ public class ShowtimeController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateShowtime(@PathVariable("id") Long id, @RequestBody ShowtimeRequest req) {
         try {
-            if (req.getGroupIds() != null || req.getStartDate() != null || req.getEndDate() != null) {
+            if (req.getGroupIds() != null || req.getStartDate() != null || req.getEndDate() != null
+                    || (req.getShowTimes() != null && !req.getShowTimes().isEmpty())) {
                 req.setMovieId(resolveMovieId(req));
                 req.setStartDate(resolveStartDate(req));
                 if (req.getEndDate() == null) {
@@ -182,8 +194,6 @@ public class ShowtimeController {
             return ResponseEntity.ok(showtimeService.updateShowtime(id, toShowtime(req)));
         } catch (IllegalArgumentException | IllegalStateException ex) {
             return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
-        } catch (RuntimeException ex) {
-            return ResponseEntity.notFound().build();
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(errorBody("Lỗi hệ thống: " + ex.getMessage()));
@@ -193,12 +203,16 @@ public class ShowtimeController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteShowtime(@PathVariable("id") Long id) {
         try {
-            showtimeService.deleteShowtime(id);
+            boolean softDeleted = showtimeService.deleteShowtime(id);
+            if (softDeleted) {
+                return ResponseEntity.ok(Map.of(
+                        "softDeleted", true,
+                        "message", "Lịch chiếu đã được ẩn vì đã có vé."
+                ));
+            }
             return ResponseEntity.noContent().build();
-        } catch (IllegalStateException ex) {
-            return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(errorBody("Lỗi khi xóa suất chiếu: " + ex.getMessage()));
         }
     }
 

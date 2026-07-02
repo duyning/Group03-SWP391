@@ -67,6 +67,8 @@ public class Showtime {
     @Column(name = "is_override", nullable = false)
     private boolean isOverride = false;
 
+    private boolean active = true;
+
     public Showtime() {
     }
 
@@ -143,5 +145,13 @@ public class Showtime {
 
     public void setOverride(boolean isOverride) {
         this.isOverride = isOverride;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

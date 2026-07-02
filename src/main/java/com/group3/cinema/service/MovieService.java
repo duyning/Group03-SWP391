@@ -134,7 +134,7 @@ public class MovieService {
                 Movie.MovieStatus.NOW_SHOWING,
                 Movie.MovieStatus.COMING_SOON
         );
-        movieRepository.autoDeactivateExpiredMovies(today, Movie.MovieStatus.STOPPED);
+        movieRepository.autoDeactivateExpiredMovies(today, today.minusDays(7), Movie.MovieStatus.STOPPED);
     }
 
     private String trimToNull(String value) {

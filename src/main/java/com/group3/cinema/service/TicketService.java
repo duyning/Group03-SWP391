@@ -24,8 +24,9 @@ import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,66 +74,102 @@ public class TicketService {
         if (time == null) {
             return "Giờ thường";
         }
-        if (time.isBefore(LocalTime.of(12, 0))) {
+        int hour = time.getHour();
+        if (hour < 12) {
             return "Suất sớm";
         }
-        if (time.isBefore(LocalTime.of(17, 0))) {
+        if (hour < 17) {
             return "Giờ thường";
         }
-        if (time.isBefore(LocalTime.of(22, 0))) {
+        if (hour < 22) {
             return "Giờ vàng";
         }
         return "Suất khuya";
     }
 
     public double calculatePrice(Showtime showtime, Seat seat, String customerType) {
-        String dayType = showtime.getDayType();
-        if (dayType == null || dayType.isBlank()) {
-            dayType = "Trong tuần";
-        }
-
-        String slotName = determineTimeSlot(showtime.getShowTime());
-        double basePrice = resolveBasePrice(dayType, slotName);
-        double seatSurcharge = resolveSeatSurcharge(seat);
-        double formatSurcharge = resolveFormatSurcharge(showtime);
-        double finalPrice = basePrice + seatSurcharge + formatSurcharge;
-
-        if (customerType != null && !"ADULT".equalsIgnoreCase(customerType)) {
-            Optional<CustomerDiscount> discountOpt = customerDiscountRepository.findByCustomerType(customerType);
-            if (discountOpt.isPresent()) {
-                CustomerDiscount discount = discountOpt.get();
-                if ("Trong tuần".equals(dayType)
-                        && discount.getFixedPriceWeekday() != null
-                        && discount.getFixedPriceWeekday() > 0) {
-                    finalPrice = discount.getFixedPriceWeekday() + seatSurcharge + formatSurcharge;
-                } else {
-                    finalPrice = finalPrice * (1 - discount.getDiscountRate());
-                }
-            }
-        }
-
-        return finalPrice;
+        Ticket ticket = new Ticket();
+        populateTicketPriceDetails(ticket, showtime, seat, customerType);
+        return ticket.getFinalPrice();
     }
 
-    private double resolveBasePrice(String dayType, String slotName) {
-        Optional<TicketPriceConfig> configOpt = ticketPriceConfigRepository.findByDayTypeAndSlotName(dayType, slotName);
-        if (configOpt.isPresent()) {
-            return configOpt.get().getBasePrice();
+    public void populateTicketPriceDetails(Ticket ticket, Showtime showtime, Seat seat, String customerType) {
+        if (ticket == null) {
+            return;
         }
 
-        if ("Trong tuần".equals(dayType)) {
+        String dayType = showtime != null && showtime.getDayType() != null && !showtime.getDayType().isBlank()
+                ? showtime.getDayType()
+                : "Trong tuần";
+        String slotName = determineTimeSlot(showtime != null ? showtime.getShowTime() : null);
+        String dateStr = showtime != null && showtime.getShowDate() != null ? showtime.getShowDate().toString() : "";
+        Long movieId = showtime != null && showtime.getMovie() != null ? (long) showtime.getMovie().getId() : null;
+
+        double basePrice = resolveBasePrice(movieId, dateStr, dayType, slotName);
+        double seatSurcharge = resolveSeatSurcharge(seat);
+        double formatSurcharge = resolveFormatSurcharge(showtime);
+        double subtotal = basePrice + seatSurcharge + formatSurcharge;
+        double discountAmount = resolveDiscountAmount(subtotal, dayType, seatSurcharge, formatSurcharge, customerType);
+        double finalPrice = Math.max(0.0, subtotal - discountAmount);
+
+        ticket.setBasePrice(basePrice);
+        ticket.setSeatSurcharge(seatSurcharge);
+        ticket.setFormatSurcharge(formatSurcharge);
+        ticket.setDiscountAmount(discountAmount);
+        ticket.setFinalPrice(finalPrice);
+        ticket.setPrice(finalPrice);
+    }
+
+    private double resolveBasePrice(Long movieId, String dateStr, String dayType, String slotName) {
+        List<TicketPriceConfig> configs = ticketPriceConfigRepository.findAll();
+
+        Optional<TicketPriceConfig> matched = Optional.empty();
+        if (movieId != null && dateStr != null && !dateStr.isBlank()) {
+            matched = configs.stream()
+                    .filter(c -> movieId.equals(c.getMovieId()))
+                    .filter(c -> dateStr.equals(c.getDayType()))
+                    .filter(c -> slotName.equals(c.getSlotName()))
+                    .findFirst();
+        }
+        if (matched.isEmpty() && movieId != null) {
+            matched = configs.stream()
+                    .filter(c -> movieId.equals(c.getMovieId()))
+                    .filter(c -> dayType.equalsIgnoreCase(c.getDayType()))
+                    .filter(c -> slotName.equals(c.getSlotName()))
+                    .findFirst();
+        }
+        if (matched.isEmpty() && dateStr != null && !dateStr.isBlank()) {
+            matched = configs.stream()
+                    .filter(c -> c.getMovieId() == null)
+                    .filter(c -> dateStr.equals(c.getDayType()))
+                    .filter(c -> slotName.equals(c.getSlotName()))
+                    .findFirst();
+        }
+        if (matched.isEmpty()) {
+            matched = configs.stream()
+                    .filter(c -> c.getMovieId() == null)
+                    .filter(c -> dayType.equalsIgnoreCase(c.getDayType()))
+                    .filter(c -> slotName.equals(c.getSlotName()))
+                    .findFirst();
+        }
+
+        return matched.map(TicketPriceConfig::getBasePrice)
+                .orElseGet(() -> fallbackBasePrice(dayType, slotName));
+    }
+
+    private double fallbackBasePrice(String dayType, String slotName) {
+        if ("Trong tuần".equalsIgnoreCase(dayType)) {
             if ("Suất sớm".equals(slotName)) return 50000.0;
             if ("Giờ vàng".equals(slotName)) return 75000.0;
             if ("Suất khuya".equals(slotName)) return 65000.0;
             return 60000.0;
         }
-        if ("Cuối tuần".equals(dayType)) {
+        if ("Cuối tuần".equalsIgnoreCase(dayType)) {
             if ("Suất sớm".equals(slotName)) return 65000.0;
             if ("Giờ vàng".equals(slotName)) return 95000.0;
             if ("Suất khuya".equals(slotName)) return 85000.0;
             return 80000.0;
         }
-
         if ("Suất sớm".equals(slotName)) return 80000.0;
         if ("Giờ vàng".equals(slotName)) return 110000.0;
         if ("Suất khuya".equals(slotName)) return 100000.0;
@@ -141,17 +178,13 @@ public class TicketService {
 
     private double resolveSeatSurcharge(Seat seat) {
         String seatType = normalizeSeatType(seat != null ? seat.getSeatType() : null);
-        Optional<SeatTypeSurcharge> seatSurchargeOpt = seatTypeSurchargeRepository.findBySeatTypeCode(seatType);
-        if (seatSurchargeOpt.isPresent()) {
-            return seatSurchargeOpt.get().getSurchargeAmount();
-        }
-        if ("vip".equals(seatType)) {
-            return 15000.0;
-        }
-        if ("couple".equals(seatType)) {
-            return 30000.0;
-        }
-        return 0.0;
+        return seatTypeSurchargeRepository.findBySeatTypeCode(seatType)
+                .map(SeatTypeSurcharge::getSurchargeAmount)
+                .orElseGet(() -> {
+                    if ("vip".equals(seatType)) return 15000.0;
+                    if ("couple".equals(seatType)) return 30000.0;
+                    return 0.0;
+                });
     }
 
     private double resolveFormatSurcharge(Showtime showtime) {
@@ -160,29 +193,51 @@ public class TicketService {
         }
 
         Optional<Room> roomOpt = roomRepository.findFirstByRoomNameIgnoreCaseAndCinemaId(showtime.getRoom(), 1L);
-        if (roomOpt.isEmpty()) {
+        if (roomOpt.isEmpty() || roomOpt.get().getRoomType() == null || roomOpt.get().getRoomType().isBlank()) {
             return 0.0;
         }
 
         String formatCode = roomOpt.get().getRoomType();
-        if (formatCode == null || formatCode.isBlank()) {
+        return formatSurchargeRepository.findByFormatCode(formatCode)
+                .map(FormatSurcharge::getSurchargeAmount)
+                .orElseGet(() -> {
+                    if ("3D".equalsIgnoreCase(formatCode)) return 25000.0;
+                    if ("IMAX".equalsIgnoreCase(formatCode)) return 80000.0;
+                    if ("Premium".equalsIgnoreCase(formatCode)) return 50000.0;
+                    return 0.0;
+                });
+    }
+
+    private double resolveDiscountAmount(double subtotal,
+                                         String dayType,
+                                         double seatSurcharge,
+                                         double formatSurcharge,
+                                         String customerType) {
+        if (customerType == null || "ADULT".equalsIgnoreCase(customerType)) {
             return 0.0;
         }
 
-        Optional<FormatSurcharge> formatOpt = formatSurchargeRepository.findByFormatCode(formatCode);
-        if (formatOpt.isPresent()) {
-            return formatOpt.get().getSurchargeAmount();
+        Optional<CustomerDiscount> discountOpt = customerDiscountRepository.findByCustomerType(customerType);
+        if (discountOpt.isEmpty()) {
+            return 0.0;
         }
-        if ("3D".equalsIgnoreCase(formatCode)) {
-            return 25000.0;
+
+        CustomerDiscount discount = discountOpt.get();
+        if (subtotal < discount.getMinPriceToApply()) {
+            return 0.0;
         }
-        if ("IMAX".equalsIgnoreCase(formatCode)) {
-            return 80000.0;
+
+        double discountAmount;
+        if ("Trong tuần".equalsIgnoreCase(dayType)
+                && discount.getFixedPriceWeekday() != null
+                && discount.getFixedPriceWeekday() > 0) {
+            double flatPrice = discount.getFixedPriceWeekday() + seatSurcharge + formatSurcharge;
+            discountAmount = Math.max(0.0, subtotal - flatPrice);
+        } else {
+            discountAmount = subtotal * discount.getDiscountRate();
         }
-        if ("Premium".equalsIgnoreCase(formatCode)) {
-            return 50000.0;
-        }
-        return 0.0;
+
+        return Math.min(discountAmount, discount.getMaxDiscountAmount());
     }
 
     private String normalizeSeatType(String seatType) {
@@ -212,99 +267,119 @@ public class TicketService {
 
     @Transactional
     public void generateTicketsForShowtime(Showtime showtime) {
-        if (showtime == null || showtime.getId() == null) {
-            return;
-        }
+        // Vé quản lý được tạo khi giữ/bán ghế, không sinh trước toàn bộ vé trống.
+    }
 
-        boolean hasSold = ticketRepository.existsByShowtimeIdAndStatus(showtime.getId(), "Đã bán");
-        if (hasSold) {
-            return;
-        }
+    @Transactional(readOnly = true)
+    public List<Ticket> getTicketsByShowtime(Long showtimeId) {
+        return ticketRepository.findByShowtimeIdAndDeletedFalse(showtimeId);
+    }
 
-        ticketRepository.deleteUnsoldTicketsByShowtimeId(showtime.getId());
-
+    @Transactional(readOnly = true)
+    public List<Seat> getSeatsForShowtime(Long showtimeId) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
         Optional<Room> roomOpt = roomRepository.findFirstByRoomNameIgnoreCaseAndCinemaId(showtime.getRoom(), 1L);
         if (roomOpt.isEmpty()) {
-            return;
+            return Collections.emptyList();
         }
-
-        Room room = roomOpt.get();
-        List<Seat> seats = seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(room.getId());
-        List<Ticket> ticketsToSave = new ArrayList<>();
-
-        for (Seat seat : seats) {
-            String seatType = normalizeSeatType(seat.getSeatType());
-            if ("empty".equals(seatType) || "skip".equals(seatType) || "broken".equals(seatType)) {
-                continue;
-            }
-
-            double calculatedPrice = calculatePrice(showtime, seat, "ADULT");
-
-            Ticket ticket = new Ticket();
-            ticket.setShowtime(showtime);
-            ticket.setSeat(seat);
-            ticket.setSeatNumber(seat.getSeatLabel());
-            ticket.setSeatLabel(seat.getSeatLabel());
-            ticket.setSeatType(displaySeatType(seat.getSeatType()));
-            ticket.setBasePrice(calculatedPrice);
-            ticket.setPrice(calculatedPrice);
-            ticket.setStatus("Còn trống");
-            ticket.setCustomerType("ADULT");
-
-            ticketsToSave.add(ticket);
-        }
-
-        if (!ticketsToSave.isEmpty()) {
-            ticketRepository.saveAll(ticketsToSave);
-        }
+        return seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(roomOpt.get().getId());
     }
 
     @Transactional
-    public List<Ticket> getTicketsByShowtime(Long showtimeId) {
-        List<Ticket> tickets = ticketRepository.findByShowtimeId(showtimeId);
-        if (tickets.isEmpty()) {
-            Optional<Showtime> showtimeOpt = showtimeRepository.findById(showtimeId);
-            if (showtimeOpt.isPresent()) {
-                generateTicketsForShowtime(showtimeOpt.get());
-                tickets = ticketRepository.findByShowtimeId(showtimeId);
-            }
+    public Ticket holdSeat(Long showtimeId, Long seatId) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+
+        Optional<Ticket> existing = ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId);
+        if (existing.isPresent()) {
+            throw new IllegalStateException("Ghế này đã được bán hoặc đang giữ chỗ!");
         }
-        return tickets;
+
+        Ticket ticket = buildTicket(showtime, seat, "ADULT", null, null, "PENDING");
+        return ticketRepository.save(ticket);
+    }
+
+    @Transactional
+    public void releaseSeat(Long showtimeId, Long seatId) {
+        ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId)
+                .filter(ticket -> "PENDING".equals(ticket.getStatus()))
+                .ifPresent(ticketRepository::delete);
+    }
+
+    @Transactional
+    public Ticket sellTicket(Long showtimeId, Long seatId, String customerType) {
+        return sellTicket(showtimeId, seatId, customerType, null, null);
+    }
+
+    @Transactional
+    public Ticket sellTicket(Long showtimeId, Long seatId, String customerType, String customerName, String customerPhone) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+
+        Optional<Ticket> existingOpt = ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId);
+        Ticket ticket = existingOpt.orElseGet(() -> buildTicket(showtime, seat, customerType, customerName, customerPhone, "BOOKED"));
+        if ("BOOKED".equals(ticket.getStatus())) {
+            throw new IllegalStateException("Ghế này đã có vé đặt rồi!");
+        }
+
+        fillTicket(ticket, showtime, seat, customerType, customerName, customerPhone, "BOOKED");
+        return ticketRepository.save(ticket);
     }
 
     @Transactional
     public Ticket sellTicket(Long ticketId, String customerType) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé có ID: " + ticketId));
-        if ("Đã bán".equals(ticket.getStatus())) {
+        if ("BOOKED".equals(ticket.getStatus()) || "Đã bán".equals(ticket.getStatus())) {
             throw new IllegalStateException("Vé này đã được bán trước đó!");
         }
 
-        double finalPrice = calculatePrice(ticket.getShowtime(), ticket.getSeat(), customerType);
-        ticket.setStatus("Đã bán");
+        populateTicketPriceDetails(ticket, ticket.getShowtime(), ticket.getSeat(), customerType);
+        ticket.setStatus("BOOKED");
         ticket.setCustomerType(customerType);
-        ticket.setPrice(finalPrice);
-        if (ticket.getBasePrice() <= 0) {
-            ticket.setBasePrice(calculatePrice(ticket.getShowtime(), ticket.getSeat(), "ADULT"));
+        ticket.setCreatedAt(LocalDateTime.now());
+        ticket.setDeleted(false);
+        return ticketRepository.save(ticket);
+    }
+
+    @Transactional
+    public Ticket changeSeat(Long ticketId, Long newSeatId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+        if (ticket.isDeleted() || "REFUNDED".equals(ticket.getStatus())) {
+            throw new IllegalStateException("Vé đã bị hủy hoặc hoàn trả, không thể đổi ghế!");
         }
 
+        Seat newSeat = seatRepository.findById(newSeatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế mới!"));
+        ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(ticket.getShowtime().getId(), newSeatId)
+                .filter(existing -> !existing.getId().equals(ticketId))
+                .ifPresent(existing -> {
+                    throw new IllegalStateException("Ghế mới đã có vé đặt hoặc đang giữ chỗ!");
+                });
+
+        ticket.setSeat(newSeat);
+        ticket.setSeatNumber(newSeat.getSeatLabel());
+        ticket.setSeatType(displaySeatType(newSeat.getSeatType()));
+        populateTicketPriceDetails(ticket, ticket.getShowtime(), newSeat, ticket.getCustomerType());
         return ticketRepository.save(ticket);
     }
 
     @Transactional
     public Ticket updateCustomerType(Long ticketId, String customerType) {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé có ID: " + ticketId));
-        if (!"Đã bán".equals(ticket.getStatus())) {
-            throw new IllegalStateException("Vé này chưa được bán, không thể cập nhật đối tượng!");
-        }
-        if (ticket.getBasePrice() <= 0) {
-            ticket.setBasePrice(calculatePrice(ticket.getShowtime(), ticket.getSeat(), "ADULT"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+        if (ticket.isDeleted() || "REFUNDED".equals(ticket.getStatus())) {
+            throw new IllegalStateException("Vé đã bị hủy hoặc hoàn trả, không thể chỉnh sửa!");
         }
 
-        double newPrice = calculatePrice(ticket.getShowtime(), ticket.getSeat(), customerType);
+        populateTicketPriceDetails(ticket, ticket.getShowtime(), ticket.getSeat(), customerType);
         ticket.setCustomerType(customerType);
-        ticket.setPrice(newPrice);
         return ticketRepository.save(ticket);
     }
 
@@ -312,37 +387,136 @@ public class TicketService {
     public Ticket toggleTicketStatus(Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé có ID: " + ticketId));
-
-        if ("Đã bán".equals(ticket.getStatus())) {
-            ticket.setStatus("Còn trống");
-            ticket.setCustomerType("ADULT");
-            ticket.setPrice(calculatePrice(ticket.getShowtime(), ticket.getSeat(), "ADULT"));
+        if ("BOOKED".equals(ticket.getStatus()) || "Đã bán".equals(ticket.getStatus())) {
+            ticket.setStatus("PENDING");
         } else {
-            ticket.setStatus("Đã bán");
-            ticket.setCustomerType("ADULT");
-            if (ticket.getBasePrice() <= 0) {
-                ticket.setBasePrice(calculatePrice(ticket.getShowtime(), ticket.getSeat(), "ADULT"));
-            }
+            ticket.setStatus("BOOKED");
         }
+        ticket.setDeleted(false);
+        return ticketRepository.save(ticket);
+    }
 
+    @Transactional
+    public Ticket cancelTicket(Long ticketId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+        ticket.setDeleted(true);
+        ticket.setStatus("REFUNDED");
         return ticketRepository.save(ticket);
     }
 
     public Map<String, Object> getShowtimeStats(Long showtimeId) {
-        long total = ticketRepository.countByShowtimeId(showtimeId);
-        long sold = ticketRepository.countByShowtimeIdAndStatus(showtimeId, "Đã bán");
-        long empty = total - sold;
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
 
+        long totalCount = 0;
+        Optional<Room> roomOpt = roomRepository.findFirstByRoomNameIgnoreCaseAndCinemaId(showtime.getRoom(), 1L);
+        if (roomOpt.isPresent()) {
+            totalCount = seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(roomOpt.get().getId()).stream()
+                    .filter(seat -> {
+                        String type = normalizeSeatType(seat.getSeatType());
+                        return !"empty".equals(type) && !"skip".equals(type) && !"broken".equals(type);
+                    })
+                    .count();
+        }
+
+        long soldCount = ticketRepository.countByShowtimeIdAndStatusAndDeletedFalse(showtimeId, "BOOKED");
+        long emptyCount = Math.max(0, totalCount - soldCount);
         Double revenueVal = ticketRepository.calculateRevenueByShowtimeId(showtimeId);
         double revenue = revenueVal != null ? revenueVal : 0.0;
-        double occupancyRate = total > 0 ? Math.round(((double) sold / total) * 1000.0) / 10.0 : 0.0;
+        double occupancyRate = totalCount > 0 ? Math.round(((double) soldCount / totalCount) * 1000.0) / 10.0 : 0.0;
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalCount", total);
-        stats.put("soldCount", sold);
-        stats.put("emptyCount", empty);
+        stats.put("totalCount", totalCount);
+        stats.put("soldCount", soldCount);
+        stats.put("emptyCount", emptyCount);
         stats.put("revenue", revenue);
         stats.put("occupancyRate", occupancyRate);
         return stats;
+    }
+
+    public Map<String, Object> getPriceBreakdownForSeat(Long showtimeId, Long seatId, String customerType) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+        return computeBreakdownMap(showtime, seat, customerType);
+    }
+
+    public Map<String, Object> getPriceBreakdownForTicket(Long ticketId, String customerType) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+        return computeBreakdownMap(ticket.getShowtime(), ticket.getSeat(), customerType);
+    }
+
+    private Map<String, Object> computeBreakdownMap(Showtime showtime, Seat seat, String customerType) {
+        Ticket ticket = new Ticket();
+        populateTicketPriceDetails(ticket, showtime, seat, customerType);
+        Map<String, Object> breakdown = new HashMap<>();
+        breakdown.put("basePrice", ticket.getBasePrice());
+        breakdown.put("seatSurcharge", ticket.getSeatSurcharge());
+        breakdown.put("formatSurcharge", ticket.getFormatSurcharge());
+        breakdown.put("discountAmount", ticket.getDiscountAmount());
+        breakdown.put("finalPrice", ticket.getFinalPrice());
+        return breakdown;
+    }
+
+    @Transactional
+    public Ticket createTicket(Long showtimeId, Long seatId, String customerType, String customerName, String customerPhone, String status) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+
+        if (ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId).isPresent()) {
+            throw new IllegalStateException("Ghế này đã có vé đặt hoặc đang giữ chỗ!");
+        }
+
+        return ticketRepository.save(buildTicket(showtime, seat, customerType, customerName, customerPhone,
+                status != null ? status : "BOOKED"));
+    }
+
+    @Transactional
+    public Ticket updateTicket(Long ticketId, Long showtimeId, Long seatId, String customerType, String customerName, String customerPhone, String status) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ghế!"));
+
+        ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId)
+                .filter(existing -> !existing.getId().equals(ticketId))
+                .ifPresent(existing -> {
+                    throw new IllegalStateException("Ghế này đã có vé đặt bởi khách hàng khác!");
+                });
+
+        fillTicket(ticket, showtime, seat, customerType, customerName, customerPhone, status != null ? status : "BOOKED");
+        return ticketRepository.save(ticket);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Ticket> searchTickets(Integer movieId, String room, String status, java.time.LocalDate fromDate, java.time.LocalDate toDate, String searchTerm) {
+        return ticketRepository.searchTickets(movieId, room, status, fromDate, toDate, searchTerm);
+    }
+
+    private Ticket buildTicket(Showtime showtime, Seat seat, String customerType, String customerName, String customerPhone, String status) {
+        Ticket ticket = new Ticket();
+        fillTicket(ticket, showtime, seat, customerType, customerName, customerPhone, status);
+        return ticket;
+    }
+
+    private void fillTicket(Ticket ticket, Showtime showtime, Seat seat, String customerType, String customerName, String customerPhone, String status) {
+        ticket.setShowtime(showtime);
+        ticket.setSeat(seat);
+        ticket.setSeatNumber(seat.getSeatLabel());
+        ticket.setSeatType(displaySeatType(seat.getSeatType()));
+        populateTicketPriceDetails(ticket, showtime, seat, customerType);
+        ticket.setStatus(status);
+        ticket.setCustomerType(customerType);
+        ticket.setCustomerName(customerName);
+        ticket.setCustomerPhone(customerPhone);
+        ticket.setCreatedAt(LocalDateTime.now());
+        ticket.setDeleted(false);
     }
 }
