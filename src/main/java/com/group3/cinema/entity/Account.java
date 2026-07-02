@@ -62,6 +62,7 @@ public class Account {
     @NotNull(message = "Vui lòng nhập ngày sinh")
     @Past(message = "Ngày sinh không thể ở tương lai")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @Column(nullable = true)
     private LocalDate dob;
 
     @Column(columnDefinition = "NVARCHAR(20)")

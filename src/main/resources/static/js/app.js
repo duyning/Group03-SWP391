@@ -563,12 +563,27 @@ function initAutocomplete(inputId, type) {
 
 // --- Đăng ký sự kiện phim ---
 function initMovieEvents() {
-    document.getElementById('btnOpenAddModal').addEventListener('click',   () => openMovieModal(false));
-    document.getElementById('btnCloseModal').addEventListener('click',     closeMovieModal);
-    document.getElementById('btnCancelModal').addEventListener('click',    closeMovieModal);
-    document.getElementById('btnApplyFilter').addEventListener('click',    applyMovieFilter);
-    document.getElementById('btnResetFilter').addEventListener('click',    resetMovieFilter);
-    document.getElementById('filterForm').addEventListener('submit', e => {
+    const onClick = (id, handler) => {
+        const element = document.getElementById(id);
+        if (element) element.addEventListener('click', handler);
+    };
+    const onChange = (id, handler) => {
+        const element = document.getElementById(id);
+        if (element) element.addEventListener('change', handler);
+    };
+    const onInput = (id, handler) => {
+        const element = document.getElementById(id);
+        if (element) element.addEventListener('input', handler);
+    };
+
+    onClick('btnOpenAddModal', () => openMovieModal(false));
+    onClick('btnCloseModal', closeMovieModal);
+    onClick('btnCancelModal', closeMovieModal);
+    onClick('btnApplyFilter', applyMovieFilter);
+    onClick('btnResetFilter', resetMovieFilter);
+
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) filterForm.addEventListener('submit', e => {
         e.preventDefault();
         applyMovieFilter();
     });
@@ -590,45 +605,48 @@ function initMovieEvents() {
         }
     });
 
-    document.getElementById('movieForm').addEventListener('submit',        handleMovieSave);
-    document.getElementById('btnCloseTrailerModal').addEventListener('click', closeTrailer);
-    document.getElementById('moviePosterFile').addEventListener('change', handlePosterFilePreview);
-    document.getElementById('moviePosterUrl').addEventListener('input', e => showPosterPreview(e.target.value.trim()));
+    const movieForm = document.getElementById('movieForm');
+    if (movieForm) movieForm.addEventListener('submit', handleMovieSave);
+    onClick('btnCloseTrailerModal', closeTrailer);
+    onChange('moviePosterFile', handlePosterFilePreview);
+    onInput('moviePosterUrl', e => showPosterPreview(e.target.value.trim()));
 
     // Sự kiện upload video: nút chọn file
-    document.getElementById('btnSelectVideo').addEventListener('click', () => {
+    onClick('btnSelectVideo', () => {
         document.getElementById('videoFileInput').click();
     });
     // Khi người dùng chọn file qua hộp thoại
-    document.getElementById('videoFileInput').addEventListener('change', e => {
+    onChange('videoFileInput', e => {
         if (e.target.files.length > 0) handleVideoFileSelected(e.target.files[0]);
     });
     // Nút xóa video đã upload
-    document.getElementById('btnRemoveVideo').addEventListener('click', removeUploadedVideo);
+    onClick('btnRemoveVideo', removeUploadedVideo);
 
     // Sự kiện kéo thả file vào upload zone
     const zone = document.getElementById('videoUploadZone');
-    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
-    zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
-    zone.addEventListener('drop',      e  => {
-        e.preventDefault();
-        zone.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file) handleVideoFileSelected(file);
-    });
-    // Click vào vùng (không phải nút) cũng mở hộp chọn file
-    zone.addEventListener('click', e => {
-        if (e.target === zone || e.target.classList.contains('upload-zone-content') ||
-            e.target.classList.contains('upload-hint-main') ||
-            e.target.classList.contains('upload-hint-sub')) {
-            document.getElementById('videoFileInput').click();
-        }
-    });
+    if (zone) {
+        zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop',      e  => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) handleVideoFileSelected(file);
+        });
+        // Click vào vùng (không phải nút) cũng mở hộp chọn file
+        zone.addEventListener('click', e => {
+            if (e.target === zone || e.target.classList.contains('upload-zone-content') ||
+                e.target.classList.contains('upload-hint-main') ||
+                e.target.classList.contains('upload-hint-sub')) {
+                document.getElementById('videoFileInput').click();
+            }
+        });
+    }
 
     // [MỚI - TrienLX - 2026-06-11]
     // Khi người dùng thay đổi ngày khởi chiếu, tự động gợi ý trạng thái phim
     // và hiển thị hint cho Manager biết hệ thống sẽ tính trạng thái nào.
-    document.getElementById('movieReleaseDate').addEventListener('change', e => {
+    onChange('movieReleaseDate', e => {
         const selectedDate = e.target.value; // Giá trị 'yyyy-MM-dd'
         if (!selectedDate) return;           // Bỏ qua nếu chưa chọn ngày
 
@@ -757,7 +775,7 @@ async function loadMovies(filters) {
         document.getElementById('resultsCount').textContent = `Tìm thấy ${moviesData.length} kết quả`;
     } catch(e) {
         document.getElementById('movieTableBody').innerHTML =
-            `<tr><td colspan="8" class="text-center" style="padding:3rem;color:var(--stat-red);">
+            `<tr><td colspan="9" class="text-center" style="padding:3rem;color:var(--stat-red);">
                 <i class="fa-solid fa-triangle-exclamation"></i> Không thể tải danh sách phim.
             </td></tr>`;
     }
@@ -769,7 +787,7 @@ function renderMovieTable() {
     tbody.innerHTML = '';
 
     if (!moviesData.length) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:3rem;color:var(--text-muted);">
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="padding:3rem;color:var(--text-muted);">
             <i class="fa-regular fa-folder-open" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
             Không tìm thấy phim nào.
         </td></tr>`;
@@ -779,7 +797,12 @@ function renderMovieTable() {
 
     const start   = (moviesPage - 1) * PAGE_SIZE;
     const slice   = moviesData.slice(start, start + PAGE_SIZE);
-    const colorMap = { 'Đang chiếu':'var(--stat-green)', 'Sắp chiếu':'var(--stat-orange)', 'Suất chiếu đặc biệt':'var(--stat-red)' };
+    const colorMap = {
+        'Đang chiếu':'var(--stat-green)',
+        'Sắp chiếu':'var(--stat-orange)',
+        'Suất chiếu đặc biệt':'var(--stat-red)',
+        'Ngừng chiếu':'var(--text-muted)'
+    };
 
     slice.forEach(mv => {
         const poster = mv.posterUrl
@@ -810,6 +833,11 @@ function renderMovieTable() {
             <td>${mv.duration ? mv.duration+' phút' : '—'}</td>
             <td><span style="font-weight: 600; color: var(--text-main);">${esc(mv.format||'2D')}</span></td>
             <td><span class="status-text" style="color:${colorMap[mv.status]||'inherit'}">${esc(mv.status||'—')}</span></td>
+            <td class="text-center">
+                <span class="status-text" style="color:${mv.active ? 'var(--stat-green)' : 'var(--text-muted)'}">
+                    ${mv.active ? 'Đang hiện' : 'Đã ẩn'}
+                </span>
+            </td>
             <td>${formatDate(mv.releaseDate)}</td>
             <td>
                 <div class="action-cell">

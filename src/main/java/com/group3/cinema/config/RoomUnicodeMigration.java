@@ -31,23 +31,27 @@ public class RoomUnicodeMigration {
 
     @PostConstruct
     public void migrateRoomUnicodeColumns() {
+        runMigrationStep("create banner table", this::createBannerTableIfMissing);
+        runMigrationStep("add account dob column", this::addAccountDobColumnIfMissing);
+        runMigrationStep("create account voucher wallet table", this::createAccountVoucherTableIfMissing);
+        runMigrationStep("add movie columns", this::addMovieColumnsIfMissing);
+        runMigrationStep("create combo catalog tables", this::createComboCatalogTablesIfMissing);
+        runMigrationStep("migrate combo pricing columns", this::migrateComboPricingColumns);
+        runMigrationStep("seed default food items", this::seedDefaultFoodItems);
+        runMigrationStep("add showtime override column", this::addShowtimeOverrideColumnIfMissing);
+        runMigrationStep("add ticket base price column", this::addTicketBasePriceColumnIfMissing);
+        runMigrationStep("migrate ticket columns", this::migrateTicketColumns);
+        runMigrationStep("migrate text columns", this::migrateTextColumns);
+        runMigrationStep("normalize Vietnamese values", this::normalizeVietnameseValues);
+        runMigrationStep("fix movie status constraint", this::fixMovieStatusConstraint);
+        runMigrationStep("seed pricing configs", this::seedPricingConfigs);
+    }
+
+    private void runMigrationStep(String stepName, Runnable step) {
         try {
-            createBannerTableIfMissing();
-            addMovieColumnsIfMissing();
-            createComboCatalogTablesIfMissing();
-            migrateComboPricingColumns();
-            seedDefaultFoodItems();
-            addShowtimeOverrideColumnIfMissing();
-            addTicketBasePriceColumnIfMissing();
-            migrateTicketColumns();
-            migrateTextColumns();
-            normalizeVietnameseValues();
-            // [SỬA - TrienLX - 2026-06-23]: Sửa constraint kiểm tra cột status của bảng movie
-            fixMovieStatusConstraint();
-            // [THÊM - TrienLX - 2026-06-25]: Seed dữ liệu mẫu cho ma trận giá vé
-            seedPricingConfigs();
+            step.run();
         } catch (Exception e) {
-            log.warn("Không thể tự động chuyển cột tiếng Việt sang NVARCHAR: {}", e.getMessage());
+            log.warn("Không thể chạy migration '{}': {}", stepName, e.getMessage());
         }
     }
 
@@ -129,6 +133,47 @@ public class RoomUnicodeMigration {
             } catch (Exception e) {
                 log.warn("Không thể bổ sung cột producer: {}", e.getMessage());
             }
+        }
+    }
+
+    private void addAccountDobColumnIfMissing() {
+        addColumnIfMissing("account", "dob", "DATE NULL");
+        updateIfTableExists("account", "UPDATE account SET dob = '2000-01-01' WHERE dob IS NULL");
+    }
+
+    private void createAccountVoucherTableIfMissing() {
+        if (!tableExists("account") || !tableExists("vouchers")) {
+            return;
+        }
+
+        if (!tableExists("account_vouchers")) {
+            jdbcTemplate.execute("""
+                    CREATE TABLE account_vouchers (
+                        account_id INT NOT NULL,
+                        voucher_id BIGINT NOT NULL,
+                        CONSTRAINT PK_account_vouchers PRIMARY KEY (account_id, voucher_id),
+                        CONSTRAINT FK_account_vouchers_account FOREIGN KEY (account_id) REFERENCES account(accountid),
+                        CONSTRAINT FK_account_vouchers_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers(id)
+                    )
+                    """);
+            return;
+        }
+
+        addColumnIfMissing("account_vouchers", "account_id", "INT NULL");
+        addColumnIfMissing("account_vouchers", "voucher_id", "BIGINT NULL");
+        try {
+            jdbcTemplate.execute("""
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM sys.indexes
+                        WHERE name = 'UX_account_vouchers_account_voucher'
+                          AND object_id = OBJECT_ID('account_vouchers')
+                    )
+                    CREATE UNIQUE INDEX UX_account_vouchers_account_voucher
+                    ON account_vouchers(account_id, voucher_id)
+                    """);
+        } catch (Exception e) {
+            log.warn("Không thể tạo unique index cho account_vouchers: {}", e.getMessage());
         }
     }
 

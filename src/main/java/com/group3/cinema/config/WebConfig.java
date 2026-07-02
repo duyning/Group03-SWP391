@@ -76,6 +76,17 @@ public class WebConfig implements WebMvcConfigurer {
                 );
 
         registry.addInterceptor(new AuthInterceptor(Role.ADMIN, Role.MANAGER))
-                .addPathPatterns("/admin/**", "/manage_movies.html", "/manage_showtime.html", "/manage_ticket.html");
+                .addPathPatterns(
+                        "/admin/**",
+                        "/manage_movies.html",
+                        "/manage_showtime.html",
+                        "/manage_ticket.html",
+                        "/api/movies/**",
+                        "/api/showtimes/**",
+                        "/api/tickets/**",
+                        "/api/rooms/**",
+                        "/api/upload/**",
+                        "/api/suggestions/persons/**"
+                );
     }
 }

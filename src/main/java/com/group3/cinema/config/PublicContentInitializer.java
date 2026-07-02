@@ -14,6 +14,7 @@ import com.group3.cinema.repository.PostRepository;
 import com.group3.cinema.repository.PromotionRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Component
+@DependsOn("roomUnicodeMigration")
 public class PublicContentInitializer {
 
     private final MovieRepository movieRepository;

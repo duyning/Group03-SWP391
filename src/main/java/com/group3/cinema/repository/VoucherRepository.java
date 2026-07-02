@@ -3,6 +3,7 @@ package com.group3.cinema.repository;
 import com.group3.cinema.entity.Voucher;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -59,4 +60,24 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             @Param("discountType") Voucher.DiscountType discountType,
             @Param("serviceScope") Voucher.ServiceScope serviceScope
     );
+
+    @Query(value = """
+            SELECT CASE WHEN COUNT(1) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END
+            FROM account_vouchers
+            WHERE account_id = :accountId AND voucher_id = :voucherId
+            """, nativeQuery = true)
+    boolean existsInWallet(@Param("accountId") int accountId, @Param("voucherId") Long voucherId);
+
+    @Modifying
+    @Transactional
+    @Query(value = """
+            INSERT INTO account_vouchers (account_id, voucher_id)
+            SELECT :accountId, :voucherId
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM account_vouchers
+                WHERE account_id = :accountId AND voucher_id = :voucherId
+            )
+            """, nativeQuery = true)
+    int addToWallet(@Param("accountId") int accountId, @Param("voucherId") Long voucherId);
 }

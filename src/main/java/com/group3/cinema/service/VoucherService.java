@@ -1,6 +1,5 @@
 package com.group3.cinema.service;
 
-import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Voucher;
 import com.group3.cinema.repository.AccountRepository;
 import com.group3.cinema.repository.VoucherRepository;
@@ -109,19 +108,29 @@ public class VoucherService {
      */
     @Transactional
     public void collectVoucher(int accountId, Long voucherId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Tài khoản không tồn tại"));
         Voucher voucher = voucherRepository.findById(voucherId)
                 .orElseThrow(() -> new IllegalArgumentException("Voucher không tồn tại"));
 
-        if (voucher.getEndDate().isBefore(LocalDateTime.now())) {
+        if (!accountRepository.existsById(accountId)) {
+            throw new IllegalArgumentException("Tài khoản không tồn tại");
+        }
+        if (Boolean.TRUE.equals(voucher.getIsDeleted())) {
+            throw new IllegalArgumentException("Voucher này hiện không còn khả dụng!");
+        }
+        if (voucher.getEndDate() == null || voucher.getEndDate().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Voucher này đã hết hạn!");
         }
+        if (voucher.getTotalQuantity() != null
+                && voucher.getUsedQuantity() != null
+                && voucher.getUsedQuantity() >= voucher.getTotalQuantity()) {
+            throw new IllegalArgumentException("Voucher này đã hết số lượng phát hành!");
+        }
+        if (voucherRepository.existsInWallet(accountId, voucherId)) {
+            throw new IllegalArgumentException("Bạn đã lưu voucher này rồi!");
+        }
 
-        // Thêm vào Set savedVouchers (Set tự động xử lý trùng lặp)
-        if (account.getSavedVouchers().add(voucher)) {
-            accountRepository.save(account);
-        } else {
+        int insertedRows = voucherRepository.addToWallet(accountId, voucherId);
+        if (insertedRows == 0) {
             throw new IllegalArgumentException("Bạn đã lưu voucher này rồi!");
         }
     }

@@ -323,6 +323,43 @@
             margin-bottom: 60px;
         }
 
+        .voucher-toast-stack {
+            position: fixed;
+            top: 22px;
+            right: 22px;
+            z-index: 2000;
+            display: grid;
+            gap: 10px;
+            width: min(380px, calc(100vw - 32px));
+        }
+
+        .voucher-toast {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: white;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+            font-weight: 700;
+            line-height: 1.35;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .voucher-toast.success {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .voucher-toast.error {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
         .footer {
             background: #0054a6;
             color: white;
@@ -510,27 +547,69 @@
 </footer>
 
 <script>
-    function collectVoucher(id) {
-        fetch('/vouchers/collect/' + id, { method: 'POST' })
-            .then(res => res.text())
-            .then(data => {
-                if (data === 'success') {
-                    alert("Lưu voucher thành công!");
-                    const btn = document.getElementById('btn-' + id);
-                    btn.innerHTML = "<i class='fa-solid fa-check'></i> Đã lưu";
-                    btn.classList.add('btn-collected');
-                    btn.disabled = true;
-                } else if (data === 'error_login') {
-                    alert("Vui lòng đăng nhập trước khi lưu mã!");
-                    window.location.href = "/login";
-                } else {
-                    alert(data);
-                }
-            })
-            .catch(err => {
-                console.error("Lỗi hệ thống:", err);
-                alert("Không thể kết nối đến server.");
+    function showVoucherToast(type, message) {
+        let stack = document.getElementById('voucherToastStack');
+        if (!stack) {
+            stack = document.createElement('div');
+            stack.id = 'voucherToastStack';
+            stack.className = 'voucher-toast-stack';
+            document.body.appendChild(stack);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `voucher-toast ${type === 'success' ? 'success' : 'error'}`;
+        toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i><span>${message}</span>`;
+        stack.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-6px)';
+            setTimeout(() => toast.remove(), 320);
+        }, 5000);
+    }
+
+    async function collectVoucher(id) {
+        const btn = document.getElementById('btn-' + id);
+        if (btn) {
+            btn.disabled = true;
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang lưu";
+        }
+
+        try {
+            const res = await fetch('/vouchers/collect/' + id, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' }
             });
+            const contentType = res.headers.get('content-type') || '';
+            const data = contentType.includes('application/json')
+                ? await res.json()
+                : { status: res.ok ? 'success' : 'error', message: await res.text() };
+
+            if (res.status === 401 || data.status === 'login') {
+                showVoucherToast('error', data.message || 'Vui lòng đăng nhập trước khi lưu mã!');
+                setTimeout(() => window.location.href = '/login', 900);
+                return;
+            }
+
+            if (!res.ok || data.status !== 'success') {
+                throw new Error(data.message || 'Không thể lưu voucher lúc này.');
+            }
+
+            showVoucherToast('success', data.message || 'Lưu voucher thành công!');
+            if (btn) {
+                btn.innerHTML = "<i class='fa-solid fa-check'></i> Đã lưu";
+                btn.classList.add('btn-collected');
+                btn.disabled = true;
+            }
+        } catch (err) {
+            console.error('Lỗi lưu voucher:', err);
+            showVoucherToast('error', err.message || 'Không thể kết nối đến server.');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = btn.dataset.originalHtml || "<i class='fa-solid fa-ticket'></i> Lưu mã";
+            }
+        }
     }
 </script>
 </body>

@@ -6,6 +6,10 @@ import com.group3.cinema.service.AccountService;
 import com.group3.cinema.service.VoucherService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -15,11 +19,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
 public class VoucherPublicController {
+
+    private static final Logger log = LoggerFactory.getLogger(VoucherPublicController.class);
 
     private final VoucherService voucherService;
     private final AccountService accountService;
@@ -60,19 +67,23 @@ public class VoucherPublicController {
      */
     @PostMapping("/vouchers/collect/{id}")
     @ResponseBody
-    public String collectVoucher(@PathVariable Long id, HttpSession session) {
+    public ResponseEntity<Map<String, String>> collectVoucher(@PathVariable Long id, HttpSession session) {
         Account account = (Account) session.getAttribute("loggedInUser");
         if (account == null) {
-            return "error_login";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("status", "login", "message", "Vui lòng đăng nhập trước khi lưu mã!"));
         }
 
         try {
             voucherService.collectVoucher(account.getAccountID(), id);
-            return "success";
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Lưu voucher thành công!"));
         } catch (IllegalArgumentException e) {
-            return e.getMessage();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("status", "error", "message", e.getMessage()));
         } catch (Exception e) {
-            return "error";
+            log.error("Không thể lưu voucher {} cho account {}", id, account.getAccountID(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "error", "message", "Không thể lưu voucher lúc này. Vui lòng thử lại sau."));
         }
     }
 
