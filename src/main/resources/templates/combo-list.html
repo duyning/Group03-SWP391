@@ -334,14 +334,24 @@
                                     1 x Bắp rang bơ lớn + 2 x Nước ngọt lớn
                                 </div>
                             </td>
-                            <td class="text-end">
-                                <div class="fw-semibold" th:text="${#numbers.formatDecimal(combo.originalPrice != null ? combo.originalPrice : combo.price, 0, 'POINT', 0, 'COMMA')} + ' đ'">125.000 đ</div>
+                            <td class="text-end"
+                                th:with="priceDisplay=${combo.originalPrice != null ? combo.originalPrice : combo.price}">
+
+                                <div class="fw-semibold"
+                                     th:text="${#numbers.formatDecimal(priceDisplay, 0, 'POINT', 0, 'COMMA')} + ' đ'">125.000 đ</div>
+
                                 <div class="price-muted" th:if="${combo.costPrice != null and combo.costPrice > 0}"
                                      th:text="'Vốn: ' + ${#numbers.formatDecimal(combo.costPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">Vốn: 62.000 đ</div>
                             </td>
-                            <td class="text-end">
-                                <div class="fw-semibold" th:text="${#numbers.formatDecimal(combo.discountPercent != null ? combo.discountPercent : 0, 0, 'POINT', 1, 'COMMA')} + '%'">10%</div>
-                                <div class="price-muted" th:text="${#numbers.formatDecimal(combo.discountAmount != null ? combo.discountAmount : 0, 0, 'POINT', 0, 'COMMA')} + ' đ'">12.500 đ</div>
+                            <td class="text-end"
+                                th:with="dPercent=${combo.discountPercent != null ? combo.discountPercent : 0},
+             dAmount=${combo.discountAmount != null ? combo.discountAmount : 0}">
+
+                                <div class="fw-semibold"
+                                     th:text="${#numbers.formatDecimal(dPercent, 0, 'POINT', 1, 'COMMA')} + '%'">10%</div>
+
+                                <div class="price-muted"
+                                     th:text="${#numbers.formatDecimal(dAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'">12.500 đ</div>
                             </td>
                             <td class="text-end">
                                 <span class="price-main" th:text="${#numbers.formatDecimal(combo.price, 0, 'POINT', 0, 'COMMA')} + ' đ'">112.500 đ</span>
