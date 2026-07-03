@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<!--
+    Created on 2026-06-25: Promotion campaign management page.
+    Created by: NinhDD - HE186113
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý khuyến mãi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
+    <link rel="stylesheet" th:href="@{/css/admin-content.css}">
+    <style>
+        .promotion-thumb {
+            width: 120px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .campaign-title {
+            color: #0f172a;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .campaign-title:hover {
+            color: #0054a6;
+        }
+
+        .campaign-sub {
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        .campaign-rule {
+            color: #0f3768;
+            font-weight: 750;
+            max-width: 340px;
+        }
+
+        .state-badge {
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 7px 10px;
+            white-space: nowrap;
+        }
+
+        .state-running { background: #dcfce7; color: #166534; }
+        .state-upcoming { background: #dbeafe; color: #1d4ed8; }
+        .state-expired { background: #e5e7eb; color: #475569; }
+        .state-draft { background: #fef3c7; color: #92400e; }
+        .state-inactive { background: #fee2e2; color: #991b1b; }
+
+        .type-pill {
+            background: #eef6ff;
+            border: 1px solid #d8eafe;
+            border-radius: 999px;
+            color: #075ba8;
+            display: inline-flex;
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 5px 9px;
+        }
+
+        .campaign-kpi-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-bottom: 18px;
+        }
+
+        .campaign-kpi {
+            background: #f8fafc;
+            border: 1px solid #dbe5ef;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .campaign-kpi span {
+            color: #64748b;
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .campaign-kpi strong {
+            color: #0f3768;
+            display: block;
+            font-size: 2rem;
+            line-height: 1;
+            margin-top: 6px;
+        }
+
+        .campaign-progress {
+            background: #e2e8f0;
+            border-radius: 999px;
+            height: 8px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .campaign-progress-fill {
+            background: #0054a6;
+            border-radius: inherit;
+            height: 100%;
+        }
+
+        .condition-preview {
+            color: #64748b;
+            font-size: 0.84rem;
+            line-height: 1.45;
+            margin-top: 6px;
+            max-width: 420px;
+        }
+
+        @media (max-width: 1000px) {
+            .campaign-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body class="admin-page">
+<div class="admin-layout">
+    <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('promotions')}"></aside>
+    <main class="admin-main">
+        <div class="container py-4">
+            <section class="page-card">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+                    <div>
+                        <h1 class="page-title mb-1">
+                            <i class="fa-solid fa-bullhorn me-2"></i>
+                            Quản lý khuyến mãi
+                        </h1>
+                        <p class="text-secondary mb-0">
+                            Quản lý các chiến dịch ưu đãi công khai theo thời gian, nhóm khách hàng và điều kiện tham gia.
+                        </p>
+                    </div>
+                    <a th:href="@{/admin/promotions/create}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                        <i class="fa-solid fa-plus"></i>
+                        Tạo chiến dịch
+                    </a>
+                </div>
+
+                <div th:if="${successMessage}" class="alert alert-success" data-auto-dismiss="5000">
+                    <i class="fa-solid fa-circle-check me-2"></i>
+                    <span th:text="${successMessage}">Đã lưu chiến dịch.</span>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger" data-auto-dismiss="5000">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <span th:text="${errorMessage}">Có lỗi xảy ra.</span>
+                </div>
+
+                <section class="campaign-kpi-grid" aria-label="Tổng quan chiến dịch">
+                    <div class="campaign-kpi">
+                        <span>Tổng campaign</span>
+                        <strong th:text="${totalCampaigns}">0</strong>
+                    </div>
+                    <div class="campaign-kpi">
+                        <span>Đang diễn ra</span>
+                        <strong th:text="${runningCampaigns}">0</strong>
+                    </div>
+                    <div class="campaign-kpi">
+                        <span>Sắp diễn ra</span>
+                        <strong th:text="${upcomingCampaigns}">0</strong>
+                    </div>
+                    <div class="campaign-kpi">
+                        <span>Nháp / Ẩn / Hết hạn</span>
+                        <strong th:text="${inactiveCampaigns}">0</strong>
+                    </div>
+                </section>
+
+                <div class="filter-wrapper mb-4">
+                    <form th:action="@{/admin/promotions}" method="get" class="row g-3 align-items-end">
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label">Tìm chiến dịch</label>
+                            <input class="form-control" type="text" name="keyword" th:value="${param.keyword}" placeholder="Happy Monday, sinh viên...">
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label">Loại chiến dịch</label>
+                            <select class="form-select" name="type">
+                                <option value="">Tất cả loại</option>
+                                <option th:each="type : ${types}"
+                                        th:value="${type.name()}"
+                                        th:text="${type.displayName}"
+                                        th:selected="${param.type != null && param.type[0] == type.name()}">
+                                    Happy Monday
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-6">
+                            <label class="form-label">Nhóm áp dụng</label>
+                            <select class="form-select" name="targetGroup">
+                                <option value="">Tất cả nhóm</option>
+                                <option th:each="group : ${targetGroups}"
+                                        th:value="${group.name()}"
+                                        th:text="${group.displayName}"
+                                        th:selected="${param.targetGroup != null && param.targetGroup[0] == group.name()}">
+                                    Tất cả
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-6">
+                            <label class="form-label">Trạng thái quản trị</label>
+                            <select class="form-select" name="status">
+                                <option value="">Tất cả</option>
+                                <option th:each="status : ${statuses}"
+                                        th:value="${status.name()}"
+                                        th:text="${status.displayName}"
+                                        th:selected="${param.status != null && param.status[0] == status.name()}">
+                                    Đang hiển thị
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 d-flex gap-2">
+                            <button class="btn btn-primary flex-fill" type="submit">
+                                <i class="fa-solid fa-filter me-1"></i>Lọc
+                            </button>
+                            <a th:href="@{/admin/promotions}" class="btn btn-outline-light" title="Xóa bộ lọc">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th style="width: 64px;">ID</th>
+                            <th style="width: 140px;">Banner</th>
+                            <th>Campaign brief</th>
+                            <th style="width: 170px;">Nhóm áp dụng</th>
+                            <th style="width: 220px;">Vòng đời campaign</th>
+                            <th style="width: 140px;">Trạng thái</th>
+                            <th style="width: 150px;" class="text-end">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="promotion : ${promotions}">
+                            <td class="fw-bold text-secondary" th:text="${promotion.id}">1</td>
+                            <td>
+                                <img class="promotion-thumb"
+                                     th:src="${promotion.bannerImage != null ? promotion.bannerImage : 'https://placehold.co/240x128?text=Promotion'}"
+                                     th:alt="${promotion.title}">
+                            </td>
+                            <td>
+                                <a class="campaign-title" th:href="@{/admin/promotions/edit/{id}(id=${promotion.id})}" th:text="${promotion.title}">
+                                    Happy Monday
+                                </a>
+                                <div class="campaign-sub mt-1">
+                                    <span class="type-pill" th:text="${promotion.type.displayName}">Happy Monday</span>
+                                </div>
+                                <div class="campaign-rule mt-2" th:text="${promotion.discountRule}">
+                                    Giảm giá vé vào thứ Hai hàng tuần.
+                                </div>
+                                <div class="condition-preview">
+                                    <strong>Điều kiện:</strong>
+                                    <span th:text="${promotion.conditionText}">Áp dụng theo điều kiện chiến dịch.</span>
+                                </div>
+                            </td>
+                            <td>
+                                <strong th:text="${promotion.targetGroup.displayName}">Tất cả khách hàng</strong>
+                            </td>
+                            <td>
+                                <div class="fw-bold">
+                                    <span th:text="${#temporals.format(promotion.startDate, 'dd/MM/yyyy')}">01/07/2026</span>
+                                    <span class="text-secondary">-</span>
+                                    <span th:text="${#temporals.format(promotion.endDate, 'dd/MM/yyyy')}">31/07/2026</span>
+                                </div>
+                                <div class="campaign-sub" th:if="${promotion.remainingDays > 0}">
+                                    Còn <span th:text="${promotion.remainingDays}">10</span> ngày
+                                </div>
+                                <div class="campaign-progress" th:title="|Tiến độ ${promotion.progressPercent}%|">
+                                    <div class="campaign-progress-fill" th:style="'width:' + ${promotion.progressPercent} + '%'"></div>
+                                </div>
+                                <div class="campaign-sub">
+                                    Đã chạy <span th:text="${promotion.elapsedDays}">1</span>/<span th:text="${promotion.totalDays}">30</span> ngày
+                                </div>
+                            </td>
+                            <td>
+                                <span class="state-badge" th:classappend="${promotion.campaignStateCssClass}">
+                                    <i class="fa-solid fa-circle"></i>
+                                    <span th:text="${promotion.campaignStateDisplayName}">Đang diễn ra</span>
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <a class="btn btn-outline-primary btn-sm action-btn" th:href="@{/promotions/{id}(id=${promotion.id})}" target="_blank" title="Xem public">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a class="btn btn-outline-warning btn-sm action-btn" th:href="@{/admin/promotions/edit/{id}(id=${promotion.id})}" title="Sửa">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <a class="btn btn-outline-success btn-sm action-btn"
+                                       th:if="${promotion.status.name() != 'ACTIVE'}"
+                                       th:href="@{/admin/promotions/activate/{id}(id=${promotion.id})}"
+                                       title="Kích hoạt">
+                                        <i class="fa-solid fa-play"></i>
+                                    </a>
+                                    <a class="btn btn-outline-danger btn-sm action-btn"
+                                       th:if="${promotion.status.name() == 'ACTIVE'}"
+                                       th:href="@{/admin/promotions/hide/{id}(id=${promotion.id})}"
+                                       onclick="return confirm('Tạm ẩn chiến dịch này khỏi trang khách hàng?')"
+                                       title="Tạm ẩn">
+                                        <i class="fa-solid fa-eye-slash"></i>
+                                    </a>
+                                    <form th:action="@{/admin/promotions/delete/{id}(id=${promotion.id})}" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bạn có chắc muốn xóa vĩnh viễn chiến dịch khuyến mãi này?')">
+                                        <button class="btn btn-outline-danger btn-sm action-btn" type="submit" title="Xóa">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(promotions)}">
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="fa-regular fa-folder-open fs-2 d-block mb-2"></i>
+                                Chưa có chiến dịch khuyến mãi phù hợp với bộ lọc.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/auto-dismiss-alerts.js}"></script>
+</body>
+</html>

@@ -5,13 +5,19 @@ package com.group3.cinema.repository;
  * Updated on 2026-06-04: Added UC-G03 active movie search by title keyword,
  * genre, and status only.
  * Created by: HuyPB - HE191335
+ * Updated on 2026-06-23 by: TrienLX
+ * Chi tiết thay đổi:
+ * - Hạn chế tự động cập nhật UPCOMING -> NOW_SHOWING đối với phim active = true.
+ * - Cập nhật autoDeactivateExpiredMovies để đặt trạng thái là STOPPED khi ẩn suất chiếu hết hạn.
  */
 
 import com.group3.cinema.entity.Movie;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,6 +25,10 @@ import java.util.Optional;
 
 @Repository
 public interface MovieRepository extends JpaRepository<Movie, Integer> {
+
+    @Override
+    @Query("SELECT m FROM Movie m WHERE m.deleted = false")
+    List<Movie> findAll();
 
     /**
      * Load all movies that are allowed to appear on public customer screens.
@@ -57,7 +67,7 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
     @Query("""
             SELECT m
             FROM Movie m
-            WHERE m.active = true
+            WHERE m.active = true AND m.deleted = false
               AND (:keyword IS NULL OR LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
               AND (:genre IS NULL OR LOWER(m.genre) LIKE LOWER(CONCAT('%', :genre, '%')))
               AND (:status IS NULL OR m.status = :status)
@@ -67,23 +77,46 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
                                    @Param("status") Movie.MovieStatus status);
 
     @Query("""
-            SELECT m
-            FROM Movie m
-            WHERE (:title IS NULL OR :title = '' OR LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%')))
-              AND (:genre IS NULL OR :genre = '' OR LOWER(m.genre) LIKE LOWER(CONCAT('%', :genre, '%')))
-              AND (:director IS NULL OR :director = '' OR LOWER(m.director) LIKE LOWER(CONCAT('%', :director, '%')))
-              AND (:duration IS NULL OR m.duration = :duration)
-              AND (:status IS NULL OR m.status = :status)
-              AND (:releaseDate IS NULL OR m.releaseDate = :releaseDate)
-            """)
+             SELECT m
+             FROM Movie m
+             WHERE m.deleted = false
+               AND (:title IS NULL OR :title = '' OR LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%')))
+               AND (:genre IS NULL OR :genre = '' OR LOWER(m.genre) LIKE LOWER(CONCAT('%', :genre, '%')))
+               AND (:director IS NULL OR :director = '' OR LOWER(m.director) LIKE LOWER(CONCAT('%', :director, '%')))
+               AND (:duration IS NULL OR m.duration = :duration)
+               AND (:status IS NULL OR m.status = :status)
+               AND (:releaseDate IS NULL OR m.releaseDate = :releaseDate)
+               AND (:active IS NULL OR m.active = :active)
+             """)
     List<Movie> searchMovies(@Param("title") String title,
                              @Param("genre") String genre,
                              @Param("director") String director,
                              @Param("duration") Integer duration,
                              @Param("status") Movie.MovieStatus status,
-                             @Param("releaseDate") LocalDate releaseDate);
+                             @Param("releaseDate") LocalDate releaseDate,
+                             @Param("active") Boolean active);
 
-    long countByStatus(Movie.MovieStatus status);
+    @Override
+    @Query("SELECT COUNT(m) FROM Movie m WHERE m.deleted = false")
+    long count();
+
+    @Query("SELECT COUNT(m) FROM Movie m WHERE m.status = :status AND m.deleted = false")
+    long countByStatus(@Param("status") Movie.MovieStatus status);
+
+    @Query("SELECT COUNT(m) FROM Movie m WHERE m.active = false AND m.deleted = false")
+    long countByActiveFalse();
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Movie m SET m.status = :nowShowing WHERE m.active = true AND m.status = :comingSoon AND m.releaseDate <= :today")
+    int autoUpdateUpcomingToNowShowing(@Param("today") LocalDate today,
+                                       @Param("nowShowing") Movie.MovieStatus nowShowing,
+                                       @Param("comingSoon") Movie.MovieStatus comingSoon);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Movie m SET m.active = false, m.status = :stoppedStatus WHERE m.active = true AND m.releaseDate < :today AND m.id IN (SELECT s.movie.id FROM Showtime s GROUP BY s.movie.id HAVING MAX(s.showDate) < :today AND MAX(s.showDate) >= :thresholdDate)")
+    int autoDeactivateExpiredMovies(@Param("today") LocalDate today, @Param("thresholdDate") LocalDate thresholdDate, @Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
 
     @Query("""
             SELECT DISTINCT m.genre
@@ -95,12 +128,15 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
             """)
     List<String> findDistinctActiveGenres();
 
-    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE LOWER(m.title) = LOWER(:title) AND m.id <> :id")
+    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE LOWER(m.title) = LOWER(:title) AND m.id <> :id AND m.deleted = false")
     boolean existsDuplicateTitle(@Param("title") String title, @Param("id") int id);
 
-    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE m.posterUrl = :posterUrl AND m.posterUrl IS NOT NULL AND m.posterUrl <> '' AND m.id <> :id")
+    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE m.posterUrl = :posterUrl AND m.posterUrl IS NOT NULL AND m.posterUrl <> '' AND m.id <> :id AND m.deleted = false")
     boolean existsDuplicatePoster(@Param("posterUrl") String posterUrl, @Param("id") int id);
 
-    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE m.trailerUrl = :trailerUrl AND m.trailerUrl IS NOT NULL AND m.trailerUrl <> '' AND m.id <> :id")
+    @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE m.trailerUrl = :trailerUrl AND m.trailerUrl IS NOT NULL AND m.trailerUrl <> '' AND m.id <> :id AND m.deleted = false")
     boolean existsDuplicateTrailer(@Param("trailerUrl") String trailerUrl, @Param("id") int id);
+
+    @Query("SELECT m FROM Movie m WHERE LOWER(m.title) = LOWER(:title) AND m.deleted = true")
+    Optional<Movie> findSoftDeletedByTitle(@Param("title") String title);
 }

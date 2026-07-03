@@ -2,6 +2,8 @@
 <!--
     Updated on 2026-06-05: Split admin Quản lý phim from the original static index page.
     Created by: NinhDD - HE186113
+    Updated on 2026-06-23 by: TrienLX
+    Chi tiết thay đổi: Bổ sung tùy chọn trạng thái "Ngừng chiếu" vào dropdown khi chỉnh sửa phim.
 -->
 <html lang="vi">
 <head>
@@ -11,7 +13,7 @@
     <meta name="description" content="Quản lý phim của Cinema 2026.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&subset=vietnamese&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -28,6 +30,7 @@
                 <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
                 <a href="/manage_ticket.html"><li><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
                 <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
+                <a href="/admin/promotions"><li><i class="fas fa-bullhorn"></i> Quản lý khuyến mãi</li></a>
                 <a href="/admin/banners"><li><i class="fas fa-images"></i> Quản lý banner</li></a>
                 <a href="/admin/rooms"><li><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
                 <a href="/admin/catalogs"><li><i class="fas fa-list"></i> Danh mục phòng</li></a>
@@ -70,6 +73,12 @@
                         <strong class="stat-value" id="statSpecialShow">0</strong>
                     </div>
                 </div>
+                <div class="stat-card stat-gray">
+                    <div class="stat-info">
+                        <span class="stat-label">Ngừng chiếu</span>
+                        <strong class="stat-value" id="statInactive">0</strong>
+                    </div>
+                </div>
             </section>
 
             <section class="filter-card">
@@ -97,6 +106,7 @@
                             <option value="Đang chiếu">Đang chiếu</option>
                             <option value="Sắp chiếu">Sắp chiếu</option>
                             <option value="Suất chiếu đặc biệt">Suất chiếu đặc biệt</option>
+                            <option value="Ngừng chiếu">Ngừng chiếu</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -107,11 +117,11 @@
                 <div class="filter-actions">
                     <span class="results-count" id="resultsCount">Tìm thấy 0 kết quả</span>
                     <div class="action-buttons">
-                        <button class="btn btn-outline" id="btnResetFilter">
-                            <i class="fa-solid fa-rotate-left"></i> Làm mới bộ lọc
+                        <button type="button" class="btn btn-outline" id="btnResetFilter">
+                            <i class="fa-solid fa-rotate-left"></i> Đặt lại
                         </button>
-                        <button class="btn btn-primary" id="btnApplyFilter">
-                            <i class="fa-solid fa-magnifying-glass"></i> Áp dụng bộ lọc
+                        <button type="button" class="btn btn-primary" id="btnApplyFilter">
+                            <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm
                         </button>
                         <button class="btn btn-primary" id="btnOpenAddModal" style="background-color: #10b981; border-color: #10b981;">
                             <i class="fa-solid fa-plus"></i> Thêm phim mới
@@ -131,6 +141,7 @@
                                 <th scope="col" style="cursor: pointer;" onclick="toggleSort('duration')">THỜI LƯỢNG <i class="fa-solid fa-sort" id="sort-icon-duration" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
                                 <th scope="col" style="cursor: pointer;" onclick="toggleSort('format')">ĐỊNH DẠNG <i class="fa-solid fa-sort" id="sort-icon-format" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
                                 <th scope="col" style="cursor: pointer;" onclick="toggleSort('status')">TRẠNG THÁI <i class="fa-solid fa-sort" id="sort-icon-status" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
+                                <th scope="col" class="text-center">HIỂN THỊ</th>
                                 <th scope="col" style="cursor: pointer;" onclick="toggleSort('releaseDate')">KHỞI CHIẾU <i class="fa-solid fa-sort" id="sort-icon-releaseDate" style="font-size: 0.75rem; margin-left: 4px; opacity: 0.6;"></i></th>
                                 <th scope="col" class="text-center">HÀNH ĐỘNG</th>
                             </tr>
@@ -219,11 +230,16 @@
                         <label for="movieLanguage">Ngôn ngữ <span class="required">*</span></label>
                         <select id="movieLanguage" required>
                             <option value="">-- Chọn ngôn ngữ --</option>
-                            <option value="Phụ đề Tiếng Việt">Phụ đề Tiếng Việt</option>
+                            <option value="Tiếng Việt">Tiếng Việt (Gốc)</option>
                             <option value="Lồng tiếng Tiếng Việt">Lồng tiếng Tiếng Việt</option>
-                            <option value="Tiếng Việt">Tiếng Việt</option>
-                            <option value="Phụ đề Tiếng Anh">Phụ đề Tiếng Anh</option>
-                            <option value="Tiếng Anh">Tiếng Anh</option>
+                            <option value="Tiếng Anh - Phụ đề Tiếng Việt & Tiếng Anh">Tiếng Anh - Phụ đề Tiếng Việt</option>
+                            <option value="Tiếng Hàn - Phụ đề Tiếng Việt & Tiếng Anh">Tiếng Hàn - Phụ đề Tiếng Việt & Tiếng Anh</option>
+                            <option value="Tiếng Nhật - Phụ đề Tiếng Việt & Tiếng Anh">Tiếng Nhật - Phụ đề Tiếng Việt & Tiếng Anh</option>
+                            <option value="Tiếng Trung - Phụ đề Tiếng Việt">Tiếng Trung - Phụ đề Tiếng Việt</option>
+                            <option value="Tiếng Thái - Phụ đề Tiếng Việt">Tiếng Thái - Phụ đề Tiếng Việt</option>
+                            <option value="Tiếng Ấn Độ - Phụ đề Tiếng Việt">Tiếng Ấn Độ - Phụ đề Tiếng Việt</option>
+                            <option value="Tiếng Pháp - Phụ đề Tiếng Việt">Tiếng Pháp - Phụ đề Tiếng Việt</option>
+                            <option value="Tiếng Tây Ban Nha - Phụ đề Tiếng Việt">Tiếng Tây Ban Nha - Phụ đề Tiếng Việt</option>
                         </select>
                     </div>
                 </div>
@@ -300,6 +316,7 @@
                             <option value="Đang chiếu">Đang chiếu</option>
                             <option value="Sắp chiếu">Sắp chiếu</option>
                             <option value="Suất chiếu đặc biệt">Suất chiếu đặc biệt</option>
+                            <option value="Ngừng chiếu">Ngừng chiếu</option>
                         </select>
                         <small id="movieStatusHint" style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:2px;"></small>
                     </div>

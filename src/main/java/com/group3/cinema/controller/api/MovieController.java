@@ -4,17 +4,21 @@ package com.group3.cinema.controller.api;
  * Dá»± Ã¡n: Cinema 2026 â€” SWP391 Group 03
  * File: MovieController.java
  * Chá»©c nÄƒng: REST Controller cung cáº¥p cÃ¡c API Ä‘á»ƒ quáº£n lÃ½ phim (Movie).
- *            Há»— trá»£ hiá»ƒn thá»‹ danh sÃ¡ch, tÃ¬m kiáº¿m & lá»c nÃ¢ng cao, thÃªm má»›i, sá»­a Ä‘á»•i, xÃ³a phim vÃ 
+ *            Há»— trá»£ hiá»ƒn thá»‹ danh sÃ¡ch, tÃ¬m kiáº¿m & lá» c nÃ¢ng cao, thÃªm má»›i, sá»­a Ä‘á»•i, xÃ³a phim vÃ 
  *            thá»‘ng kÃª tá»•ng sá»‘ lÆ°á»£ng phim theo tá»«ng tráº¡ng thÃ¡i.
  * Endpoints:
- *   - GET /api/movies: Láº¥y danh sÃ¡ch phim theo bá»™ lá»c (Query Params: title, genre, director, duration, status, releaseDate).
+ *   - GET /api/movies: Láº¥y danh sÃ¡ch phim theo bá»™ lá» c (Query Params: title, genre, director, duration, status, releaseDate).
  *   - GET /api/movies/{id}: Xem thÃ´ng tin chi tiáº¿t cá»§a má»™t bá»™ phim theo ID.
  *   - POST /api/movies: ThÃªm phim má»›i.
  *   - PUT /api/movies/{id}: Cáº­p nháº­t thÃ´ng tin phim.
  *   - DELETE /api/movies/{id}: XÃ³a má»™t bá»™ phim.
  *   - GET /api/movies/stats: Thá»‘ng kÃª sá»‘ lÆ°á»£ng phim (tá»•ng sá»‘, Ä‘ang chiáº¿u, sáº¯p chiáº¿u, suáº¥t Ä‘áº·c biá»‡t).
- * NgÆ°á»i viáº¿t: TrienLX - HE182285
+ * NgÆ°á» i viáº¿t: TrienLX - HE182285
  * NgÃ y táº¡o: 2026-06-04
+ * Người sửa: TrienLX
+ * Ngày sửa: 2026-06-23
+ * Chi tiết thay đổi:
+ *   - [SỬA - TrienLX - 2026-06-23] Cải tiến xử lý ngoại lệ trong toggleActive để ghi log lỗi chi tiết và tránh che giấu lỗi hệ thống dưới mã HTTP 404.
  */
 
 import com.group3.cinema.entity.Movie;
@@ -105,6 +109,26 @@ public class MovieController {
             return ResponseEntity.ok(Map.of("message", "Phim đã được ẩn thành công."));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi xóa phim."));
+        }
+    }
+
+    // Endpoint: PATCH /api/movies/{id}/toggle-active
+    // Đảo ngược trạng thái hiển thị của phim (active ↔ inactive).
+    // Nếu đang hiển thị thì tạm ẩn; nếu đang ẩn thì mở lại — không làm mất dữ liệu.
+    // [SỬA - TrienLX - 2026-06-23]: Ghi log lỗi chi tiết khi không thể tạm ẩn/mở lại phim để debug và trả về mã lỗi 500 kèm chi tiết thay vì luôn trả về 404.
+    @PatchMapping("/{id}/toggle-active")
+    public ResponseEntity<?> toggleActive(@PathVariable("id") Integer id) {
+        try {
+            Movie updated = movieService.toggleActive(id);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi toggle-active cho phim ID " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            if (e.getMessage() != null && e.getMessage().contains("Không tìm thấy phim")) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.status(500)
+                    .body(Map.of("message", "Lỗi hệ thống khi tạm ẩn/mở lại phim: " + e.getMessage()));
         }
     }
 

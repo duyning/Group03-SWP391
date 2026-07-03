@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Quản Lý Ngày Lễ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        .card {
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .table th {
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+
+    <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+        <div class="bg-danger text-white rounded-3 p-3 me-3 shadow-sm">
+            <i class="fa-solid fa-calendar-star fa-2x"></i>
+        </div>
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">CẤU HÌNH NGÀY LỄ / NGÀY CAO ĐIỂM</h2>
+            <p class="text-muted mb-0">Quản lý danh sách các ngày đặc biệt nhằm thiết lập điều kiện áp dụng cho hệ thống Voucher.</p>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fa-solid fa-circle-check fa-lg me-2 text-success"></i>
+            <strong th:text="${successMessage}"></strong>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fa-solid fa-circle-exclamation fa-lg me-2 text-danger"></i>
+            <strong th:text="${errorMessage}"></strong>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+
+    <div class="row g-4">
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-dark text-white fw-bold py-3">
+                    <i class="fa-solid fa-plus-circle me-2 text-danger"></i>Thêm Ngày Đặc Biệt
+                </div>
+                <div class="card-body p-4">
+                    <form th:action="@{/admin/holidays/add}" th:object="${newHoliday}" method="POST">
+
+                        <div class="mb-3">
+                            <label for="holidayName" class="form-label fw-semibold text-secondary">Tên Ngày Lễ / Sự Kiện</label>
+                            <input type="text" id="holidayName" class="form-control form-control-lg border-2"
+                                   th:field="*{name}" placeholder="Ví dụ: Tết Dương Lịch, Nghỉ bù 30/4" required>
+                            <div class="form-text text-muted">Nhập tên tường minh để dễ quản lý.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="holidayDate" class="form-label fw-semibold text-secondary">Chọn Ngày Áp Dụng</label>
+                            <input type="date" id="holidayDate" class="form-control form-control-lg border-2"
+                                   th:field="*{holidayDate}" required>
+                            <div class="form-text text-muted">Hệ thống áp dụng luật chặn voucher vào đúng ngày này.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-danger btn-lg w-100 fw-bold py-2.5 shadow-sm">
+                            <i class="fa-solid fa-floppy-disk me-2"></i>Kích Hoạt & Lưu Lại
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-secondary text-white fw-bold py-3 d-flex justify-content-between align-items-center">
+                    <span><i class="fa-solid fa-list-check me-2 text-warning"></i>Danh Sách Ngày Lễ / Ngày Cao Điểm</span>
+                    <span class="badge bg-dark" th:text="|${#lists.size(holidayList)} ngày|"></span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-dark">
+                            <tr>
+                                <th scope="col" class="ps-4 text-center" style="width: 10%">STT</th>
+                                <th scope="col" style="width: 45%">Tên Ngày Lễ / Sự Kiện</th>
+                                <th scope="col" style="width: 25%">Ngày Áp Dụng</th>
+                                <th scope="col" class="text-center" style="width: 20%">Hành Động</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="holiday, iterStat : ${holidayList}">
+                                <td class="text-center fw-bold text-muted" th:text="${iterStat.index + 1}"></td>
+                                <td>
+                                    <span class="fw-semibold text-dark" th:text="${holiday.name}"></span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-danger border border-danger px-3 py-2 fw-bold">
+                                        <i class="fa-regular fa-calendar-days me-2"></i>
+                                        <span th:text="${#temporals.format(holiday.holidayDate, 'dd/MM/yyyy')}"></span>
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <a th:href="@{/admin/holidays/delete/{id}(id=${holiday.id})}"
+                                       class="btn btn-outline-danger btn-sm rounded-3 px-3 fw-semibold"
+                                       onclick="return confirm('Hệ thống sẽ gỡ bỏ cấu hình chặn Voucher cho ngày này. Bạn có chắc chắn muốn xóa?')">
+                                        <i class="fa-solid fa-trash-can me-1"></i> Xóa
+                                    </a>
+                                </td>
+                            </tr>
+
+                            <tr th:if="${#lists.isEmpty(holidayList)}">
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="fa-regular fa-calendar-xmark fa-3x mb-3 text-secondary"></i>
+                                    <p class="mb-0 fw-semibold">Chưa có ngày lễ nào được cấu hình trong hệ thống.</p>
+                                    <small class="text-muted">Vui lòng sử dụng form bên trái để thiết lập cấu hình mới.</small>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

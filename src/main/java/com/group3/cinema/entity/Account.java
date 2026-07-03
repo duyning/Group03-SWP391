@@ -1,30 +1,34 @@
 package com.group3.cinema.entity;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDate;
-
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
- * Entity Ä‘áº¡i diá»‡n cho báº£ng tÃ i khoáº£n (Account) trong há»‡ thá»‘ng.
- * LÆ°u trá»¯ thÃ´ng tin cÃ¡ nhÃ¢n cá»§a ngÆ°á»i dÃ¹ng bao gá»“m há» tÃªn, email, máº­t kháº©u, sá»‘ Ä‘iá»‡n thoáº¡i, Ä‘á»‹a chá»‰, tuá»•i, giá»›i tÃ­nh, vai trÃ² vÃ  Ä‘iá»ƒm tÃ­ch lÅ©y.
- * 
- * NgÃ y thá»±c hiá»‡n: 04/06/2026
- * Táº¡o bá»Ÿi: DuongND_HE186619
+ * Entity đại diện cho bảng tài khoản (Account) trong hệ thống.
+ * Created by: DuongND_HE186619
+ * Updated by: NinhDD - HE186113, TuanPM
  */
 @Entity
 @Table(name = "account")
@@ -58,12 +62,15 @@ public class Account {
     @NotNull(message = "Vui lòng nhập ngày sinh")
     @Past(message = "Ngày sinh không thể ở tương lai")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @Column(nullable = true)
     private LocalDate dob;
+
     @Column(columnDefinition = "NVARCHAR(20)")
     private String gender;
 
     @Column(columnDefinition = "NVARCHAR(500)")
     private String avatar;
+
     private int loyaltyPoint;
 
     @Enumerated(EnumType.STRING)
@@ -73,6 +80,14 @@ public class Account {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @ManyToMany
+    @JoinTable(
+            name = "account_vouchers",
+            joinColumns = @JoinColumn(name = "account_id"),
+            inverseJoinColumns = @JoinColumn(name = "voucher_id")
+    )
+    private Set<Voucher> savedVouchers = new HashSet<>();
 
     public Account() {
     }
@@ -128,7 +143,9 @@ public class Account {
     @JsonIgnore
     @Transient
     public boolean isValidAge() {
-        if (dob == null) return false;
+        if (dob == null) {
+            return false;
+        }
         int calculatedAge = java.time.Period.between(dob, LocalDate.now()).getYears();
         return calculatedAge >= 13 && calculatedAge <= 100;
     }
@@ -189,13 +206,20 @@ public class Account {
         this.role = role;
     }
 
+    public Set<Voucher> getSavedVouchers() {
+        return savedVouchers;
+    }
+
+    public void setSavedVouchers(Set<Voucher> savedVouchers) {
+        this.savedVouchers = savedVouchers;
+    }
+
     @Override
     public String toString() {
         return "Account{" +
                 "accountID=" + accountID +
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
                 ", phoneNum='" + phoneNum + '\'' +
                 ", address='" + address + '\'' +
                 ", dob=" + dob +

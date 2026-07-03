@@ -3,6 +3,10 @@ package com.group3.cinema.entity;
 /*
  * Added on 2026-06-04: Movie entity for cinema movie data.
  * Created by: HuyPB - HE191335
+ * Updated on 2026-06-23 by: TrienLX
+ * Chi tiết thay đổi:
+ * - Bổ sung trạng thái STOPPED ("Ngừng chiếu") vào enum MovieStatus
+ * - Bổ sung logic phân tích cú pháp cho STOPPED trong fromJson.
  */
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -93,6 +97,8 @@ public class Movie {
      * false = movie stays in database but is hidden from public movie pages.
      */
     private boolean active = true;
+
+    private boolean deleted = false;
 
     public Movie() {
     }
@@ -257,6 +263,14 @@ public class Movie {
         this.active = active;
     }
 
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
     public enum MovieStatus {
         /*
          * Movie is currently available on public listing and booking flows.
@@ -271,7 +285,12 @@ public class Movie {
         /*
          * Movie belongs to a limited/special screening group.
          */
-        SPECIAL_SCREENING("Suất chiếu đặc biệt");
+        SPECIAL_SCREENING("Suất chiếu đặc biệt"),
+
+        /*
+         * Movie has stopped screening or is hidden.
+         */
+        STOPPED("Ngừng chiếu");
 
         private final String displayName;
 
@@ -308,6 +327,9 @@ public class Movie {
             }
             if (lower.contains("special") || lower.contains("dac biet")) {
                 return SPECIAL_SCREENING;
+            }
+            if (lower.contains("stop") || lower.contains("ngung") || lower.contains("ngung chieu")) {
+                return STOPPED;
             }
 
             return null;

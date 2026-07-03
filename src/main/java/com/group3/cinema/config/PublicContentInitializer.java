@@ -7,11 +7,14 @@ package com.group3.cinema.config;
 
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Post;
+import com.group3.cinema.entity.Promotion;
 import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.PostRepository;
+import com.group3.cinema.repository.PromotionRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,17 +25,21 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Component
+@DependsOn("roomUnicodeMigration")
 public class PublicContentInitializer {
 
     private final MovieRepository movieRepository;
     private final PostRepository postRepository;
+    private final PromotionRepository promotionRepository;
     private final ShowtimeRepository showtimeRepository;
     private final JdbcTemplate jdbcTemplate;
 
     public PublicContentInitializer(MovieRepository movieRepository, PostRepository postRepository,
+                                    PromotionRepository promotionRepository,
                                     ShowtimeRepository showtimeRepository, JdbcTemplate jdbcTemplate) {
         this.movieRepository = movieRepository;
         this.postRepository = postRepository;
+        this.promotionRepository = promotionRepository;
         this.showtimeRepository = showtimeRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -43,6 +50,7 @@ public class PublicContentInitializer {
         seedMovies();
         seedShowtimes();
         seedPosts();
+        seedPromotions();
     }
 
     private void seedMovies() {
@@ -354,5 +362,76 @@ public class PublicContentInitializer {
         post.setStatus("PUBLISHED");
         post.setPublishedAt(publishedAt);
         return post;
+    }
+
+    private void seedPromotions() {
+        if (promotionRepository.count() > 0) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        promotionRepository.saveAll(List.of(
+                promotion("Happy Monday - Giá vé nhẹ hơn mỗi thứ Hai",
+                        Promotion.CampaignType.HAPPY_MONDAY,
+                        Promotion.TargetGroup.ALL,
+                        "Đồng giá vé 45.000đ cho các suất chiếu 2D vào thứ Hai hàng tuần.",
+                        "Chiến dịch Happy Monday giúp khách hàng bắt đầu tuần mới bằng một buổi xem phim tiết kiệm, áp dụng cho các suất chiếu hợp lệ tại hệ thống rạp.",
+                        "Áp dụng vào thứ Hai hàng tuần, không áp dụng cho suất chiếu đặc biệt, ghế đôi hoặc ngày lễ theo quy định của rạp.",
+                        "Khách hàng chọn suất chiếu trong ngày thứ Hai trên website hoặc tại quầy, hệ thống/nhân viên sẽ kiểm tra điều kiện chiến dịch trước khi thanh toán.",
+                        "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=85",
+                        today.minusDays(3), today.plusMonths(2)),
+                promotion("Member Day - Ưu đãi dành riêng cho thành viên",
+                        Promotion.CampaignType.MEMBER_DAY,
+                        Promotion.TargetGroup.MEMBER,
+                        "Thành viên nhận ưu đãi giá vé và combo vào thứ Tư hàng tuần.",
+                        "Member Day là chiến dịch chăm sóc khách hàng thân thiết, khuyến khích khách đăng nhập và sử dụng tài khoản thành viên khi đặt vé.",
+                        "Áp dụng cho tài khoản thành viên đang hoạt động. Mỗi khách hàng cần đăng nhập hoặc xuất trình thông tin thành viên khi mua vé.",
+                        "Đăng nhập tài khoản thành viên trước khi đặt vé hoặc cung cấp số điện thoại thành viên tại quầy để được kiểm tra quyền lợi.",
+                        "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1600&q=85",
+                        today.plusDays(2), today.plusMonths(3)),
+                promotion("Student Screen - Ưu đãi học sinh sinh viên",
+                        Promotion.CampaignType.STUDENT_DISCOUNT,
+                        Promotion.TargetGroup.STUDENT,
+                        "Học sinh, sinh viên được hưởng mức giá ưu đãi khi xuất trình thẻ hợp lệ.",
+                        "Chiến dịch Student Screen tạo điều kiện để nhóm khách trẻ tiếp cận phim mới với chi phí hợp lý hơn trong các khung giờ phù hợp.",
+                        "Khách hàng cần xuất trình thẻ học sinh/sinh viên còn hiệu lực. Không áp dụng đồng thời với chương trình ưu đãi khác.",
+                        "Chọn suất chiếu hợp lệ, mang theo thẻ học sinh/sinh viên và xác nhận thông tin tại quầy trước khi nhận vé.",
+                        "https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=1600&q=85",
+                        today.minusDays(10), today.plusMonths(1)),
+                promotion("Bank Weekend - Ưu đãi thanh toán ngân hàng",
+                        Promotion.CampaignType.BANK_PROMOTION,
+                        Promotion.TargetGroup.BANK_USER,
+                        "Khách thanh toán bằng ngân hàng liên kết nhận ưu đãi theo từng cuối tuần.",
+                        "Bank Weekend hỗ trợ các chiến dịch đồng thương hiệu với ngân hàng, giúp tăng tỷ lệ thanh toán không tiền mặt và doanh số cuối tuần.",
+                        "Áp dụng theo danh sách ngân hàng liên kết từng thời điểm. Số lượng giao dịch ưu đãi có thể giới hạn theo ngày.",
+                        "Chọn phương thức thanh toán ngân hàng liên kết khi đặt vé online hoặc hỏi nhân viên tại quầy để được hướng dẫn.",
+                        "https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=1600&q=85",
+                        today.plusDays(5), today.plusMonths(2))
+        ));
+    }
+
+    private Promotion promotion(String title,
+                                Promotion.CampaignType type,
+                                Promotion.TargetGroup targetGroup,
+                                String discountRule,
+                                String description,
+                                String conditionText,
+                                String howToJoin,
+                                String bannerImage,
+                                LocalDate startDate,
+                                LocalDate endDate) {
+        Promotion promotion = new Promotion();
+        promotion.setTitle(title);
+        promotion.setType(type);
+        promotion.setTargetGroup(targetGroup);
+        promotion.setDiscountRule(discountRule);
+        promotion.setDescription(description);
+        promotion.setConditionText(conditionText);
+        promotion.setHowToJoin(howToJoin);
+        promotion.setBannerImage(bannerImage);
+        promotion.setStartDate(startDate);
+        promotion.setEndDate(endDate);
+        promotion.setStatus(Promotion.PromotionStatus.ACTIVE);
+        return promotion;
     }
 }

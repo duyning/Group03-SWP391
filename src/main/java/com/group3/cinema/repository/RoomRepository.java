@@ -28,6 +28,9 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     boolean existsByRoomNameIgnoreCaseAndCinemaIdAndIdNot(String roomName, Long cinemaId, Long id);
 
+    // [THÊM - TrienLX - 2026-06-25] Tìm kiếm phòng theo tên không phân biệt hoa thường để lấy RoomId
+    java.util.Optional<Room> findFirstByRoomNameIgnoreCaseAndCinemaId(String roomName, Long cinemaId);
+
     /** Äáº¿m sá»‘ phÃ²ng Ä‘ang hoáº¡t Ä‘á»™ng */
     long countByCinemaIdAndStatus(Long cinemaId, String status);
 

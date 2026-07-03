@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${voucher.id == null ? 'Tạo Mới Voucher - Hệ Thống Rạp Phim' : 'Chỉnh Sửa Voucher - Hệ Thống Rạp Phim'}">Cấu Hình Voucher</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #f1f3f7;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2d3748;
+            padding: 30px;
+        }
+        .form-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 35px;
+            max-width: 850px;
+            margin: 0 auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .header-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        .form-title {
+            font-weight: 700;
+            color: #2563eb;
+            font-size: 1.6rem;
+            margin: 0;
+        }
+        .header-icon {
+            color: #718096;
+            font-size: 1.4rem;
+        }
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-left: 4px solid #2563eb;
+            padding-left: 10px;
+            margin-top: 25px;
+            margin-bottom: 20px;
+        }
+        .form-label {
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .required-star {
+            color: #ef4444;
+            margin-left: 3px;
+        }
+        .form-control, .form-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 0.92rem;
+            color: #334155;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+        .input-group-text {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .checkbox-group-box {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px 14px;
+            background-color: #ffffff;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .form-footer {
+            background-color: #f8fafc;
+            margin: 40px -35px -35px -35px;
+            padding: 20px 35px;
+            border-top: 1px solid #e2e8f0;
+            border-radius: 0 0 4px 4px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+        .btn-cancel {
+            background-color: #e2e8f0;
+            color: #1e293b;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 6px;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        .btn-cancel:hover {
+            background-color: #cbd5e1;
+            color: #1e293b;
+        }
+        .btn-submit {
+            background-color: #1d61e1;
+            color: white;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 6px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-submit:hover {
+            background-color: #154ec2;
+        }
+        /* Style thông báo lỗi validate đỏ */
+        .error-feedback {
+            color: #ef4444;
+            font-size: 0.82rem;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="form-card">
+
+        <div class="header-wrapper">
+            <h2 class="form-title" th:text="${voucher.id == null ? 'Tạo Voucher Mới' : 'Cập Nhật Thông Tin Voucher'}">Cấu Hình Voucher</h2>
+            <div class="header-icon"><i class="fa-solid fa-ticket-simple"></i></div>
+        </div>
+
+        <form th:action="${voucher.id == null ? '/admin/vouchers/add' : '/admin/vouchers/edit/' + voucher.id}"
+              th:object="${voucher}" method="POST">
+
+            <input type="hidden" th:field="*{id}">
+
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="background-color: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important; border-radius: 4px;">
+                <i class="fa-solid fa-circle-exclamation me-2"></i>
+                <span th:text="${errorMessage}">Đã xảy ra lỗi hệ thống!</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger border-0 shadow-sm mb-4" role="alert" style="background-color: #fff5f5; color: #c53030; border-left: 4px solid #e53e3e !important; border-radius: 4px; padding: 15px 20px;">
+                <div class="fw-bold mb-2"><i class="fa-solid fa-triangle-exclamation me-2"></i>Phát hiện lỗi logic dữ liệu:</div>
+                <ul class="mb-0 ps-3" style="font-size: 0.9rem;">
+                    <li th:each="err : ${#fields.globalErrors()}" th:text="${err}">Nội dung lỗi logic</li>
+                </ul>
+            </div>
+
+            <div th:if="${#fields.hasAnyErrors() and !#fields.hasGlobalErrors()}" class="alert alert-warning border-0 shadow-sm mb-4" role="alert" style="background-color: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b !important; border-radius: 4px; padding: 15px 20px;">
+                <div class="fw-bold mb-1"><i class="fa-solid fa-pen-ruler me-2"></i>Thông tin nhập liệu chưa hợp lệ:</div>
+                <p class="small mb-0 opacity-75">Cậu vui lòng kiểm tra lại các vùng đánh dấu lỗi đỏ ở phía dưới form nhé.</p>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="background-color: #f0fdf4; color: #166534; border-left: 4px solid #22c55e !important; border-radius: 4px;">
+                <i class="fa-solid fa-circle-check me-2"></i>
+                <span th:text="${successMessage}">Thành công!</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div class="section-title">1. Thông tin cơ bản</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Mã Voucher<span class="required-star">*</span></label>
+                    <div class="input-group">
+                        <input type="text" th:field="*{code}" class="form-control"
+                               th:classappend="${#fields.hasErrors('code')} ? 'is-invalid' : ''"
+                               placeholder="Ví dụ: BETA2026, PHIMHE">
+                        <button class="btn btn-outline-secondary" type="button" onclick="generateRandomCode()" style="font-size: 0.85rem;">Tự động tạo</button>
+                    </div>
+                    <div class="error-feedback" th:if="${#fields.hasErrors('code')}" th:errors="*{code}">Lỗi Mã Code</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tên chương trình / Tiêu đề Voucher<span class="required-star">*</span></label>
+                    <input type="text" th:field="*{title}" class="form-control"
+                           th:classappend="${#fields.hasErrors('title')} ? 'is-invalid' : ''"
+                           placeholder="Ví dụ: Ưu đãi ngày hè rực rỡ">
+                    <div class="error-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">Lỗi Tiêu đề</div>
+                </div>
+            </div>
+
+            <div class="section-title">2. Cấu hình giảm giá & Thời gian</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Loại giảm giá<span class="required-star">*</span></label>
+                    <select th:field="*{discountType}" class="form-select" th:classappend="${#fields.hasErrors('discountType')} ? 'is-invalid' : ''">
+                        <option th:each="type : ${discountTypes}"
+                                th:value="${type}"
+                                th:text="${type.displayName}"></option>
+                    </select>
+                    <div class="error-feedback" th:if="${#fields.hasErrors('discountType')}" th:errors="*{discountType}">Lỗi Loại giảm giá</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Mức giảm giá cụ thể<span class="required-star">*</span></label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" th:field="*{discountValue}" class="form-control"
+                               th:classappend="${#fields.hasErrors('discountValue')} ? 'is-invalid' : ''" min="0">
+                        <span class="input-group-text" id="discountUnit">%</span>
+                    </div>
+                    <div class="error-feedback" th:if="${#fields.hasErrors('discountValue')}" th:errors="*{discountValue}">Lỗi Mức giảm</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Mức giảm tối đa (Nếu có)</label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" th:field="*{maxDiscountAmount}" class="form-control"
+                               th:classappend="${#fields.hasErrors('maxDiscountAmount')} ? 'is-invalid' : ''" placeholder="Không giới hạn">
+                        <span class="input-group-text">đ</span>
+                    </div>
+                    <div class="error-feedback" th:if="${#fields.hasErrors('maxDiscountAmount')}" th:errors="*{maxDiscountAmount}">Lỗi giảm tối đa</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Ngày bắt đầu áp dụng<span class="required-star">*</span></label>
+                    <input type="datetime-local" th:field="*{startDate}" class="form-control"
+                           th:classappend="${#fields.hasErrors('startDate')} ? 'is-invalid' : ''">
+                    <div class="error-feedback" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}">Lỗi Ngày bắt đầu</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Ngày hết hạn (Hạn sử dụng)<span class="required-star">*</span></label>
+                    <input type="datetime-local" th:field="*{endDate}" class="form-control"
+                           th:classappend="${#fields.hasErrors('endDate')} ? 'is-invalid' : ''">
+                    <div class="error-feedback" th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}">Lỗi Ngày hết hạn</div>
+                </div>
+            </div>
+
+            <div class="section-title">3. Điều kiện & Giới hạn áp dụng</div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Giá trị hóa đơn tối thiểu<span class="required-star">*</span></label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" th:field="*{minOrderValue}" class="form-control"
+                               th:classappend="${#fields.hasErrors('minOrderValue')} ? 'is-invalid' : ''">
+                        <span class="input-group-text">đ</span>
+                    </div>
+                    <div class="error-feedback" th:if="${#fields.hasErrors('minOrderValue')}" th:errors="*{minOrderValue}">Lỗi đơn tối thiểu</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tổng số lượng phát hành hệ thống<span class="required-star">*</span></label>
+                    <input type="number" th:field="*{totalQuantity}" class="form-control"
+                           th:classappend="${#fields.hasErrors('totalQuantity')} ? 'is-invalid' : ''" min="1">
+                    <div class="error-feedback" th:if="${#fields.hasErrors('totalQuantity')}" th:errors="*{totalQuantity}">Lỗi Số lượng phát hành</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Dịch vụ được áp dụng mã<span class="required-star">*</span></label>
+                    <select th:field="*{serviceScope}" class="form-select" th:classappend="${#fields.hasErrors('serviceScope')} ? 'is-invalid' : ''">
+                        <option th:each="scope : ${serviceScopes}"
+                                th:value="${scope}"
+                                th:text="${scope.displayName}"></option>
+                    </select>
+                    <div class="error-feedback" th:if="${#fields.hasErrors('serviceScope')}" th:errors="*{serviceScope}">Lỗi Phạm vi áp dụng</div>
+                </div>
+
+                <input type="hidden" th:field="*{applicableSeats}" id="applicableSeatsHidden">
+
+                <div class="col-md-6" id="seatTypeContainer">
+                    <label class="form-label">Áp dụng cho loại ghế</label>
+                    <div class="checkbox-group-box">
+                        <div class="form-check form-check-inline mb-0 me-3">
+                            <input class="form-check-input seat-checkbox" type="checkbox" id="seatNormal" value="Normal">
+                            <label class="form-check-label" for="seatNormal">Ghế Thường</label>
+                        </div>
+                        <div class="form-check form-check-inline mb-0 me-3">
+                            <input class="form-check-input seat-checkbox" type="checkbox" id="seatVIP" value="VIP">
+                            <label class="form-check-label" for="seatVIP">Ghế VIP</label>
+                        </div>
+                        <div class="form-check form-check-inline mb-0 me-0">
+                            <input class="form-check-input seat-checkbox" type="checkbox" id="seatDouble" value="Double">
+                            <label class="form-check-label" for="seatDouble">Ghế Đôi</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Áp dụng các ngày trong tuần<span class="required-star">*</span></label>
+                    <select th:field="*{applicableDays}" class="form-select" th:classappend="${#fields.hasErrors('applicableDays')} ? 'is-invalid' : ''">
+                        <option th:each="dayOpt : ${applicableDaysOptions}"
+                                th:value="${dayOpt}"
+                                th:text="${dayOpt.displayName}"></option>
+                    </select>
+                    <div class="error-feedback" th:if="${#fields.hasErrors('applicableDays')}" th:errors="*{applicableDays}">Lỗi Ngày áp dụng</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Áp dụng vào ngày Lễ, Tết<span class="required-star">*</span></label>
+                    <select th:field="*{isHolidayApplicable}" class="form-select">
+                        <option th:value="true">Cho phép áp dụng vào ngày Lễ, Tết</option>
+                        <option th:value="false">KHÔNG áp dụng vào ngày Lễ, Tết</option>
+                    </select>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Giới hạn sử dụng mỗi tài khoản<span class="required-star">*</span></label>
+                    <div class="input-group" style="max-width: 350px;">
+                        <input type="number" th:field="*{limitPerUser}" class="form-control"
+                               th:classappend="${#fields.hasErrors('limitPerUser')} ? 'is-invalid' : ''" min="1">
+                        <span class="input-group-text">lượt / khách hàng</span>
+                    </div>
+                    <div class="error-feedback" th:if="${#fields.hasErrors('limitPerUser')}" th:errors="*{limitPerUser}">Lỗi cấu hình lượt dùng</div>
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <a th:href="@{/admin/vouchers/list}" class="btn-cancel">Hủy bỏ</a>
+                <button type="submit" class="btn-submit">
+                    <i class="fa-regular fa-floppy-disk"></i> Lưu Cấu Hình Voucher
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<script>
+    // 1. Xử lý đổi đơn vị %, đ linh hoạt khi chọn Loại giảm giá (Giá trị Enum khớp Backend hoa)
+    const discountTypeSelect = document.getElementById('discountType');
+    const discountUnitSpan = document.getElementById('discountUnit');
+
+    function updateDiscountUnit() {
+        if (discountTypeSelect.value === 'PERCENTAGE') {
+            discountUnitSpan.textContent = '%';
+        } else {
+            discountUnitSpan.textContent = 'đ';
+        }
+    }
+    discountTypeSelect.addEventListener('change', updateDiscountUnit);
+    window.addEventListener('DOMContentLoaded', updateDiscountUnit); // Đồng bộ khi load trang Edit
+
+    // 2. Hàm sinh mã ngẫu nhiên tự động (Gán thẳng vào id='code' sinh bởi Thymeleaf)
+    function generateRandomCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = 'VCR-';
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('code').value = result;
+    }
+
+    // 3. Logic ẩn/hiển thị chọn loại ghế dựa trên dịch vụ áp dụng (Nếu chọn WATER - chỉ bắp nước thì mờ chọn ghế)
+    const serviceScopeSelect = document.getElementById('serviceScope');
+    const seatTypeContainer = document.getElementById('seatTypeContainer');
+
+    function checkServiceScope() {
+        if (serviceScopeSelect.value === 'WATER') {
+            seatTypeContainer.style.opacity = '0.4';
+            seatTypeContainer.style.pointerEvents = 'none';
+        } else {
+            seatTypeContainer.style.opacity = '1';
+            seatTypeContainer.style.pointerEvents = 'auto';
+        }
+    }
+    serviceScopeSelect.addEventListener('change', checkServiceScope);
+    window.addEventListener('DOMContentLoaded', checkServiceScope);
+
+    // 4. Cơ chế Sync giá trị check các ô Ghế thành Chuỗi gộp (ví dụ: "Normal,VIP") để lưu vào DB
+    const hiddenSeatInput = document.getElementById('applicableSeatsHidden');
+    const seatCheckboxes = document.querySelectorAll('.seat-checkbox');
+
+    function syncCheckboxesToHiddenInput() {
+        const selectedSeats = [];
+        seatCheckboxes.forEach(cb => {
+            if (cb.checked) selectedSeats.push(cb.value);
+        });
+        hiddenSeatInput.value = selectedSeats.join(',');
+    }
+
+    // Đổ dữ liệu ngược lại từ String DB ra Checkbox khi tải trang Sửa (Edit Form)
+    window.addEventListener('DOMContentLoaded', () => {
+        const currentSeatsValue = hiddenSeatInput.value;
+        if (currentSeatsValue) {
+            const seatArray = currentSeatsValue.split(',');
+            seatCheckboxes.forEach(cb => {
+                cb.checked = seatArray.includes(cb.value);
+            });
+        } else {
+            // Nếu tạo mới hoàn toàn, cho mặc định check hết cả 3 loại ghế
+            seatCheckboxes.forEach(cb => cb.checked = true);
+            syncCheckboxesToHiddenInput();
+        }
+    });
+
+    // Lắng nghe sự kiện click checkbox để gom dữ liệu
+    seatCheckboxes.forEach(cb => {
+        cb.addEventListener('change', syncCheckboxesToHiddenInput);
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
