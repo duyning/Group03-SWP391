@@ -8,11 +8,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.time.LocalDate;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Service
-@RequiredArgsConstructor
 public class HolidayService { // Đổi thành Class thường giống các service khác của cậu
 
     private final HolidayRepository holidayRepository;
+
+    @Autowired
+    public HolidayService(HolidayRepository holidayRepository) {
+        this.holidayRepository = holidayRepository;
+    }
 
     @Transactional(readOnly = true)
     public List<Holiday> getAllHolidays() {

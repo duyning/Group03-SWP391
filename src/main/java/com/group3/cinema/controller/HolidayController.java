@@ -10,18 +10,25 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Controller
 @RequestMapping("/admin/holidays")
-@RequiredArgsConstructor
 public class HolidayController {
 
     private final HolidayService holidayService;
+
+    @Autowired
+    public HolidayController(HolidayService holidayService) {
+        this.holidayService = holidayService;
+    }
 
     // 1. Hiển thị trang quản lý ngày lễ
     @GetMapping
     public String showHolidayPage(Model model) {
         model.addAttribute("holidayList", holidayService.getAllHolidays());
-        // Nếu model chưa có đối tượng newHoliday (do lỗi validate truyền sang), thì mới tạo mới
+        // Nếu model chưa có đối tượng newHoliday (do lỗi validate truyền sang), thì mới
+        // tạo mới
         if (!model.containsAttribute("newHoliday")) {
             model.addAttribute("newHoliday", new Holiday());
         }
@@ -31,15 +38,17 @@ public class HolidayController {
     // 2. Xử lý lưu ngày lễ mới (Có Validate)
     @PostMapping("/add")
     public String addHoliday(@Valid @ModelAttribute("newHoliday") Holiday holiday,
-                             BindingResult result,
-                             Model model,
-                             RedirectAttributes redirectAttributes) {
+            BindingResult result,
+            Model model,
+            RedirectAttributes redirectAttributes) {
 
-        // BƯỚC 1: Kiểm tra các ràng buộc Validate đầu vào (@NotBlank, @NotNull từ Entity)
+        // BƯỚC 1: Kiểm tra các ràng buộc Validate đầu vào (@NotBlank, @NotNull từ
+        // Entity)
         if (result.hasErrors()) {
             // Nạp lại danh sách để bảng bên phải không bị trống dữ liệu
             model.addAttribute("holidayList", holidayService.getAllHolidays());
-            // Trả trực tiếp về view chứ KHÔNG redirect, nhằm giữ lại thông báo lỗi đỏ của HTML5/Thymeleaf nếu có mở rộng
+            // Trả trực tiếp về view chứ KHÔNG redirect, nhằm giữ lại thông báo lỗi đỏ của
+            // HTML5/Thymeleaf nếu có mở rộng
             model.addAttribute("errorMessage", "Dữ liệu nhập vào không hợp lệ. Vui lòng kiểm tra lại!");
             return "holiday-management";
         }
@@ -67,7 +76,8 @@ public class HolidayController {
             redirectAttributes.addFlashAttribute("successMessage", "Xóa ngày lễ thành công!");
         } catch (Exception e) {
             // Đề phòng trường hợp id không tồn tại hoặc bị ràng buộc dữ liệu khóa ngoại
-            redirectAttributes.addFlashAttribute("errorMessage", "Không thể xóa ngày lễ này hoặc dữ liệu không tồn tại!");
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Không thể xóa ngày lễ này hoặc dữ liệu không tồn tại!");
         }
         return "redirect:/admin/holidays";
     }

@@ -1,5 +1,6 @@
 package com.group3.cinema.service;
 
+import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Voucher;
 import com.group3.cinema.repository.AccountRepository;
 import com.group3.cinema.repository.VoucherRepository;
@@ -11,12 +12,19 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Service
-@RequiredArgsConstructor
 public class VoucherService {
 
     private final VoucherRepository voucherRepository;
     private final AccountRepository accountRepository;
+
+    @Autowired
+    public VoucherService(VoucherRepository voucherRepository, AccountRepository accountRepository) {
+        this.voucherRepository = voucherRepository;
+        this.accountRepository = accountRepository;
+    }
 
     // ==========================================
     // 1. DÀNH CHO ADMIN (Quản lý)
@@ -24,7 +32,8 @@ public class VoucherService {
 
     @Transactional(readOnly = true)
     public List<Voucher> getAllVouchers() {
-        // Tự động ẩn voucher xóa mềm, tự động ẩn voucher quá hạn và xếp mới nhất lên đầu
+        // Tự động ẩn voucher xóa mềm, tự động ẩn voucher quá hạn và xếp mới nhất lên
+        // đầu
         return voucherRepository.findByIsDeletedFalseAndEndDateAfterOrderByIdDesc(java.time.LocalDateTime.now());
     }
 
@@ -36,7 +45,8 @@ public class VoucherService {
 
     @Transactional
     public void saveVoucher(Voucher voucher) {
-        if (voucher.getCode() != null) voucher.setCode(voucher.getCode().trim().toUpperCase());
+        if (voucher.getCode() != null)
+            voucher.setCode(voucher.getCode().trim().toUpperCase());
         if (voucherRepository.existsByCode(voucher.getCode())) {
             throw new IllegalArgumentException("Mã Voucher '" + voucher.getCode() + "' đã tồn tại!");
         }
@@ -49,7 +59,8 @@ public class VoucherService {
         Voucher existingVoucher = voucherRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Voucher cần cập nhật!"));
 
-        if (updatedVoucher.getCode() != null) updatedVoucher.setCode(updatedVoucher.getCode().trim().toUpperCase());
+        if (updatedVoucher.getCode() != null)
+            updatedVoucher.setCode(updatedVoucher.getCode().trim().toUpperCase());
 
         if (voucherRepository.existsByCodeAndIdNot(updatedVoucher.getCode(), id)) {
             throw new IllegalArgumentException("Mã Voucher đã được sử dụng cho chương trình khác!");
@@ -84,7 +95,8 @@ public class VoucherService {
     @Transactional(readOnly = true)
     public List<Voucher> searchVouchers(String keyword, String discountTypeStr, String serviceScopeStr) {
 
-        // 1. Chuyển đổi kiểu dữ liệu String từ ô Select sang đúng Enum Object, nếu để trống thì gán null
+        // 1. Chuyển đổi kiểu dữ liệu String từ ô Select sang đúng Enum Object, nếu để
+        // trống thì gán null
         Voucher.DiscountType discountType = null;
         if (discountTypeStr != null && !discountTypeStr.trim().isEmpty()) {
             discountType = Voucher.DiscountType.valueOf(discountTypeStr.trim());
@@ -102,35 +114,24 @@ public class VoucherService {
         return voucherRepository.searchVouchersForAdmin(cleanKeyword, discountType, serviceScope);
     }
 
-
     /**
      * Logic Lưu Voucher (Collect)
      */
     @Transactional
     public void collectVoucher(int accountId, Long voucherId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Tài khoản không tồn tại"));
         Voucher voucher = voucherRepository.findById(voucherId)
                 .orElseThrow(() -> new IllegalArgumentException("Voucher không tồn tại"));
 
-        if (!accountRepository.existsById(accountId)) {
-            throw new IllegalArgumentException("Tài khoản không tồn tại");
-        }
-        if (Boolean.TRUE.equals(voucher.getIsDeleted())) {
-            throw new IllegalArgumentException("Voucher này hiện không còn khả dụng!");
-        }
-        if (voucher.getEndDate() == null || voucher.getEndDate().isBefore(LocalDateTime.now())) {
+        if (voucher.getEndDate().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Voucher này đã hết hạn!");
         }
-        if (voucher.getTotalQuantity() != null
-                && voucher.getUsedQuantity() != null
-                && voucher.getUsedQuantity() >= voucher.getTotalQuantity()) {
-            throw new IllegalArgumentException("Voucher này đã hết số lượng phát hành!");
-        }
-        if (voucherRepository.existsInWallet(accountId, voucherId)) {
-            throw new IllegalArgumentException("Bạn đã lưu voucher này rồi!");
-        }
 
-        int insertedRows = voucherRepository.addToWallet(accountId, voucherId);
-        if (insertedRows == 0) {
+        // Thêm vào Set savedVouchers (Set tự động xử lý trùng lặp)
+        if (account.getSavedVouchers().add(voucher)) {
+            accountRepository.save(account);
+        } else {
             throw new IllegalArgumentException("Bạn đã lưu voucher này rồi!");
         }
     }
@@ -145,7 +146,8 @@ public class VoucherService {
             throw new IllegalArgumentException("Ngày bắt đầu không được sau ngày kết thúc!");
         }
 
-        // 2. THÊM LẠI LOGIC CŨ: Ngày đóng (endDate) không được bé hơn thời gian hiện tại (ngày hôm nay)
+        // 2. THÊM LẠI LOGIC CŨ: Ngày đóng (endDate) không được bé hơn thời gian hiện
+        // tại (ngày hôm nay)
         if (voucher.getEndDate().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Ngày đóng chương trình Voucher không được là một ngày trong quá khứ!");
         }
@@ -162,7 +164,8 @@ public class VoucherService {
         }
     }
 
-    // Trong file com.group3.cinema.service.VoucherService.java (hoặc VoucherServiceImpl.java)
+    // Trong file com.group3.cinema.service.VoucherService.java (hoặc
+    // VoucherServiceImpl.java)
     @Transactional
     public void deleteVoucher(Long id) {
         Voucher voucher = voucherRepository.findById(id)
@@ -173,8 +176,5 @@ public class VoucherService {
         voucher.setIsDeleted(true);
         voucherRepository.save(voucher);
     }
-
-
-
 
 }
