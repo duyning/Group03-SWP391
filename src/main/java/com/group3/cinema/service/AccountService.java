@@ -98,12 +98,22 @@ public class AccountService {
     /**
      * Cập nhật thông tin hồ sơ cá nhân.
      */
-    public void updateProfile(Account account, String name, java.time.LocalDate dob, String gender, String address) {
+    public void updateProfile(Account account, String name, java.time.LocalDate dob, String gender, String address, String phoneNum) {
         account.setName(name);
         account.setDob(dob);
         account.setGender(gender);
         account.setAddress(address);
+        if (phoneNum != null && !phoneNum.trim().isEmpty()) {
+            account.setPhoneNum(phoneNum.trim());
+        }
         accountRepository.save(account);
+    }
+
+    /**
+     * Kiểm tra số điện thoại đã tồn tại trong DB hay chưa (trừ chính tài khoản hiện tại).
+     */
+    public boolean isPhoneNumTakenByOther(String phoneNum, Integer accountId) {
+        return accountRepository.existsByPhoneNumAndAccountIDNot(phoneNum, accountId);
     }
 
     /**
