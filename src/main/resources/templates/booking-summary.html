@@ -15,11 +15,28 @@
         .summary-card h2{margin-top:0;color:#0054a6}
         .info-list{display:grid;grid-template-columns:130px 1fr;gap:13px;margin:0}
         .info-list dt{color:#68768b}.info-list dd{margin:0;font-weight:800}
-        .voucher-box{margin-top:18px;border:1px solid #dce5ef;border-radius:14px;overflow:hidden}
-        .voucher-box summary{cursor:pointer;padding:15px 16px;font-weight:900;color:#0054a6;background:#f5f9fd}
-        .voucher-inner{padding:16px}
-        .voucher{display:flex;gap:10px;margin:0}
-        .voucher input{flex:1;padding:11px;border:1px solid #ccd7e4;border-radius:9px}
+        .voucher-box{margin-top:20px;border:1px solid #dce5ef;border-radius:16px;overflow:hidden;background:#fff}
+        .voucher-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:16px 18px;background:linear-gradient(135deg,#f7fbff,#eef6ff)}
+        .voucher-head h2{margin:0;color:#0054a6;font-size:18px}
+        .voucher-head p{margin:5px 0 0;color:#68768b}
+        .voucher-head a{white-space:nowrap;color:#0054a6;font-weight:900;text-decoration:none}
+        .voucher-inner{padding:16px;overflow-x:auto}
+        .wallet-voucher-table{width:100%;border-collapse:separate;border-spacing:0 10px;min-width:720px}
+        .wallet-voucher-table th{text-align:left;color:#68768b;font-size:12px;text-transform:uppercase;padding:0 12px}
+        .wallet-voucher-table td{background:#f8fbff;border-top:1px solid #dbe6f1;border-bottom:1px solid #dbe6f1;padding:13px 12px;vertical-align:middle}
+        .wallet-voucher-table td:first-child{border-left:1px solid #dbe6f1;border-radius:12px 0 0 12px;width:42px}
+        .wallet-voucher-table td:last-child{border-right:1px solid #dbe6f1;border-radius:0 12px 12px 0}
+        .wallet-voucher-table tr.selected td{background:#eff8ff;border-color:#63b3ed}
+        .wallet-voucher-table tr.disabled td{background:#f3f5f8;color:#91a0b2}
+        .wallet-voucher-table input{width:18px;height:18px;accent-color:#0054a6}
+        .voucher-title{font-weight:900;color:#172033}
+        .voucher-code{display:inline-flex;margin-top:5px;padding:4px 8px;border-radius:999px;background:#e7f1ff;color:#0054a6;font-size:12px;font-weight:900;letter-spacing:.04em}
+        .voucher-meta{display:grid;gap:5px;color:#45566f;font-size:13px}
+        .voucher-discount{font-weight:900;color:#0054a6}
+        .voucher-status{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900;background:#e8fff1;color:#087443}
+        .wallet-voucher-table tr.disabled .voucher-status{background:#fff0f0;color:#b42318;white-space:normal}
+        .voucher-empty{margin:0;padding:16px;border:1px dashed #cbd7e5;border-radius:12px;background:#f8fbff;color:#68768b}
+        .voucher-actions{display:flex;justify-content:flex-end;margin-top:12px}
         .totals{position:sticky;top:92px}
         .totals p{display:flex;justify-content:space-between;gap:18px;margin:12px 0}
         .totals .grand{font-size:22px;color:#0054a6;border-top:2px solid #dce5ef;padding-top:16px;margin-top:16px}
@@ -29,7 +46,7 @@
         .confirm-modal h2{margin:0 0 14px;color:#0054a6}
         .confirm-modal p{margin:8px 0;color:#32435a}
         .confirm-modal .flow-actions{margin-top:18px}
-        @media(max-width:900px){.summary-layout{grid-template-columns:1fr}.totals{position:static}.info-list{grid-template-columns:1fr}}
+        @media(max-width:900px){.summary-layout{grid-template-columns:1fr}.totals{position:static}.info-list{grid-template-columns:1fr}.voucher-head{flex-direction:column}.voucher-head a{white-space:normal}}
     </style>
 </head>
 <body>
@@ -62,15 +79,74 @@
                 </dd>
             </dl>
 
-            <details class="voucher-box" th:open="${summary.voucherCode != null || error != null}">
-                <summary>Voucher / mã giảm giá</summary>
+            <section class="voucher-box">
+                <div class="voucher-head">
+                    <div>
+                        <h2>Voucher trong ví của bạn</h2>
+                        <p>Chỉ voucher đủ điều kiện với đơn hiện tại mới có thể chọn.</p>
+                    </div>
+                    <a th:href="@{/vouchers/my-wallet}">Xem ví voucher</a>
+                </div>
                 <div class="voucher-inner">
-                    <form class="voucher" method="post" th:action="@{/booking/voucher}">
-                        <input name="voucherCode" th:value="${summary.voucherCode}" placeholder="Nhập mã voucher nếu có">
-                        <button class="btn small" type="submit">Áp dụng</button>
+                    <form method="post" th:action="@{/booking/voucher}">
+                        <table class="wallet-voucher-table" th:if="${voucherOptions != null && !#lists.isEmpty(voucherOptions)}">
+                            <thead>
+                            <tr>
+                                <th></th>
+                                <th>Voucher</th>
+                                <th>Điều kiện</th>
+                                <th>Giảm dự kiến</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:classappend="${selectedVoucherId == null ? ' selected' : ''}">
+                                <td><input type="radio" name="voucherId" value="" th:checked="${selectedVoucherId == null}"></td>
+                                <td>
+                                    <div class="voucher-title">Không dùng voucher</div>
+                                    <span class="voucher-code">NO VOUCHER</span>
+                                </td>
+                                <td><div class="voucher-meta">Thanh toán theo tổng tiền gốc.</div></td>
+                                <td class="voucher-discount">0đ</td>
+                                <td><span class="voucher-status">Có thể chọn</span></td>
+                            </tr>
+                            <tr th:each="option : ${voucherOptions}"
+                                th:classappend="${(!option.eligible ? ' disabled' : '') + (selectedVoucherId != null && selectedVoucherId == option.voucher.id ? ' selected' : '')}">
+                                <td>
+                                    <input type="radio" name="voucherId"
+                                           th:value="${option.voucher.id}"
+                                           th:checked="${selectedVoucherId != null && selectedVoucherId == option.voucher.id}"
+                                           th:disabled="${!option.eligible}">
+                                </td>
+                                <td>
+                                    <div class="voucher-title" th:text="${option.voucher.title}">Tên voucher</div>
+                                    <span class="voucher-code" th:text="${option.voucher.code}">CODE</span>
+                                </td>
+                                <td>
+                                    <div class="voucher-meta">
+                                        <span th:text="'Đơn tối thiểu: ' + ${#numbers.formatDecimal(option.voucher.minOrderValue,0,'COMMA',0,'POINT')} + 'đ'">Đơn tối thiểu</span>
+                                        <span th:text="'Áp dụng: ' + ${option.voucher.serviceScope.displayName}">Áp dụng</span>
+                                        <span th:text="'HSD: ' + ${#temporals.format(option.voucher.endDate,'dd/MM/yyyy HH:mm')}">HSD</span>
+                                    </div>
+                                </td>
+                                <td class="voucher-discount"
+                                    th:text="${option.eligible ? '-' + #numbers.formatDecimal(option.discount,0,'COMMA',0,'POINT') + 'đ' : '--'}">-0đ</td>
+                                <td>
+                                    <span class="voucher-status"
+                                          th:text="${option.eligible ? 'Có thể chọn' : option.reason}">Có thể chọn</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <p class="voucher-empty" th:if="${voucherOptions == null || #lists.isEmpty(voucherOptions)}">
+                            Ví voucher của bạn đang trống. Hãy lưu voucher ở Kho Voucher trước khi thanh toán.
+                        </p>
+                        <div class="voucher-actions">
+                            <button class="btn small" type="submit">Cập nhật voucher</button>
+                        </div>
                     </form>
                 </div>
-            </details>
+            </section>
 
             <div class="flow-actions">
                 <a class="btn secondary" th:href="@{/booking/seats/change}">Đổi ghế</a>

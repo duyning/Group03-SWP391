@@ -2,7 +2,7 @@ package com.group3.cinema.service;
 
 /*
  * Added on 2026-06-24: Seat map loading and temporary seat holding for customer booking.
- * Updated on 2026-06-26: Seat prices are loaded from SQL table booking_seat_prices.
+ * Updated on 2026-07-03: Customer booking now renders the same configured seat layout and seat types as management.
  * Created by: HuyPB - HE191335
  */
 
@@ -11,36 +11,60 @@ import com.group3.cinema.dto.BookingSelection;
 import com.group3.cinema.entity.BookingTicket;
 import com.group3.cinema.entity.Room;
 import com.group3.cinema.entity.Seat;
+import com.group3.cinema.entity.SeatType;
+import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.RoomRepository;
 import com.group3.cinema.repository.SeatRepository;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.group3.cinema.repository.SeatTypeRepository;
+import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 public class SeatHoldingService {
     public static final int HOLD_MINUTES = 5;
-    private static final Set<String> SELLABLE_TYPES = Set.of("std", "vip", "couple");
+
     private final SeatRepository seatRepository;
     private final RoomRepository roomRepository;
     private final BookingTicketRepository ticketRepository;
-    private final JdbcTemplate jdbcTemplate;
+    private final SeatTypeRepository seatTypeRepository;
+    private final ShowtimeRepository showtimeRepository;
+    private final TicketService ticketService;
 
-    public SeatHoldingService(SeatRepository seatRepository, RoomRepository roomRepository,
+    public SeatHoldingService(SeatRepository seatRepository,
+                              RoomRepository roomRepository,
                               BookingTicketRepository ticketRepository,
-                              JdbcTemplate jdbcTemplate) {
+                              SeatTypeRepository seatTypeRepository,
+                              ShowtimeRepository showtimeRepository,
+                              TicketService ticketService) {
         this.seatRepository = seatRepository;
         this.roomRepository = roomRepository;
         this.ticketRepository = ticketRepository;
-        this.jdbcTemplate = jdbcTemplate;
+        this.seatTypeRepository = seatTypeRepository;
+        this.showtimeRepository = showtimeRepository;
+        this.ticketService = ticketService;
+    }
+
+    @Transactional(readOnly = true)
+    public List<SeatType> getActiveSeatTypes() {
+        return seatTypeRepository.findByActiveTrueOrderByIdAsc();
     }
 
     @Transactional
@@ -48,11 +72,15 @@ public class SeatHoldingService {
         releaseExpired();
         Room room = roomRepository.findById(selection.roomId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng chiếu."));
-        List<BookingTicket> tickets = ticketRepository.findByShowtimeId(selection.showtimeId());
-        Map<Long, BookingTicket> states = tickets.stream()
-                .collect(Collectors.toMap(BookingTicket::getSeatId, Function.identity()));
+        Showtime showtime = showtimeRepository.findById(selection.showtimeId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
+        Map<String, SeatType> seatTypes = seatTypesByCode();
+        Map<Long, BookingTicket> states = ticketRepository.findByShowtimeId(selection.showtimeId()).stream()
+                .collect(Collectors.toMap(BookingTicket::getSeatId, Function.identity(), (first, ignored) -> first));
+
         return seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(room.getId()).stream()
-                .map(seat -> toView(seat, states.get(seat.getId()), ownToken))
+                .filter(seat -> !"skip".equals(normalizeType(seat.getSeatType())))
+                .map(seat -> toView(seat, states.get(seat.getId()), ownToken, seatTypes, showtime))
                 .toList();
     }
 
@@ -61,20 +89,24 @@ public class SeatHoldingService {
         if (requestedIds == null || requestedIds.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một ghế.");
         }
+
         LinkedHashSet<Long> seatIds = new LinkedHashSet<>(requestedIds);
         if (seatIds.size() > 8) {
             throw new IllegalArgumentException("Mỗi lần đặt tối đa 8 ghế.");
         }
+
         releaseExpired();
         String token = currentToken == null || currentToken.isBlank()
                 ? UUID.randomUUID().toString() : currentToken;
         ticketRepository.deleteUnbookedByHoldToken(token);
         ticketRepository.flush();
 
+        Showtime showtime = showtimeRepository.findById(selection.showtimeId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
+        Map<String, SeatType> seatTypes = seatTypesByCode();
         List<Seat> seats = seatRepository.findAllById(seatIds);
-        if (seats.size() != seatIds.size()
-                || seats.stream().anyMatch(s -> !selection.roomId().equals(s.getRoomId())
-                || !SELLABLE_TYPES.contains(normalizeType(s.getSeatType())))) {
+        if (seats.size() != seatIds.size() || seats.stream().anyMatch(seat ->
+                !selection.roomId().equals(seat.getRoomId()) || !isSellableSeat(seat, seatTypes))) {
             throw new IllegalArgumentException("Danh sách ghế không hợp lệ hoặc có ghế không thể bán.");
         }
         if (!ticketRepository.findByShowtimeIdAndSeatIdIn(selection.showtimeId(), seatIds).isEmpty()) {
@@ -85,16 +117,18 @@ public class SeatHoldingService {
         List<BookingTicket> holds = new ArrayList<>();
         for (Seat seat : seats) {
             BookingTicket ticket = new BookingTicket();
+            String type = normalizeType(seat.getSeatType());
             ticket.setShowtimeId(selection.showtimeId());
             ticket.setSeatId(seat.getId());
             ticket.setSeatLabel(seat.getSeatLabel());
-            ticket.setSeatType(normalizeType(seat.getSeatType()));
-            ticket.setPrice(priceFor(seat.getSeatType()));
+            ticket.setSeatType(type);
+            ticket.setPrice(priceFor(showtime, seat));
             ticket.setStatus(BookingTicket.Status.HOLDING);
             ticket.setHoldToken(token);
             ticket.setHoldExpiresAt(expiresAt);
             holds.add(ticket);
         }
+
         try {
             ticketRepository.saveAllAndFlush(holds);
         } catch (DataIntegrityViolationException ex) {
@@ -106,7 +140,9 @@ public class SeatHoldingService {
 
     @Transactional
     public void releaseHold(String token) {
-        if (token != null && !token.isBlank()) ticketRepository.deleteUnbookedByHoldToken(token);
+        if (token != null && !token.isBlank()) {
+            ticketRepository.deleteUnbookedByHoldToken(token);
+        }
     }
 
     @Transactional
@@ -114,31 +150,95 @@ public class SeatHoldingService {
         ticketRepository.deleteByStatusAndHoldExpiresAtBefore(BookingTicket.Status.HOLDING, LocalDateTime.now());
     }
 
-    public BigDecimal priceFor(String type) {
-        String normalizedType = normalizeType(type);
-        List<BigDecimal> prices = jdbcTemplate.query(
-                "SELECT price FROM booking_seat_prices WHERE seat_type = ? AND active = 1",
-                (rs, rowNum) -> rs.getBigDecimal("price"),
-                normalizedType
-        );
-        if (prices.isEmpty()) {
-            throw new IllegalArgumentException("Chưa cấu hình giá ghế trong cơ sở dữ liệu: " + normalizedType);
-        }
-        return prices.get(0);
+    public BigDecimal priceFor(Showtime showtime, Seat seat) {
+        return BigDecimal.valueOf(ticketService.calculatePrice(showtime, seat, "ADULT"))
+                .setScale(0, RoundingMode.HALF_UP);
     }
 
-    private BookingSeatView toView(Seat seat, BookingTicket ticket, String ownToken) {
+    private BookingSeatView toView(Seat seat,
+                                   BookingTicket ticket,
+                                   String ownToken,
+                                   Map<String, SeatType> seatTypes,
+                                   Showtime showtime) {
         String type = normalizeType(seat.getSeatType());
+        SeatType meta = seatTypes.get(type);
+        boolean sellable = isSellableSeat(seat, seatTypes);
         String status;
-        if (!SELLABLE_TYPES.contains(type)) status = "UNAVAILABLE";
-        else if (ticket == null) status = "AVAILABLE";
-        else if (ticket.getStatus() == BookingTicket.Status.BOOKED) status = "BOOKED";
-        else if (Objects.equals(ticket.getHoldToken(), ownToken)) status = "SELECTED";
-        else status = "HOLDING";
-        return new BookingSeatView(seat.getId(), seat.getRowIndex(), seat.getColIndex(),
-                seat.getSeatLabel(), type, status, SELLABLE_TYPES.contains(type) ? priceFor(type) : BigDecimal.ZERO);
+        if (!sellable) {
+            status = "UNAVAILABLE";
+        } else if (ticket == null) {
+            status = "AVAILABLE";
+        } else if (ticket.getStatus() == BookingTicket.Status.BOOKED) {
+            status = "BOOKED";
+        } else if (Objects.equals(ticket.getHoldToken(), ownToken)) {
+            status = "SELECTED";
+        } else {
+            status = "HOLDING";
+        }
+
+        return new BookingSeatView(
+                seat.getId(),
+                seat.getRowIndex(),
+                seat.getColIndex(),
+                seat.getSeatLabel(),
+                type,
+                displayName(type, meta),
+                color(meta),
+                visualCapacity(type, meta),
+                sellable,
+                status,
+                sellable ? priceFor(showtime, seat) : BigDecimal.ZERO
+        );
     }
 
-    private String normalizeType(String type) { return type == null ? "std" : type.trim().toLowerCase(); }
+    private Map<String, SeatType> seatTypesByCode() {
+        Map<String, SeatType> map = new LinkedHashMap<>();
+        seatTypeRepository.findAllByOrderByIdAsc().forEach(type -> map.put(normalizeType(type.getCode()), type));
+        return map;
+    }
+
+    private boolean isSellableSeat(Seat seat, Map<String, SeatType> seatTypes) {
+        String type = normalizeType(seat.getSeatType());
+        if ("skip".equals(type)) {
+            return false;
+        }
+        SeatType meta = seatTypes.get(type);
+        if (meta == null) {
+            return false;
+        }
+        return meta.isActive() && meta.isSellable() && meta.getCapacity() > 0;
+    }
+
+    private int visualCapacity(String type, SeatType meta) {
+        if ("skip".equals(type)) {
+            return 0;
+        }
+        return meta != null && meta.getCapacity() > 1 ? meta.getCapacity() : 1;
+    }
+
+    private String displayName(String type, SeatType meta) {
+        if (meta != null && meta.getDisplayName() != null && !meta.getDisplayName().isBlank()) {
+            return meta.getDisplayName();
+        }
+        return switch (type) {
+            case "vip" -> "Ghế VIP";
+            case "couple" -> "Ghế đôi";
+            case "broken" -> "Ghế hỏng";
+            case "empty" -> "Lối đi / Trống";
+            default -> "Ghế thường";
+        };
+    }
+
+    private String color(SeatType meta) {
+        if (meta == null || meta.getColor() == null || meta.getColor().isBlank()) {
+            return "#e2e8f0";
+        }
+        return meta.getColor();
+    }
+
+    private String normalizeType(String type) {
+        return type == null || type.isBlank() ? "std" : type.trim().toLowerCase();
+    }
+
     public record HoldResult(String token, LocalDateTime expiresAt, List<BookingTicket> tickets) { }
 }

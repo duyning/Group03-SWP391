@@ -6,6 +6,9 @@ body.admin-page {
     padding: 0 !important;
     margin: 0;
     background: #f1f5f9;
+    display: block !important;
+    align-items: initial !important;
+    justify-content: initial !important;
 }
 
 .admin-layout {

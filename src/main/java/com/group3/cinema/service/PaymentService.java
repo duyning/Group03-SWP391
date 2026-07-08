@@ -15,6 +15,7 @@ import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.PaymentRepository;
 import com.group3.cinema.repository.TicketRepository;
+import com.group3.cinema.repository.VoucherRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class PaymentService {
     private final TicketRepository realTicketRepository;
     private final ShowtimeRepository showtimeRepository;
     private final AccountRepository accountRepository;
+    private final VoucherRepository voucherRepository;
 
     public PaymentService(PaymentRepository paymentRepository,
                           BookingRepository bookingRepository,
@@ -40,7 +42,8 @@ public class PaymentService {
                           BookingEmailService bookingEmailService,
                           TicketRepository realTicketRepository,
                           ShowtimeRepository showtimeRepository,
-                          AccountRepository accountRepository) {
+                          AccountRepository accountRepository,
+                          VoucherRepository voucherRepository) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.ticketRepository = ticketRepository;
@@ -48,11 +51,13 @@ public class PaymentService {
         this.realTicketRepository = realTicketRepository;
         this.showtimeRepository = showtimeRepository;
         this.accountRepository = accountRepository;
+        this.voucherRepository = voucherRepository;
     }
 
     @Transactional
     public Payment createPayment(Long bookingId, Integer accountId, String method) {
         Booking booking = requirePayableBooking(bookingId, accountId);
+        ensureVoucherStillAvailable(booking);
         Payment existingPending = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(bookingId)
                 .filter(payment -> payment.getStatus() == Payment.Status.PENDING)
                 .orElse(null);
@@ -97,6 +102,7 @@ public class PaymentService {
                 payment.setErrorMessage("Đơn đặt vé đã hết hạn trước khi thanh toán hoàn tất.");
                 return paymentRepository.save(payment);
             }
+            markVoucherAsUsed(booking);
             payment.setStatus(Payment.Status.SUCCESS);
             payment.setResponseCode("00");
             payment.setTransactionId(UUID.randomUUID().toString());
@@ -150,6 +156,7 @@ public class PaymentService {
                 payment.setErrorMessage("Đơn đặt vé đã hết hạn trước khi thanh toán hoàn tất.");
                 return paymentRepository.save(payment);
             }
+            markVoucherAsUsed(booking);
             payment.setStatus(Payment.Status.SUCCESS);
             payment.setResponseCode(responseCode);
             payment.setTransactionId(transactionId);
@@ -244,6 +251,44 @@ public class PaymentService {
     private void cancelBookingAndReleaseSeats(Booking booking) {
         booking.setStatus(Booking.Status.CANCELLED);
         ticketRepository.deleteByBookingId(booking.getId());
+    }
+
+    private void ensureVoucherStillAvailable(Booking booking) {
+        String voucherCode = normalizeVoucherCode(booking.getVoucherCode());
+        if (voucherCode == null) {
+            return;
+        }
+        voucherRepository.findByCodeIgnoreCase(voucherCode).ifPresent(voucher -> {
+            int usedQuantity = voucher.getUsedQuantity() == null ? 0 : voucher.getUsedQuantity();
+            Integer totalQuantity = voucher.getTotalQuantity();
+            if (totalQuantity != null && usedQuantity >= totalQuantity) {
+                throw new IllegalArgumentException("Voucher " + voucher.getCode()
+                        + " đã hết số lượng phát hành. Vui lòng quay lại chọn voucher khác.");
+            }
+        });
+    }
+
+    private void markVoucherAsUsed(Booking booking) {
+        String voucherCode = normalizeVoucherCode(booking.getVoucherCode());
+        if (voucherCode == null) {
+            return;
+        }
+        boolean managedVoucher = voucherRepository.findByCodeIgnoreCase(voucherCode).isPresent();
+        if (!managedVoucher) {
+            return;
+        }
+        int updatedRows = voucherRepository.incrementUsedQuantityIfAvailable(voucherCode);
+        if (updatedRows == 0) {
+            throw new IllegalArgumentException("Voucher " + voucherCode
+                    + " đã hết số lượng phát hành. Vui lòng quay lại chọn voucher khác.");
+        }
+    }
+
+    private String normalizeVoucherCode(String voucherCode) {
+        if (voucherCode == null || voucherCode.isBlank()) {
+            return null;
+        }
+        return voucherCode.trim().toUpperCase();
     }
 
     private String generateOrderCode(Payment.Method method) {

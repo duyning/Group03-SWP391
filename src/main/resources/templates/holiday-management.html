@@ -6,135 +6,460 @@
     <title>Admin - Quản Lý Ngày Lễ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
     <style>
-        .card {
-            transition: all 0.3s ease-in-out;
+        body.admin-page {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #172033;
+            background: #f1f5f9;
         }
-        .card:hover {
-            transform: translateY(-2px);
+
+        .holiday-page {
+            max-width: 1440px;
+            margin: 0 auto;
         }
-        .table th {
+
+        .holiday-hero {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            align-items: stretch;
+            padding: 28px;
+            border: 1px solid #dbe4ef;
+            border-radius: 18px;
+            background:
+                    linear-gradient(135deg, rgba(0,84,166,0.96), rgba(18,44,92,0.98)),
+                    #0054a6;
+            box-shadow: 0 18px 42px rgba(15,23,42,0.14);
+            color: #ffffff;
+            margin-bottom: 22px;
+        }
+
+        .holiday-title {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            max-width: 760px;
+        }
+
+        .holiday-title-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.22);
+            flex-shrink: 0;
+        }
+
+        .holiday-title h1 {
+            font-size: 1.72rem;
+            line-height: 1.2;
+            margin: 0 0 8px;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .holiday-title p {
+            margin: 0;
+            color: rgba(255,255,255,0.78);
+            line-height: 1.55;
+        }
+
+        .holiday-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(150px, 1fr));
+            gap: 12px;
+            min-width: 330px;
+        }
+
+        .holiday-stat {
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .holiday-stat small {
+            display: block;
+            color: rgba(255,255,255,0.72);
             font-weight: 600;
-            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .holiday-stat strong {
+            display: block;
+            font-size: 1.6rem;
+            line-height: 1;
+            font-weight: 850;
+        }
+
+        .holiday-grid {
+            display: grid;
+            grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .holiday-panel {
+            background: #ffffff;
+            border: 1px solid #dbe4ef;
+            border-radius: 16px;
+            box-shadow: 0 14px 34px rgba(15,23,42,0.06);
+            overflow: hidden;
+        }
+
+        .panel-heading {
+            padding: 18px 22px;
+            border-bottom: 1px solid #e6edf5;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .panel-heading h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.05rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-heading p {
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+
+        .holiday-form {
+            padding: 22px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .field-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #334155;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .holiday-form .form-control {
+            min-height: 46px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 0.94rem;
+        }
+
+        .holiday-form .form-control:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+        }
+
+        .helper-text {
+            margin: 7px 0 0;
+            color: #64748b;
+            font-size: 0.82rem;
+        }
+
+        .btn-save-holiday {
+            min-height: 46px;
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            background: #0054a6;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            transition: 0.2s ease;
+        }
+
+        .btn-save-holiday:hover {
+            background: #003f7d;
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .holiday-table {
+            margin: 0;
+            table-layout: fixed;
+        }
+
+        .holiday-table th {
+            padding: 14px 18px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .holiday-table td {
+            padding: 17px 18px;
+            border-bottom: 1px solid #edf2f7;
+            color: #172033;
+            vertical-align: middle;
+        }
+
+        .holiday-table tbody tr:hover td {
+            background: #f8fbff;
+        }
+
+        .holiday-name {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .holiday-name-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eef6ff;
+            color: #0054a6;
+            flex-shrink: 0;
+        }
+
+        .holiday-name strong {
+            display: block;
+            overflow-wrap: anywhere;
+        }
+
+        .date-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .btn-delete-holiday {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border-radius: 10px;
+            padding: 8px 13px;
+            font-weight: 700;
+            text-decoration: none;
+            color: #b91c1c;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+
+        .btn-delete-holiday:hover {
+            color: #7f1d1d;
+            background: #fee2e2;
+        }
+
+        .empty-holiday {
+            padding: 58px 18px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .empty-holiday i {
+            font-size: 2.4rem;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 1100px) {
+            .holiday-hero {
+                flex-direction: column;
+            }
+
+            .holiday-stats {
+                min-width: 0;
+            }
+
+            .holiday-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .holiday-hero,
+            .holiday-form,
+            .panel-heading {
+                padding: 18px;
+            }
+
+            .holiday-title {
+                flex-direction: column;
+            }
+
+            .holiday-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .holiday-table {
+                min-width: 680px;
+            }
         }
     </style>
 </head>
-<body class="bg-light">
+<body class="admin-page">
 
-<div class="container py-5">
-
-    <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
-        <div class="bg-danger text-white rounded-3 p-3 me-3 shadow-sm">
-            <i class="fa-solid fa-calendar-star fa-2x"></i>
-        </div>
-        <div>
-            <h2 class="fw-bold mb-1 text-dark">CẤU HÌNH NGÀY LỄ / NGÀY CAO ĐIỂM</h2>
-            <p class="text-muted mb-0">Quản lý danh sách các ngày đặc biệt nhằm thiết lập điều kiện áp dụng cho hệ thống Voucher.</p>
-        </div>
-    </div>
-
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-        <div class="d-flex align-items-center">
-            <i class="fa-solid fa-circle-check fa-lg me-2 text-success"></i>
-            <strong th:text="${successMessage}"></strong>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-        <div class="d-flex align-items-center">
-            <i class="fa-solid fa-circle-exclamation fa-lg me-2 text-danger"></i>
-            <strong th:text="${errorMessage}"></strong>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-
-
-    <div class="row g-4">
-
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-header bg-dark text-white fw-bold py-3">
-                    <i class="fa-solid fa-plus-circle me-2 text-danger"></i>Thêm Ngày Đặc Biệt
+<div class="admin-layout">
+    <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('holidays')}"></aside>
+    <main class="admin-main">
+        <div class="holiday-page">
+            <section class="holiday-hero">
+                <div class="holiday-title">
+                    <div class="holiday-title-icon">
+                        <i class="fa-solid fa-calendar-days fa-xl"></i>
+                    </div>
+                    <div>
+                        <h1>Cấu hình ngày lễ / ngày cao điểm</h1>
+                        <p>Quản lý các ngày đặc biệt dùng để kiểm soát điều kiện áp dụng voucher, tránh áp dụng sai chính sách giá và ưu đãi vào dịp cao điểm.</p>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <form th:action="@{/admin/holidays/add}" th:object="${newHoliday}" method="POST">
+                <div class="holiday-stats">
+                    <div class="holiday-stat">
+                        <small>Ngày đã cấu hình</small>
+                        <strong th:text="${#lists.size(holidayList)}">0</strong>
+                    </div>
+                    <div class="holiday-stat">
+                        <small>Phạm vi ảnh hưởng</small>
+                        <strong>Voucher</strong>
+                    </div>
+                </div>
+            </section>
 
-                        <div class="mb-3">
-                            <label for="holidayName" class="form-label fw-semibold text-secondary">Tên Ngày Lễ / Sự Kiện</label>
-                            <input type="text" id="holidayName" class="form-control form-control-lg border-2"
-                                   th:field="*{name}" placeholder="Ví dụ: Tết Dương Lịch, Nghỉ bù 30/4" required>
-                            <div class="form-text text-muted">Nhập tên tường minh để dễ quản lý.</div>
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+                <i class="fa-solid fa-circle-check me-2"></i>
+                <strong th:text="${successMessage}"></strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+                <i class="fa-solid fa-circle-exclamation me-2"></i>
+                <strong th:text="${errorMessage}"></strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="holiday-grid">
+                <section class="holiday-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h2><i class="fa-solid fa-plus-circle text-primary"></i>Thêm ngày đặc biệt</h2>
+                            <p>Thiết lập ngày cần áp dụng quy tắc lễ/tết hoặc ngày cao điểm.</p>
+                        </div>
+                    </div>
+                    <form class="holiday-form" th:action="@{/admin/holidays/add}" th:object="${newHoliday}" method="POST">
+                        <div>
+                            <label for="holidayName" class="field-label">
+                                <i class="fa-solid fa-signature text-primary"></i>Tên ngày lễ / sự kiện
+                            </label>
+                            <input type="text" id="holidayName" class="form-control"
+                                   th:field="*{name}" placeholder="Ví dụ: Tết Dương Lịch, Quốc Khánh" required>
+                            <p class="helper-text">Tên nên rõ nghĩa để nhân viên vận hành dễ nhận biết khi cấu hình voucher.</p>
                         </div>
 
-                        <div class="mb-4">
-                            <label for="holidayDate" class="form-label fw-semibold text-secondary">Chọn Ngày Áp Dụng</label>
-                            <input type="date" id="holidayDate" class="form-control form-control-lg border-2"
-                                   th:field="*{holidayDate}" required>
-                            <div class="form-text text-muted">Hệ thống áp dụng luật chặn voucher vào đúng ngày này.</div>
+                        <div>
+                            <label for="holidayDate" class="field-label">
+                                <i class="fa-regular fa-calendar text-primary"></i>Ngày áp dụng
+                            </label>
+                            <input type="date" id="holidayDate" class="form-control" th:field="*{holidayDate}" required>
+                            <p class="helper-text">Voucher có điều kiện ngày lễ sẽ được kiểm tra dựa trên ngày này.</p>
                         </div>
 
-                        <button type="submit" class="btn btn-danger btn-lg w-100 fw-bold py-2.5 shadow-sm">
-                            <i class="fa-solid fa-floppy-disk me-2"></i>Kích Hoạt & Lưu Lại
+                        <button type="submit" class="btn-save-holiday">
+                            <i class="fa-solid fa-floppy-disk"></i>Lưu cấu hình
                         </button>
                     </form>
-                </div>
-            </div>
-        </div>
+                </section>
 
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-header bg-secondary text-white fw-bold py-3 d-flex justify-content-between align-items-center">
-                    <span><i class="fa-solid fa-list-check me-2 text-warning"></i>Danh Sách Ngày Lễ / Ngày Cao Điểm</span>
-                    <span class="badge bg-dark" th:text="|${#lists.size(holidayList)} ngày|"></span>
-                </div>
-                <div class="card-body p-0">
+                <section class="holiday-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h2><i class="fa-solid fa-list-check text-primary"></i>Danh sách ngày đã cấu hình</h2>
+                            <p>Theo dõi và gỡ cấu hình các ngày đặc biệt đang ảnh hưởng tới chính sách voucher.</p>
+                        </div>
+                        <span class="badge rounded-pill text-bg-primary" th:text="|${#lists.size(holidayList)} ngày|">0 ngày</span>
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-hover table-striped align-middle mb-0">
-                            <thead class="table-dark">
+                        <table class="table holiday-table align-middle">
+                            <colgroup>
+                                <col style="width: 82px;">
+                                <col>
+                                <col style="width: 210px;">
+                                <col style="width: 150px;">
+                            </colgroup>
+                            <thead>
                             <tr>
-                                <th scope="col" class="ps-4 text-center" style="width: 10%">STT</th>
-                                <th scope="col" style="width: 45%">Tên Ngày Lễ / Sự Kiện</th>
-                                <th scope="col" style="width: 25%">Ngày Áp Dụng</th>
-                                <th scope="col" class="text-center" style="width: 20%">Hành Động</th>
+                                <th class="text-center">STT</th>
+                                <th>Tên ngày lễ / sự kiện</th>
+                                <th>Ngày áp dụng</th>
+                                <th class="text-center">Hành động</th>
                             </tr>
                             </thead>
                             <tbody>
                             <tr th:each="holiday, iterStat : ${holidayList}">
-                                <td class="text-center fw-bold text-muted" th:text="${iterStat.index + 1}"></td>
+                                <td class="text-center fw-bold text-secondary" th:text="${iterStat.index + 1}">1</td>
                                 <td>
-                                    <span class="fw-semibold text-dark" th:text="${holiday.name}"></span>
+                                    <div class="holiday-name">
+                                        <span class="holiday-name-icon"><i class="fa-solid fa-calendar-check"></i></span>
+                                        <strong th:text="${holiday.name}">Tên ngày lễ</strong>
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-danger border border-danger px-3 py-2 fw-bold">
-                                        <i class="fa-regular fa-calendar-days me-2"></i>
-                                        <span th:text="${#temporals.format(holiday.holidayDate, 'dd/MM/yyyy')}"></span>
+                                    <span class="date-badge">
+                                        <i class="fa-regular fa-calendar-days"></i>
+                                        <span th:text="${#temporals.format(holiday.holidayDate, 'dd/MM/yyyy')}">01/01/2026</span>
                                     </span>
                                 </td>
                                 <td class="text-center">
                                     <a th:href="@{/admin/holidays/delete/{id}(id=${holiday.id})}"
-                                       class="btn btn-outline-danger btn-sm rounded-3 px-3 fw-semibold"
-                                       onclick="return confirm('Hệ thống sẽ gỡ bỏ cấu hình chặn Voucher cho ngày này. Bạn có chắc chắn muốn xóa?')">
-                                        <i class="fa-solid fa-trash-can me-1"></i> Xóa
+                                       class="btn-delete-holiday"
+                                       onclick="return confirm('Hệ thống sẽ gỡ bỏ cấu hình ngày đặc biệt này. Bạn có chắc chắn muốn xóa?')">
+                                        <i class="fa-solid fa-trash-can"></i>Xóa
                                     </a>
                                 </td>
                             </tr>
 
                             <tr th:if="${#lists.isEmpty(holidayList)}">
-                                <td colspan="4" class="text-center py-5 text-muted">
-                                    <i class="fa-regular fa-calendar-xmark fa-3x mb-3 text-secondary"></i>
-                                    <p class="mb-0 fw-semibold">Chưa có ngày lễ nào được cấu hình trong hệ thống.</p>
-                                    <small class="text-muted">Vui lòng sử dụng form bên trái để thiết lập cấu hình mới.</small>
+                                <td colspan="4">
+                                    <div class="empty-holiday">
+                                        <i class="fa-regular fa-calendar-xmark d-block"></i>
+                                        <strong>Chưa có ngày lễ nào được cấu hình.</strong>
+                                        <p class="mb-0 mt-1">Hãy thêm ngày đặc biệt đầu tiên để hệ thống kiểm tra voucher chính xác hơn.</p>
+                                    </div>
                                 </td>
                             </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
-
-    </div>
+    </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

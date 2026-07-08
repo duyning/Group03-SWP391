@@ -6,5 +6,15 @@ package com.group3.cinema.dto;
  */
 
 import java.math.BigDecimal;
-public record BookingSeatView(Long id, int rowIndex, int colIndex, String label,
-                              String type, String status, BigDecimal price) { }
+
+public record BookingSeatView(Long id,
+                              int rowIndex,
+                              int colIndex,
+                              String label,
+                              String type,
+                              String displayName,
+                              String color,
+                              int capacity,
+                              boolean sellable,
+                              String status,
+                              BigDecimal price) { }

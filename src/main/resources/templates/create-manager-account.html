@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
     <link rel="stylesheet" th:href="@{/css/register.css}">
     <style>
         /* ===== White & Blue theme overrides for Create Manager page ===== */
@@ -15,6 +16,16 @@
         /* Background: light gradient instead of dark */
         body {
             background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 40%, #dbeafe 100%) !important;
+        }
+        .admin-main.create-manager-main {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+        .admin-main.create-manager-main .register-wrapper {
+            max-width: 620px;
         }
 
         /* Background decoration shapes → blue tones */
@@ -206,8 +217,11 @@
         }
     </style>
 </head>
-<body>
+<body class="admin-page">
 
+<div class="admin-layout">
+    <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('create-manager')}"></aside>
+    <main class="admin-main create-manager-main">
 <div class="register-wrapper">
     <!-- Decorative background elements -->
     <div class="bg-shape bg-shape-1"></div>
@@ -357,6 +371,8 @@
             <p><a th:href="@{/admin/dashboard}" class="login-link"><i class="fas fa-arrow-left"></i> Quay lại Dashboard</a></p>
         </div>
     </div>
+</div>
+    </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

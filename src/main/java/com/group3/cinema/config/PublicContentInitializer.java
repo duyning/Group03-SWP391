@@ -8,11 +8,9 @@ package com.group3.cinema.config;
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Post;
 import com.group3.cinema.entity.Promotion;
-import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.PostRepository;
 import com.group3.cinema.repository.PromotionRepository;
-import com.group3.cinema.repository.api.ShowtimeRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
 @Component
@@ -31,16 +28,13 @@ public class PublicContentInitializer {
     private final MovieRepository movieRepository;
     private final PostRepository postRepository;
     private final PromotionRepository promotionRepository;
-    private final ShowtimeRepository showtimeRepository;
     private final JdbcTemplate jdbcTemplate;
 
     public PublicContentInitializer(MovieRepository movieRepository, PostRepository postRepository,
-                                    PromotionRepository promotionRepository,
-                                    ShowtimeRepository showtimeRepository, JdbcTemplate jdbcTemplate) {
+                                    PromotionRepository promotionRepository, JdbcTemplate jdbcTemplate) {
         this.movieRepository = movieRepository;
         this.postRepository = postRepository;
         this.promotionRepository = promotionRepository;
-        this.showtimeRepository = showtimeRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -48,7 +42,6 @@ public class PublicContentInitializer {
     @Transactional
     public void seedPublicContent() {
         seedMovies();
-        seedShowtimes();
         seedPosts();
         seedPromotions();
     }
@@ -141,86 +134,6 @@ public class PublicContentInitializer {
         } catch (Exception ignored) {
             // If existing movie rows are referenced, they stay hidden instead of breaking booking history.
         }
-    }
-
-    private void seedShowtimes() {
-        List<Movie> movies = movieRepository.findByActiveTrue().stream()
-                .sorted(java.util.Comparator.comparing(Movie::getTitle))
-                .toList();
-        if (movies.isEmpty()) {
-            return;
-        }
-
-        java.util.Set<String> existingSlots = showtimeRepository.findAll().stream()
-                .map(this::showtimeKey)
-                .collect(java.util.stream.Collectors.toSet());
-
-        List<String> rooms = jdbcTemplate.query(
-                "SELECT room_name FROM rooms WHERE status = N'Hoạt động' ORDER BY room_name",
-                (rs, rowNum) -> rs.getString("room_name").trim()
-        );
-        if (rooms.isEmpty()) {
-            rooms = List.of("Phòng Demo 01", "Seed Room 01", "Seed Room 04"); // Fallback to database active rooms
-        }
-
-        List<List<LocalTime>> roomSlots = List.of(
-                List.of(LocalTime.of(9, 0), LocalTime.of(12, 0), LocalTime.of(15, 0), LocalTime.of(18, 0), LocalTime.of(21, 0)),
-                List.of(LocalTime.of(9, 30), LocalTime.of(12, 30), LocalTime.of(15, 30), LocalTime.of(18, 30), LocalTime.of(21, 30)),
-                List.of(LocalTime.of(10, 0), LocalTime.of(13, 0), LocalTime.of(16, 0), LocalTime.of(19, 0), LocalTime.of(22, 0)),
-                List.of(LocalTime.of(10, 30), LocalTime.of(13, 30), LocalTime.of(16, 30), LocalTime.of(19, 30)),
-                List.of(LocalTime.of(11, 0), LocalTime.of(14, 0), LocalTime.of(17, 0), LocalTime.of(20, 0))
-        );
-
-        LocalDate startDate = LocalDate.now().plusDays(1);
-        List<Showtime> newShowtimes = new java.util.ArrayList<>();
-        int movieCursor = 0;
-
-        for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
-            LocalDate showDate = startDate.plusDays(dayOffset);
-            for (int roomIndex = 0; roomIndex < rooms.size(); roomIndex++) {
-                String room = rooms.get(roomIndex);
-                List<LocalTime> slots = roomSlots.get(roomIndex % roomSlots.size());
-                for (LocalTime showTime : slots) {
-                    Movie movie = movies.get(movieCursor % movies.size());
-                    movieCursor++;
-
-                    Showtime showtime = new Showtime();
-                    showtime.setMovie(movie);
-                    showtime.setShowDate(showDate);
-                    showtime.setShowTime(showTime);
-                    showtime.setRoom(room);
-                    showtime.setDayType(determineDayType(showDate));
-
-                    String key = showtimeKey(showtime);
-                    if (existingSlots.add(key)) {
-                        newShowtimes.add(showtime);
-                    }
-                }
-            }
-        }
-
-        if (!newShowtimes.isEmpty()) {
-            showtimeRepository.saveAll(newShowtimes);
-        }
-    }
-
-    private String showtimeKey(Showtime showtime) {
-        return (showtime.getRoom() == null ? "" : showtime.getRoom().trim().toLowerCase())
-                + "|" + showtime.getShowDate()
-                + "|" + showtime.getShowTime();
-    }
-
-    private String determineDayType(LocalDate date) {
-        int month = date.getMonthValue();
-        int day = date.getDayOfMonth();
-        if ((month == 1 && day == 1) || (month == 4 && day == 30)
-                || (month == 5 && day == 1) || (month == 9 && day == 2)) {
-            return "Ngày lễ";
-        }
-        java.time.DayOfWeek dow = date.getDayOfWeek();
-        return dow == java.time.DayOfWeek.SATURDAY || dow == java.time.DayOfWeek.SUNDAY
-                ? "Cuối tuần"
-                : "Trong tuần";
     }
 
     private void seedDemoMoviesUnused() {

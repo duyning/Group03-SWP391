@@ -14,11 +14,16 @@
         .ticket-card dl { display: grid; grid-template-columns: 150px 1fr; gap: 12px; margin: 22px 0; }
         .ticket-card dt { color: #68768b; }
         .ticket-card dd { margin: 0; font-weight: 800; }
-        .ticket-card .ticket-code { margin: 18px 0; padding: 18px; border: 2px dashed #9ab1ca; border-radius: 14px; text-align: center; font-size: 26px; font-weight: 900; color: #0054a6; letter-spacing: 2px; }
+        .ticket-card .ticket-qr { margin: 18px 0; padding: 18px; border: 2px dashed #9ab1ca; border-radius: 18px; display: flex; align-items: center; gap: 18px; background: #f8fbff; }
+        .ticket-card .ticket-qr-box { width: 132px; height: 132px; padding: 10px; border-radius: 16px; background: #fff; box-shadow: 0 10px 28px rgba(15, 47, 86, 0.12); flex-shrink: 0; }
+        .ticket-card .ticket-qr-box img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; }
+        .ticket-card .ticket-qr-content strong { display: block; color: #0054a6; font-size: 20px; margin-bottom: 6px; }
+        .ticket-card .ticket-qr-content span { color: #68768b; line-height: 1.55; }
         .ticket-actions { display: flex; gap: 12px; flex-wrap: wrap; }
         @media (max-width: 640px) {
             .ticket-card .poster-row { grid-template-columns: 1fr; }
             .ticket-card dl { grid-template-columns: 1fr; }
+            .ticket-card .ticket-qr { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
@@ -36,7 +41,16 @@
         </div>
     </div>
 
-    <div class="ticket-code" th:text="${ticket.bookingCode}">CF-20260625-001</div>
+    <div class="ticket-qr" th:with="qrData=${!#strings.isEmpty(ticket.bookingCode) ? ticket.bookingCode : 'TICKET-' + ticket.id}">
+        <div class="ticket-qr-box">
+            <img th:src="${'https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=6&data=' + qrData}"
+                 th:alt="${'QR vé ' + qrData}">
+        </div>
+        <div class="ticket-qr-content">
+            <strong>Mã QR vé</strong>
+            <span>Quét mã này tại quầy soát vé để kiểm tra thông tin đặt chỗ.</span>
+        </div>
+    </div>
 
     <dl>
         <dt>Ngày chiếu</dt>
@@ -55,7 +69,7 @@
         <dd th:text="${#numbers.formatDecimal(ticket.price, 0, 'COMMA', 0, 'POINT')} + 'đ'">85,000đ</dd>
     </dl>
 
-    <p>Vui lòng xuất trình mã vé này tại quầy soát vé.</p>
+    <p>Vui lòng xuất trình mã QR này tại quầy soát vé.</p>
     <div class="ticket-actions">
         <a class="btn secondary" th:href="@{/my-tickets}">Quay lại danh sách vé</a>
         <a class="btn" th:href="@{/}">Trang chủ</a>

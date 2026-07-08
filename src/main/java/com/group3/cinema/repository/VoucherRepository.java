@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface VoucherRepository extends JpaRepository<Voucher, Long> {
@@ -19,6 +20,8 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 
     // Tìm kiếm kiểm tra trùng mã với bản ghi KHÁC khi CẬP NHẬT
     boolean existsByCodeAndIdNot(String code, Long id);
+
+    Optional<Voucher> findByCodeIgnoreCase(String code);
 
     // Lấy toàn bộ danh sách sắp xếp theo ID lớn nhất lên đầu (Mới nhất lên đầu)
     List<Voucher> findAllByOrderByIdDesc();
@@ -80,4 +83,31 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             )
             """, nativeQuery = true)
     int addToWallet(@Param("accountId") int accountId, @Param("voucherId") Long voucherId);
+
+    @Query(value = """
+            SELECT v.*
+            FROM vouchers v
+            INNER JOIN account_vouchers av ON av.voucher_id = v.id
+            WHERE av.account_id = :accountId
+            ORDER BY v.end_date ASC, v.id DESC
+            """, nativeQuery = true)
+    List<Voucher> findWalletVouchers(@Param("accountId") int accountId);
+
+    @Query(value = """
+            SELECT v.*
+            FROM vouchers v
+            INNER JOIN account_vouchers av ON av.voucher_id = v.id
+            WHERE av.account_id = :accountId AND v.id = :voucherId
+            """, nativeQuery = true)
+    Optional<Voucher> findWalletVoucher(@Param("accountId") int accountId, @Param("voucherId") Long voucherId);
+
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE vouchers
+            SET used_quantity = ISNULL(used_quantity, 0) + 1
+            WHERE UPPER(voucher_code) = UPPER(:code)
+              AND ISNULL(used_quantity, 0) < total_quantity
+            """, nativeQuery = true)
+    int incrementUsedQuantityIfAvailable(@Param("code") String code);
 }

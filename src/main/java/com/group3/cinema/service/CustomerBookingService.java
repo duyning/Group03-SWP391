@@ -12,10 +12,12 @@ import com.group3.cinema.entity.BookingCombo;
 import com.group3.cinema.entity.BookingTicket;
 import com.group3.cinema.entity.Combo;
 import com.group3.cinema.entity.Showtime;
+import com.group3.cinema.entity.Voucher;
 import com.group3.cinema.repository.BookingComboRepository;
 import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.ComboRepository;
+import com.group3.cinema.repository.VoucherRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -23,11 +25,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,6 +46,7 @@ public class CustomerBookingService {
     private final BookingRepository bookingRepository;
     private final BookingComboRepository bookingComboRepository;
     private final ShowtimeRepository showtimeRepository;
+    private final VoucherRepository voucherRepository;
     private final JdbcTemplate jdbcTemplate;
 
     public CustomerBookingService(ComboRepository comboRepository,
@@ -47,12 +54,14 @@ public class CustomerBookingService {
                                   BookingRepository bookingRepository,
                                   BookingComboRepository bookingComboRepository,
                                   ShowtimeRepository showtimeRepository,
+                                  VoucherRepository voucherRepository,
                                   JdbcTemplate jdbcTemplate) {
         this.comboRepository = comboRepository;
         this.ticketRepository = ticketRepository;
         this.bookingRepository = bookingRepository;
         this.bookingComboRepository = bookingComboRepository;
         this.showtimeRepository = showtimeRepository;
+        this.voucherRepository = voucherRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -86,43 +95,58 @@ public class CustomerBookingService {
     @Transactional(readOnly = true)
     public BookingSummary calculateSummary(BookingSelection selection, String holdToken,
                                            Map<Long, Integer> selectedCombos, String voucherCode) {
-        List<BookingTicket> tickets = requireValidHolds(selection, holdToken);
-        BigDecimal ticketSubtotal = tickets.stream().map(BookingTicket::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        List<ComboLine> comboLines = new ArrayList<>();
-        BigDecimal comboSubtotal = BigDecimal.ZERO;
-
-        if (selectedCombos != null && !selectedCombos.isEmpty()) {
-            Map<Long, Combo> comboMap = new HashMap<>();
-            comboRepository.findAllById(selectedCombos.keySet()).forEach(combo -> comboMap.put(combo.getId(), combo));
-            for (Map.Entry<Long, Integer> entry : selectedCombos.entrySet()) {
-                Combo combo = comboMap.get(entry.getKey());
-                if (combo == null || !ACTIVE_COMBO_STATUSES.contains(combo.getStatus()) || entry.getValue() < 1) {
-                    throw new IllegalArgumentException("Combo đã chọn không còn khả dụng.");
-                }
-                BigDecimal subtotal = combo.getPrice().multiply(BigDecimal.valueOf(entry.getValue()));
-                comboLines.add(new ComboLine(combo.getId(), combo.getName(), entry.getValue(), combo.getPrice(), subtotal));
-                comboSubtotal = comboSubtotal.add(subtotal);
-            }
-        }
-
+        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos);
         String normalizedVoucher = normalizeVoucher(voucherCode);
-        BigDecimal beforeDiscount = ticketSubtotal.add(comboSubtotal);
         VoucherRule voucherRule = normalizedVoucher == null ? null : voucherRule(normalizedVoucher);
         BigDecimal discount = voucherRule == null ? BigDecimal.ZERO
-                : beforeDiscount.multiply(voucherRule.discountPercent().divide(new BigDecimal("100"), 4, RoundingMode.DOWN))
+                : base.beforeDiscount().multiply(voucherRule.discountPercent().divide(new BigDecimal("100"), 4, RoundingMode.DOWN))
                 .setScale(0, RoundingMode.DOWN)
                 .min(voucherRule.maxDiscount());
+        return base.toSummary(discount, normalizedVoucher);
+    }
 
-        return new BookingSummary(selection, tickets, comboLines, ticketSubtotal, comboSubtotal,
-                discount, beforeDiscount.subtract(discount), normalizedVoucher,
-                tickets.stream().map(BookingTicket::getHoldExpiresAt).min(LocalDateTime::compareTo).orElseThrow());
+    @Transactional(readOnly = true)
+    public BookingSummary calculateSummaryWithWalletVoucher(Integer accountId, BookingSelection selection,
+                                                            String holdToken,
+                                                            Map<Long, Integer> selectedCombos,
+                                                            Long voucherId) {
+        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos);
+        WalletVoucherOption voucherOption = voucherId == null
+                ? null
+                : evaluateWalletVoucher(accountId, voucherId, base, true);
+        BigDecimal discount = voucherOption == null ? BigDecimal.ZERO : voucherOption.discount();
+        String voucherCode = voucherOption == null ? null : voucherOption.voucher().getCode();
+        return base.toSummary(discount, voucherCode);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WalletVoucherOption> getWalletVoucherOptions(Integer accountId, BookingSelection selection,
+                                                             String holdToken,
+                                                             Map<Long, Integer> selectedCombos) {
+        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos);
+        LocalDateTime now = LocalDateTime.now();
+        return voucherRepository.findWalletVouchers(requireAccountId(accountId)).stream()
+                .filter(voucher -> !Boolean.TRUE.equals(voucher.getIsDeleted()))
+                .filter(voucher -> voucher.getEndDate() != null && voucher.getEndDate().isAfter(now))
+                .map(voucher -> evaluateWalletVoucher(accountId, voucher, base, false))
+                .toList();
     }
 
     @Transactional
     public Booking createPendingBooking(Integer accountId, BookingSelection selection, String holdToken,
                                         Map<Long, Integer> selectedCombos, String voucherCode) {
         BookingSummary summary = calculateSummary(selection, holdToken, selectedCombos, voucherCode);
+        return savePendingBooking(accountId, selection, summary);
+    }
+
+    @Transactional
+    public Booking createPendingBookingWithWalletVoucher(Integer accountId, BookingSelection selection, String holdToken,
+                                                         Map<Long, Integer> selectedCombos, Long voucherId) {
+        BookingSummary summary = calculateSummaryWithWalletVoucher(accountId, selection, holdToken, selectedCombos, voucherId);
+        return savePendingBooking(accountId, selection, summary);
+    }
+
+    private Booking savePendingBooking(Integer accountId, BookingSelection selection, BookingSummary summary) {
         LocalDateTime paymentExpiry = LocalDateTime.now().plusMinutes(5);
         Booking booking = new Booking();
         booking.setAccountId(accountId);
@@ -176,6 +200,195 @@ public class CustomerBookingService {
                 bookingComboRepository.findByBookingId(booking.getId()));
     }
 
+    private SummaryBase buildSummaryBase(BookingSelection selection, String holdToken,
+                                         Map<Long, Integer> selectedCombos) {
+        List<BookingTicket> tickets = requireValidHolds(selection, holdToken);
+        BigDecimal ticketSubtotal = tickets.stream().map(BookingTicket::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<ComboLine> comboLines = new ArrayList<>();
+        BigDecimal comboSubtotal = BigDecimal.ZERO;
+
+        if (selectedCombos != null && !selectedCombos.isEmpty()) {
+            Map<Long, Combo> comboMap = new HashMap<>();
+            comboRepository.findAllById(selectedCombos.keySet()).forEach(combo -> comboMap.put(combo.getId(), combo));
+            for (Map.Entry<Long, Integer> entry : selectedCombos.entrySet()) {
+                Combo combo = comboMap.get(entry.getKey());
+                if (combo == null || !ACTIVE_COMBO_STATUSES.contains(combo.getStatus()) || entry.getValue() < 1) {
+                    throw new IllegalArgumentException("Combo đã chọn không còn khả dụng.");
+                }
+                BigDecimal subtotal = combo.getPrice().multiply(BigDecimal.valueOf(entry.getValue()));
+                comboLines.add(new ComboLine(combo.getId(), combo.getName(), entry.getValue(), combo.getPrice(), subtotal));
+                comboSubtotal = comboSubtotal.add(subtotal);
+            }
+        }
+
+        LocalDateTime expiresAt = tickets.stream()
+                .map(BookingTicket::getHoldExpiresAt)
+                .min(LocalDateTime::compareTo)
+                .orElseThrow();
+        return new SummaryBase(selection, tickets, comboLines, ticketSubtotal, comboSubtotal,
+                ticketSubtotal.add(comboSubtotal), expiresAt);
+    }
+
+    private WalletVoucherOption evaluateWalletVoucher(Integer accountId, Long voucherId,
+                                                      SummaryBase base, boolean strict) {
+        Voucher voucher = voucherRepository.findWalletVoucher(requireAccountId(accountId), voucherId)
+                .orElseThrow(() -> new IllegalArgumentException("Voucher này chưa được lưu trong ví của bạn."));
+        return evaluateWalletVoucher(accountId, voucher, base, strict);
+    }
+
+    private WalletVoucherOption evaluateWalletVoucher(Integer accountId, Voucher voucher,
+                                                      SummaryBase base, boolean strict) {
+        String reason = voucherIneligibilityReason(accountId, voucher, base);
+        BigDecimal eligibleAmount = eligibleVoucherAmount(voucher, base);
+        BigDecimal discount = reason == null ? calculateVoucherDiscount(voucher, eligibleAmount) : BigDecimal.ZERO;
+        if (reason == null && discount.compareTo(BigDecimal.ZERO) <= 0) {
+            reason = "Voucher chưa tạo ra giá trị giảm cho đơn hàng hiện tại.";
+        }
+        if (strict && reason != null) {
+            throw new IllegalArgumentException(reason);
+        }
+        return new WalletVoucherOption(voucher, discount, eligibleAmount, reason == null, reason);
+    }
+
+    private String voucherIneligibilityReason(Integer accountId, Voucher voucher, SummaryBase base) {
+        requireAccountId(accountId);
+        LocalDateTime now = LocalDateTime.now();
+        if (Boolean.TRUE.equals(voucher.getIsDeleted())) {
+            return "Voucher này đã ngừng hoạt động.";
+        }
+        if (voucher.getStartDate() == null || voucher.getEndDate() == null) {
+            return "Voucher thiếu thời gian áp dụng.";
+        }
+        if (voucher.getStartDate().isAfter(now)) {
+            return "Voucher chưa đến thời gian áp dụng.";
+        }
+        if (!voucher.getEndDate().isAfter(now)) {
+            return "Voucher đã hết hạn.";
+        }
+        if (voucher.getTotalQuantity() != null && voucher.getUsedQuantity() != null
+                && voucher.getUsedQuantity() >= voucher.getTotalQuantity()) {
+            return "Voucher đã hết số lượng phát hành.";
+        }
+        BigDecimal minOrderValue = safeMoney(voucher.getMinOrderValue());
+        if (base.beforeDiscount().compareTo(minOrderValue) < 0) {
+            return "Đơn hàng chưa đạt tối thiểu "
+                    + minOrderValue.setScale(0, RoundingMode.DOWN).toPlainString() + "đ.";
+        }
+        if (!matchesApplicableDay(voucher.getApplicableDays(), base.selection().showDate())) {
+            return "Voucher không áp dụng cho ngày chiếu đã chọn.";
+        }
+        if (Boolean.FALSE.equals(voucher.getIsHolidayApplicable()) && isKnownHoliday(base.selection().showDate())) {
+            return "Voucher không áp dụng vào ngày lễ.";
+        }
+        if (eligibleVoucherAmount(voucher, base).compareTo(BigDecimal.ZERO) <= 0) {
+            return "Đơn hàng hiện tại không có dịch vụ phù hợp với voucher.";
+        }
+        int limitPerUser = voucher.getLimitPerUser() == null ? 1 : voucher.getLimitPerUser();
+        if (limitPerUser > 0 && voucher.getCode() != null) {
+            long usedByAccount = bookingRepository.countByAccountIdAndVoucherCodeAndStatusIn(
+                    accountId,
+                    voucher.getCode(),
+                    List.of(Booking.Status.PENDING, Booking.Status.PAID)
+            );
+            if (usedByAccount >= limitPerUser) {
+                return "Bạn đã dùng đủ số lượt cho voucher này.";
+            }
+        }
+        if (voucher.getDiscountType() == null || voucher.getDiscountValue() == null
+                || voucher.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0) {
+            return "Voucher chưa có cấu hình giảm giá hợp lệ.";
+        }
+        return null;
+    }
+
+    private BigDecimal calculateVoucherDiscount(Voucher voucher, BigDecimal eligibleAmount) {
+        BigDecimal discount;
+        if (voucher.getDiscountType() == Voucher.DiscountType.PERCENTAGE) {
+            discount = eligibleAmount
+                    .multiply(voucher.getDiscountValue().divide(new BigDecimal("100"), 4, RoundingMode.DOWN))
+                    .setScale(0, RoundingMode.DOWN);
+            BigDecimal maxDiscount = voucher.getMaxDiscountAmount();
+            if (maxDiscount != null && maxDiscount.compareTo(BigDecimal.ZERO) > 0) {
+                discount = discount.min(maxDiscount);
+            }
+        } else {
+            discount = voucher.getDiscountValue().setScale(0, RoundingMode.DOWN);
+        }
+        return discount.min(eligibleAmount).max(BigDecimal.ZERO);
+    }
+
+    private BigDecimal eligibleVoucherAmount(Voucher voucher, SummaryBase base) {
+        Voucher.ServiceScope scope = voucher.getServiceScope();
+        if (scope == Voucher.ServiceScope.WATER) {
+            return base.comboSubtotal();
+        }
+        BigDecimal ticketAmount = eligibleTicketAmount(voucher, base);
+        if (scope == Voucher.ServiceScope.TICKET) {
+            return ticketAmount;
+        }
+        return ticketAmount.add(base.comboSubtotal());
+    }
+
+    private BigDecimal eligibleTicketAmount(Voucher voucher, SummaryBase base) {
+        Set<String> applicableSeatTypes = normalizedSeatTypes(voucher.getApplicableSeats());
+        if (applicableSeatTypes.isEmpty()) {
+            return base.ticketSubtotal();
+        }
+        return base.tickets().stream()
+                .filter(ticket -> applicableSeatTypes.contains(normalizeSeatType(ticket.getSeatType())))
+                .map(BookingTicket::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private Set<String> normalizedSeatTypes(String applicableSeats) {
+        if (applicableSeats == null || applicableSeats.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(applicableSeats.split("[,;|]"))
+                .map(this::normalizeSeatType)
+                .filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private String normalizeSeatType(String value) {
+        if (value == null) return "";
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "normal", "standard", "std", "thuong", "thường", "ghe thuong", "ghế thường" -> "std";
+            case "double", "couple", "doi", "đôi", "ghe doi", "ghế đôi" -> "couple";
+            default -> normalized;
+        };
+    }
+
+    private boolean matchesApplicableDay(Voucher.ApplicableDay applicableDay, LocalDate showDate) {
+        if (applicableDay == null || applicableDay == Voucher.ApplicableDay.ALL || showDate == null) {
+            return true;
+        }
+        DayOfWeek day = showDate.getDayOfWeek();
+        boolean weekend = day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY;
+        return applicableDay == Voucher.ApplicableDay.WEEKEND ? weekend : !weekend;
+    }
+
+    private boolean isKnownHoliday(LocalDate date) {
+        if (date == null) return false;
+        return (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
+                || (date.getMonthValue() == 4 && date.getDayOfMonth() == 30)
+                || (date.getMonthValue() == 5 && date.getDayOfMonth() == 1)
+                || (date.getMonthValue() == 9 && date.getDayOfMonth() == 2);
+    }
+
+    private BigDecimal safeMoney(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private int requireAccountId(Integer accountId) {
+        if (accountId == null) {
+            throw new IllegalArgumentException("Vui lòng đăng nhập để sử dụng voucher trong ví.");
+        }
+        return accountId;
+    }
+
     private List<BookingTicket> requireValidHolds(BookingSelection selection, String holdToken) {
         if (holdToken == null || holdToken.isBlank()) {
             throw new IllegalArgumentException("Phiên giữ ghế không tồn tại.");
@@ -211,10 +424,21 @@ public class CustomerBookingService {
     }
 
     public record ComboLine(Long id, String name, int quantity, BigDecimal unitPrice, BigDecimal subtotal) { }
+    public record WalletVoucherOption(Voucher voucher, BigDecimal discount, BigDecimal eligibleAmount,
+                                      boolean eligible, String reason) { }
     public record BookingSummary(BookingSelection selection, List<BookingTicket> tickets, List<ComboLine> combos,
                                  BigDecimal ticketSubtotal, BigDecimal comboSubtotal, BigDecimal discount,
                                  BigDecimal total, String voucherCode, LocalDateTime expiresAt) { }
     public record BookingDetails(Booking booking, Showtime showtime,
                                  List<BookingTicket> tickets, List<BookingCombo> combos) { }
+    private record SummaryBase(BookingSelection selection, List<BookingTicket> tickets, List<ComboLine> combos,
+                               BigDecimal ticketSubtotal, BigDecimal comboSubtotal, BigDecimal beforeDiscount,
+                               LocalDateTime expiresAt) {
+        BookingSummary toSummary(BigDecimal discount, String voucherCode) {
+            BigDecimal safeDiscount = discount == null ? BigDecimal.ZERO : discount;
+            return new BookingSummary(selection, tickets, combos, ticketSubtotal, comboSubtotal,
+                    safeDiscount, beforeDiscount.subtract(safeDiscount), voucherCode, expiresAt);
+        }
+    }
     private record VoucherRule(BigDecimal discountPercent, BigDecimal maxDiscount) { }
 }

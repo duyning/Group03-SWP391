@@ -13,4 +13,5 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByIdAndAccountId(Long id, Integer accountId);
     List<Booking> findByStatusAndExpiresAtBefore(Booking.Status status, LocalDateTime expiresAt);
+    long countByAccountIdAndVoucherCodeAndStatusIn(Integer accountId, String voucherCode, List<Booking.Status> statuses);
 }

@@ -33,6 +33,7 @@ import java.util.Map;
 public class BookingController {
 
     public static final String BOOKING_SELECTION_SESSION_KEY = "bookingSelection";
+    private static final String SELECTED_VOUCHER_ID_SESSION_KEY = "selectedVoucherId";
     private final BookingShowtimeService bookingShowtimeService;
     private final SeatHoldingService seatHoldingService;
     private final CustomerBookingService customerBookingService;
@@ -102,8 +103,9 @@ public class BookingController {
         try {
             var seats = seatHoldingService.getSeatMap(selection, (String) session.getAttribute("seatHoldToken"));
             model.addAttribute("seats", seats);
+            model.addAttribute("seatTypes", seatHoldingService.getActiveSeatTypes());
             model.addAttribute("roomCols", seats.stream()
-                    .mapToInt(s -> s.colIndex() + ("couple".equalsIgnoreCase(s.type()) ? 2 : 1))
+                    .mapToInt(s -> s.colIndex() + Math.max(1, s.capacity()))
                     .max().orElse(10));
             model.addAttribute("holdExpiresAt", session.getAttribute("seatHoldExpiresAt"));
             return "seat-selection";
@@ -134,7 +136,7 @@ public class BookingController {
             session.setAttribute("seatHoldToken", result.token());
             session.setAttribute("seatHoldExpiresAt", result.expiresAt());
             session.removeAttribute("selectedCombos");
-            session.removeAttribute("voucherCode");
+            clearSelectedVoucher(session);
             return "redirect:/booking/combos";
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -150,7 +152,7 @@ public class BookingController {
         session.removeAttribute("seatHoldToken");
         session.removeAttribute("seatHoldExpiresAt");
         session.removeAttribute("selectedCombos");
-        session.removeAttribute("voucherCode");
+        clearSelectedVoucher(session);
         redirectAttributes.addFlashAttribute("success", "Đã thả ghế cũ. Vui lòng chọn lại ghế.");
         return "redirect:/booking/seats";
     }
@@ -179,6 +181,7 @@ public class BookingController {
                              RedirectAttributes redirectAttributes) {
         try {
             session.setAttribute("selectedCombos", customerBookingService.validateComboQuantities(params));
+            clearSelectedVoucher(session);
             return "redirect:/booking/summary";
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -190,39 +193,56 @@ public class BookingController {
     public String summary(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
         BookingSelection selection = requireSelection(session, redirectAttributes);
         if (selection == null) return "redirect:/movies";
+        Account account = requireLoggedInAccount(session, redirectAttributes);
+        if (account == null) return "redirect:/login";
+        Long selectedVoucherId = selectedVoucherId(session);
         try {
-            CustomerBookingService.BookingSummary summary = customerBookingService.calculateSummary(selection,
+            CustomerBookingService.BookingSummary summary = customerBookingService.calculateSummaryWithWalletVoucher(
+                    account.getAccountID(), selection,
                     (String) session.getAttribute("seatHoldToken"), selectedCombos(session),
-                    (String) session.getAttribute("voucherCode"));
-            model.addAttribute("user", session.getAttribute("loggedInUser"));
+                    selectedVoucherId);
+            model.addAttribute("user", account);
             model.addAttribute("summary", summary);
+            model.addAttribute("voucherOptions", customerBookingService.getWalletVoucherOptions(
+                    account.getAccountID(), selection, (String) session.getAttribute("seatHoldToken"),
+                    selectedCombos(session)));
+            model.addAttribute("selectedVoucherId", selectedVoucherId);
             return "booking-summary";
         } catch (IllegalArgumentException ex) {
+            if (selectedVoucherId != null) {
+                clearSelectedVoucher(session);
+                redirectAttributes.addFlashAttribute("error", ex.getMessage());
+                return "redirect:/booking/summary";
+            }
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/booking/seats";
         }
     }
 
     @PostMapping("/voucher")
-    public String applyVoucher(@RequestParam(value = "voucherCode", required = false) String voucherCode,
+    public String applyVoucher(@RequestParam(value = "voucherId", required = false) String voucherIdValue,
                                HttpSession session, RedirectAttributes redirectAttributes) {
         BookingSelection selection = requireSelection(session, redirectAttributes);
         if (selection == null) return "redirect:/movies";
-        String normalizedVoucher = voucherCode == null ? "" : voucherCode.trim().toUpperCase();
-        if (normalizedVoucher.isBlank()) {
-            boolean hadVoucher = session.getAttribute("voucherCode") != null;
-            session.removeAttribute("voucherCode");
-            redirectAttributes.addFlashAttribute(hadVoucher ? "success" : "error",
-                    hadVoucher ? "Đã bỏ mã voucher khỏi đơn." : "Vui lòng nhập mã voucher.");
-            return "redirect:/booking/summary";
-        }
+        Account account = requireLoggedInAccount(session, redirectAttributes);
+        if (account == null) return "redirect:/login";
         try {
-            customerBookingService.calculateSummary(selection, (String) session.getAttribute("seatHoldToken"),
-                    selectedCombos(session), normalizedVoucher);
-            session.setAttribute("voucherCode", normalizedVoucher);
+            Long voucherId = parseVoucherId(voucherIdValue);
+            if (voucherId == null) {
+                boolean hadVoucher = selectedVoucherId(session) != null;
+                clearSelectedVoucher(session);
+                redirectAttributes.addFlashAttribute("success",
+                        hadVoucher ? "Đã bỏ voucher khỏi đơn." : "Đơn hàng sẽ không dùng voucher.");
+                return "redirect:/booking/summary";
+            }
+            CustomerBookingService.BookingSummary summary = customerBookingService.calculateSummaryWithWalletVoucher(
+                    account.getAccountID(), selection, (String) session.getAttribute("seatHoldToken"),
+                    selectedCombos(session), voucherId);
+            session.setAttribute(SELECTED_VOUCHER_ID_SESSION_KEY, voucherId);
+            session.setAttribute("voucherCode", summary.voucherCode());
             redirectAttributes.addFlashAttribute("success", "Áp dụng voucher thành công.");
         } catch (IllegalArgumentException ex) {
-            session.removeAttribute("voucherCode");
+            clearSelectedVoucher(session);
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/booking/summary";
@@ -233,10 +253,14 @@ public class BookingController {
         BookingSelection selection = requireSelection(session, redirectAttributes);
         if (selection == null) return "redirect:/movies";
         Account account = (Account) session.getAttribute("loggedInUser");
+        if (account == null) {
+            redirectAttributes.addFlashAttribute("error", "Vui lòng đăng nhập để thanh toán.");
+            return "redirect:/login";
+        }
         try {
-            var booking = customerBookingService.createPendingBooking(account.getAccountID(), selection,
+            var booking = customerBookingService.createPendingBookingWithWalletVoucher(account.getAccountID(), selection,
                     (String) session.getAttribute("seatHoldToken"), selectedCombos(session),
-                    (String) session.getAttribute("voucherCode"));
+                    selectedVoucherId(session));
             session.setAttribute("bookingId", booking.getId());
             return "redirect:/payment?bookingId=" + booking.getId();
         } catch (IllegalArgumentException ex) {
@@ -251,17 +275,53 @@ public class BookingController {
         return selection;
     }
 
+    private Account requireLoggedInAccount(HttpSession session, RedirectAttributes redirectAttributes) {
+        Account account = (Account) session.getAttribute("loggedInUser");
+        if (account == null) {
+            redirectAttributes.addFlashAttribute("error", "Vui lòng đăng nhập để tiếp tục đặt vé.");
+        }
+        return account;
+    }
+
     @SuppressWarnings("unchecked")
     private LinkedHashMap<Long, Integer> selectedCombos(HttpSession session) {
         Object value = session.getAttribute("selectedCombos");
         return value instanceof LinkedHashMap<?, ?> ? (LinkedHashMap<Long, Integer>) value : new LinkedHashMap<>();
     }
 
+    private Long selectedVoucherId(HttpSession session) {
+        Object value = session.getAttribute(SELECTED_VOUCHER_ID_SESSION_KEY);
+        if (value instanceof Long id) return id;
+        if (value instanceof Number number) return number.longValue();
+        if (value instanceof String text) {
+            try {
+                return parseVoucherId(text);
+            } catch (IllegalArgumentException ex) {
+                clearSelectedVoucher(session);
+            }
+        }
+        return null;
+    }
+
+    private Long parseVoucherId(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Voucher được chọn không hợp lệ.");
+        }
+    }
+
+    private void clearSelectedVoucher(HttpSession session) {
+        session.removeAttribute(SELECTED_VOUCHER_ID_SESSION_KEY);
+        session.removeAttribute("voucherCode");
+    }
+
     private void clearBookingSteps(HttpSession session) {
         session.removeAttribute("seatHoldToken");
         session.removeAttribute("seatHoldExpiresAt");
         session.removeAttribute("selectedCombos");
-        session.removeAttribute("voucherCode");
+        clearSelectedVoucher(session);
         session.removeAttribute("bookingId");
     }
 }
