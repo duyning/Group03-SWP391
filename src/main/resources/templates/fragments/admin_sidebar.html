@@ -26,6 +26,9 @@
         <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/create-manager}">
             <li th:classappend="${active == 'create-manager'} ? 'active' : ''"><i class="fas fa-user-shield"></i> Tạo tài khoản Quản lý</li>
         </a>
+        <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/accounts}">
+            <li th:classappend="${active == 'accounts'} ? 'active' : ''"><i class="fas fa-users-cog"></i> Quản lý tài khoản</li>
+        </a>
         <a th:href="@{/logout}"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
     </ul>
 </aside>
