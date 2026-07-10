@@ -231,6 +231,59 @@
             margin: 5px 0;
         }
 
+        .recommend-section {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0 34px;
+            background: #f8fafc;
+        }
+
+        .recommend-heading h2 {
+            margin: 0 0 16px;
+            color: #0054a6;
+            font-size: 22px;
+            text-transform: uppercase;
+        }
+
+        .recommend-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 18px;
+        }
+
+        .recommend-card {
+            text-decoration: none;
+            color: inherit;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .recommend-card img {
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #eef2f7;
+            display: block;
+            margin-bottom: 9px;
+        }
+
+        .recommend-card h3 {
+            font-size: 15px;
+            margin: 0 0 6px;
+            color: #0054a6;
+        }
+
+        .recommend-card p {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0;
+        }
+
         .date-blue {
             color: #0054a6;
             font-weight: 800;
@@ -302,6 +355,22 @@
             <p th:if="${keyword == null || keyword == ''}">Khám phá danh sách phim tại Beta Cinemas</p>
             <p th:if="${keyword != null && keyword != ''}" th:text="'Kết quả tìm kiếm cho: ' + ${keyword}">Kết quả tìm kiếm</p>
         </div>
+
+        <section class="recommend-section" th:if="${recommendedMovies != null && !#lists.isEmpty(recommendedMovies)}">
+            <div class="recommend-heading">
+                <h2>Phim đề xuất</h2>
+            </div>
+            <div class="recommend-row">
+                <a class="recommend-card"
+                   th:each="item : ${recommendedMovies}"
+                   th:href="@{/movies/{id}(id=${item.movie.id})}">
+                    <img th:src="${item.movie.posterUrl}" th:alt="${item.movie.title}">
+                    <h3 th:text="${item.movie.title}">Tên phim</h3>
+                    <p th:text="${item.reason}">Lý do đề xuất</p>
+                    <p th:text="'Điểm phù hợp: ' + ${item.recommendationScore} + '%'">Điểm phù hợp: 80%</p>
+                </a>
+            </div>
+        </section>
 
         <!-- Search result mode: MovieController passes movies when keyword search is used. -->
         <th:block th:if="${movies != null}">

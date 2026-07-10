@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CineFlow | Quản lý đánh giá</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', Arial, sans-serif;
+            background: #f1f5f9;
+            display: flex;
+            color: #1e293b;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #1e293b;
+            height: 100vh;
+            color: #f8fafc;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 25px;
+            font-size: 20px;
+            font-weight: 800;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 15px 0;
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .sidebar-nav li {
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+        }
+
+        .sidebar-nav li:hover,
+        .sidebar-nav li.active {
+            background: #334155;
+            color: white;
+        }
+
+        .sidebar-nav li.active {
+            border-left: 4px solid #0054a6;
+        }
+
+        .main {
+            margin-left: 260px;
+            flex: 1;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .header-content,
+        .review-top,
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .header-content {
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .meta {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .stat-card,
+        .filter-card,
+        .review-card,
+        .empty-state {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+        }
+
+        .stat-card {
+            padding: 16px;
+            border-left: 4px solid #0054a6;
+        }
+
+        .stat-card strong {
+            display: block;
+            color: #0f172a;
+            font-size: 26px;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .filter-card {
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+
+        .filter-form {
+            display: grid;
+            grid-template-columns: 1.5fr repeat(4, minmax(130px, 1fr)) auto auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        label {
+            color: #334155;
+            display: grid;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        input,
+        select {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            color: #0f172a;
+            font: inherit;
+            min-height: 40px;
+            padding: 0 11px;
+            width: 100%;
+        }
+
+        .btn,
+        button {
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font: inherit;
+            font-weight: 800;
+            min-height: 40px;
+            padding: 0 14px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: #0054a6;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .btn-hide {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-show {
+            background: #10b981;
+            color: white;
+        }
+
+        .alert {
+            border-radius: 8px;
+            color: white;
+            font-weight: 700;
+            margin-bottom: 18px;
+            padding: 14px 16px;
+        }
+
+        .alert.success {
+            background: #10b981;
+        }
+
+        .alert.error {
+            background: #ef4444;
+        }
+
+        .review-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .review-card {
+            padding: 18px;
+        }
+
+        .review-top {
+            margin-bottom: 10px;
+        }
+
+        .movie-title {
+            color: #0054a6;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .stars {
+            color: #f59e0b;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .badge {
+            align-items: center;
+            border-radius: 999px;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            margin-top: 6px;
+            padding: 4px 10px;
+        }
+
+        .badge.visible {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .badge.hidden {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .comment {
+            background: #f8fafc;
+            border-radius: 8px;
+            color: #334155;
+            line-height: 1.6;
+            margin: 12px 0;
+            padding: 12px;
+        }
+
+        .empty-state {
+            color: #64748b;
+            padding: 35px;
+            text-align: center;
+        }
+
+        .pagination {
+            align-items: center;
+            justify-content: center;
+            margin-top: 22px;
+        }
+
+        .page-link {
+            align-items: center;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            color: #0054a6;
+            display: inline-flex;
+            font-weight: 800;
+            height: 38px;
+            justify-content: center;
+            min-width: 38px;
+            padding: 0 10px;
+            text-decoration: none;
+        }
+
+        .page-link.active {
+            background: #0054a6;
+            color: white;
+        }
+
+        @media (max-width: 1100px) {
+            .filter-form {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div th:replace="~{fragments/admin_sidebar :: adminSidebar('reviews')}"></div>
+
+    <main class="main">
+        <div class="header-content">
+            <div>
+                <h1 class="page-title">Quản lý đánh giá phim</h1>
+                <p class="meta">Đánh giá hiển thị ngay sau khi khách gửi. Admin có thể ẩn hoặc hiện lại khi cần.</p>
+            </div>
+            <div class="meta" th:if="${user != null}">
+                <i class="fas fa-user-shield"></i>
+                <span th:text="${user.name}">Admin</span>
+            </div>
+        </div>
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <strong th:text="${allReviewCount}">0</strong>
+                <span class="meta">Tổng đánh giá trong hệ thống</span>
+            </div>
+            <div class="stat-card">
+                <strong th:text="${visibleReviewCount}">0</strong>
+                <span class="meta">Đang hiển thị</span>
+            </div>
+            <div class="stat-card">
+                <strong th:text="${hiddenReviewCount}">0</strong>
+                <span class="meta">Đã ẩn</span>
+            </div>
+            <div class="stat-card">
+                <strong th:text="${totalReviews}">0</strong>
+                <span class="meta">Kết quả theo bộ lọc hiện tại</span>
+            </div>
+        </section>
+
+        <form class="filter-card filter-form" th:action="@{/admin/reviews}" method="get">
+            <label>
+                Tìm kiếm
+                <input type="search"
+                       name="keyword"
+                       placeholder="Tên phim, khách hàng, email, nội dung"
+                       th:value="${keyword}">
+            </label>
+            <label>
+                Trạng thái
+                <select name="status">
+                    <option value="ALL" th:selected="${status == null || status == 'ALL'}">Tất cả</option>
+                    <option value="VISIBLE" th:selected="${status == 'VISIBLE'}">Đang hiển thị</option>
+                    <option value="HIDDEN" th:selected="${status == 'HIDDEN'}">Đã ẩn</option>
+                </select>
+            </label>
+            <label>
+                Từ ngày
+                <input type="date" name="startDate" th:value="${startDate}">
+            </label>
+            <label>
+                Đến ngày
+                <input type="date" name="endDate" th:value="${endDate}">
+            </label>
+            <label>
+                Mỗi trang
+                <select name="size">
+                    <option value="10" th:selected="${pageSize == 10}">10</option>
+                    <option value="20" th:selected="${pageSize == 20}">20</option>
+                    <option value="50" th:selected="${pageSize == 50}">50</option>
+                </select>
+            </label>
+            <button class="btn btn-primary" type="submit">Lọc</button>
+            <a class="btn btn-reset" th:href="@{/admin/reviews}">Xóa lọc</a>
+        </form>
+
+        <div class="alert success" th:if="${successMessage}" th:text="${successMessage}"></div>
+        <div class="alert error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+        <section class="review-list" th:if="${reviews != null && !#lists.isEmpty(reviews)}">
+            <article class="review-card" th:each="review : ${reviews}">
+                <div class="review-top">
+                    <div>
+                        <div class="movie-title" th:text="${review.movie.title}">Tên phim</div>
+                        <div class="meta">
+                            Khách hàng: <strong th:text="${review.account.name}">Tên khách</strong>
+                            · <span th:text="${review.account.email}">email@example.com</span>
+                            · Booking #<span th:text="${review.bookingId != null ? review.bookingId : 'N/A'}">1</span>
+                            · <span th:text="${#temporals.format(review.reviewDate, 'dd/MM/yyyy HH:mm')}">10/07/2026</span>
+                        </div>
+                        <span class="badge visible"
+                              th:if="${review.moderationStatus.name() == 'APPROVED'}">Đang hiển thị</span>
+                        <span class="badge hidden"
+                              th:if="${review.moderationStatus.name() != 'APPROVED'}">Đã ẩn</span>
+                    </div>
+                    <div>
+                        <div class="stars">
+                            <span th:each="star : ${#numbers.sequence(1, review.ratingScore)}">&#9733;</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comment"
+                     th:if="${review.comment != null && !review.comment.isBlank()}"
+                     th:text="${review.comment}">Nội dung đánh giá</div>
+                <div class="meta" th:if="${review.moderatedBy != null}">
+                    Cập nhật bởi <span th:text="${review.moderatedBy.name}">Admin</span>
+                    lúc <span th:text="${#temporals.format(review.moderatedAt, 'dd/MM/yyyy HH:mm')}">10/07/2026</span>
+                </div>
+
+                <form th:if="${review.moderationStatus.name() == 'APPROVED'}"
+                      th:action="@{/admin/reviews/{id}/visibility(id=${review.id})}"
+                      method="post">
+                    <input type="hidden" name="visible" value="false">
+                    <button class="btn-hide" type="submit">Ẩn đánh giá</button>
+                </form>
+                <form th:if="${review.moderationStatus.name() != 'APPROVED'}"
+                      th:action="@{/admin/reviews/{id}/visibility(id=${review.id})}"
+                      method="post">
+                    <input type="hidden" name="visible" value="true">
+                    <button class="btn-show" type="submit">Hiện lại</button>
+                </form>
+            </article>
+        </section>
+
+        <div class="empty-state" th:if="${reviews == null || #lists.isEmpty(reviews)}">
+            Không có đánh giá nào phù hợp với bộ lọc.
+        </div>
+
+        <nav class="pagination" th:if="${totalPages > 1}">
+            <a class="page-link"
+               th:if="${currentPage > 1}"
+               th:href="@{/admin/reviews(keyword=${keyword}, status=${status}, startDate=${startDate}, endDate=${endDate}, size=${pageSize}, page=${currentPage - 1})}">Trước</a>
+            <a class="page-link"
+               th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
+               th:classappend="${pageNumber == currentPage} ? ' active'"
+               th:href="@{/admin/reviews(keyword=${keyword}, status=${status}, startDate=${startDate}, endDate=${endDate}, size=${pageSize}, page=${pageNumber})}"
+               th:text="${pageNumber}">1</a>
+            <a class="page-link"
+               th:if="${currentPage < totalPages}"
+               th:href="@{/admin/reviews(keyword=${keyword}, status=${status}, startDate=${startDate}, endDate=${endDate}, size=${pageSize}, page=${currentPage + 1})}">Sau</a>
+        </nav>
+    </main>
+</body>
+
+</html>
