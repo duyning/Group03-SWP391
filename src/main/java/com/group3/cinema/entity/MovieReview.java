@@ -1,5 +1,11 @@
 package com.group3.cinema.entity;
 
+/*
+ * Added on 2026-07-10: Stores customer ratings and comments for movie detail pages.
+ * One account can keep one review per movie; admins can hide or restore reviews.
+ * Created by: HuyPB - HE191335
+ */
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -22,6 +28,10 @@ import java.time.LocalDateTime;
 )
 public class MovieReview {
 
+    /*
+     * APPROVED means visible to customers; REJECTED is hidden by admin.
+     * PENDING is reserved for future moderation workflows.
+     */
     public enum ModerationStatus {
         PENDING,
         APPROVED,
@@ -43,6 +53,7 @@ public class MovieReview {
     @Column(nullable = false)
     private int ratingScore;
 
+    /** Paid booking used as proof that the customer already watched the movie. */
     private Long bookingId;
 
     @Column(columnDefinition = "NVARCHAR(1000)")

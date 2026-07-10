@@ -1,5 +1,11 @@
 package com.group3.cinema.repository;
 
+/*
+ * Added on 2026-07-10: Repository queries for customer movie reviews.
+ * Supports visible review paging, rating/date filtering, user review lookup, and review statistics.
+ * Created by: HuyPB - HE191335
+ */
+
 import com.group3.cinema.entity.MovieReview;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +49,7 @@ public interface MovieReviewRepository extends JpaRepository<MovieReview, Long> 
               AND (:endDate IS NULL OR r.reviewDate <= :endDate)
             ORDER BY r.reviewDate DESC
             """)
+    // Central query for movie detail reviews with optional rating and date filters.
     Page<MovieReview> searchVisibleReviews(
             @Param("movieId") int movieId,
             @Param("status") MovieReview.ModerationStatus status,

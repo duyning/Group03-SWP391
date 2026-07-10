@@ -1,5 +1,11 @@
 package com.group3.cinema.service;
 
+/*
+ * Added on 2026-07-10: Business rules for customer movie reviews and admin review moderation.
+ * Updated on 2026-07-10: Reviews require a paid booking whose showtime has already passed.
+ * Created by: HuyPB - HE191335
+ */
+
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Booking;
 import com.group3.cinema.entity.Movie;
@@ -57,6 +63,8 @@ public class MovieReviewService {
                                                 Pageable pageable) {
         LocalDateTime startDateTime = startDate == null ? null : startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate == null ? null : endDate.atTime(23, 59, 59);
+
+        // Convert customer-facing date filters into an inclusive LocalDateTime range for reviewDate.
         if (ratingScore != null && ratingScore >= 1 && ratingScore <= 5) {
             return movieReviewRepository.searchVisibleReviews(movieId, VISIBLE_STATUS, ratingScore, startDateTime, endDateTime, pageable);
         }
@@ -82,6 +90,7 @@ public class MovieReviewService {
         String normalizedKeyword = normalize(keyword);
         String normalizedStatus = status == null ? "ALL" : status.trim().toUpperCase(Locale.ROOT);
 
+        // Admin search is intentionally tolerant: accents are stripped and status aliases are accepted.
         return movieReviewRepository.findAllByOrderByReviewDateDesc().stream()
                 .filter(review -> matchesStatus(review, normalizedStatus))
                 .filter(review -> matchesDateRange(review, startDate, endDate))
@@ -105,6 +114,7 @@ public class MovieReviewService {
     }
 
     public boolean canReviewMovie(Integer accountId, int movieId) {
+        // Customers may review only after a paid showtime for this movie has already happened.
         return accountId != null && bookingRepository.existsWatchedMovie(
                 accountId,
                 movieId,
@@ -136,6 +146,7 @@ public class MovieReviewService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Ban chi co the danh gia sau khi da xem phim."));
 
+        // Reuse the same row when a customer edits their previous review for the same movie.
         MovieReview review = movieReviewRepository.findByMovieIdAndAccountAccountID(movieId, accountId)
                 .orElseGet(MovieReview::new);
         review.setMovie(movie);

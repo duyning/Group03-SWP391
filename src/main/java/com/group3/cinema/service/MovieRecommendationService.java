@@ -1,5 +1,11 @@
 package com.group3.cinema.service;
 
+/*
+ * Added on 2026-07-10: Customer movie recommendation scoring for list, search, and detail pages.
+ * The score combines watched genres, global booking popularity, and movie availability status.
+ * Created by: HuyPB - HE191335
+ */
+
 import com.group3.cinema.dto.MovieRecommendation;
 import com.group3.cinema.entity.Booking;
 import com.group3.cinema.entity.Movie;
@@ -30,6 +36,7 @@ public class MovieRecommendationService {
     }
 
     public List<MovieRecommendation> recommendMovies(Integer accountId, Integer currentMovieId, int limit) {
+        // Personal signals come from paid bookings; guests fall back to popularity/status signals.
         Set<Integer> watchedMovieIds = accountId == null
                 ? Set.of()
                 : new HashSet<>(bookingRepository.findPaidMovieIdsByAccount(accountId, Booking.Status.PAID));
@@ -40,6 +47,7 @@ public class MovieRecommendationService {
 
         List<MovieRecommendation> recommendations = new ArrayList<>();
         for (Movie movie : movieRepository.findByActiveTrue()) {
+            // Do not recommend the current detail movie or movies the user has already watched.
             if (currentMovieId != null && movie.getId() == currentMovieId) {
                 continue;
             }
@@ -66,6 +74,7 @@ public class MovieRecommendationService {
     }
 
     private int calculateScore(Movie movie, boolean genreMatch, long popularCount) {
+        // Keep the score bounded to 0-100 for simple display in Thymeleaf templates.
         int score = 20;
         if (genreMatch) {
             score += 50;

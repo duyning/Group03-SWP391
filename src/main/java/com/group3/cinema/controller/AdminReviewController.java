@@ -1,5 +1,11 @@
 package com.group3.cinema.controller;
 
+/*
+ * Added on 2026-07-10: Admin movie review management screen and visibility controls.
+ * This controller supports filtering, paging, and hiding/showing customer movie reviews.
+ * Created by: HuyPB - HE191335
+ */
+
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.MovieReview;
 import com.group3.cinema.service.MovieReviewService;
@@ -40,6 +46,8 @@ public class AdminReviewController {
                               Model model) {
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
         List<MovieReview> filteredReviews = movieReviewService.searchReviewsForAdmin(keyword, status, startDate, endDate);
+
+        // Keep paging in-memory because admin filters combine keyword, status, and date range.
         int pageSize = Math.min(Math.max(size, 5), 50);
         int totalReviews = filteredReviews.size();
         int totalPages = Math.max(1, (int) Math.ceil((double) totalReviews / pageSize));
@@ -76,6 +84,7 @@ public class AdminReviewController {
         }
 
         try {
+            // Visibility is stored as moderation status so reviews can be restored later.
             movieReviewService.setReviewVisible(id, loggedInUser.getAccountID(), visible);
             redirectAttributes.addFlashAttribute("successMessage",
                     visible ? "Đã hiển thị lại đánh giá." : "Đã ẩn đánh giá.");
