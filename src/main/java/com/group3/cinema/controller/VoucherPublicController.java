@@ -1,8 +1,10 @@
 package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.NotificationType;
 import com.group3.cinema.entity.Voucher;
 import com.group3.cinema.service.AccountService;
+import com.group3.cinema.service.NotificationService;
 import com.group3.cinema.service.VoucherService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class VoucherPublicController {
 
     private final VoucherService voucherService;
     private final AccountService accountService;
+    private final NotificationService notificationService;
 
     /**
      * 1. TRANG KHO VOUCHER CÔNG KHAI
@@ -75,7 +78,17 @@ public class VoucherPublicController {
         }
 
         try {
+            // Lưu voucher vào database
             voucherService.collectVoucher(account.getAccountID(), id);
+
+            // Gửi thông báo vào Notification Center của user
+            notificationService.sendNotification(
+                    account.getAccountID(),
+                    "Lưu mã ưu đãi thành công \uD83C\uDF81",
+                    "Bạn vừa lưu thành công 1 voucher vào ví. Hãy vào phần 'Ví Voucher' để xem chi tiết và sử dụng nhé!",
+                    NotificationType.VOUCHER
+            );
+
             return ResponseEntity.ok(Map.of("status", "success", "message", "Lưu voucher thành công!"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()

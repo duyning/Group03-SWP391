@@ -7,6 +7,8 @@ import com.group3.cinema.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Lớp dịch vụ (Service) xử lý các nghiệp vụ logic liên quan đến tài khoản (Account).
  * Bao gồm đăng ký, đăng nhập, tìm kiếm tài khoản, đổi mật khẩu và xử lý gửi OTP xác thực.
@@ -213,5 +215,8 @@ public class AccountService {
         }
 
         return otp;
+    }
+    public List<Account> findAll() {
+        return accountRepository.findAll();
     }
 }

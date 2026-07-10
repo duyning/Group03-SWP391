@@ -5,33 +5,34 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/NotificationController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Notification.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/NotificationType.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/NotificationRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/NotificationService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/templates/notification-list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/BookingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/BookingController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/dto/BookingSeatView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/dto/BookingSeatView.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/BookingRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/BookingRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/VoucherRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/VoucherRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/BookingShowtimeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/BookingShowtimeService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/CustomerBookingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/CustomerBookingService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/PaymentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/PaymentService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/SeatHoldingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/SeatHoldingService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application-vnpay-local.example.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/css/admin-sidebar.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/css/admin-sidebar.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_movies.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_movies.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_showtime.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_showtime.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_ticket.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_ticket.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/booking-summary.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/booking-summary.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/create-manager-account.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/create-manager-account.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/fragments/admin_sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/fragments/admin_sidebar.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/holiday-management.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/holiday-management.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/seat-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/seat-selection.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/voucher-form.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/voucher-form.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/voucher-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/voucher-list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/PaymentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/PaymentController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/PromotionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/PromotionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/VoucherPublicController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/VoucherPublicController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/AccountService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/AccountService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Enum" />
+        <option value="Interface" />
+        <option value="Class" />
+        <option value="HTML File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -57,32 +58,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.CinemaApplication.executor&quot;: &quot;Run&quot;,
-    &quot;Application.Group03Swp391Summer26Application.executor&quot;: &quot;Run&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;Spring Boot.CinemaApplication.executor&quot;: &quot;Run&quot;,
-    &quot;Spring Boot.Group03Swp391Summer26Application.executor&quot;: &quot;Run&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.CinemaApplication.executor": "Run",
+    "Application.Group03Swp391Summer26Application.executor": "Run",
+    "DefaultHtmlFileTemplate": "HTML File",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "Spring Boot.CinemaApplication.executor": "Run",
+    "Spring Boot.Group03Swp391Summer26Application.executor": "Run",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "TuanPM",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
-  <component name="RunManager" selected="Spring Boot.CinemaApplication">
+}]]></component>
+  <component name="RunManager" selected="Spring Boot.Group03Swp391Summer26Application">
     <configuration name="CinemaApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
       <module name="Group03_SWP391_Summer26" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.group3.cinema.Group03Swp391Summer26Application" />
