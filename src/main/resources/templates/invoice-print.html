@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Hóa đơn ' + ${details.row.invoiceCode}">Hóa đơn</title>
+    <style>
+        @page{size:A4;margin:12mm}
+        *{box-sizing:border-box}
+        body{margin:0;background:#e8eef5;color:#162033;font-family:Arial,'Segoe UI',Tahoma,sans-serif}
+        .print-toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:center;gap:10px;padding:14px;background:#0f315e;box-shadow:0 8px 24px rgba(15,23,42,.16)}
+        .print-toolbar a,.print-toolbar button{border:1px solid rgba(255,255,255,.35);border-radius:10px;background:#fff;color:#0f315e;font-weight:800;padding:10px 14px;text-decoration:none;cursor:pointer}
+        .print-toolbar button.primary{background:#1f5bd8;color:#fff;border-color:#1f5bd8}
+        .page{width:210mm;min-height:297mm;margin:20px auto;background:#fff;padding:18mm;box-shadow:0 20px 60px rgba(15,23,42,.18)}
+        .invoice-head{display:flex;justify-content:space-between;gap:24px;border-bottom:3px solid #0f315e;padding-bottom:18px}
+        .brand{display:flex;gap:14px;align-items:center}
+        .brand-mark{width:54px;height:54px;border-radius:16px;background:#0f315e;color:#fff;display:grid;place-items:center;font-size:24px;font-weight:900}
+        .brand h1{margin:0;color:#0f315e;font-size:26px}
+        .brand p{margin:4px 0 0;color:#667085;font-size:13px}
+        .invoice-code{text-align:right}
+        .invoice-code span{display:block;color:#667085;font-size:12px;text-transform:uppercase;font-weight:800}
+        .invoice-code strong{display:block;margin-top:5px;color:#0f315e;font-size:22px}
+        .invoice-code small{display:block;margin-top:5px;color:#667085}
+        .section-grid{display:grid;grid-template-columns:1.1fr 1fr 120px;gap:16px;margin-top:18px}
+        .box{border:1px solid #d9e2ec;border-radius:12px;padding:13px;background:#fbfdff}
+        .box h2{margin:0 0 9px;color:#0f315e;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+        .box p{margin:5px 0;font-size:13px;line-height:1.45}
+        .qr-box{text-align:center}
+        .qr-box img{width:92px;height:92px;object-fit:contain}
+        .status-line{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+        .badge{display:inline-flex;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
+        .paid{background:#dcfce7;color:#166534}.pending{background:#fef3c7;color:#92400e}.cancelled,.failed{background:#fee2e2;color:#991b1b}.refunded{background:#ede9fe;color:#5b21b6}.neutral{background:#e5e7eb;color:#374151}.source{background:#e0f2fe;color:#075985}
+        table{width:100%;border-collapse:collapse;margin-top:20px}
+        th{background:#f1f5f9;color:#475569;text-align:left;text-transform:uppercase;font-size:11px;letter-spacing:.04em;padding:10px;border-bottom:1px solid #d9e2ec}
+        td{padding:11px 10px;border-bottom:1px solid #edf2f7;font-size:13px;vertical-align:top}
+        .right{text-align:right}.money{font-weight:900;white-space:nowrap}
+        .muted{color:#667085}
+        .totals{width:45%;margin-left:auto;margin-top:16px}
+        .total-row{display:flex;justify-content:space-between;gap:18px;padding:7px 0;color:#475569;font-size:14px}
+        .total-row strong{color:#172033}
+        .grand{margin-top:7px;border-top:2px solid #0f315e;padding-top:11px;color:#0f315e;font-size:18px;font-weight:900}
+        .payment-history{margin-top:24px}
+        .footer{display:flex;justify-content:space-between;gap:18px;margin-top:30px;padding-top:16px;border-top:1px solid #d9e2ec;color:#667085;font-size:12px}
+        .signature{min-width:180px;text-align:center}
+        .signature div{height:48px}
+        @media(max-width:900px){.page{width:auto;min-height:auto;margin:0;padding:18px}.section-grid{grid-template-columns:1fr}.totals{width:100%}.invoice-head{flex-direction:column}.invoice-code{text-align:left}}
+        @media print{
+            body{background:#fff}
+            .print-toolbar{display:none}
+            .page{width:auto;min-height:auto;margin:0;padding:0;box-shadow:none}
+            a{color:inherit;text-decoration:none}
+        }
+    </style>
+</head>
+<body>
+<div class="print-toolbar">
+    <a th:href="@{/admin/invoices/{id}(id=${details.row.bookingId})}">Quay lại chi tiết</a>
+    <button class="primary" type="button" onclick="window.print()">In / Lưu PDF</button>
+</div>
+
+<main class="page">
+    <header class="invoice-head">
+        <div class="brand">
+            <div class="brand-mark">CF</div>
+            <div>
+                <h1>CineFlow Cinema</h1>
+                <p>Hệ thống bán vé xem phim và dịch vụ rạp chiếu</p>
+                <p>Hotline: 1900 636807 • Email: feedback@betacinemas.vn</p>
+            </div>
+        </div>
+        <div class="invoice-code">
+            <span>Hóa đơn</span>
+            <strong th:text="${details.row.invoiceCode}">INV</strong>
+            <small th:text="'Ngày tạo: ' + ${#temporals.format(details.row.createdAt,'dd/MM/yyyy HH:mm')}">Ngày tạo</small>
+        </div>
+    </header>
+
+    <section class="section-grid">
+        <div class="box">
+            <h2>Khách hàng</h2>
+            <p><strong th:text="${details.row.customerName}">Khách hàng</strong></p>
+            <p th:if="${details.row.customerPhone != null && !details.row.customerPhone.isBlank()}" th:text="${details.row.customerPhone}">SĐT</p>
+            <p th:if="${details.row.customerEmail != null && !details.row.customerEmail.isBlank()}" th:text="${details.row.customerEmail}">Email</p>
+        </div>
+        <div class="box">
+            <h2>Thông tin suất chiếu</h2>
+            <p><strong th:text="${details.row.movieTitle}">Phim</strong></p>
+            <p th:text="${details.row.showDate != null ? #temporals.format(details.row.showDate,'dd/MM/yyyy') + ' • ' + #temporals.format(details.row.showTime,'HH:mm') : 'Không xác định'}">Suất</p>
+            <p th:text="'Phòng: ' + ${details.row.roomName}">Phòng</p>
+            <p th:text="'Ghế: ' + (${details.row.seats != null && !details.row.seats.isBlank() ? details.row.seats : '--'})">Ghế</p>
+        </div>
+        <div class="box qr-box" th:with="qrData=${details.row.invoiceCode + '|BOOKING-' + details.row.bookingId}">
+            <h2>Mã tra cứu</h2>
+            <img th:src="${'https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=5&data=' + qrData}" alt="QR hóa đơn">
+        </div>
+    </section>
+
+    <div class="status-line">
+        <span class="badge refunded" th:if="${details.row.refunded}">Đã hoàn tiền</span>
+        <span class="badge" th:unless="${details.row.refunded}" th:classappend="${details.row.bookingStatus.name() == 'PAID' ? ' paid' : (details.row.bookingStatus.name() == 'PENDING' ? ' pending' : (details.row.bookingStatus.name() == 'CANCELLED' ? ' cancelled' : ' neutral'))}" th:text="${details.row.bookingStatusText()}">Đã thanh toán</span>
+        <span class="badge source" th:text="${details.row.source}">Online</span>
+        <span class="badge" th:if="${details.row.paymentStatus != null}"
+              th:classappend="${details.row.paymentStatus.name() == 'SUCCESS' ? ' paid' : (details.row.paymentStatus.name() == 'PENDING' ? ' pending' : ' failed')}"
+              th:text="${details.row.paymentMethodText() + ' • ' + details.row.paymentStatusText()}">PayOS</span>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Hạng mục</th>
+            <th>Chi tiết</th>
+            <th class="right">Số lượng</th>
+            <th class="right">Đơn giá/Tạm tính</th>
+            <th class="right">Thành tiền</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Vé xem phim</td>
+            <td>
+                <strong th:text="${details.row.movieTitle}">Phim</strong>
+                <div class="muted" th:text="'Ghế: ' + (${details.row.seats != null && !details.row.seats.isBlank() ? details.row.seats : '--'})">Ghế</div>
+            </td>
+            <td class="right" th:text="${#lists.size(details.tickets)}">1</td>
+            <td class="right muted">Theo cấu hình giá vé</td>
+            <td class="right money" th:text="${#numbers.formatDecimal(details.booking.ticketSubtotal,0,'COMMA',0,'POINT')} + ' đ'">0 đ</td>
+        </tr>
+        <tr th:each="combo : ${details.combos}">
+            <td>Combo</td>
+            <td th:text="${combo.comboName}">Combo</td>
+            <td class="right" th:text="${combo.quantity}">1</td>
+            <td class="right" th:text="${#numbers.formatDecimal(combo.unitPrice,0,'COMMA',0,'POINT')} + ' đ'">0 đ</td>
+            <td class="right money" th:text="${#numbers.formatDecimal(combo.subtotal,0,'COMMA',0,'POINT')} + ' đ'">0 đ</td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(details.combos)}">
+            <td>Combo</td>
+            <td class="muted">Không chọn combo</td>
+            <td class="right">0</td>
+            <td class="right">0 đ</td>
+            <td class="right money">0 đ</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <section class="totals">
+        <div class="total-row"><span>Tiền vé</span><strong th:text="${#numbers.formatDecimal(details.booking.ticketSubtotal,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>
+        <div class="total-row"><span>Combo</span><strong th:text="${#numbers.formatDecimal(details.booking.comboSubtotal,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>
+        <div class="total-row" th:if="${details.booking.voucherCode != null}"><span>Voucher</span><strong th:text="${details.booking.voucherCode}">CODE</strong></div>
+        <div class="total-row"><span>Giảm giá</span><strong th:text="'-' + ${#numbers.formatDecimal(details.booking.discountAmount,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>
+        <div class="total-row grand"><span>Tổng thanh toán</span><strong th:text="${#numbers.formatDecimal(details.booking.totalAmount,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>
+    </section>
+
+    <section class="payment-history">
+        <table>
+            <thead>
+            <tr>
+                <th>Mã giao dịch</th>
+                <th>Phương thức</th>
+                <th>Trạng thái</th>
+                <th>Thời gian</th>
+                <th class="right">Số tiền</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(details.payments)}">
+                <td colspan="5" class="muted">Chưa có giao dịch thanh toán.</td>
+            </tr>
+            <tr th:each="payment : ${details.payments}">
+                <td th:text="${payment.orderCode}">ORDER</td>
+                <td th:text="${details.row.paymentMethodText()}">PayOS</td>
+                <td th:text="${payment.responseCode != null && payment.responseCode.equalsIgnoreCase('REFUNDED') ? 'Đã hoàn tiền' : (payment.status.name() == 'SUCCESS' ? 'Thành công' : (payment.status.name() == 'PENDING' ? 'Chờ thanh toán' : (payment.status.name() == 'FAILED' ? 'Thất bại' : 'Đã hủy')))}">Thành công</td>
+                <td>
+                    <div th:text="${#temporals.format(payment.createdAt,'dd/MM/yyyy HH:mm')}">Ngày</div>
+                    <div class="muted" th:if="${payment.paidAt != null}" th:text="'Đã thanh toán: ' + ${#temporals.format(payment.paidAt,'dd/MM/yyyy HH:mm')}">Paid</div>
+                </td>
+                <td class="right money" th:text="${#numbers.formatDecimal(payment.amount,0,'COMMA',0,'POINT')} + ' đ'">0 đ</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <footer class="footer">
+        <div>
+            <strong>Ghi chú</strong>
+            <p>Hóa đơn được phát hành từ hệ thống CineFlow Cinema. Vui lòng giữ hóa đơn để đối chiếu khi cần.</p>
+        </div>
+        <div class="signature">
+            <div></div>
+            <strong>Nhân viên xác nhận</strong>
+        </div>
+    </footer>
+</main>
+
+<script>
+    window.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('autoPrint') !== 'false') {
+            setTimeout(() => window.print(), 350);
+        }
+    });
+</script>
+</body>
+</html>

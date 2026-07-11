@@ -16,6 +16,7 @@
         <a href="/manage_showtime.html"><li th:classappend="${active == 'showtimes'} ? 'active' : ''"><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
         <a href="/manage_ticket.html"><li th:classappend="${active == 'tickets'} ? 'active' : ''"><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
         <a th:href="@{/admin/counter-sales}"><li th:classappend="${active == 'counter-sales'} ? 'active' : ''"><i class="fas fa-cash-register"></i> Bán vé tại quầy</li></a>
+        <a th:href="@{/admin/invoices}"><li th:classappend="${active == 'invoices'} ? 'active' : ''"><i class="fas fa-file-invoice"></i> Quản lý hóa đơn</li></a>
         <a th:href="@{/admin/combos}"><li th:classappend="${active == 'combos'} ? 'active' : ''"><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
         <a th:href="@{/admin/promotions}"><li th:classappend="${active == 'promotions'} ? 'active' : ''"><i class="fas fa-bullhorn"></i> Quản lý khuyến mãi</li></a>
         <a th:href="@{/admin/vouchers/list}"><li th:classappend="${active == 'vouchers'} ? 'active' : ''"><i class="fas fa-ticket-simple"></i> Quản lý Voucher</li></a>
