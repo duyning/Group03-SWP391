@@ -22,25 +22,77 @@ public class TicketApiController {
     private final SeatTypeSurchargeRepository seatTypeSurchargeRepository;
     private final FormatSurchargeRepository formatSurchargeRepository;
     private final CustomerDiscountRepository customerDiscountRepository;
+    private final BookingTicketRepository bookingTicketRepository;
 
     public TicketApiController(TicketService ticketService,
                                TicketPriceConfigRepository ticketPriceConfigRepository,
                                SeatTypeSurchargeRepository seatTypeSurchargeRepository,
                                FormatSurchargeRepository formatSurchargeRepository,
-                               CustomerDiscountRepository customerDiscountRepository) {
+                               CustomerDiscountRepository customerDiscountRepository,
+                               BookingTicketRepository bookingTicketRepository) {
         this.ticketService = ticketService;
         this.ticketPriceConfigRepository = ticketPriceConfigRepository;
         this.seatTypeSurchargeRepository = seatTypeSurchargeRepository;
         this.formatSurchargeRepository = formatSurchargeRepository;
         this.customerDiscountRepository = customerDiscountRepository;
+        this.bookingTicketRepository = bookingTicketRepository;
     }
 
     /**
-     * Lấy danh sách vé đã bán hoạt động của một suất chiếu.
+     * Lấy danh sách vé đã bán hoạt động của một suất chiếu (chỉ từ bảng tickets admin).
      */
     @GetMapping("/showtime/{showtimeId}")
     public ResponseEntity<List<Ticket>> getTicketsByShowtime(@PathVariable("showtimeId") Long showtimeId) {
         return ResponseEntity.ok(ticketService.getTicketsByShowtime(showtimeId));
+    }
+
+    /**
+     * Lấy trạng thái tất cả ghế đã bán / đang giữ chỗ của suất chiếu (gộp cả 2 luồng: Admin bán trực tiếp + khách hàng đặt online).
+     * Trả về List<Map> mỗi phần tử gồm: seatId, seatLabel, seatType, status (BOOKED/HOLDING/PENDING), source (ticket/booking), finalPrice.
+     */
+    @GetMapping("/seat-status/{showtimeId}")
+    public ResponseEntity<List<Map<String, Object>>> getSeatStatusByShowtime(@PathVariable("showtimeId") Long showtimeId) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        // Nguồn 1: Vé bán trực tiếp bởi Admin (bảng tickets)
+        List<Ticket> adminTickets = ticketService.getTicketsByShowtime(showtimeId);
+        for (Ticket t : adminTickets) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", t.getId());
+            m.put("seatId", t.getSeat() != null ? t.getSeat().getId() : null);
+            m.put("seatLabel", t.getSeatLabel());
+            m.put("seatType", t.getSeatType());
+            m.put("status", t.getStatus());          // BOOKED, PENDING, CONFIRMED...
+            m.put("source", "ticket");
+            m.put("customerType", t.getCustomerType());
+            m.put("finalPrice", t.getFinalPrice());
+            result.add(m);
+        }
+
+        // Nguồn 2: Ghế đang giữ / đã đặt qua flow online (bảng booking_tickets)
+        Set<Long> addedSeatIds = new HashSet<>();
+        for (Ticket t : adminTickets) {
+            if (t.getSeat() != null) addedSeatIds.add(t.getSeat().getId());
+        }
+
+        List<BookingTicket> bookingTickets = bookingTicketRepository.findByShowtimeId(showtimeId);
+        for (BookingTicket bt : bookingTickets) {
+            // Bỏ qua nếu ghế đã được đếm từ bảng tickets
+            if (addedSeatIds.contains(bt.getSeatId())) continue;
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", bt.getId());
+            m.put("seatId", bt.getSeatId());
+            m.put("seatLabel", bt.getSeatLabel());
+            m.put("seatType", bt.getSeatType());
+            // Map HOLDING -> PENDING (để front-end dùng chung màu vàng)
+            m.put("status", bt.getStatus() == BookingTicket.Status.HOLDING ? "PENDING" : "BOOKED");
+            m.put("source", "booking");
+            m.put("customerType", "ADULT");
+            m.put("finalPrice", bt.getPrice() != null ? bt.getPrice().doubleValue() : 0);
+            result.add(m);
+        }
+
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -69,11 +121,9 @@ public class TicketApiController {
     @PostMapping("/sell")
     public ResponseEntity<?> sellTicket(@RequestParam("showtimeId") Long showtimeId,
                                         @RequestParam("seatId") Long seatId,
-                                        @RequestParam("customerType") String customerType,
-                                        @RequestParam(value = "customerName", required = false) String customerName,
-                                        @RequestParam(value = "customerPhone", required = false) String customerPhone) {
+                                        @RequestParam("customerType") String customerType) {
         try {
-            return ResponseEntity.ok(ticketService.sellTicket(showtimeId, seatId, customerType, customerName, customerPhone));
+            return ResponseEntity.ok(ticketService.sellTicket(showtimeId, seatId, customerType));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -342,11 +392,9 @@ public class TicketApiController {
             Long showtimeId = Long.valueOf(payload.get("showtimeId").toString());
             Long seatId = Long.valueOf(payload.get("seatId").toString());
             String customerType = payload.get("customerType").toString();
-            String customerName = payload.get("customerName") != null ? payload.get("customerName").toString() : null;
-            String customerPhone = payload.get("customerPhone") != null ? payload.get("customerPhone").toString() : null;
             String status = payload.get("status") != null ? payload.get("status").toString() : "BOOKED";
 
-            return ResponseEntity.ok(ticketService.createTicket(showtimeId, seatId, customerType, customerName, customerPhone, status));
+            return ResponseEntity.ok(ticketService.createTicket(showtimeId, seatId, customerType, status));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -358,11 +406,9 @@ public class TicketApiController {
             Long showtimeId = Long.valueOf(payload.get("showtimeId").toString());
             Long seatId = Long.valueOf(payload.get("seatId").toString());
             String customerType = payload.get("customerType").toString();
-            String customerName = payload.get("customerName") != null ? payload.get("customerName").toString() : null;
-            String customerPhone = payload.get("customerPhone") != null ? payload.get("customerPhone").toString() : null;
             String status = payload.get("status") != null ? payload.get("status").toString() : "BOOKED";
 
-            return ResponseEntity.ok(ticketService.updateTicket(id, showtimeId, seatId, customerType, customerName, customerPhone, status));
+            return ResponseEntity.ok(ticketService.updateTicket(id, showtimeId, seatId, customerType, status));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

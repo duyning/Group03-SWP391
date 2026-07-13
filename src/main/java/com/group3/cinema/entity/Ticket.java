@@ -94,10 +94,10 @@ public class Ticket {
     @Column(name = "customer_type", columnDefinition = "NVARCHAR(30)")
     private String customerType = "ADULT";
 
-    @Column(name = "customer_name", columnDefinition = "NVARCHAR(255)")
+    @Column(name = "customer_name", columnDefinition = "NVARCHAR(100)")
     private String customerName;
 
-    @Column(name = "customer_phone", columnDefinition = "NVARCHAR(50)")
+    @Column(name = "customer_phone", columnDefinition = "NVARCHAR(20)")
     private String customerPhone;
 
     @Column(name = "payment_method", columnDefinition = "NVARCHAR(50)")

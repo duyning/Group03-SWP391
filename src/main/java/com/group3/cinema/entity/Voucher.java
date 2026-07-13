@@ -231,6 +231,7 @@ public class Voucher {
     private Integer totalQuantity;
 
     @Column(name = "used_quantity", nullable = false)
+    @Builder.Default
     private Integer usedQuantity = 0;
 
     @NotNull(message = "Vui lòng chọn dịch vụ được áp dụng")
@@ -248,11 +249,13 @@ public class Voucher {
 
     @NotNull(message = "Vui lòng chọn cấu hình áp dụng ngày Lễ, Tết")
     @Column(name = "is_holiday_applicable", nullable = false)
+    @Builder.Default
     private Boolean isHolidayApplicable = true;
 
     @NotNull(message = "Vui lòng cấu hình giới hạn lượt dùng")
     @Min(value = 1, message = "Giới hạn sử dụng mỗi tài khoản phải tối thiểu là 1")
     @Column(name = "limit_per_user", nullable = false)
+    @Builder.Default
     private Integer limitPerUser = 1;
 
     @Column(name = "created_at", updatable = false)
@@ -264,6 +267,7 @@ public class Voucher {
     // Trong Voucher.java
     @ManyToMany(mappedBy = "savedVouchers")
     @JsonIgnore // Tránh vòng lặp vô tận khi dùng JSON
+    @Builder.Default
     private Set<Account> accounts = new HashSet<>();
 
     @PrePersist

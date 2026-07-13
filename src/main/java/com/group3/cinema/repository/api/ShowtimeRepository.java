@@ -40,6 +40,23 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
                                    @Param("startDate") LocalDate startDate,
                                    @Param("endDate") LocalDate endDate);
 
+    @Query("""
+            SELECT s
+            FROM Showtime s
+            WHERE s.active = true
+              AND s.movie.active = true
+              AND s.movie.status <> com.group3.cinema.entity.Movie$MovieStatus.STOPPED
+              AND (:movieId IS NULL OR s.movie.id = :movieId)
+              AND (:dayType IS NULL OR :dayType = '' OR s.dayType = :dayType)
+              AND (:startDate IS NULL OR s.showDate >= :startDate)
+              AND (:endDate IS NULL OR s.showDate <= :endDate)
+            ORDER BY s.showDate ASC, s.showTime ASC
+            """)
+    List<Showtime> searchShowtimesForCustomer(@Param("movieId") Integer movieId,
+                                             @Param("dayType") String dayType,
+                                             @Param("startDate") LocalDate startDate,
+                                             @Param("endDate") LocalDate endDate);
+
     @Query("SELECT COUNT(s) FROM Showtime s WHERE s.dayType = :dayType AND s.active = true")
     long countByDayType(@Param("dayType") String dayType);
 
@@ -75,4 +92,10 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
             """)
     List<Showtime> findByMovieIdAndShowDate(@Param("movieId") int movieId,
                                             @Param("showDate") LocalDate showDate);
+
+    @Query("SELECT COUNT(s) FROM Showtime s WHERE s.movie.id = :movieId AND s.active = true")
+    long countAllShowtimesByMovieId(@Param("movieId") int movieId);
+
+    @Query("SELECT COUNT(s) FROM Showtime s WHERE s.movie.id = :movieId AND s.showDate >= :today AND s.active = true")
+    long countFutureShowtimesByMovieId(@Param("movieId") int movieId, @Param("today") LocalDate today);
 }
