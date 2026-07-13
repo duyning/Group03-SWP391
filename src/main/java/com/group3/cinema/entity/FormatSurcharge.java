@@ -15,7 +15,7 @@ public class FormatSurcharge {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "format_code", nullable = false, unique = true, length = 20)
+    @Column(name = "format_code", nullable = false, unique = true, length = 20, columnDefinition = "NVARCHAR(20)")
     private String formatCode;  // "2D" | "3D" | "IMAX" | "Gold"
 
     @Column(name = "surcharge_amount", nullable = false)

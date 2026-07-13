@@ -21,7 +21,7 @@
 // *
 // * Ngày thực hiện: 26/06/2026
 // */
-//@Component
+//@Componet
 //public class TicketSeedInitializer {
 //
 //    private final TicketRepository ticketRepository;

@@ -65,7 +65,7 @@ public class BookingShowtimeService {
         Movie movie = getBookableMovie(movieId);
         LocalDateTime now = LocalDateTime.now();
 
-        return showtimeRepository.searchShowtimes(movieId, null, date, date).stream()
+        return showtimeRepository.searchShowtimesForCustomer(movieId, null, date, date).stream()
                 .filter(showtime -> LocalDateTime.of(showtime.getShowDate(), showtime.getShowTime()).isAfter(now))
                 .map(showtime -> toView(showtime, movie))
                 .filter(view -> view != null && view.availableSeatCount() > 0)
@@ -79,7 +79,7 @@ public class BookingShowtimeService {
         LocalDateTime now = LocalDateTime.now();
         Map<LocalDate, List<BookingShowtimeView>> grouped = new LinkedHashMap<>();
 
-        showtimeRepository.searchShowtimes(movieId, null, today, maxDate).stream()
+        showtimeRepository.searchShowtimesForCustomer(movieId, null, today, maxDate).stream()
                 .filter(showtime -> LocalDateTime.of(showtime.getShowDate(), showtime.getShowTime()).isAfter(now))
                 .map(showtime -> toView(showtime, movie))
                 .filter(view -> view != null && view.availableSeatCount() > 0)

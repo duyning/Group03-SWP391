@@ -845,6 +845,7 @@ function openMovieModal(isEdit) {
     if (!isEdit) {
         document.getElementById('movieForm').reset();
         document.getElementById('movieParamId').value = '';
+        document.getElementById('movieReleaseDate').dataset.original = '';
         showPosterPreview('');
         resetUploadZone();
         document.querySelectorAll('input[name="movieGenreVal"]').forEach(cb => cb.checked = false);
@@ -906,13 +907,17 @@ async function handleMovieSave(e) {
         return;
     }
 
-    if (!id && body.releaseDate) {
-        const today    = new Date(); today.setHours(0, 0, 0, 0);
-        const releaseD = new Date(body.releaseDate + 'T00:00:00');
-        if (releaseD < today) {
-            showToast('warning', 'Ngày khởi chiếu không hợp lệ',
-                'Ngày khởi chiếu không được là ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.');
-            return;
+    if (body.releaseDate) {
+        const originalReleaseDate = document.getElementById('movieReleaseDate').dataset.original || '';
+        const isChanged = !id || body.releaseDate !== originalReleaseDate;
+        if (isChanged) {
+            const today    = new Date(); today.setHours(0, 0, 0, 0);
+            const releaseD = new Date(body.releaseDate + 'T00:00:00');
+            if (releaseD < today) {
+                showToast('warning', 'Ngày khởi chiếu không hợp lệ',
+                    'Ngày khởi chiếu không được là ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.');
+                return;
+            }
         }
     }
 
@@ -968,7 +973,9 @@ async function editMovie(id) {
         document.getElementById('movieFormat').value    = mv.format      || '';
         showPosterPreview(mv.posterUrl || '');
         setMinReleaseDateToday(true);
-        document.getElementById('movieReleaseDate').value = mv.releaseDate || '';
+        const relDateInput = document.getElementById('movieReleaseDate');
+        relDateInput.value = mv.releaseDate || '';
+        relDateInput.dataset.original = mv.releaseDate || '';
         document.getElementById('movieStatus').value    = mv.status      || 'Đang chiếu';
         // Cập nhật hint trạng thái theo ngày hiện tại của phim
         const hint = document.getElementById('movieStatusHint');
@@ -1087,10 +1094,20 @@ async function toggleMovieActive(id, currentActive) {
 
     try {
         const r = await fetch(`${API_MOVIES}/${id}/toggle-active`, { method: 'PATCH' });
-        if (!r.ok) throw new Error();
-        const result = currentActive
-            ? { type:'warning', title:'Đã tạm ẩn phim!', msg:'Phim đã được ẩn khỏi giao diện khách hàng.' }
-            : { type:'success', title:'Đã mở lại phim!', msg:'Phim đã hiển thị trở lại cho khách hàng.' };
+        if (!r.ok) {
+            const errData = await r.json().catch(() => ({}));
+            const errMsg = errData.message || `Không thể ${action} phim. Vui lòng thử lại.`;
+            showToast('error', 'Thông báo', errMsg);
+            return;
+        }
+        const data = await r.json();
+        
+        let result;
+        if (currentActive) {
+            result = { type:'warning', title:'Đã tạm ẩn phim!', msg:'Phim đã được ẩn khỏi giao diện khách hàng.' };
+        } else {
+            result = { type:'success', title:'Đã mở lại phim!', msg:'Phim đã hiển thị trở lại cho khách hàng.' };
+        }
         showToast(result.type, result.title, result.msg);
         loadMovieStats();
         applyMovieFilter();
@@ -1349,7 +1366,7 @@ async function populateMovieDropdowns(forceRefresh = false) {
     } catch(e) { console.error('Lỗi nạp dropdown phim:', e); }
 }
 
-// --- Nạp phòng chiếu (có cache để không bị lag) ---
+    // --- Nạp phòng chiếu (có cache để không bị lag) ---
 // [SỬA - TrienLX - 2026-06-23]: Hỗ trợ nạp phòng cho cả form điều chỉnh 1 ngày
 async function populateRoomDropdown(selectedRoomName = '', forceRefresh = false) {
     const roomContainer = document.getElementById('showtimeRoomsCheckboxContainer');
@@ -1709,7 +1726,7 @@ async function renderShowtimeTable() {
                 color:#fff; padding:4px 12px; border-radius:20px;
                 font-size:.82rem; font-weight:600; white-space:nowrap;
                 " title="${titleTooltip}">
-                <span>${iconHtml}${startT} – ${endT}${roomSuffix}</span>
+                <span>${iconHtml}${startT} – ${endT}</span>
                 <span style="display:inline-flex; gap:6px; margin-left:4px; border-left:1px solid rgba(255,255,255,0.3); padding-left:6px;">
                     <i class="fa-solid fa-pen-to-square" onclick="event.stopPropagation(); editShowtime(${slot.id}, ${slotIdsJson})" title="Sửa suất chiếu này" style="cursor:pointer; opacity:0.8; transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8"></i>
                     <i class="fa-solid fa-trash-can" onclick="event.stopPropagation(); deleteShowtime(${slot.id})" title="Xóa suất chiếu này" style="cursor:pointer; opacity:0.8; transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8"></i>
@@ -2337,7 +2354,6 @@ function renderSeatGrid(seats, soldTickets) {
             let tooltip = 'Ghế ' + seat.seatLabel + ' - ' + (isVIP ? 'VIP' : (isCouple ? 'Đôi' : 'Thường'));
             if (ticket) {
                 tooltip += ' [' + (ticket.status === 'BOOKED' ? 'Đã bán' : 'Đang giữ chỗ') + ']';
-                if (ticket.customerName) tooltip += ' - Khách: ' + ticket.customerName;
             } else {
                 tooltip += ' [Còn trống]';
             }
@@ -2371,8 +2387,6 @@ function selectEmptySeat(seat) {
     document.getElementById('bookingDetailContainer').style.display = 'none';
     document.getElementById('sellSeatLabel').value       = seat.seatLabel;
     document.getElementById('sellSeatId').value          = seat.id;
-    document.getElementById('sellCustomerName').value    = '';
-    document.getElementById('sellCustomerPhone').value   = '';
     document.getElementById('sellCustomerType').value    = 'ADULT';
     const holdBtn = document.getElementById('btnActionConfirmHold');
     if (holdBtn) { holdBtn.style.display = 'inline-flex'; holdBtn.innerHTML = '<i class="fa-solid fa-clock"></i> Giữ chỗ'; holdBtn.onclick = null; }
@@ -2390,8 +2404,6 @@ function selectPendingSeat(seat, ticket) {
     document.getElementById('bookingDetailContainer').style.display = 'none';
     document.getElementById('sellSeatLabel').value       = seat.seatLabel;
     document.getElementById('sellSeatId').value          = seat.id;
-    document.getElementById('sellCustomerName').value    = ticket.customerName  || '';
-    document.getElementById('sellCustomerPhone').value   = ticket.customerPhone || '';
     document.getElementById('sellCustomerType').value    = ticket.customerType  || 'ADULT';
     const holdBtn = document.getElementById('btnActionConfirmHold');
     if (holdBtn) {
@@ -2416,8 +2428,6 @@ function selectBookedSeat(ticket) {
     document.getElementById('detailSeatLabel').textContent  = ticket.seatNumber + ' (' + (ticket.seatType || '') + ')';
     const badge = document.getElementById('detailStatus');
     if (badge) { badge.textContent = ticket.status; badge.className = 'badge badge-ongoing'; }
-    document.getElementById('detailCustName').textContent   = ticket.customerName  || 'Khách vãng lai';
-    document.getElementById('detailCustPhone').textContent  = ticket.customerPhone || 'Không cung cấp';
 
     const typeLabels = { 'ADULT':'Người lớn (Adult)', 'STUDENT':'Học sinh/SV (Student)', 'CHILD':'Trẻ em (Child)', 'VIP':'Khách hàng VIP' };
     document.getElementById('detailCustType').textContent = typeLabels[ticket.customerType] || ticket.customerType || '--';
@@ -2487,14 +2497,10 @@ async function handleReleaseHoldSeat(seatId) {
 async function handleConfirmSellTicket() {
     if (!selectedSeatId) return;
     const customerType  = document.getElementById('sellCustomerType').value;
-    const customerName  = document.getElementById('sellCustomerName').value;
-    const customerPhone = document.getElementById('sellCustomerPhone').value;
     try {
         const url = '/api/tickets/sell?showtimeId=' + activeShowtimeId
             + '&seatId='       + selectedSeatId
-            + '&customerType=' + customerType
-            + '&customerName=' + encodeURIComponent(customerName)
-            + '&customerPhone='+ encodeURIComponent(customerPhone);
+            + '&customerType=' + customerType;
         const r = await fetch(url, { method: 'POST' });
         if (!r.ok) { const data = await r.json(); throw new Error(data.error || 'Lỗi từ máy chủ.'); }
         showToast('success', 'Bán vé thành công!', 'Vé cho ghế ' + selectedSeatLabel + ' đã được ghi nhận.');
@@ -2820,8 +2826,6 @@ function initQueryTabFilters() {
 async function openCreateTicketModal() {
     document.getElementById('ticketCrudModalTitle').textContent = 'Thêm vé mới';
     document.getElementById('ticketCrudId').value = '';
-    document.getElementById('ticketCrudCustomerName').value = '';
-    document.getElementById('ticketCrudCustomerPhone').value = '';
     document.getElementById('ticketCrudCustomerType').value = 'ADULT';
     document.getElementById('ticketCrudStatus').value = 'BOOKED';
     document.getElementById('ticketCrudStatus').disabled = false;
@@ -2873,8 +2877,6 @@ async function openEditTicketModal(ticketId) {
 
         document.getElementById('ticketCrudModalTitle').textContent = 'Sửa thông tin vé';
         document.getElementById('ticketCrudId').value = ticket.id;
-        document.getElementById('ticketCrudCustomerName').value = ticket.customerName || '';
-        document.getElementById('ticketCrudCustomerPhone').value = ticket.customerPhone || '';
         document.getElementById('ticketCrudCustomerType').value = ticket.customerType || 'ADULT';
         document.getElementById('ticketCrudStatus').value = ticket.status || 'BOOKED';
         
@@ -3065,8 +3067,6 @@ async function handleSaveTicketCrud() {
     const seatId = document.getElementById('ticketCrudSeat').value;
     const customerType = document.getElementById('ticketCrudCustomerType').value;
     const status = document.getElementById('ticketCrudStatus').value;
-    const customerName = document.getElementById('ticketCrudCustomerName').value.trim();
-    const customerPhone = document.getElementById('ticketCrudCustomerPhone').value.trim();
 
     if (!showtimeId || !seatId || !customerType || !status) {
         showToast('warning', 'Thiếu thông tin', 'Vui lòng điền đầy đủ các trường thông tin bắt buộc (*).');
@@ -3077,9 +3077,7 @@ async function handleSaveTicketCrud() {
         showtimeId: parseInt(showtimeId),
         seatId: parseInt(seatId),
         customerType: customerType,
-        status: status,
-        customerName: customerName || null,
-        customerPhone: customerPhone || null
+        status: status
     };
 
     try {
@@ -3467,13 +3465,13 @@ async function handleMapShowtimeChange() {
         const coupleConfig = configs.seatSurcharges.find(ss => ss.seatTypeCode === 'couple');
         localPricingInfo.coupleSurcharge = coupleConfig ? coupleConfig.surchargeAmount : 30000;
 
-        // 2. Tải danh sách ghế và vé đã bán
+        // 2. Tải danh sách ghế và trạng thái ghế (đã bán + đang giữ chỗ qua cả 2 nguồn: Admin + Online booking)
         const seatsRes = await fetch(API_TICKETS + '/seats?showtimeId=' + showtimeId);
         const seats = await seatsRes.json();
-        const ticketRes = await fetch(API_TICKETS + '/showtime/' + showtimeId);
-        const soldTickets = await ticketRes.json();
+        const seatStatusRes = await fetch(API_TICKETS + '/seat-status/' + showtimeId);
+        const occupiedSeats = await seatStatusRes.json();
 
-        renderMapSeatGrid(seats, soldTickets);
+        renderMapSeatGrid(seats, occupiedSeats);
     } catch (e) {
         showToast('error', 'Lỗi', 'Không thể tải sơ đồ ghế.');
     }
@@ -3522,7 +3520,11 @@ function renderMapSeatGrid(seats, soldTickets) {
         rowDiv.appendChild(lbl);
 
         rowSeats.forEach(seat => {
-            const ticket = soldTickets.find(t => t.seat && t.seat.id === seat.id && t.status !== 'REFUNDED');
+            // Ho tro ca 2 format: Ticket object cu (t.seat.id) va Map moi tu /seat-status/ (t.seatId)
+            const ticket = soldTickets.find(t => {
+                const tSeatId = t.seatId != null ? t.seatId : (t.seat ? t.seat.id : null);
+                return tSeatId === seat.id && t.status !== 'REFUNDED';
+            });
             const isVIP = seat.seatType === 'vip';
             const isCouple = seat.seatType === 'couple';
 
@@ -3531,8 +3533,9 @@ function renderMapSeatGrid(seats, soldTickets) {
             else if (isCouple) stateClass = 'seat-empty-couple';
 
             if (ticket) {
-                if (ticket.status === 'BOOKED') stateClass = 'seat-state-booked';
-                else if (ticket.status === 'PENDING') stateClass = 'seat-state-pending';
+                const s = ticket.status;
+                if (s === 'BOOKED' || s === 'CONFIRMED') stateClass = 'seat-state-booked';
+                else if (s === 'PENDING' || s === 'HOLDING') stateClass = 'seat-state-pending';
             }
 
             const btn = document.createElement('div');
@@ -3548,7 +3551,6 @@ function renderMapSeatGrid(seats, soldTickets) {
             let tooltip = `Ghế ${seat.seatLabel} - ${isVIP ? 'VIP' : (isCouple ? 'Đôi' : 'Thường')}`;
             if (ticket) {
                 tooltip += ` [${ticket.status === 'BOOKED' ? 'Đã bán' : 'Đang giữ chỗ'}]`;
-                if (ticket.customerName) tooltip += ` - Khách: ${ticket.customerName}`;
             } else {
                 tooltip += ` - Giá vé: ${formatVND(seatPrice)}`;
             }
@@ -3624,20 +3626,67 @@ function selectMapSeat(seat, ticket) {
     document.getElementById('bookingPanelActive').style.display = 'block';
     document.getElementById('bookingPanelEmpty').style.display = 'none';
 
-    // 1. Tính giá gốc (Adult)
-    const isVIP = seat.seatType === 'vip';
-    const isCouple = seat.seatType === 'couple';
-    const seatSurchargeVal = isVIP ? localPricingInfo.vipSurcharge : (isCouple ? localPricingInfo.coupleSurcharge : 0);
-    const formatSurchargeVal = localPricingInfo.formatSurcharge;
+    const bookedPanel = document.getElementById('bookedSeatInfoPanel');
+    const priceBreakdown = document.getElementById('bookPriceBreakdown');
 
-    const subtotal = localPricingInfo.basePrice + seatSurchargeVal + formatSurchargeVal;
+    if (ticket) {
+        // Ghế đã bán hoặc đang giữ chỗ — hiển thị thông tin vé
+        bookedPanel.style.display = 'block';
+        priceBreakdown.style.display = 'none';
 
-    document.getElementById('bookBasePrice').textContent = formatVND(localPricingInfo.basePrice);
-    document.getElementById('bookSeatSurcharge').textContent = formatVND(seatSurchargeVal);
-    document.getElementById('bookFormatSurcharge').textContent = formatVND(formatSurchargeVal);
-    document.getElementById('bookFinalPrice').textContent = formatVND(subtotal);
+        const isBooked = ticket.status === 'BOOKED';
+        const header = document.getElementById('bookedSeatInfoHeader');
+        const icon = document.getElementById('bookedSeatInfoIcon');
+        const title = document.getElementById('bookedSeatInfoTitle');
 
+        if (isBooked) {
+            header.style.cssText = 'padding: 0.6rem 1rem; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; background: #ef4444; color: #fff; border-radius: 10px 10px 0 0;';
+            icon.className = 'fa-solid fa-ticket-alt';
+            title.textContent = 'Ghế đã được bán';
+        } else {
+            header.style.cssText = 'padding: 0.6rem 1rem; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; background: #eab308; color: #fff; border-radius: 10px 10px 0 0;';
+            icon.className = 'fa-solid fa-hourglass-half';
+            title.textContent = 'Ghế đang được giữ chỗ';
+        }
 
+        document.getElementById('bookedTicketId').textContent = '#' + ticket.id;
+
+        const customerTypeMap = { 'ADULT': 'Người lớn', 'CHILD': 'Trẻ em', 'STUDENT': 'Học sinh/SV', 'SENIOR': 'Người cao tuổi' };
+        document.getElementById('bookedCustomerType').textContent = customerTypeMap[ticket.customerType] || ticket.customerType || '--';
+
+        const statusEl = document.getElementById('bookedStatus');
+        if (isBooked) {
+            statusEl.textContent = '✅ Đã bán (BOOKED)';
+            statusEl.style.color = '#ef4444';
+        } else {
+            statusEl.textContent = '⏳ Đang giữ chỗ (PENDING)';
+            statusEl.style.color = '#ca8a04';
+        }
+
+        const priceVal = ticket.finalPrice || ticket.price;
+        if (priceVal && priceVal > 0) {
+            document.getElementById('bookedFinalPrice').textContent = formatVND(priceVal) + 'đ';
+            document.getElementById('bookedPriceRow').style.display = 'block';
+        } else {
+            document.getElementById('bookedPriceRow').style.display = 'none';
+        }
+
+    } else {
+        // Ghế trống — hiển thị cơ cấu giá ước tính
+        bookedPanel.style.display = 'none';
+        priceBreakdown.style.display = 'block';
+
+        const isVIP = seat.seatType === 'vip';
+        const isCouple = seat.seatType === 'couple';
+        const seatSurchargeVal = isVIP ? localPricingInfo.vipSurcharge : (isCouple ? localPricingInfo.coupleSurcharge : 0);
+        const formatSurchargeVal = localPricingInfo.formatSurcharge;
+        const subtotal = localPricingInfo.basePrice + seatSurchargeVal + formatSurchargeVal;
+
+        document.getElementById('bookBasePrice').textContent = formatVND(localPricingInfo.basePrice);
+        document.getElementById('bookSeatSurcharge').textContent = formatVND(seatSurchargeVal);
+        document.getElementById('bookFormatSurcharge').textContent = formatVND(formatSurchargeVal);
+        document.getElementById('bookFinalPrice').textContent = formatVND(subtotal);
+    }
 }
 
 function resetMapBookingPanel() {

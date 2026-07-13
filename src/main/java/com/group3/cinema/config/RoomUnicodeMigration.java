@@ -342,11 +342,11 @@ public class RoomUnicodeMigration {
         alterColumn("rooms", "audio_tech", "NVARCHAR(80) NULL");
         alterColumn("rooms", "status", "NVARCHAR(20) NULL");
 
-        alterColumn("room_types", "name", "NVARCHAR(50) NOT NULL");
+        migrateColumnToNvarcharWithConstraints("room_types", "name", "NVARCHAR(50) NOT NULL", "UQ_room_types_name");
         alterColumn("room_types", "description", "NVARCHAR(255) NULL");
-        alterColumn("audio_technologies", "name", "NVARCHAR(80) NOT NULL");
+        migrateColumnToNvarcharWithConstraints("audio_technologies", "name", "NVARCHAR(80) NOT NULL", "UQ_audio_technologies_name");
         alterColumn("audio_technologies", "description", "NVARCHAR(255) NULL");
-        alterColumn("seat_types", "code", "NVARCHAR(20) NOT NULL");
+        migrateColumnToNvarcharWithConstraints("seat_types", "code", "NVARCHAR(20) NOT NULL", "UQ_seat_types_code");
         alterColumn("seat_types", "display_name", "NVARCHAR(80) NOT NULL");
         alterColumn("seats", "seat_label", "NVARCHAR(20) NULL");
         alterColumn("seats", "seat_type", "NVARCHAR(30) NOT NULL");
@@ -409,9 +409,9 @@ public class RoomUnicodeMigration {
         alterColumn("ticket_price_configs", "day_type", "NVARCHAR(30) NOT NULL");
         alterColumn("ticket_price_configs", "slot_name", "NVARCHAR(30) NOT NULL");
         alterColumn("ticket_price_configs", "note", "NVARCHAR(100) NULL");
-        alterColumn("customer_discounts", "customer_type", "NVARCHAR(50) NOT NULL");
-        alterColumn("seat_type_surcharges", "seat_type_code", "NVARCHAR(30) NOT NULL");
-        alterColumn("format_surcharges", "format_code", "NVARCHAR(30) NOT NULL");
+        migrateColumnToNvarcharWithConstraints("customer_discounts", "customer_type", "NVARCHAR(50) NOT NULL", "UQ_customer_discounts_type");
+        migrateColumnToNvarcharWithConstraints("seat_type_surcharges", "seat_type_code", "NVARCHAR(30) NOT NULL", "UQ_seat_type_surcharges_code");
+        migrateColumnToNvarcharWithConstraints("format_surcharges", "format_code", "NVARCHAR(30) NOT NULL", "UQ_format_surcharges_code");
     }
 
     /**
@@ -650,6 +650,51 @@ public class RoomUnicodeMigration {
             }
         } catch (Exception e) {
             log.warn("Lỗi nạp seed data cho ma trận giá vé: {}", e.getMessage());
+        }
+    }
+
+    private void migrateColumnToNvarcharWithConstraints(String tableName, String columnName, String definition, String uniqueConstraintName) {
+        if (!tableExists(tableName) || !columnExists(tableName, columnName)) {
+            return;
+        }
+        try {
+            // Drop unique constraints
+            java.util.List<String> constraints = jdbcTemplate.query(
+                "SELECT name FROM sys.objects WHERE (type = 'UQ' OR type = 'F' OR type = 'PK') AND parent_object_id = OBJECT_ID('" + tableName + "')",
+                (rs, rowNum) -> rs.getString("name")
+            );
+            for (String cn : constraints) {
+                try {
+                    jdbcTemplate.execute("ALTER TABLE " + tableName + " DROP CONSTRAINT [" + cn + "]");
+                    log.info("Dropped constraint {} on table {}", cn, tableName);
+                } catch (Exception ignored) {}
+            }
+
+            // Drop unique indexes
+            java.util.List<String> indexes = jdbcTemplate.query(
+                "SELECT name FROM sys.indexes WHERE object_id = OBJECT_ID('" + tableName + "') AND is_unique = 1 AND name NOT LIKE 'PK_%'",
+                (rs, rowNum) -> rs.getString("name")
+            );
+            for (String idx : indexes) {
+                try {
+                    jdbcTemplate.execute("DROP INDEX [" + idx + "] ON " + tableName);
+                    log.info("Dropped index {} on table {}", idx, tableName);
+                } catch (Exception ignored) {}
+            }
+
+            // Alter column
+            jdbcTemplate.execute("ALTER TABLE " + tableName + " ALTER COLUMN " + columnName + " " + definition);
+            log.info("Successfully altered column {}.{} to {}", tableName, columnName, definition);
+
+            // Recreate unique constraint
+            try {
+                jdbcTemplate.execute("ALTER TABLE " + tableName + " ADD CONSTRAINT [" + uniqueConstraintName + "] UNIQUE (" + columnName + ")");
+                log.info("Re-created unique constraint {} on {}({})", uniqueConstraintName, tableName, columnName);
+            } catch (Exception e) {
+                log.warn("Could not re-create unique constraint {} on {}: {}", uniqueConstraintName, tableName, e.getMessage());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to migrate column {}.{} to NVARCHAR: {}", tableName, columnName, e.getMessage());
         }
     }
 }

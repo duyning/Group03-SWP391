@@ -17,7 +17,7 @@ public class CustomerDiscount {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "customer_type", nullable = false, unique = true, length = 30)
+    @Column(name = "customer_type", nullable = false, unique = true, length = 30, columnDefinition = "NVARCHAR(30)")
     private String customerType; // "STUDENT", "CHILD", "ELDERLY", "ADULT"
 
     @Column(name = "discount_rate", nullable = false)

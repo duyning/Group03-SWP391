@@ -4,7 +4,6 @@ spring:
     name: Group03_SWP391_Summer26
   config:
     import: optional:classpath:application-vnpay-local.yaml
-
   datasource:
     url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=Group3_SWP391;encrypt=false;trustServerCertificate=true}
     username: ${DB_USERNAME:sa}
@@ -43,6 +42,11 @@ spring:
       enabled: true
       max-file-size: 50MB
       max-request-size: 50MB
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+
 
   mail:
     host: smtp.gmail.com

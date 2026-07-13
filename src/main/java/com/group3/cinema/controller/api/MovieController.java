@@ -32,25 +32,27 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-// ÄÃ¡nh dáº¥u lá»›p nÃ y lÃ  má»™t RestController Ä‘á»ƒ Spring Boot Ä‘á»‹nh cáº¥u hÃ¬nh cÃ¡c API endpoint tráº£ vá» dá»¯ liá»‡u JSON
+// Đánh dấu lớp này là một RestController để Spring Boot định cấu hình các API endpoint trả về dữ liệu JSON
 @RestController("apiMovieController")
-// Äá»‹nh nghÄ©a Ä‘Æ°á»ng dáº«n cÆ¡ sá»Ÿ (base path) cho toÃ n bá»™ API trong controller nÃ y lÃ  "/api/movies"
+// Định nghĩa đường dẫn cơ sở (base path) cho toàn bộ API trong controller này là "/api/movies"
 @RequestMapping("/api/movies")
-// Cho phÃ©p táº¥t cáº£ cÃ¡c nguá»“n gá»‘c (Cross-Origin Resource Sharing) gá»i Ä‘áº¿n API nÃ y (Ä‘á»ƒ trÃ¡nh lá»—i CORS)
+// Cho phép tất cả các nguồn gốc (Cross-Origin Resource Sharing) gọi đến API này (để tránh lỗi CORS)
 @CrossOrigin(origins = "*")
 public class MovieController {
 
-    // Khai bÃ¡o káº¿t ná»‘i Ä‘áº¿n MovieService xá»­ lÃ½ nghiá»‡p vá»¥
+    // Khai báo kết nối đến MovieService xử lý nghiệp vụ
     private final MovieService movieService;
+    private final com.group3.cinema.repository.api.ShowtimeRepository showtimeRepository;
 
-    // TiÃªm (Inject) MovieService thÃ´ng qua Constructor Injection
+    // Tiêm (Inject) MovieService thông qua Constructor Injection
     @Autowired
-    public MovieController(MovieService movieService) {
+    public MovieController(MovieService movieService, com.group3.cinema.repository.api.ShowtimeRepository showtimeRepository) {
         this.movieService = movieService;
+        this.showtimeRepository = showtimeRepository;
     }
 
     // Endpoint: GET /api/movies
-    // Há»— trá»£ tÃ¬m kiáº¿m, lá»c phim nÃ¢ng cao báº±ng cÃ¡ch truyá»n tham sá»‘ tÃ¹y chá»n (Query Parameters)
+    // Hỗ trợ tìm kiếm, lọc phim nâng cao bằng cách truyền tham số tùy chọn (Query Parameters)
     @GetMapping
     public ResponseEntity<List<Movie>> searchMovies(
             @RequestParam(value = "title", required = false) String title,
@@ -58,20 +60,20 @@ public class MovieController {
             @RequestParam(value = "director", required = false) String director,
             @RequestParam(value = "duration", required = false) Integer duration,
             @RequestParam(value = "status", required = false) String status,
-            // Há»— trá»£ parse Ä‘á»‹nh dáº¡ng ngÃ y chuáº©n ISO (yyyy-MM-dd) thÃ nh kiá»ƒu dá»¯ liá»‡u LocalDate
+            // Hỗ trợ parse định dạng ngày chuẩn ISO (yyyy-MM-dd) thành kiểu dữ liệu LocalDate
             @RequestParam(value = "releaseDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate releaseDate
     ) {
         List<Movie> movies = movieService.searchMovies(title, genre, director, duration, status, releaseDate);
-        return ResponseEntity.ok(movies); // Tráº£ vá» mÃ£ pháº£n há»“i HTTP 200 OK kÃ¨m danh sÃ¡ch phim
+        return ResponseEntity.ok(movies); // Trả về mã phản hồi HTTP 200 OK kèm danh sách phim
     }
 
     // Endpoint: GET /api/movies/{id}
-    // Láº¥y thÃ´ng tin chi tiáº¿t cá»§a má»™t bá»™ phim theo mÃ£ ID truyá»n vÃ o tá»« Ä‘Æ°á»ng dáº«n (Path Variable)
+    // Lấy thông tin chi tiết của một bộ phim theo mã ID truyền vào từ đường dẫn (Path Variable)
     @GetMapping("/{id}")
     public ResponseEntity<Movie> getMovieById(@PathVariable("id") Integer id) {
         return movieService.getMovieById(id)
-                .map(ResponseEntity::ok) // Náº¿u tÃ¬m tháº¥y, tráº£ vá»  HTTP 200 OK kÃ¨m dá»¯ liá»‡u phim
-                .orElse(ResponseEntity.notFound().build()); // Náº¿u khÃ´ng tÃ¬m tháº¥y, tráº£ vá»  HTTP 404 Not Found
+                .map(ResponseEntity::ok) // Nếu tìm thấy, trả về HTTP 200 OK kèm dữ liệu phim
+                .orElse(ResponseEntity.notFound().build()); // Nếu không tìm thấy, trả về HTTP 404 Not Found
     }
 
     // Endpoint: POST /api/movies
@@ -119,8 +121,36 @@ public class MovieController {
     @PatchMapping("/{id}/toggle-active")
     public ResponseEntity<?> toggleActive(@PathVariable("id") Integer id) {
         try {
+            java.util.Optional<Movie> movieOpt = movieService.getMovieById(id);
+            if (movieOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            Movie movie = movieOpt.get();
+
+            // If the movie is currently INACTIVE (about to be activated):
+            if (!movie.isActive()) {
+                boolean isComingSoonAndNotYetReleased = movie.getStatus() == Movie.MovieStatus.COMING_SOON
+                        && (movie.getReleaseDate() != null && movie.getReleaseDate().isAfter(LocalDate.now()));
+
+                if (!isComingSoonAndNotYetReleased) {
+                    boolean hasAnyShowtimes = showtimeRepository.countAllShowtimesByMovieId(id) > 0;
+                    if (hasAnyShowtimes) {
+                        boolean hasFutureShowtimes = showtimeRepository.countFutureShowtimesByMovieId(id, LocalDate.now()) > 0;
+                        if (!hasFutureShowtimes) {
+                            return ResponseEntity.badRequest().body(Map.of(
+                                "message", "Phim đã hết lịch chiếu vui lòng thêm lịch chiếu mới để mở!"
+                            ));
+                        }
+                    }
+                }
+            }
+
             Movie updated = movieService.toggleActive(id);
-            return ResponseEntity.ok(updated);
+            boolean hasFutureShowtimes = showtimeRepository.countFutureShowtimesByMovieId(id, LocalDate.now()) > 0;
+            return ResponseEntity.ok(Map.of(
+                "movie", updated,
+                "hasFutureShowtimes", hasFutureShowtimes
+            ));
         } catch (Exception e) {
             System.err.println("Lỗi khi toggle-active cho phim ID " + id + ": " + e.getMessage());
             e.printStackTrace();

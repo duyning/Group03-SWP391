@@ -13,6 +13,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${movie.title} + ' | CineFlow'">Chi tiết phim | CineFlow</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             margin: 0;
@@ -228,6 +229,43 @@
             text-transform: uppercase;
         }
 
+        .wishlist-btn {
+            background: #fff;
+            color: #ef4444;
+            border: 2px solid #fecaca;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 28px;
+            text-transform: uppercase;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.04);
+        }
+
+        .wishlist-btn:hover {
+            background: #fef2f2;
+            border-color: #f87171;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.12);
+        }
+
+        .wishlist-btn.active {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .wishlist-btn.active:hover {
+            background: linear-gradient(135deg, #f87171 0%, #e11d48 100%);
+            box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45);
+        }
+
         .trailer-section {
             margin-top: 30px;
             border-top: 1px solid #e2e8f0;
@@ -274,6 +312,42 @@
             .footer-container {
                 grid-template-columns: 1fr;
             }
+        }
+
+        /* Toast notifications styling */
+        #toastContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast-msg {
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-weight: 600;
+            animation: slideIn 0.3s ease forwards;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast-msg.success { background: #10b981; }
+        .toast-msg.error { background: #ef4444; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; transform: scale(0.9); }
         }
     </style>
     <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
@@ -344,6 +418,9 @@
                         th:if="${movie.trailerUrl != null && !movie.trailerUrl.isEmpty()}"
                         onclick="document.getElementById('movieTrailer').scrollIntoView({ behavior: 'smooth', block: 'center' }); const player = document.getElementById('movieTrailerPlayer'); if (player) player.play();">
                     Xem trailer
+                </button>
+                <button class="wishlist-btn" id="btnWishlist" th:attr="data-movie-id=${movie.id}">
+                    <i class="fa-regular fa-heart"></i> <span>Yêu thích</span>
                 </button>
                 <a class="outline-btn" th:href="@{/movies}">Quay lại</a>
             </div>
@@ -423,7 +500,74 @@
                 <p>Facebook | Youtube | TikTok</p>
             </div>
         </div>
-    </footer>
+    <div id="toastContainer"></div>
+
+    <script>
+        function showToast(type, message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast-msg ${type}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.5s ease forwards';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnWishlist = document.getElementById('btnWishlist');
+            if (!btnWishlist) return;
+            const movieId = btnWishlist.getAttribute('data-movie-id');
+
+            // 1. Check if movie is wishlisted
+            fetch(`/api/wishlist/check?movieId=${movieId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.wishlisted) {
+                        btnWishlist.classList.add('active');
+                        const icon = btnWishlist.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fa-solid fa-heart';
+                        }
+                    }
+                })
+                .catch(() => {});
+
+            // 2. Add click listener to toggle wishlist
+            btnWishlist.addEventListener('click', async function() {
+                try {
+                    const response = await fetch(`/api/wishlist/toggle?movieId=${movieId}`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.status === 401) {
+                        const data = await response.json();
+                        showToast('error', data.message || 'Vui lòng đăng nhập.');
+                        return;
+                    }
+
+                    const data = await response.json();
+                    if (response.ok) {
+                        const icon = btnWishlist.querySelector('i');
+                        if (data.added) {
+                            btnWishlist.classList.add('active');
+                            if (icon) icon.className = 'fa-solid fa-heart';
+                            showToast('success', data.message);
+                        } else {
+                            btnWishlist.classList.remove('active');
+                            if (icon) icon.className = 'fa-regular fa-heart';
+                            showToast('success', data.message);
+                        }
+                    } else {
+                        showToast('error', data.message || 'Có lỗi xảy ra.');
+                    }
+                } catch (error) {
+                    showToast('error', 'Lỗi kết nối mạng.');
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

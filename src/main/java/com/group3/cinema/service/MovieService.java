@@ -31,6 +31,7 @@ public class MovieService {
         List<Movie> movies = movieRepository.findByActiveTrue();
         Collections.shuffle(movies);
         return movies.stream()
+                .filter(m -> m.getStatus() != Movie.MovieStatus.STOPPED)
                 .limit(5)
                 .collect(Collectors.toList());
     }
@@ -88,6 +89,7 @@ public class MovieService {
         }
 
         List<Movie> movies = movieRepository.findByActiveTrue().stream()
+                .filter(movie -> movie.getStatus() != Movie.MovieStatus.STOPPED || movieStatus == Movie.MovieStatus.STOPPED)
                 .filter(movie -> matchesKeyword(movie, keyword))
                 .filter(movie -> matchesAny(movie.getGenre(), genres))
                 .filter(movie -> matchesAny(movie.getFormat(), formats))

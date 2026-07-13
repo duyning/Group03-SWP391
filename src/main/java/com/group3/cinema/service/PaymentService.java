@@ -15,6 +15,7 @@ import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.PaymentRepository;
 import com.group3.cinema.repository.TicketRepository;
+import com.group3.cinema.repository.WishlistRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class PaymentService {
     private final TicketRepository realTicketRepository;
     private final ShowtimeRepository showtimeRepository;
     private final AccountRepository accountRepository;
+    private final WishlistRepository wishlistRepository;
 
     public PaymentService(PaymentRepository paymentRepository,
                           BookingRepository bookingRepository,
@@ -40,7 +42,8 @@ public class PaymentService {
                           BookingEmailService bookingEmailService,
                           TicketRepository realTicketRepository,
                           ShowtimeRepository showtimeRepository,
-                          AccountRepository accountRepository) {
+                          AccountRepository accountRepository,
+                          WishlistRepository wishlistRepository) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.ticketRepository = ticketRepository;
@@ -48,7 +51,9 @@ public class PaymentService {
         this.realTicketRepository = realTicketRepository;
         this.showtimeRepository = showtimeRepository;
         this.accountRepository = accountRepository;
+        this.wishlistRepository = wishlistRepository;
     }
+
 
     @Transactional
     public Payment createPayment(Long bookingId, Integer accountId, String method) {
@@ -285,6 +290,14 @@ public class PaymentService {
                     t.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "Momo");
                     t.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
                     realTicketRepository.save(t);
+                }
+
+                // Tự động xoá khỏi wishlist khi thanh toán/đặt mua thành công bộ phim này
+                try {
+                    wishlistRepository.findByAccountAccountIDAndMovieId(account.getAccountID(), movie.getId())
+                            .ifPresent(wishlistRepository::delete);
+                } catch (Exception ex) {
+                    System.err.println("Warning: Failed to auto-remove movie from wishlist: " + ex.getMessage());
                 }
             }
         } catch (Exception ex) {

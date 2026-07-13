@@ -166,6 +166,45 @@
             letter-spacing: 0.5px;
         }
 
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 15px;
+            padding: 0 25px 25px 25px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .table th, .table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .table th {
+            background-color: #f8fafc;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        .table tr:hover {
+            background-color: #f8fafc;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-secondary { background: #f3f4f6; color: #374151; }
+
         .panel {
             background: white;
             border-radius: 12px;
@@ -217,7 +256,28 @@
             align-items: center;
             justify-content: center;
         }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+        .chart-card h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-weight: 800;
+            color: #1e293b;
+        }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -248,33 +308,91 @@
         </div>
 
         <section class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-film"></i></div>
+            <div class="stat-card" style="border-left-color: var(--success);">
+                <div class="stat-icon" style="background: #ecfdf5; color: var(--success);"><i class="fas fa-wallet"></i></div>
                 <div class="stat-info">
-                    <h3 th:text="${movieCount}">0</h3>
-                    <p>Phim</p>
+                    <h3 th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 0, 'POINT', 0, 'POINT') + ' đ' : '0 đ'}">0 đ</h3>
+                    <p>Doanh thu</p>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-theater-masks"></i></div>
+            <div class="stat-card" style="border-left-color: var(--primary);">
+                <div class="stat-icon" style="background: #eff6ff; color: var(--primary);"><i class="fas fa-ticket-alt"></i></div>
                 <div class="stat-info">
-                    <h3 th:text="${roomCount}">0</h3>
-                    <p>Phòng chiếu</p>
+                    <h3 th:text="${totalTicketsSold}">0</h3>
+                    <p>Vé bán ra</p>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-chair"></i></div>
+            <div class="stat-card" style="border-left-color: var(--warning);">
+                <div class="stat-icon" style="background: #fffbeb; color: var(--warning);"><i class="fas fa-shopping-cart"></i></div>
                 <div class="stat-info">
-                    <h3 th:text="${seatCount}">0</h3>
-                    <p>Ghế</p>
+                    <h3 th:text="${totalBookingsPaid}">0</h3>
+                    <p>Số lượt đặt</p>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+            <div class="stat-card" style="border-left-color: #a78bfa;">
+                <div class="stat-icon" style="background: #f5f3ff; color: #a78bfa;"><i class="fas fa-chart-line"></i></div>
                 <div class="stat-info">
-                    <h3 th:text="${showtimeCount}">0</h3>
-                    <p>Lịch chiếu</p>
+                    <h3 th:text="${occupancyRate} + '%'">0%</h3>
+                    <p>Tỷ lệ lấp đầy</p>
                 </div>
+            </div>
+        </section>
+
+        <!-- Section Biểu đồ Phân tích -->
+        <section class="charts-grid">
+            <!-- Biểu đồ phim hàng đầu -->
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-bar"></i> Top 5 phim doanh thu cao nhất</h3>
+                <div style="position: relative; height:300px;">
+                    <canvas id="topMoviesChart"></canvas>
+                </div>
+            </div>
+            <!-- Biểu đồ phương thức thanh toán -->
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-pie"></i> Cơ cấu phương thức thanh toán</h3>
+                <div style="position: relative; height:300px; display:flex; justify-content:center;">
+                    <canvas id="paymentStatsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bảng lịch sử đặt vé gần đây -->
+        <section class="panel" style="margin-bottom: 30px;">
+            <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Lịch sử đặt vé gần đây</span>
+                <span style="font-size:12px; font-weight:normal; color:#64748b;" th:text="${bookings.size()} + ' giao dịch'">0 giao dịch</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Mã HD</th>
+                            <th>Khách hàng</th>
+                            <th>Phim</th>
+                            <th>Số vé</th>
+                            <th>Tổng tiền</th>
+                            <th>Thời gian</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="b : ${bookings}">
+                            <td style="font-weight:700; color:var(--primary);" th:text="'HD-' + ${b.id}">HD-001</td>
+                            <td th:text="${b.customerName}">Nguyễn Văn A</td>
+                            <td style="font-weight:600;" th:text="${b.movieTitle}">Bầy xác sống</td>
+                            <td th:text="${b.ticketQuantity}">2</td>
+                            <td style="font-weight:700;" th:text="${b.totalPrice != null ? #numbers.formatDecimal(b.totalPrice, 0, 'POINT', 0, 'POINT') + ' đ' : '0 đ'}">150.000 đ</td>
+                            <td th:text="${b.bookingTime}">09/07/2026 14:00</td>
+                            <td>
+                                <span th:class="'badge ' + (${b.status == 'Đã thanh toán'} ? 'badge-success' : (${b.status == 'Chờ thanh toán'} ? 'badge-warning' : (${b.status == 'Đã hủy'} ? 'badge-danger' : 'badge-secondary')))"
+                                      th:text="${b.status}">Đã thanh toán</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(bookings)}">
+                            <td colspan="7" style="text-align:center; color:#64748b; padding: 30px;">Chưa có giao dịch nào được ghi nhận.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
@@ -293,7 +411,89 @@
                     khoản Quản lý</a>
             </div>
         </section>
-    </main>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const topMoviesData = /*[[${topMovies}]]*/ [];
+        const paymentStatsData = /*[[${paymentStats}]]*/ [];
+        /*]]>*/
+        
+        // 1. Render Top Movies Chart
+        const movieLabels = topMoviesData.map(m => m.title);
+        const movieRevenues = topMoviesData.map(m => m.revenue);
+        
+        new Chart(document.getElementById('topMoviesChart'), {
+            type: 'bar',
+            data: {
+                labels: movieLabels,
+                datasets: [{
+                    label: 'Doanh thu (đ)',
+                    data: movieRevenues,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgb(59, 130, 246)',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('vi-VN') + ' đ';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Render Payment Method Chart
+        const paymentLabels = paymentStatsData.map(p => p.method);
+        const paymentValues = paymentStatsData.map(p => p.revenue);
+        
+        new Chart(document.getElementById('paymentStatsChart'), {
+            type: 'doughnut',
+            data: {
+                labels: paymentLabels,
+                datasets: [{
+                    data: paymentValues,
+                    backgroundColor: [
+                        '#10b981', // green
+                        '#3b82f6', // blue
+                        '#ec4899', // pink
+                        '#f59e0b', // amber
+                        '#6b7280'  // gray
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 15 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) label += ': ';
+                                label += context.raw.toLocaleString('vi-VN') + ' đ';
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>

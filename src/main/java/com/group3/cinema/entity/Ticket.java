@@ -94,11 +94,7 @@ public class Ticket {
     @Column(name = "customer_type", columnDefinition = "NVARCHAR(30)")
     private String customerType = "ADULT";
 
-    @Column(name = "customer_name", columnDefinition = "NVARCHAR(255)")
-    private String customerName;
 
-    @Column(name = "customer_phone", columnDefinition = "NVARCHAR(50)")
-    private String customerPhone;
 
     @Column(name = "payment_method", columnDefinition = "NVARCHAR(50)")
     private String paymentMethod;
@@ -309,21 +305,7 @@ public class Ticket {
         this.customerType = customerType;
     }
 
-    public String getCustomerName() {
-        return customerName;
-    }
 
-    public void setCustomerName(String customerName) {
-        this.customerName = customerName;
-    }
-
-    public String getCustomerPhone() {
-        return customerPhone;
-    }
-
-    public void setCustomerPhone(String customerPhone) {
-        this.customerPhone = customerPhone;
-    }
 
     public String getPaymentMethod() {
         return paymentMethod;

@@ -235,7 +235,8 @@
                                 <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#475569;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Standard (Thường)</span></div>
                                 <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#8b5cf6;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>VIP (Vip)</span></div>
                                 <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ec4899;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Sweetbox (Đôi)</span></div>
-                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ef4444;border-radius:4px;display:inline-block;"></span> <span>Đã bán / Giữ chỗ</span></div>
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ef4444;border-radius:4px;display:inline-block;"></span> <span>Đã bán (BOOKED)</span></div>
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#eab308;border-radius:4px;display:inline-block;animation:pulse-yellow 1.5s infinite;"></span> <span>Đang giữ chỗ (PENDING)</span></div>
                                 <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:var(--primary-color);border-radius:4px;display:inline-block;box-shadow:0 0 10px var(--primary-color);"></span> <span>Đang chọn</span></div>
                             </div>
 
@@ -253,17 +254,33 @@
 
                         <!-- Panel thông tin & tính giá bên phải -->
                         <div class="panel-booking-info" style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.05); min-height: 300px;">
-                            <h3 style="font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-top:0; color: var(--text-main);"><i class="fa-solid fa-ticket-alt"></i> Thông tin giá ghế</h3>
+                            <h3 style="font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-top:0; color: var(--text-main);"><i class="fa-solid fa-ticket-alt"></i> Thông tin ghế</h3>
                             
                             <div id="bookingPanelActive" style="display: none; margin-top: 1rem;">
+                                <!-- Thông tin cơ bản về ghế -->
                                 <div style="font-size: 0.9rem; line-height: 1.6rem; color: var(--text-main); margin-bottom: 1.2rem; background: var(--bg-app); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
                                     <div><strong>Ghế chọn:</strong> <span id="bookSeatLabel" style="font-weight: 700; color: var(--primary-color);">--</span> (<span id="bookSeatType">--</span>)</div>
                                     <div><strong>Phòng:</strong> <span id="bookRoomLabel">--</span></div>
                                     <div><strong>Suất chiếu:</strong> <span id="bookShowtimeLabel">--</span></div>
                                 </div>
 
-                                <!-- Chi tiết cơ cấu giá gốc -->
+                                <!-- Panel vé đã bán / đang giữ chỗ -->
+                                <div id="bookedSeatInfoPanel" style="display: none; margin-bottom: 1.2rem; border-radius: 10px; overflow: hidden;">
+                                    <div id="bookedSeatInfoHeader" style="padding: 0.6rem 1rem; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                                        <i id="bookedSeatInfoIcon" class="fa-solid fa-lock"></i>
+                                        <span id="bookedSeatInfoTitle">Ghế đang được giữ chỗ</span>
+                                    </div>
+                                    <div style="background: var(--bg-app); padding: 1rem; font-size: 0.85rem; color: var(--text-main); line-height: 1.7rem; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 10px 10px;">
+                                        <div><strong>Mã vé:</strong> <span id="bookedTicketId" style="font-family: monospace; color: var(--primary-color);">--</span></div>
+                                        <div><strong>Loại khách:</strong> <span id="bookedCustomerType">--</span></div>
+                                        <div><strong>Trạng thái:</strong> <span id="bookedStatus" style="font-weight: 700;">--</span></div>
+                                        <div id="bookedPriceRow"><strong>Giá vé:</strong> <span id="bookedFinalPrice" style="font-weight: 700; color: var(--stat-green);">--</span></div>
+                                    </div>
+                                </div>
+
+                                <!-- Chi tiết cơ cấu giá gốc (chỉ hiển thị với ghế trống) -->
                                 <div class="price-breakdown-box" id="bookPriceBreakdown" style="background: var(--bg-app); border-radius: 8px; padding: 1rem; border: 1px dashed var(--border-color); font-size: 0.85rem; margin-bottom: 1.2rem;">
+                                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px;">Cơ cấu giá vé (Ước tính)</div>
                                     <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Giá cơ bản (Giờ/Ngày):</span><span id="bookBasePrice">0đ</span></div>
                                     <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Phụ thu loại ghế:</span><span id="bookSeatSurcharge">0đ</span></div>
                                     <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Phụ thu định dạng:</span><span id="bookFormatSurcharge">0đ</span></div>
@@ -272,8 +289,9 @@
                             </div>
 
                             <div id="bookingPanelEmpty" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 250px; color: var(--text-muted); font-size: 0.88rem; text-align: center;">
-                                <i class="fa-solid fa-calculator" style="font-size: 2.2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                                <span>Chọn một ghế trống trên sơ đồ để xem thông tin chi tiết và giá vé.</span>
+                                <i class="fa-solid fa-map-location-dot" style="font-size: 2.2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                                <span>Chọn một ghế trên sơ đồ để xem thông tin chi tiết.</span>
+                                <span style="font-size: 0.8rem; margin-top: 0.3rem; opacity: 0.7;">🟥 Đã bán &nbsp;&nbsp; 🟨 Đang giữ &nbsp;&nbsp; ⬜ Còn trống</span>
                             </div>
                         </div>
                     </div>
@@ -578,16 +596,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-                    <div class="form-group">
-                        <label for="ticketCrudCustomerName" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Tên khách hàng</label>
-                        <input type="text" id="ticketCrudCustomerName" class="form-control" placeholder="Nhập tên khách..." style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);">
-                    </div>
-                    <div class="form-group">
-                        <label for="ticketCrudCustomerPhone" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Số điện thoại</label>
-                        <input type="text" id="ticketCrudCustomerPhone" class="form-control" placeholder="Nhập số điện thoại..." style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);">
-                    </div>
-                </div>
+
 
                 <!-- Phân tích cơ cấu giá vé tự động -->
                 <div class="price-breakdown-box" id="crudPriceBreakdownBox" style="display: none; background: var(--bg-app); border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color); font-size: 0.88rem; margin-bottom: 1.5rem;">

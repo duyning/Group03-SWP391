@@ -48,9 +48,24 @@ public class PublicContentInitializer {
     @Transactional
     public void seedPublicContent() {
         seedMovies();
-        seedShowtimes();
+        // seedShowtimes(); // Đã tắt tự động sinh lịch chiếu theo yêu cầu của người dùng
         seedPosts();
         seedPromotions();
+        cleanupInvalidShowtimes();
+    }
+
+    private void cleanupInvalidShowtimes() {
+        try {
+            jdbcTemplate.update("""
+                    UPDATE showtimes
+                    SET active = 0
+                    WHERE movie_id IN (
+                        SELECT id FROM movie WHERE active = 0 OR status = 'STOPPED'
+                    )
+                    """);
+        } catch (Exception e) {
+            // Ignored
+        }
     }
 
     private void seedMovies() {
@@ -113,10 +128,6 @@ public class PublicContentInitializer {
                 .map(Movie::getTitle)
                 .collect(java.util.stream.Collectors.toSet());
         List<Movie> existingMovies = movieRepository.findAll();
-        existingMovies.stream()
-                .filter(movie -> !betaTitles.contains(movie.getTitle()))
-                .forEach(movie -> movie.setActive(false));
-        movieRepository.saveAll(existingMovies);
         deleteUnreferencedNonBetaMovies(betaTitles);
 
         movieRepository.saveAll(betaMovies.stream()
@@ -145,6 +156,7 @@ public class PublicContentInitializer {
 
     private void seedShowtimes() {
         List<Movie> movies = movieRepository.findByActiveTrue().stream()
+                .filter(m -> m.getStatus() != Movie.MovieStatus.STOPPED)
                 .sorted(java.util.Comparator.comparing(Movie::getTitle))
                 .toList();
         if (movies.isEmpty()) {
@@ -310,9 +322,7 @@ public class PublicContentInitializer {
         target.setAgeRating(source.getAgeRating());
         target.setReleaseYear(source.getReleaseYear());
         target.setProducer(source.getProducer());
-        target.setStatus(source.getStatus());
         target.setFormat(source.getFormat());
-        target.setActive(true);
         return target;
     }
 

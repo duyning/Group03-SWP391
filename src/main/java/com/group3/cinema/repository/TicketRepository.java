@@ -62,9 +62,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
               AND (:toDate IS NULL OR t.showtime.showDate <= :toDate)
               AND (:searchTerm IS NULL OR
                    CAST(t.id AS string) LIKE %:searchTerm% OR
-                   t.seatNumber LIKE %:searchTerm% OR
-                   t.customerPhone LIKE %:searchTerm% OR
-                   t.customerName LIKE %:searchTerm%)
+                   t.seatNumber LIKE %:searchTerm%)
             ORDER BY t.createdAt DESC, t.id DESC
             """)
     List<Ticket> searchTickets(@Param("movieId") Integer movieId,
