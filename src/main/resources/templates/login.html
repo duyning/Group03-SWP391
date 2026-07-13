@@ -207,6 +207,14 @@
     }
 
     // Form submit animation
+    function resetLoginButton() {
+        const btn = document.getElementById('btnLogin');
+        if (!btn) return;
+        btn.querySelector('.btn-text').style.display = 'inline';
+        btn.querySelector('.btn-loader').style.display = 'none';
+        btn.disabled = false;
+    }
+
     document.getElementById('loginForm').addEventListener('submit', function (e) {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value.trim();
@@ -222,6 +230,8 @@
         btn.querySelector('.btn-loader').style.display = 'inline-block';
         btn.disabled = true;
     });
+
+    window.addEventListener('pageshow', resetLoginButton);
 
     // Input focus animation
     document.querySelectorAll('.form-input').forEach(input => {

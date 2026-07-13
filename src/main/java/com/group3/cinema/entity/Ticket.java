@@ -294,6 +294,12 @@ public class Ticket {
     }
 
     public String getStatus() {
+        if ("CONFIRMED".equals(status) && showDate != null && showTime != null) {
+            LocalDateTime showDateTime = LocalDateTime.of(showDate, showTime);
+            if (LocalDateTime.now().isAfter(showDateTime)) {
+                return "USED";
+            }
+        }
         return status;
     }
 
@@ -350,10 +356,11 @@ public class Ticket {
     }
 
     public String getStatusDisplayName() {
-        if (status == null) {
+        String currentStatus = getStatus();
+        if (currentStatus == null) {
             return "Không xác định";
         }
-        return switch (status) {
+        return switch (currentStatus) {
             case "CONFIRMED" -> "Đã xác nhận";
             case "USED" -> "Đã sử dụng";
             case "CANCELLED" -> "Đã hủy";
@@ -362,7 +369,7 @@ public class Ticket {
             case "REFUNDED" -> "Đã hoàn";
             case "Còn trống" -> "Còn trống";
             case "Đã bán" -> "Đã bán";
-            default -> status;
+            default -> currentStatus;
         };
     }
 

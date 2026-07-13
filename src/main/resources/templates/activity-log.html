@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhật ký hoạt động - CinemaBook</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-start: #0f0c29;
+            --bg-mid:   #302b63;
+            --bg-end:   #24243e;
+            --card-bg:  rgba(255,255,255,0.05);
+            --card-border: rgba(255,255,255,0.10);
+            --text-main: #e0e0f0;
+            --text-muted: rgba(255,255,255,0.45);
+            --accent-green: #10b981;
+            --accent-blue: #60a5fa;
+            --accent-purple: #a78bfa;
+            --accent-yellow: #fbbf24;
+            --accent-red: #f87171;
+            --accent-pink: #f472b6;
+            --accent-cyan: #22d3ee;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-start), var(--bg-mid), var(--bg-end));
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            padding: 40px 20px;
+        }
+
+        .page-container {
+            max-width: 820px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Header ── */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .page-title {
+            font-size: 1.7rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: rgba(255,255,255,0.75);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.25s;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-back:hover {
+            background: rgba(255,255,255,0.10);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* ── Timeline ── */
+        .timeline {
+            position: relative;
+            padding-left: 54px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent-green), transparent);
+            border-radius: 2px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            animation: slideIn 0.4s ease-out both;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-16px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Stagger animation for each item */
+        .timeline-item:nth-child(1)  { animation-delay: 0.05s; }
+        .timeline-item:nth-child(2)  { animation-delay: 0.10s; }
+        .timeline-item:nth-child(3)  { animation-delay: 0.15s; }
+        .timeline-item:nth-child(4)  { animation-delay: 0.20s; }
+        .timeline-item:nth-child(5)  { animation-delay: 0.25s; }
+        .timeline-item:nth-child(6)  { animation-delay: 0.30s; }
+        .timeline-item:nth-child(7)  { animation-delay: 0.35s; }
+        .timeline-item:nth-child(8)  { animation-delay: 0.40s; }
+        .timeline-item:nth-child(9)  { animation-delay: 0.45s; }
+        .timeline-item:nth-child(10) { animation-delay: 0.50s; }
+
+        .timeline-dot {
+            position: absolute;
+            left: -42px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            border: 2px solid transparent;
+            flex-shrink: 0;
+        }
+
+        .timeline-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px 20px;
+            backdrop-filter: blur(16px);
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+        }
+
+        .timeline-card:hover {
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transform: translateX(4px);
+        }
+
+        .log-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .log-icon--login    { background: rgba(16,185,129,0.18);  color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .log-icon--logout   { background: rgba(248,113,113,0.18); color: #fca5a5; border: 1px solid rgba(248,113,113,0.3); }
+        .log-icon--profile  { background: rgba(167,139,250,0.18); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.3); }
+        .log-icon--password { background: rgba(251,191,36,0.18);  color: #fde68a; border: 1px solid rgba(251,191,36,0.3); }
+        .log-icon--ticket   { background: rgba(251,191,36,0.18);  color: #fde68a; border: 1px solid rgba(251,191,36,0.3); }
+        .log-icon--payment  { background: rgba(34,211,238,0.18);  color: #67e8f9; border: 1px solid rgba(34,211,238,0.3); }
+        .log-icon--voucher  { background: rgba(244,114,182,0.18); color: #f9a8d4; border: 1px solid rgba(244,114,182,0.3); }
+        .log-icon--movie    { background: rgba(96,165,250,0.18);  color: #93c5fd; border: 1px solid rgba(96,165,250,0.3); }
+        .log-icon--post     { background: rgba(167,139,250,0.18); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.3); }
+        .log-icon--account  { background: rgba(34,211,238,0.18);  color: #67e8f9; border: 1px solid rgba(34,211,238,0.3); }
+        .log-icon--showtime { background: rgba(16,185,129,0.18);  color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+        .log-icon--other    { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.15); }
+
+        /* Dot uses same colour as badge */
+        .timeline-dot.log-icon--login    { background: rgba(16,185,129,0.2);  border-color: #34d399; color: #34d399; }
+        .timeline-dot.log-icon--logout   { background: rgba(248,113,113,0.2); border-color: #fca5a5; color: #fca5a5; }
+        .timeline-dot.log-icon--profile  { background: rgba(167,139,250,0.2); border-color: #c4b5fd; color: #c4b5fd; }
+        .timeline-dot.log-icon--password { background: rgba(251,191,36,0.2);  border-color: #fde68a; color: #fde68a; }
+        .timeline-dot.log-icon--ticket   { background: rgba(251,191,36,0.2);  border-color: #fde68a; color: #fde68a; }
+        .timeline-dot.log-icon--payment  { background: rgba(34,211,238,0.2);  border-color: #67e8f9; color: #67e8f9; }
+        .timeline-dot.log-icon--voucher  { background: rgba(244,114,182,0.2); border-color: #f9a8d4; color: #f9a8d4; }
+        .timeline-dot.log-icon--movie    { background: rgba(96,165,250,0.2);  border-color: #93c5fd; color: #93c5fd; }
+        .timeline-dot.log-icon--post     { background: rgba(167,139,250,0.2); border-color: #c4b5fd; color: #c4b5fd; }
+        .timeline-dot.log-icon--account  { background: rgba(34,211,238,0.2);  border-color: #67e8f9; color: #67e8f9; }
+        .timeline-dot.log-icon--showtime { background: rgba(16,185,129,0.2);  border-color: #6ee7b7; color: #6ee7b7; }
+        .timeline-dot.log-icon--other    { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.4); }
+
+        .log-info { flex: 1; min-width: 0; }
+
+        .log-action-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .log-description {
+            font-size: 0.83rem;
+            color: var(--text-muted);
+            word-break: break-word;
+        }
+
+        .log-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .log-ip {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.25);
+            margin-top: 2px;
+        }
+
+        /* ── Empty state ── */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: var(--card-bg);
+            border: 1px dashed rgba(255,255,255,0.12);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .empty-state i {
+            font-size: 3.5rem;
+            color: rgba(255,255,255,0.12);
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 576px) {
+            .timeline { padding-left: 44px; }
+            .timeline-dot { left: -36px; width: 30px; height: 30px; font-size: 0.75rem; }
+            .timeline::before { left: 15px; }
+            .log-time { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="page-title">
+            <i class="fas fa-history"></i>
+            Nhật ký hoạt động
+        </div>
+        <a th:href="@{/profile}" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Hồ sơ của tôi
+        </a>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline" th:if="${!logs.isEmpty()}">
+        <div class="timeline-item" th:each="log : ${logs}">
+            <!-- Dot on the line -->
+            <div class="timeline-dot fas" th:classappend="${log.actionIconClass}"></div>
+
+            <!-- Card -->
+            <div class="timeline-card">
+                <!-- Left: badge + info -->
+                <div class="log-info">
+                    <div class="log-action-name">
+                        <span class="log-badge" th:classappend="${log.actionIconClass}">
+                            <i class="fas" th:classappend="${log.actionIconClass.split(' ')[0]}"></i>
+                            <span th:text="${log.actionDisplayName}">Hành động</span>
+                        </span>
+                    </div>
+                    <div class="log-description" th:text="${log.description}" th:if="${log.description != null and !log.description.isEmpty()}">
+                        Mô tả hành động
+                    </div>
+                    <div class="log-ip" th:if="${log.ipAddress != null and !log.ipAddress.isEmpty()}">
+                        <i class="fas fa-network-wired"></i>
+                        <span th:text="${log.ipAddress}">127.0.0.1</span>
+                    </div>
+                </div>
+
+                <!-- Right: time -->
+                <div class="log-time">
+                    <div th:text="${#temporals.format(log.createdAt, 'HH:mm')}">14:30</div>
+                    <div style="color: rgba(255,255,255,0.2); margin-top: 2px;"
+                         th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy')}">01/07/2026</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" th:if="${logs.isEmpty()}">
+        <i class="fas fa-clipboard-list"></i>
+        <h3>Chưa có hoạt động nào được ghi lại</h3>
+        <p style="font-size: 0.85rem; color: rgba(255,255,255,0.25); margin-top: 8px;">
+            Các hoạt động của bạn sẽ xuất hiện ở đây sau khi bạn thực hiện chúng.
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

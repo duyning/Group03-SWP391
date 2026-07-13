@@ -129,11 +129,11 @@ public class MovieService {
             existing.setReleaseYear(movie.getReleaseYear());
             existing.setProducer(movie.getProducer());
             existing.setFormat(movie.getFormat());
-            
+
             // Khôi phục trạng thái hoạt động
             existing.setActive(true);
             existing.setDeleted(false);
-            
+
             // Tính trạng thái phim theo ngày hiện tại
             LocalDate today = LocalDate.now();
             if (movie.getReleaseDate() != null && movie.getReleaseDate().isAfter(today)) {
@@ -141,7 +141,7 @@ public class MovieService {
             } else {
                 existing.setStatus(Movie.MovieStatus.NOW_SHOWING);
             }
-            
+
             validateMovie(existing, existing.getId()); // validate sử dụng chính ID của nó để loại trừ trùng lặp tự thân
             Movie savedMovie = movieRepository.save(existing);
             saveSuggestions(savedMovie);

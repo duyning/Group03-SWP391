@@ -58,7 +58,9 @@ public class AccountService {
      * @return the matching Account, or null if not found / wrong password
      */
     public Account login(String email, String password) {
-        Account account = accountRepository.findByEmail(email);
+        // Dùng findByEmailWithVouchers để load savedVouchers eager (JOIN FETCH),
+        // tránh LazyInitializationException khi Account được lưu vào HTTP session.
+        Account account = accountRepository.findByEmailWithVouchers(email);
         if (account != null && account.getPassword().equals(password)) {
             return account;
         }
@@ -94,14 +96,54 @@ public class AccountService {
     }
 
     /**
+     * Lấy tất cả tài khoản, sắp xếp theo tên (Admin dùng).
+     */
+    public java.util.List<Account> getAllAccounts() {
+        return accountRepository.findAll(org.springframework.data.domain.Sort.by("name"));
+    }
+
+    /**
+     * Vô hiệu hóa hoặc kích hoạt tài khoản theo ID.
+     * Trả về tài khoản đã cập nhật, hoặc null nếu không tìm thấy.
+     *
+     * @param targetId  ID tài khoản cần thay đổi trạng thái
+     * @param adminId   ID admin đang thực hiện thao tác (để ngăn tự vô hiệu hóa chính mình)
+     */
+    public Account toggleAccountStatus(int targetId, int adminId) {
+        if (targetId == adminId) {
+            throw new IllegalArgumentException("Bạn không thể vô hiệu hóa chính tài khoản của mình.");
+        }
+        Account account = accountRepository.findById(targetId).orElse(null);
+        if (account == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài khoản.");
+        }
+        // Không cho phép vô hiệu hóa ADMIN khác
+        if (account.getRole() == Role.ADMIN) {
+            throw new IllegalArgumentException("Không thể thay đổi trạng thái tài khoản Admin khác.");
+        }
+        account.setStatus(!account.isStatus());
+        return accountRepository.save(account);
+    }
+
+    /**
      * Cập nhật thông tin hồ sơ cá nhân.
      */
-    public void updateProfile(Account account, String name, java.time.LocalDate dob, String gender, String address) {
+    public void updateProfile(Account account, String name, java.time.LocalDate dob, String gender, String address, String phoneNum) {
         account.setName(name);
         account.setDob(dob);
         account.setGender(gender);
         account.setAddress(address);
+        if (phoneNum != null && !phoneNum.trim().isEmpty()) {
+            account.setPhoneNum(phoneNum.trim());
+        }
         accountRepository.save(account);
+    }
+
+    /**
+     * Kiểm tra số điện thoại đã tồn tại trong DB hay chưa (trừ chính tài khoản hiện tại).
+     */
+    public boolean isPhoneNumTakenByOther(String phoneNum, Integer accountId) {
+        return accountRepository.existsByPhoneNumAndAccountIDNot(phoneNum, accountId);
     }
 
     /**

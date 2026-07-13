@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository cung cáº¥p cÃ¡c phÆ°Æ¡ng thá»©c thao tÃ¡c dá»¯ liá»‡u vá»›i báº£ng account trong cÆ¡ sá»Ÿ dá»¯ liá»‡u.
- * Káº¿ thá»«a JpaRepository Ä‘á»ƒ cung cáº¥p cÃ¡c hÃ m CRUD cÆ¡ báº£n vÃ  cÃ¡c truy váº¥n tÃ¬m kiáº¿m/kiá»ƒm tra email, sá»‘ Ä‘iá»‡n thoáº¡i.
+ * Repository cung cấp các phương thức thao tác dữ liệu với bảng account trong cơ sở dữ liệu.
+ * Kế thừa JpaRepository để cung cấp các hàm CRUD cơ bản và các truy vấn tìm kiếm/kiểm tra email, số điện thoại.
  * 
- * NgÃ y thá»±c hiá»‡n: 04/06/2026
- * Táº¡o bá»Ÿi: DuongND_HE186619
+ * Ngày thực hiện: 04/06/2026
+ * Tạo bởi: DuongND_HE186619
  */
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Integer> {
@@ -24,9 +24,18 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     Optional<Account> findFirstByPhoneNum(String phoneNum);
 
+    /**
+     * Load account kèm theo savedVouchers (JOIN FETCH) để tránh LazyInitializationException
+     * khi Account được lưu vào HTTP session sau khi Hibernate session đã đóng.
+     */
+    @Query("SELECT a FROM Account a LEFT JOIN FETCH a.savedVouchers WHERE a.email = :email")
+    Account findByEmailWithVouchers(@Param("email") String email);
+
     boolean existsByEmail(String email);
 
     boolean existsByPhoneNum(String phoneNum);
+
+    boolean existsByPhoneNumAndAccountIDNot(String phoneNum, Integer accountID);
 
     @Query("""
             SELECT a

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<!--
+  Trang Quản lý tài khoản - Admin only.
+  Cho phép xem, tìm kiếm, lọc và vô hiệu hóa/kích hoạt tài khoản.
+
+  Ngày thực hiện: 09/07/2026
+  Tạo bởi: DuongND_HE186619
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý tài khoản | CineFlow Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --sidebar-bg: #1e293b;
+            --sidebar-hover: #334155;
+            --primary: #0054a6;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-body: #f1f5f9;
+            --card-shadow: 0 1px 3px rgba(0,0,0,.10), 0 1px 2px -1px rgba(0,0,0,.10);
+            --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: var(--bg-body);
+            display: flex;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        /* ── Sidebar (reused) ── */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            height: 100vh;
+            color: #f8fafc;
+            position: fixed;
+            top: 0; left: 0;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 25px;
+            font-size: 20px;
+            font-weight: 800;
+            border-bottom: 1px solid #334155;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .sidebar-nav { list-style: none; padding: 15px 0; margin: 0; }
+        .sidebar-nav a { text-decoration: none; color: inherit; display: block; }
+        .sidebar-nav li {
+            padding: 12px 25px;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 12px;
+            color: #94a3b8;
+            transition: 0.2s;
+        }
+        .sidebar-nav li:hover, .sidebar-nav li.active { background: var(--sidebar-hover); color: white; }
+        .sidebar-nav li.active { border-left: 4px solid var(--primary); }
+
+        /* ── Main ── */
+        .main { margin-left: 260px; flex: 1; padding: 30px; }
+
+        /* ── Header ── */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .page-title { font-size: 24px; font-weight: 800; }
+        .breadcrumb { font-size: 13px; color: #64748b; margin-top: 4px; }
+        .user-chip {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 14px;
+            box-shadow: var(--card-shadow);
+            font-weight: 700;
+            color: #334155;
+        }
+
+        /* ── Alerts ── */
+        .alert {
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .alert-danger  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        /* ── Stats Row ── */
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .stat-pill {
+            background: white;
+            border-radius: 10px;
+            padding: 14px 22px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .stat-pill .num { font-size: 1.6rem; font-weight: 800; }
+        .stat-pill.total .num   { color: var(--primary); }
+        .stat-pill.active .num  { color: var(--success); }
+        .stat-pill.inactive .num{ color: var(--danger); }
+
+        /* ── Filter Card ── */
+        .filter-card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--card-shadow);
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
+        .filter-group label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-group input,
+        .filter-group select {
+            padding: 9px 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .filter-group input:focus,
+        .filter-group select:focus { border-color: var(--primary); }
+
+        .btn {
+            padding: 9px 20px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #003d7a; transform: translateY(-1px); }
+        .btn-outline { background: white; color: #475569; border: 1px solid #e2e8f0; }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* ── Table ── */
+        .table-card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+        .table-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-count { font-size: 0.82rem; color: #64748b; font-weight: 500; }
+        table { width: 100%; border-collapse: collapse; }
+        thead tr { background: #f8fafc; }
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #f8fafc; }
+
+        /* ── Avatar initial ── */
+        .avatar-initial {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .user-name  { font-weight: 600; color: #1e293b; }
+        .user-email { font-size: 0.78rem; color: #64748b; }
+
+        /* ── Badges ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .badge-active   { background: #d1fae5; color: #065f46; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        .badge-admin    { background: #ede9fe; color: #5b21b6; }
+        .badge-manager  { background: #e0f2fe; color: #075985; }
+        .badge-customer { background: #f0fdf4; color: #166534; }
+
+        /* ── Toggle Button ── */
+        .btn-toggle {
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-deactivate { background: #fee2e2; color: #dc2626; }
+        .btn-deactivate:hover { background: #fca5a5; }
+        .btn-activate { background: #d1fae5; color: #059669; }
+        .btn-activate:hover { background: #6ee7b7; }
+
+        /* ── No results ── */
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .no-results i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+
+        /* ── Confirm modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            animation: popIn 0.2s ease-out;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to   { transform: scale(1);   opacity: 1; }
+        }
+        .modal-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .modal-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; }
+        .modal-desc  { font-size: 0.9rem;  color: #64748b; margin-bottom: 24px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/admin_sidebar :: adminSidebar('accounts')}"></div>
+
+    <main class="main">
+        <!-- Page header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title"><i class="fas fa-users-cog" style="color:var(--primary);margin-right:8px;"></i>Quản lý tài khoản</h1>
+                <p class="breadcrumb">Admin &rsaquo; Quản lý tài khoản người dùng</p>
+            </div>
+            <div class="user-chip" th:if="${user != null}">
+                <i class="fas fa-user-shield"></i>
+                <span th:text="${user.name}">Admin</span>
+            </div>
+        </div>
+
+        <!-- Flash messages -->
+        <div th:if="${successMessage}" class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i>
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <!-- Stats row -->
+        <div class="stats-row">
+            <div class="stat-pill total">
+                <i class="fas fa-users" style="color:var(--primary);font-size:1.3rem;"></i>
+                <div>
+                    <div class="num" th:text="${totalCount}">0</div>
+                    <div style="font-size:0.75rem;color:#64748b;">Tổng tài khoản</div>
+                </div>
+            </div>
+            <div class="stat-pill active">
+                <i class="fas fa-user-check" style="color:var(--success);font-size:1.3rem;"></i>
+                <div>
+                    <div class="num" th:text="${activeCount}">0</div>
+                    <div style="font-size:0.75rem;color:#64748b;">Đang hoạt động</div>
+                </div>
+            </div>
+            <div class="stat-pill inactive">
+                <i class="fas fa-user-slash" style="color:var(--danger);font-size:1.3rem;"></i>
+                <div>
+                    <div class="num" th:text="${inactiveCount}">0</div>
+                    <div style="font-size:0.75rem;color:#64748b;">Đã vô hiệu hóa</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter card -->
+        <div class="filter-card">
+            <form th:action="@{/admin/accounts}" method="get" class="filter-row">
+                <div class="filter-group" style="flex:3;min-width:220px;">
+                    <label>Tìm kiếm</label>
+                    <input type="text" name="search" th:value="${search}"
+                           placeholder="Tên, email hoặc số điện thoại...">
+                </div>
+                <div class="filter-group">
+                    <label>Vai trò</label>
+                    <select name="role">
+                        <option value="">Tất cả vai trò</option>
+                        <option value="ADMIN"    th:selected="${roleFilter == 'ADMIN'}">Admin</option>
+                        <option value="MANAGER"  th:selected="${roleFilter == 'MANAGER'}">Quản lý</option>
+                        <option value="CUSTOMER" th:selected="${roleFilter == 'CUSTOMER'}">Khách hàng</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Trạng thái</label>
+                    <select name="status">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="active"   th:selected="${statusFilter == 'active'}">Đang hoạt động</option>
+                        <option value="inactive" th:selected="${statusFilter == 'inactive'}">Đã vô hiệu hóa</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Lọc
+                    </button>
+                    <a th:href="@{/admin/accounts}" class="btn btn-outline">
+                        <i class="fas fa-redo"></i> Đặt lại
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <span>Danh sách tài khoản</span>
+                <span class="result-count" th:text="${totalCount} + ' kết quả'">0 kết quả</span>
+            </div>
+
+            <!-- Has results -->
+            <div th:if="${!accounts.isEmpty()}">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Người dùng</th>
+                            <th>Số điện thoại</th>
+                            <th>Vai trò</th>
+                            <th>Trạng thái</th>
+                            <th style="text-align:center;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="acc, stat : ${accounts}">
+                            <td style="color:#94a3b8;font-size:0.82rem;" th:text="${stat.index + 1}">1</td>
+
+                            <!-- Avatar + name + email -->
+                            <td>
+                                <div class="user-cell">
+                                    <div class="avatar-initial"
+                                         th:style="${acc.isStatus()} ? 'background:linear-gradient(135deg,#0054a6,#16a6df)' : 'background:#94a3b8'"
+                                         th:text="${acc.name != null && !acc.name.isEmpty()} ? ${acc.name.substring(0,1).toUpperCase()} : 'U'">U</div>
+                                    <div>
+                                        <div class="user-name" th:text="${acc.name}">Tên</div>
+                                        <div class="user-email" th:text="${acc.email}">email@example.com</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td th:text="${acc.phoneNum != null && !acc.phoneNum.isEmpty()} ? ${acc.phoneNum} : '—'" style="color:#64748b;"></td>
+
+                            <!-- Role badge -->
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${acc.role != null && acc.role.name() == 'ADMIN'} ? 'badge-admin' : (${acc.role != null && acc.role.name() == 'MANAGER'} ? 'badge-manager' : 'badge-customer')"
+                                      th:text="${acc.role != null} ? (${acc.role.name() == 'ADMIN'} ? 'Admin' : (${acc.role.name() == 'MANAGER'} ? 'Quản lý' : 'Khách hàng')) : '—'">
+                                    Khách hàng
+                                </span>
+                            </td>
+
+                            <!-- Status badge -->
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${acc.isStatus()} ? 'badge-active' : 'badge-inactive'">
+                                    <i class="fas" th:classappend="${acc.isStatus()} ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+                                    <span th:text="${acc.isStatus()} ? 'Hoạt động' : 'Vô hiệu hóa'">Hoạt động</span>
+                                </span>
+                            </td>
+
+                            <!-- Action -->
+                            <td style="text-align:center;">
+                                <!-- Cannot act on ADMIN accounts or your own account -->
+                                <span th:if="${acc.role != null && acc.role.name() == 'ADMIN'}"
+                                      style="color:#94a3b8;font-size:0.78rem;font-style:italic;">Không thể thay đổi</span>
+                                <button th:unless="${acc.role != null && acc.role.name() == 'ADMIN'}"
+                                        class="btn-toggle"
+                                        th:classappend="${acc.isStatus()} ? 'btn-deactivate' : 'btn-activate'"
+                                        th:data-id="${acc.accountID}"
+                                        th:data-name="${acc.name}"
+                                        th:data-action="${acc.isStatus()} ? 'vô hiệu hóa' : 'kích hoạt'"
+                                        onclick="openConfirm(this)">
+                                    <i class="fas" th:classappend="${acc.isStatus()} ? 'fa-user-slash' : 'fa-user-check'"></i>
+                                    <span th:text="${acc.isStatus()} ? 'Vô hiệu hóa' : 'Kích hoạt'">Vô hiệu hóa</span>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- No results -->
+            <div th:if="${accounts.isEmpty()}" class="no-results">
+                <i class="fas fa-users-slash"></i>
+                <div style="font-weight:600;">Không tìm thấy tài khoản nào</div>
+                <div style="font-size:0.85rem;margin-top:6px;">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Confirm modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-box">
+            <div class="modal-icon" id="modalIcon">⚠️</div>
+            <div class="modal-title" id="modalTitle">Xác nhận thao tác</div>
+            <div class="modal-desc" id="modalDesc">Bạn có chắc chắn muốn thực hiện thao tác này không?</div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeConfirm()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <form id="confirmForm" method="post">
+                    <button type="submit" class="btn" id="confirmBtn">
+                        <i class="fas fa-check"></i> Xác nhận
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function openConfirm(btn) {
+            const id     = btn.getAttribute('data-id');
+            const name   = btn.getAttribute('data-name');
+            const action = btn.getAttribute('data-action');
+            const isDeactivate = action === 'vô hiệu hóa';
+
+            document.getElementById('modalIcon').textContent  = isDeactivate ? '🚫' : '✅';
+            document.getElementById('modalTitle').textContent = isDeactivate ? 'Vô hiệu hóa tài khoản' : 'Kích hoạt tài khoản';
+            document.getElementById('modalDesc').innerHTML    =
+                `Bạn có chắc chắn muốn <strong>${action}</strong> tài khoản của <strong>${name}</strong> không?`
+                + (isDeactivate ? '<br><small style="color:#ef4444;margin-top:6px;display:block;">Người dùng sẽ không thể đăng nhập sau thao tác này.</small>' : '');
+
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.style.background = isDeactivate ? '#ef4444' : '#10b981';
+            confirmBtn.innerHTML = isDeactivate
+                ? '<i class="fas fa-user-slash"></i> Vô hiệu hóa'
+                : '<i class="fas fa-user-check"></i> Kích hoạt';
+
+            document.getElementById('confirmForm').action = '/admin/accounts/' + id + '/toggle';
+            document.getElementById('confirmModal').classList.add('show');
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirmModal').classList.remove('show');
+        }
+
+        // Close when clicking outside the modal box
+        document.getElementById('confirmModal').addEventListener('click', function(e) {
+            if (e.target === this) closeConfirm();
+        });
+    </script>
+</body>
+</html>

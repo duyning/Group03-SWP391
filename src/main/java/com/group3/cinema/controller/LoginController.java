@@ -1,8 +1,11 @@
 package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.ActivityLog.ActionType;
 import com.group3.cinema.entity.Role;
 import com.group3.cinema.service.AccountService;
+import com.group3.cinema.service.ActivityLogService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -12,42 +15,30 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Controller xá»­ lÃ½ tÃ­nh nÄƒng Ä‘Äƒng nháº­p vÃ  Ä‘Äƒng xuáº¥t (Login/Logout).
- * XÃ¡c thá»±c thÃ´ng tin ngÆ°á»i dÃ¹ng tá»« cÆ¡ sá»Ÿ dá»¯ liá»‡u vÃ  quáº£n lÃ½ tráº¡ng thÃ¡i phiÃªn lÃ m viá»‡c (Session).
- * 
- * NgÃ y thá»±c hiá»‡n: 04/06/2026
- * Táº¡o bá»Ÿi: DuongND_HE186619
- */
 @Controller
 public class LoginController {
 
     @Autowired
     private AccountService accountService;
 
-    /**
-     * Show the login form.
-     */
+    @Autowired
+    private ActivityLogService activityLogService;
+
     @GetMapping("/login")
     public String showLoginForm(HttpSession session, Model model) {
-        // If already logged in, redirect to home
-        if (session.getAttribute("loggedInUser") != null) {
-            return "redirect:/home";
+        Account loggedInUser = (Account) session.getAttribute("loggedInUser");
+        if (loggedInUser != null) {
+            return redirectByRole(loggedInUser);
         }
         return "login";
     }
 
-    /**
-     * Process login form submission.
-     * Validates email + password, stores account in session on success.
-     */
     @PostMapping("/login")
-    public String processLogin(
-            @RequestParam("email") String email,
-            @RequestParam("password") String password,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
-
+    public String processLogin(@RequestParam("email") String email,
+                               @RequestParam("password") String password,
+                               HttpSession session,
+                               HttpServletRequest request,
+                               RedirectAttributes redirectAttributes) {
         Account account = accountService.login(email, password);
 
         if (account == null) {
@@ -60,12 +51,12 @@ public class LoginController {
             return "redirect:/login?error";
         }
 
-        // Save logged-in user to session
         session.setAttribute("loggedInUser", account);
 
-        // Phân luồng redirect theo vai trò
-        if (account.getRole() == Role.ADMIN || account.getRole() == Role.MANAGER) {
-            return "redirect:/admin/dashboard";
+        try {
+            activityLogService.log(account.getAccountID(), ActionType.LOGIN, "Dang nhap he thong", request);
+        } catch (RuntimeException exception) {
+            System.err.println("Khong the ghi nhat ky dang nhap: " + exception.getMessage());
         }
 
         Object redirectTarget = session.getAttribute("redirectAfterLogin");
@@ -75,16 +66,28 @@ public class LoginController {
                 && !target.startsWith("//")) {
             return "redirect:" + target;
         }
-        return "redirect:/home";
+        return redirectByRole(account);
     }
 
-    /**
-     * Logout: invalidate session and redirect to login.
-     */
     @GetMapping("/logout")
     public String logout(HttpSession session, RedirectAttributes redirectAttributes) {
+        Account loggedInUser = (Account) session.getAttribute("loggedInUser");
+        if (loggedInUser != null) {
+            try {
+                activityLogService.log(loggedInUser.getAccountID(), ActionType.LOGOUT, "Dang xuat he thong");
+            } catch (RuntimeException exception) {
+                System.err.println("Khong the ghi nhat ky dang xuat: " + exception.getMessage());
+            }
+        }
         session.invalidate();
         redirectAttributes.addFlashAttribute("successMessage", "Đăng xuất thành công!");
         return "redirect:/login?logout";
+    }
+
+    private String redirectByRole(Account account) {
+        if (account.getRole() == Role.ADMIN || account.getRole() == Role.MANAGER) {
+            return "redirect:/admin/dashboard";
+        }
+        return "redirect:/home";
     }
 }

@@ -23,12 +23,16 @@
         <a th:href="@{/admin/holidays}"><li th:classappend="${active == 'holidays'} ? 'active' : ''"><i class="fas fa-calendar-days"></i> Cấu hình ngày lễ</li></a>
         <a th:href="@{/admin/banners}"><li th:classappend="${active == 'banners'} ? 'active' : ''"><i class="fas fa-images"></i> Quản lý banner</li></a>
         <a th:href="@{/admin/contacts}"><li th:classappend="${active == 'contacts'} ? 'active' : ''"><i class="fas fa-envelope-open-text"></i> Liên hệ khách hàng</li></a>
+        <a th:href="@{/admin/reviews}"><li th:classappend="${active == 'reviews'} ? 'active' : ''"><i class="fas fa-star-half-alt"></i> Quản lý đánh giá</li></a>
         <a th:href="@{/admin/rooms}"><li th:classappend="${active == 'rooms'} ? 'active' : ''"><i class="fas fa-theater-masks"></i> Rạp &amp; Phòng</li></a>
         <a th:href="@{/admin/catalogs}"><li th:classappend="${active == 'catalogs'} ? 'active' : ''"><i class="fas fa-list"></i> Danh mục phòng</li></a>
         <a th:href="@{/admin/posts}"><li th:classappend="${active == 'posts'} ? 'active' : ''"><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
         <a th:href="@{/profile}"><li th:classappend="${active == 'profile'} ? 'active' : ''"><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
         <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/create-manager}">
             <li th:classappend="${active == 'create-manager'} ? 'active' : ''"><i class="fas fa-user-shield"></i> Tạo tài khoản Quản lý</li>
+        </a>
+        <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/accounts}">
+            <li th:classappend="${active == 'accounts'} ? 'active' : ''"><i class="fas fa-users-cog"></i> Quản lý tài khoản</li>
         </a>
         <a th:href="@{/logout}"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
     </ul>

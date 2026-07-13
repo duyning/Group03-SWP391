@@ -7,26 +7,6 @@
     <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/BookingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/BookingController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/dto/BookingSeatView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/dto/BookingSeatView.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/BookingRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/BookingRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/VoucherRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/VoucherRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/BookingShowtimeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/BookingShowtimeService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/CustomerBookingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/CustomerBookingService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/PaymentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/PaymentService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/SeatHoldingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/SeatHoldingService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application-vnpay-local.example.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/css/admin-sidebar.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/css/admin-sidebar.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_movies.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_movies.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_showtime.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_showtime.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/static/manage_ticket.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/static/manage_ticket.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/booking-summary.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/booking-summary.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/create-manager-account.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/create-manager-account.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/fragments/admin_sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/fragments/admin_sidebar.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/holiday-management.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/holiday-management.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/seat-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/seat-selection.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/voucher-form.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/voucher-form.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/voucher-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/voucher-list.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

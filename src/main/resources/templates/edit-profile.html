@@ -143,6 +143,23 @@
                 </div>
             </div>
 
+            <!-- Phone Number -->
+            <div class="form-floating-group">
+                <div class="input-icon-wrapper" th:classappend="${phoneError != null} ? 'is-invalid' : ''">
+                    <i class="fas fa-phone input-icon"></i>
+                    <input type="text" name="phoneNum"
+                           class="form-input"
+                           th:value="${account.phoneNum}"
+                           placeholder="Số điện thoại"
+                           id="phoneNum">
+                    <label for="phoneNum">Số điện thoại</label>
+                </div>
+                <div th:if="${phoneError != null}" class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${phoneError}"></span>
+                </div>
+            </div>
+
             <!-- Address -->
             <div class="form-floating-group">
                 <div class="input-icon-wrapper textarea-wrapper">

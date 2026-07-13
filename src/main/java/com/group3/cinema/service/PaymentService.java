@@ -24,6 +24,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import com.group3.cinema.dto.BookingHistoryDto;
+import com.group3.cinema.entity.Showtime;
 
 @Service
 public class PaymentService {
@@ -335,5 +339,73 @@ public class PaymentService {
         } catch (Exception ex) {
             System.err.println("Warning: Failed to copy tickets to customer account display: " + ex.getMessage());
         }
+    }
+    public List<BookingHistoryDto> getBookingHistory(Integer accountId) {
+        List<Booking> bookings = bookingRepository.findByAccountIdOrderByCreatedAtDesc(accountId);
+        List<BookingHistoryDto> dtos = new ArrayList<>();
+        
+        for (Booking booking : bookings) {
+            BookingHistoryDto dto = new BookingHistoryDto();
+            dto.setBookingTime(booking.getCreatedAt());
+            dto.setTotalAmount(booking.getTotalAmount());
+            
+            Payment payment = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId()).orElse(null);
+            
+            if (payment != null) {
+                dto.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
+                dto.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "Thẻ/Ví");
+                
+                switch (payment.getStatus()) {
+                    case SUCCESS:
+                        dto.setStatus("Thành công");
+                        dto.setStatusClass("status-success");
+                        break;
+                    case FAILED:
+                        dto.setStatus("Thất bại");
+                        dto.setStatusClass("status-failed");
+                        break;
+                    case CANCELLED:
+                        dto.setStatus("Đã hủy");
+                        dto.setStatusClass("status-cancelled");
+                        break;
+                    case PENDING:
+                    default:
+                        dto.setStatus("Đang xử lý");
+                        dto.setStatusClass("status-pending");
+                        break;
+                }
+            } else {
+                dto.setBookingCode("CF-" + booking.getId());
+                dto.setPaymentMethod("Chưa chọn");
+                
+                switch (booking.getStatus()) {
+                    case CANCELLED:
+                    case EXPIRED:
+                        dto.setStatus("Đã hủy");
+                        dto.setStatusClass("status-cancelled");
+                        break;
+                    case PENDING:
+                    default:
+                        dto.setStatus("Đang chờ thanh toán");
+                        dto.setStatusClass("status-pending");
+                        break;
+                }
+            }
+            
+            Showtime showtime = showtimeRepository.findById(booking.getShowtimeId()).orElse(null);
+            String movieTitle = (showtime != null && showtime.getMovie() != null) ? showtime.getMovie().getTitle() : "Phim không xác định";
+            List<BookingTicket> tickets = ticketRepository.findByBookingId(booking.getId());
+            
+            if (!tickets.isEmpty()) {
+                String seats = tickets.stream().map(BookingTicket::getSeatLabel).collect(Collectors.joining(", "));
+                dto.setSummary(String.format("Thanh toán %d vé xem phim \"%s\" (Ghế %s)", tickets.size(), movieTitle, seats));
+            } else {
+                dto.setSummary("Không có thông tin vé");
+            }
+            
+            dtos.add(dto);
+        }
+        
+        return dtos;
     }
 }

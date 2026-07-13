@@ -598,13 +598,13 @@ public class RoomUnicodeMigration {
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Giờ thường', '12:00:00', '16:59:59', 60000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Giờ vàng', '17:00:00', '21:59:59', 75000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Suất khuya', '22:00:00', '23:59:59', 65000.0)");
-                    
+
                     // Cuối tuần
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Suất sớm', '00:00:00', '11:59:59', 65000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Giờ thường', '12:00:00', '16:59:59', 80000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Giờ vàng', '17:00:00', '21:59:59', 95000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Suất khuya', '22:00:00', '23:59:59', 85000.0)");
-                    
+
                     // Ngày lễ
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Ngày lễ', N'Suất sớm', '00:00:00', '11:59:59', 80000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Ngày lễ', N'Giờ thường', '12:00:00', '16:59:59', 95000.0)");

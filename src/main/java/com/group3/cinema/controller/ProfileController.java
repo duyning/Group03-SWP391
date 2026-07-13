@@ -1,13 +1,17 @@
 package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.ActivityLog;
+import com.group3.cinema.entity.ActivityLog.ActionType;
 import com.group3.cinema.service.AccountService;
+import com.group3.cinema.service.ActivityLogService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import java.util.List;
 
 /**
  * Controller xử lý hiển thị hồ sơ cá nhân (Profile).
@@ -23,6 +27,9 @@ public class ProfileController {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private ActivityLogService activityLogService;
 
     @GetMapping
     public String viewProfile(HttpSession session, Model model) {
@@ -76,6 +83,7 @@ public class ProfileController {
             @org.springframework.web.bind.annotation.RequestParam(value = "dob", required = false) @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd") java.time.LocalDate dob,
             @org.springframework.web.bind.annotation.RequestParam("gender") String gender,
             @org.springframework.web.bind.annotation.RequestParam("address") String address,
+            @org.springframework.web.bind.annotation.RequestParam(value = "phoneNum", required = false) String phoneNum,
             HttpSession session,
             Model model,
             org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
@@ -112,6 +120,17 @@ public class ProfileController {
                 hasError = true;
             }
         }
+        
+        // Validate Số điện thoại
+        if (phoneNum != null && !phoneNum.trim().isEmpty()) {
+            if (!phoneNum.matches("^\\d{10}$")) {
+                model.addAttribute("phoneError", "Số điện thoại không hợp lệ (phải gồm 10 chữ số).");
+                hasError = true;
+            } else if (accountService.isPhoneNumTakenByOther(phoneNum, account.getAccountID())) {
+                model.addAttribute("phoneError", "Số điện thoại này đã được sử dụng bởi người dùng khác.");
+                hasError = true;
+            }
+        }
 
         if (hasError) {
             // Nếu có lỗi, cập nhật lại object account với dữ liệu vừa nhập
@@ -120,12 +139,19 @@ public class ProfileController {
             account.setDob(dob);
             account.setGender(gender);
             account.setAddress(address);
+            if (phoneNum != null && !phoneNum.trim().isEmpty()) {
+                account.setPhoneNum(phoneNum.trim());
+            }
             model.addAttribute("account", account);
             return "edit-profile";
         }
 
         // Nếu dữ liệu hợp lệ, gọi service để lưu vào database
-        accountService.updateProfile(account, name, dob, gender, address);
+        accountService.updateProfile(account, name, dob, gender, address, phoneNum);
+
+        // Ghi nhật ký cập nhật hồ sơ
+        activityLogService.log(account.getAccountID(), ActionType.PROFILE_UPDATE,
+                "Cập nhật thông tin hồ sơ cá nhân");
 
         // Cập nhật lại thông tin tài khoản mới trong session để các chức năng khác hoạt động chính xác
         session.setAttribute("loggedInUser", account);
@@ -134,5 +160,22 @@ public class ProfileController {
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin thành công!");
 
         return "redirect:/profile";
+    }
+
+    /**
+     * Hiển thị trang Nhật ký hoạt động (Activity Log)
+     * GET /profile/activity-log
+     */
+    @GetMapping("/activity-log")
+    public String viewActivityLog(HttpSession session, Model model) {
+        Account loggedInUser = (Account) session.getAttribute("loggedInUser");
+        if (loggedInUser == null) {
+            return "redirect:/login";
+        }
+
+        List<ActivityLog> logs = activityLogService.getLogsForAccount(loggedInUser.getAccountID());
+        model.addAttribute("logs", logs);
+        model.addAttribute("user", loggedInUser);
+        return "activity-log";
     }
 }

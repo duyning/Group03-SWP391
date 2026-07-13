@@ -174,13 +174,13 @@ public class TicketApiController {
         } else {
             List<TicketPriceConfig> all = ticketPriceConfigRepository.findAll();
             Optional<TicketPriceConfig> existing = all.stream()
-                .filter(c -> c.getDayType().equals(req.getDayType()) 
+                .filter(c -> c.getDayType().equals(req.getDayType())
                           && c.getSlotName().equals(req.getSlotName())
                           && java.util.Objects.equals(c.getMovieId(), req.getMovieId()))
                 .findFirst();
             if (existing.isPresent()) {
-                return ResponseEntity.badRequest().body(Map.of("error", 
-                    "Cấu hình cho loại ngày/ngày '" + req.getDayType() + "', khung giờ '" + req.getSlotName() + 
+                return ResponseEntity.badRequest().body(Map.of("error",
+                    "Cấu hình cho loại ngày/ngày '" + req.getDayType() + "', khung giờ '" + req.getSlotName() +
                     "' và " + (req.getMovieId() != null ? "phim này" : "mọi phim") + " đã tồn tại!"));
             }
             return ResponseEntity.ok(ticketPriceConfigRepository.save(req));

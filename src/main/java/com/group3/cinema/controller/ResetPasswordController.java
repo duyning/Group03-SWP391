@@ -1,7 +1,9 @@
 package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.ActivityLog.ActionType;
 import com.group3.cinema.service.AccountService;
+import com.group3.cinema.service.ActivityLogService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -18,6 +20,9 @@ public class ResetPasswordController {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private ActivityLogService activityLogService;
 
     @GetMapping("/reset-password")
     public String showResetPasswordForm(HttpSession session, Model model) {
@@ -54,6 +59,7 @@ public class ResetPasswordController {
         try {
             accountService.resetPassword(account, oldPassword, newPassword, confirmPassword);
             session.setAttribute("loggedInUser", account);
+            activityLogService.log(account.getAccountID(), ActionType.PASSWORD_CHANGE, "Đổi mật khẩu thành công");
             model.addAttribute("successMessage", "Đổi mật khẩu thành công!");
             return prepareForm(model, "", "", "");
         } catch (IllegalArgumentException e) {
