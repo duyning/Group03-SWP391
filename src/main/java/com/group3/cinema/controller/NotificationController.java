@@ -33,9 +33,12 @@ public class NotificationController {
 
         int accountId = sessionAccount.getAccountID();
 
-        // Lấy danh sách thông báo và đếm số chưa đọc
+        notificationService.markAllAsRead(accountId);
+
+        // Lấy danh sách thông báo sau khi đã mở trung tâm thông báo
         model.addAttribute("notifications", notificationService.getUserNotifications(accountId, page, 10));
-        model.addAttribute("unreadCount", notificationService.getUnreadCount(accountId));
+        model.addAttribute("unreadCount", 0);
+        model.addAttribute("unreadNotificationCount", 0);
 
         return "notification-list";
     }

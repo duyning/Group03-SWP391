@@ -30,7 +30,7 @@ body {
 .top-bar {
     background: #004f9f !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 9px 0 !important;
+    padding: 0 !important;
 }
 
 .top-container,
@@ -39,11 +39,24 @@ body {
 .footer-container,
 .article-container {
     max-width: 1240px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+}
+
+.top-container,
+.header-container {
+    max-width: 1500px !important;
 }
 
 .top-container {
+    display: flex !important;
+    justify-content: flex-end !important;
     align-items: center !important;
-    gap: 12px !important;
+    gap: 14px !important;
+    flex-wrap: nowrap !important;
+    min-height: 36px;
 }
 
 .top-link {
@@ -57,15 +70,201 @@ body {
     text-decoration: none !important;
 }
 
+.top-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: nowrap;
+}
+
+.top-link-button,
+.top-quick-link {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+}
+
+.top-link-outline {
+    background: transparent;
+    color: #fff !important;
+}
+
+.top-quick-link {
+    font-size: 14px;
+}
+
+.notification-container {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    border: 0;
+}
+
+.notification-bell {
+    position: relative;
+    display: inline-block;
+    width: 16px;
+    height: 17px;
+    border: 2px solid #fff;
+    border-top-left-radius: 9px;
+    border-top-right-radius: 9px;
+    border-bottom: 0;
+    transform-origin: top center;
+}
+
+.notification-bell::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: -5px;
+    width: 5px;
+    height: 4px;
+    border-radius: 5px 5px 0 0;
+    background: #fff;
+    transform: translateX(-50%);
+}
+
+.notification-bell::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    width: 22px;
+    height: 9px;
+    border-bottom: 2px solid #fff;
+    border-radius: 0 0 14px 14px;
+    background: #fff;
+    transform: translateX(-50%);
+    clip-path: polygon(8% 0, 92% 0, 100% 65%, 62% 65%, 58% 100%, 42% 100%, 38% 65%, 0 65%);
+}
+
+.notification-container .badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 5px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef233c;
+    color: #fff;
+    border: 2px solid #004f9f;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.account-menu {
+    position: relative;
+}
+
+.account-menu summary {
+    list-style: none;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 0;
+    padding: 0;
+    color: #fff;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    font-weight: 800;
+}
+
+.account-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.account-prefix {
+    color: rgba(255,255,255,.85);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.account-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 850;
+}
+
+.account-caret {
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid rgba(255,255,255,.82);
+    border-bottom: 2px solid rgba(255,255,255,.82);
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform .18s ease;
+}
+
+.account-menu[open] .account-caret {
+    transform: rotate(225deg) translate(-1px, -1px);
+}
+
+.account-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: 190px;
+    padding: 8px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-card);
+    z-index: 1200;
+}
+
+.account-dropdown a {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    border-radius: 6px;
+    padding: 0 12px;
+    color: var(--text-strong) !important;
+    text-decoration: none;
+    font-weight: 800;
+}
+
+.account-dropdown a:hover {
+    background: #edf6ff;
+    color: var(--brand-blue) !important;
+}
+
+.account-dropdown .danger-link {
+    color: #b42318 !important;
+}
+
 .header-main {
     background: rgba(255, 255, 255, 0.96) !important;
     backdrop-filter: blur(14px);
     box-shadow: 0 10px 30px rgba(15, 35, 75, 0.08) !important;
-    padding: 14px 0 !important;
+    padding: 18px 0 !important;
 }
 
 .header-container {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center !important;
+    justify-content: initial !important;
     gap: 28px !important;
+    flex-wrap: nowrap !important;
 }
 
 .logo {
@@ -73,15 +272,21 @@ body {
 }
 
 .nav-menu {
-    gap: 8px !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    gap: 10px !important;
     align-items: center;
+    min-width: 0;
 }
 
 .nav-menu a {
     color: #2f3747 !important;
     font-size: 15px !important;
     font-weight: 800 !important;
-    padding: 10px 12px;
+    text-decoration: none !important;
+    white-space: nowrap;
+    padding: 10px 11px;
     border-radius: 999px;
     transition: color 0.2s ease, background 0.2s ease;
 }
@@ -94,13 +299,17 @@ body {
 
 .search-form,
 .header-search-form {
+    display: flex !important;
     align-items: center;
     gap: 10px !important;
+    justify-self: end;
+    min-width: 0;
 }
 
 .search-form input,
 .header-search-form input {
     min-width: 220px !important;
+    width: 220px !important;
     height: 44px;
     border-radius: 999px !important;
     border: 1px solid var(--line) !important;
@@ -108,6 +317,22 @@ body {
     padding: 0 16px !important;
     color: var(--text-strong) !important;
     box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.02);
+}
+
+@media (max-width: 1180px) {
+    .header-container {
+        grid-template-columns: 1fr !important;
+        justify-items: center !important;
+    }
+
+    .nav-menu {
+        flex-wrap: wrap !important;
+    }
+
+    .search-form,
+    .header-search-form {
+        justify-self: center;
+    }
 }
 
 .search-form input:focus,

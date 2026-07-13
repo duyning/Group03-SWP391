@@ -9,33 +9,85 @@
     <div class="sidebar-header">
         <img src="/images/cineflow-logo-light.svg" height="35" alt="CineFlow Cinema">
         <span>ADMIN</span>
+        <button type="button" class="sidebar-toggle" aria-label="Thu gọn/mở rộng sidebar" title="Thu gọn/mở rộng sidebar">
+            <i class="fas fa-bars"></i>
+        </button>
     </div>
     <ul class="sidebar-nav">
-        <a th:href="@{/admin/dashboard}"><li th:classappend="${active == 'dashboard'} ? 'active' : ''"><i class="fas fa-chart-line"></i> Dashboard</li></a>
-        <a href="/manage_movies.html"><li th:classappend="${active == 'movies'} ? 'active' : ''"><i class="fas fa-film"></i> Quản lý phim</li></a>
-        <a href="/manage_showtime.html"><li th:classappend="${active == 'showtimes'} ? 'active' : ''"><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
-        <a href="/manage_ticket.html"><li th:classappend="${active == 'tickets'} ? 'active' : ''"><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
-        <a th:href="@{/admin/counter-sales}"><li th:classappend="${active == 'counter-sales'} ? 'active' : ''"><i class="fas fa-cash-register"></i> Bán vé tại quầy</li></a>
-        <a th:href="@{/admin/invoices}"><li th:classappend="${active == 'invoices'} ? 'active' : ''"><i class="fas fa-file-invoice"></i> Quản lý hóa đơn</li></a>
-        <a th:href="@{/admin/combos}"><li th:classappend="${active == 'combos'} ? 'active' : ''"><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
-        <a th:href="@{/admin/promotions}"><li th:classappend="${active == 'promotions'} ? 'active' : ''"><i class="fas fa-bullhorn"></i> Quản lý khuyến mãi</li></a>
-        <a th:href="@{/admin/vouchers/list}"><li th:classappend="${active == 'vouchers'} ? 'active' : ''"><i class="fas fa-ticket-simple"></i> Quản lý Voucher</li></a>
-        <a th:href="@{/admin/holidays}"><li th:classappend="${active == 'holidays'} ? 'active' : ''"><i class="fas fa-calendar-days"></i> Cấu hình ngày lễ</li></a>
-        <a th:href="@{/admin/banners}"><li th:classappend="${active == 'banners'} ? 'active' : ''"><i class="fas fa-images"></i> Quản lý banner</li></a>
-        <a th:href="@{/admin/contacts}"><li th:classappend="${active == 'contacts'} ? 'active' : ''"><i class="fas fa-envelope-open-text"></i> Liên hệ khách hàng</li></a>
-        <a th:href="@{/admin/reviews}"><li th:classappend="${active == 'reviews'} ? 'active' : ''"><i class="fas fa-star-half-alt"></i> Quản lý đánh giá</li></a>
-        <a th:href="@{/admin/rooms}"><li th:classappend="${active == 'rooms'} ? 'active' : ''"><i class="fas fa-theater-masks"></i> Rạp &amp; Phòng</li></a>
-        <a th:href="@{/admin/catalogs}"><li th:classappend="${active == 'catalogs'} ? 'active' : ''"><i class="fas fa-list"></i> Danh mục phòng</li></a>
-        <a th:href="@{/admin/posts}"><li th:classappend="${active == 'posts'} ? 'active' : ''"><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
-        <a th:href="@{/profile}"><li th:classappend="${active == 'profile'} ? 'active' : ''"><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
-        <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/create-manager}">
-            <li th:classappend="${active == 'create-manager'} ? 'active' : ''"><i class="fas fa-user-shield"></i> Tạo tài khoản Quản lý</li>
-        </a>
-        <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/accounts}">
-            <li th:classappend="${active == 'accounts'} ? 'active' : ''"><i class="fas fa-users-cog"></i> Quản lý tài khoản</li>
-        </a>
-        <a th:href="@{/logout}"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
+        <li class="sidebar-section">
+            <details th:attr="open=${active == 'dashboard' || active == 'reports'} ? 'open' : null">
+                <summary><span><i class="fas fa-chart-line"></i> Tổng quan</span><b></b></summary>
+                <div class="sidebar-subnav">
+                    <a th:href="@{/admin/dashboard}"><span th:classappend="${active == 'dashboard'} ? 'active' : ''">Dashboard</span></a>
+                    <a th:href="@{/admin/reports}"><span th:classappend="${active == 'reports'} ? 'active' : ''">Báo cáo thống kê</span></a>
+                </div>
+            </details>
+        </li>
+
+        <li class="sidebar-section">
+            <details th:attr="open=${active == 'movies' || active == 'showtimes' || active == 'tickets'} ? 'open' : null">
+                <summary><span><i class="fas fa-film"></i> Phim &amp; lịch chiếu</span><b></b></summary>
+                <div class="sidebar-subnav">
+                    <a href="/manage_movies.html"><span th:classappend="${active == 'movies'} ? 'active' : ''">Quản lý phim</span></a>
+                    <a href="/manage_showtime.html"><span th:classappend="${active == 'showtimes'} ? 'active' : ''">Quản lý lịch chiếu</span></a>
+                    <a href="/manage_ticket.html"><span th:classappend="${active == 'tickets'} ? 'active' : ''">Quản lý bán vé</span></a>
+                </div>
+            </details>
+        </li>
+
+        <li class="sidebar-section">
+            <details th:attr="open=${active == 'counter-sales' || active == 'invoices' || active == 'combos'} ? 'open' : null">
+                <summary><span><i class="fas fa-cash-register"></i> Bán hàng &amp; hóa đơn</span><b></b></summary>
+                <div class="sidebar-subnav">
+                    <a th:href="@{/admin/counter-sales}"><span th:classappend="${active == 'counter-sales'} ? 'active' : ''">Bán vé tại quầy</span></a>
+                    <a th:href="@{/admin/invoices}"><span th:classappend="${active == 'invoices'} ? 'active' : ''">Quản lý hóa đơn</span></a>
+                    <a th:href="@{/admin/combos}"><span th:classappend="${active == 'combos'} ? 'active' : ''">Quản lý Combo</span></a>
+                </div>
+            </details>
+        </li>
+
+        <li class="sidebar-section">
+            <details th:attr="open=${active == 'promotions' || active == 'vouchers' || active == 'holidays' || active == 'banners'} ? 'open' : null">
+                <summary><span><i class="fas fa-bullhorn"></i> Marketing</span><b></b></summary>
+                <div class="sidebar-subnav">
+                    <a th:href="@{/admin/promotions}"><span th:classappend="${active == 'promotions'} ? 'active' : ''">Quản lý khuyến mãi</span></a>
+                    <a th:href="@{/admin/vouchers/list}"><span th:classappend="${active == 'vouchers'} ? 'active' : ''">Quản lý Voucher</span></a>
+                    <a th:href="@{/admin/holidays}"><span th:classappend="${active == 'holidays'} ? 'active' : ''">Cấu hình ngày lễ</span></a>
+                    <a th:href="@{/admin/banners}"><span th:classappend="${active == 'banners'} ? 'active' : ''">Quản lý banner</span></a>
+                </div>
+            </details>
+        </li>
+
+        <li class="sidebar-section">
+            <details th:attr="open=${active == 'contacts' || active == 'reviews' || active == 'rooms' || active == 'catalogs' || active == 'posts'} ? 'open' : null">
+                <summary><span><i class="fas fa-theater-masks"></i> Rạp, phòng &amp; nội dung</span><b></b></summary>
+                <div class="sidebar-subnav">
+                    <a th:href="@{/admin/contacts}"><span th:classappend="${active == 'contacts'} ? 'active' : ''">Liên hệ khách hàng</span></a>
+                    <a th:href="@{/admin/reviews}"><span th:classappend="${active == 'reviews'} ? 'active' : ''">Quản lý đánh giá</span></a>
+                    <a th:href="@{/admin/rooms}"><span th:classappend="${active == 'rooms'} ? 'active' : ''">Rạp &amp; Phòng</span></a>
+                    <a th:href="@{/admin/catalogs}"><span th:classappend="${active == 'catalogs'} ? 'active' : ''">Danh mục phòng</span></a>
+                    <a th:href="@{/admin/posts}"><span th:classappend="${active == 'posts'} ? 'active' : ''">Quản lý tin tức</span></a>
+                </div>
+            </details>
+        </li>
+
+        <li class="sidebar-section">
+            <details th:attr="open=${active == 'profile' || active == 'create-manager' || active == 'accounts'} ? 'open' : null">
+                <summary><span><i class="fas fa-user-circle"></i> Tài khoản</span><b></b></summary>
+                <div class="sidebar-subnav">
+                    <a th:href="@{/profile}"><span th:classappend="${active == 'profile'} ? 'active' : ''">Thông tin cá nhân</span></a>
+                    <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/create-manager}">
+                        <span th:classappend="${active == 'create-manager'} ? 'active' : ''">Tạo tài khoản Quản lý</span>
+                    </a>
+                    <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/accounts}">
+                        <span th:classappend="${active == 'accounts'} ? 'active' : ''">Quản lý tài khoản</span>
+                    </a>
+                </div>
+            </details>
+        </li>
+        <a th:href="@{/logout}"><li class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
     </ul>
+    <script th:src="@{/js/admin-sidebar.js}"></script>
 </aside>
 </body>
 </html>

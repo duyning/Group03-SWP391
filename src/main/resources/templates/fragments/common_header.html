@@ -4,23 +4,31 @@
 <th:block th:fragment="customerHeader(active, keyword)">
     <div class="top-bar">
         <div class="top-container">
-            <th:block th:if="${user == null}">
-                <a th:href="@{/login}" class="top-link">Đăng nhập</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/register}" class="top-link">Đăng ký</a>
-            </th:block>
-            <th:block th:if="${user != null}">
-                <span>Xin chào,</span>
-                <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/my-tickets}" class="top-link">Vé của tôi</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/wishlist}" class="top-link">Danh sách yêu thích</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
-                <span style="opacity: 0.5">|</span>
-                <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
-            </th:block>
+            <div class="top-actions top-actions-guest" th:if="${user == null}">
+                <a th:href="@{/login}" class="top-link top-link-button">Đăng nhập</a>
+                <a th:href="@{/register}" class="top-link top-link-button top-link-outline">Đăng ký</a>
+            </div>
+            <div class="top-actions top-actions-member" th:if="${user != null}">
+                <a th:href="@{/vouchers/my-wallet}" class="top-link top-quick-link">Ví voucher</a>
+                <a th:href="@{/notifications}" class="top-link notification-container" aria-label="Thông báo" title="Thông báo">
+                    <span class="notification-bell" aria-hidden="true"></span>
+                    <span class="badge"
+                          th:if="${unreadNotificationCount != null && unreadNotificationCount > 0}"
+                          th:text="${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}">3</span>
+                </a>
+                <details class="account-menu">
+                    <summary>
+                        <span class="account-prefix">Tài khoản</span>
+                        <span class="account-name" th:text="${user.name != null && !#strings.isEmpty(user.name) ? user.name : 'Thành viên'}">Thành viên</span>
+                        <span class="account-caret"></span>
+                    </summary>
+                    <div class="account-dropdown">
+                        <a th:href="@{/profile}">Hồ sơ của tôi</a>
+                        <a th:href="@{/wishlist}">Danh sách yêu thích</a>
+                        <a th:href="@{/logout}" class="danger-link">Đăng xuất</a>
+                    </div>
+                </details>
+            </div>
             <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
         </div>
     </div>

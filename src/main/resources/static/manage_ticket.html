@@ -175,24 +175,18 @@
             <div class="sidebar-header">
                 <img src="/images/cineflow-logo-light.svg" height="35" alt="CineFlow Cinema">
                 <span>ADMIN</span>
+                <button type="button" class="sidebar-toggle" aria-label="Thu gọn/mở rộng sidebar" title="Thu gọn/mở rộng sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
             <ul class="sidebar-nav">
-                <a href="/admin/dashboard"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
-                <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
-                <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
-                <a href="/manage_ticket.html"><li class="active"><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
-                <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
-                <a href="/admin/promotions"><li><i class="fas fa-bullhorn"></i> Quản lý khuyến mãi</li></a>
-                <a href="/admin/vouchers/list"><li><i class="fas fa-ticket-simple"></i> Quản lý Voucher</li></a>
-                <a href="/admin/holidays"><li><i class="fas fa-calendar-days"></i> Cấu hình ngày lễ</li></a>
-                <a href="/admin/banners"><li><i class="fas fa-images"></i> Quản lý banner</li></a>
-                <a href="/admin/contacts"><li><i class="fas fa-envelope-open-text"></i> Liên hệ khách hàng</li></a>
-                <a href="/admin/rooms"><li><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
-                <a href="/admin/catalogs"><li><i class="fas fa-list"></i> Danh mục phòng</li></a>
-                <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
-                <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
-                <a href="/admin/create-manager"><li><i class="fas fa-user-shield"></i> Tạo tài khoản Quản lý</li></a>
-                <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-chart-line"></i> Tổng quan</span><b></b></summary><div class="sidebar-subnav"><a href="/admin/dashboard"><span>Dashboard</span></a><a href="/admin/reports"><span>Báo cáo thống kê</span></a></div></details></li>
+                <li class="sidebar-section"><details open><summary><span><i class="fas fa-film"></i> Phim & lịch chiếu</span><b></b></summary><div class="sidebar-subnav"><a href="/manage_movies.html"><span>Quản lý phim</span></a><a href="/manage_showtime.html"><span>Quản lý lịch chiếu</span></a><a href="/manage_ticket.html"><span class="active">Quản lý bán vé</span></a></div></details></li>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-cash-register"></i> Bán hàng & hóa đơn</span><b></b></summary><div class="sidebar-subnav"><a href="/admin/counter-sales"><span>Bán vé tại quầy</span></a><a href="/admin/invoices"><span>Quản lý hóa đơn</span></a><a href="/admin/combos"><span>Quản lý Combo</span></a></div></details></li>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-bullhorn"></i> Marketing</span><b></b></summary><div class="sidebar-subnav"><a href="/admin/promotions"><span>Quản lý khuyến mãi</span></a><a href="/admin/vouchers/list"><span>Quản lý Voucher</span></a><a href="/admin/holidays"><span>Cấu hình ngày lễ</span></a><a href="/admin/banners"><span>Quản lý banner</span></a></div></details></li>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-theater-masks"></i> Rạp, phòng & nội dung</span><b></b></summary><div class="sidebar-subnav"><a href="/admin/contacts"><span>Liên hệ khách hàng</span></a><a href="/admin/reviews"><span>Quản lý đánh giá</span></a><a href="/admin/rooms"><span>Rạp & Phòng</span></a><a href="/admin/catalogs"><span>Danh mục phòng</span></a><a href="/admin/posts"><span>Quản lý tin tức</span></a></div></details></li>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-user-circle"></i> Tài khoản</span><b></b></summary><div class="sidebar-subnav"><a href="/profile"><span>Thông tin cá nhân</span></a><a href="/admin/create-manager"><span>Tạo tài khoản Quản lý</span></a><a href="/admin/accounts"><span>Quản lý tài khoản</span></a></div></details></li>
+                <a href="/logout"><li class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
             </ul>
         </aside>
 
@@ -781,5 +775,6 @@
     <div id="toast-container"></div>
 
     <script src="/js/app.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
 </body>
 </html>

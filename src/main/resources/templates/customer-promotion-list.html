@@ -64,39 +64,7 @@
     <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
 </head>
 <body>
-<div class="top-bar">
-    <div class="top-container">
-        <th:block th:if="${user == null}">
-            <a th:href="@{/login}" class="top-link">Đăng nhập</a><span style="opacity:.5">|</span>
-            <a th:href="@{/register}" class="top-link">Đăng ký</a>
-        </th:block>
-        <th:block th:if="${user != null}">
-            <span>Xin chào,</span><a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a><span style="opacity:.5">|</span>
-            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a><span style="opacity:.5">|</span>
-            <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
-        </th:block>
-        <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
-    </div>
-</div>
-
-<header class="header-main">
-    <div class="header-container">
-        <a th:href="@{/}"><img src="/images/cineflow-logo.svg" alt="CineFlow Cinema" class="logo"></a>
-        <nav class="nav-menu">
-            <a th:href="@{/}">TRANG CHỦ</a>
-            <a th:href="@{/movies}">PHIM</a>
-            <a th:href="@{/about}">RẠP</a>
-            <a href="#">GIÁ VÉ</a>
-            <a th:href="@{/promotions}" class="active">ƯU ĐÃI</a>
-            <a th:href="@{/posts}">TIN TỨC</a>
-            <a th:href="@{/contact}">LIÊN HỆ</a>
-        </nav>
-        <form class="search-form" th:action="@{/search}" method="get">
-            <input type="search" name="keyword" placeholder="Tìm phim">
-            <button type="submit">Tìm</button>
-        </form>
-    </div>
-</header>
+<div th:replace="~{fragments/common_header :: customerHeader('promotions', '')}"></div>
 
 <section class="hero">
     <div class="content-container hero-grid">
