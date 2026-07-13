@@ -3,13 +3,16 @@ package com.group3.cinema.controller;
 /*
  * Added on 2026-06-24: Customer payment endpoints for booking flow.
  * Updated on 2026-06-26: Public gateway return/cancel pages are normalized for payOS flow.
+ * Added Notification on Success Payment.
  * Created by: HuyPB - HE191335
  */
 
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Booking;
+import com.group3.cinema.entity.NotificationType;
 import com.group3.cinema.entity.Payment;
 import com.group3.cinema.service.CustomerBookingService;
+import com.group3.cinema.service.NotificationService;
 import com.group3.cinema.service.PaymentService;
 import com.group3.cinema.service.payment.PaymentGatewayRouter;
 import com.group3.cinema.service.payment.PaymentGatewayService;
@@ -29,13 +32,16 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final CustomerBookingService bookingService;
     private final PaymentGatewayRouter gatewayRouter;
+    private final NotificationService notificationService; // Thêm Service thông báo
 
     public PaymentController(PaymentService paymentService,
                              CustomerBookingService bookingService,
-                             PaymentGatewayRouter gatewayRouter) {
+                             PaymentGatewayRouter gatewayRouter,
+                             NotificationService notificationService) {
         this.paymentService = paymentService;
         this.bookingService = bookingService;
         this.gatewayRouter = gatewayRouter;
+        this.notificationService = notificationService;
     }
 
     @GetMapping
@@ -84,6 +90,8 @@ public class PaymentController {
         try {
             Payment payment = paymentService.processResult(orderCode, account(session).getAccountID(), result);
             if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+                // Bắn thông báo thanh toán thành công
+                sendPaymentSuccessNotification(session, payment.getOrderCode());
                 return "redirect:/my-tickets";
             }
         } catch (IllegalArgumentException ex) {
@@ -94,10 +102,13 @@ public class PaymentController {
 
     @GetMapping("/vnpay/return")
     public String vnpayReturn(@RequestParam Map<String, String> params,
+                              HttpSession session, // Bổ sung Session
                               RedirectAttributes redirectAttributes) {
         try {
             Payment payment = handleGatewayCallback(Payment.Method.VNPAY, params, redirectAttributes);
             if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+                // Bắn thông báo VNPay
+                sendPaymentSuccessNotification(session, payment.getOrderCode());
                 return "redirect:/my-tickets";
             }
             return "redirect:/payment/result?orderCode=" + (payment != null ? payment.getOrderCode() : params.getOrDefault("vnp_TxnRef", ""));
@@ -119,10 +130,13 @@ public class PaymentController {
 
     @GetMapping("/momo/return")
     public String momoReturn(@RequestParam Map<String, String> params,
+                             HttpSession session, // Bổ sung Session
                              RedirectAttributes redirectAttributes) {
         try {
             Payment payment = handleGatewayCallback(Payment.Method.MOMO, params, redirectAttributes);
             if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+                // Bắn thông báo MoMo
+                sendPaymentSuccessNotification(session, payment.getOrderCode());
                 return "redirect:/my-tickets";
             }
             return "redirect:/payment/result?orderCode=" + (payment != null ? payment.getOrderCode() : params.getOrDefault("orderId", ""));
@@ -144,9 +158,12 @@ public class PaymentController {
 
     @GetMapping("/payos/return")
     public String payosReturn(@RequestParam Map<String, String> params,
+                              HttpSession session, // Bổ sung Session
                               RedirectAttributes redirectAttributes) {
         Payment payment = safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
         if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+            // Bắn thông báo PayOS
+            sendPaymentSuccessNotification(session, payment.getOrderCode());
             return "redirect:/my-tickets";
         }
         return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderCode", "");
@@ -154,9 +171,12 @@ public class PaymentController {
 
     @GetMapping("/payos/cancel")
     public String payosCancel(@RequestParam Map<String, String> params,
+                              HttpSession session, // Bổ sung Session
                               RedirectAttributes redirectAttributes) {
         Payment payment = safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
         if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
+            // Trường hợp user ấn cancel nhưng giao dịch trước đó lại thành công
+            sendPaymentSuccessNotification(session, payment.getOrderCode());
             return "redirect:/my-tickets";
         }
         return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderCode", "");
@@ -183,7 +203,7 @@ public class PaymentController {
     }
 
     private Payment handleGatewayCallback(Payment.Method method, Map<String, String> params,
-                                         RedirectAttributes redirectAttributes) {
+                                          RedirectAttributes redirectAttributes) {
         PaymentGatewayService.GatewayCallback callback = gatewayRouter.gateway(method).parseCallback(params);
         if (!callback.validSignature()) {
             if (redirectAttributes != null) {
@@ -233,5 +253,22 @@ public class PaymentController {
             throw new IllegalArgumentException("Vui lòng đăng nhập.");
         }
         return account;
+    }
+
+    // --- HÀM PHỤ TRỢ BẮN THÔNG BÁO ---
+    private void sendPaymentSuccessNotification(HttpSession session, String orderCode) {
+        try {
+            Account account = (Account) session.getAttribute("loggedInUser");
+            if (account != null) {
+                notificationService.sendNotification(
+                        account.getAccountID(),
+                        "Thanh toán thành công \uD83D\uDCB8",
+                        "Giao dịch cho mã thanh toán " + orderCode + " đã hoàn tất. Bạn có thể kiểm tra vé trong mục 'Vé của tôi'!",
+                        NotificationType.PAYMENT
+                );
+            }
+        } catch (Exception e) {
+            // Bắt lỗi để nếu có trục trặc phần thông báo cũng không làm hỏng luồng thanh toán chính
+        }
     }
 }

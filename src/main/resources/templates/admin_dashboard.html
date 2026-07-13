@@ -1,8 +1,4 @@
 <!DOCTYPE html>
-<!--
-    Created on 2026-06-09: Admin dashboard for manager/admin after login.
-    Created by: NinhDD - HE186113
--->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -11,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --sidebar-bg: #1e293b;
@@ -171,6 +168,7 @@
             border-radius: 12px;
             box-shadow: var(--card-shadow);
             overflow: hidden;
+            margin-bottom: 30px;
         }
 
         .panel-header {
@@ -178,6 +176,9 @@
             border-bottom: 1px solid #e2e8f0;
             font-size: 18px;
             font-weight: 800;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .quick-grid {
@@ -217,83 +218,309 @@
             align-items: center;
             justify-content: center;
         }
+
+        .filter-form {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .btn-filter {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            align-self: flex-end;
+            transition: 0.2s;
+        }
+
+        .btn-filter:hover {
+            opacity: 0.9;
+        }
+
+        .report-split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 992px) {
+            .report-split-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            padding: 20px;
+            position: relative;
+            height: 280px;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .no-data-msg {
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
 <body>
-    <div th:replace="~{fragments/admin_sidebar :: adminSidebar('dashboard')}"></div>
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('dashboard')}"></div>
 
-    <main class="main">
-        <div class="header-content">
-            <div>
-                <h1 class="page-title">Dashboard</h1>
-                <p class="breadcrumb">Tổng quan hệ thống quản trị Beta Cinemas</p>
-            </div>
-            <div class="user-chip" th:if="${user != null}">
-                <i class="fas fa-user-shield"></i>
-                <span th:text="${user.name}">Manager</span>
+<main class="main">
+    <div class="header-content">
+        <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="breadcrumb">Tổng quan hệ thống quản trị CineFlow</p>
+        </div>
+        <div class="user-chip" th:if="${user != null}">
+            <i class="fas fa-user-shield"></i>
+            <span th:text="${user.name}">Manager</span>
+        </div>
+    </div>
+
+    <form class="filter-form" method="get" action="/admin/dashboard">
+        <div class="form-group">
+            <label>Từ ngày</label>
+            <input type="date" name="startDate" th:value="${startDate}">
+        </div>
+        <div class="form-group">
+            <label>Đến ngày</label>
+            <input type="date" name="endDate" th:value="${endDate}">
+        </div>
+        <button type="submit" class="btn-filter">
+            <i class="fas fa-filter" style="margin-right: 6px;"></i> Lọc dữ liệu
+        </button>
+    </form>
+
+    <div class="report-split-grid">
+        <div class="panel">
+            <div class="panel-header">Doanh thu theo phim (Biểu đồ cột)</div>
+            <div class="chart-container">
+                <canvas id="movieChart" th:if="${!#lists.isEmpty(movieStats)}"></canvas>
+                <div class="no-data-msg" th:if="${#lists.isEmpty(movieStats)}">Không có dữ liệu phim trong khoảng thời gian này</div>
             </div>
         </div>
 
-        <!-- Hiển thị thông báo thành công (nếu có từ redirect flash attribute) -->
-        <div th:if="${successMessage}" class="alert alert-success"
-            style="padding:15px; background-color:#10b981; color:white; border-radius:8px; margin-bottom:20px;">
-            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+        <div class="panel">
+            <div class="panel-header">Doanh thu Combo F&B (Biểu đồ cột ngang)</div>
+            <div class="chart-container">
+                <canvas id="comboChart" th:if="${!#lists.isEmpty(comboStats)}"></canvas>
+                <div class="no-data-msg" th:if="${#lists.isEmpty(comboStats)}">Không có dữ liệu combo trong khoảng thời gian này</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="report-split-grid">
+        <div class="panel">
+            <div class="panel-header">Hiệu suất theo hạng ghế (Cắt bánh Doughnut)</div>
+            <div class="chart-container">
+                <canvas id="seatChart" th:if="${!#lists.isEmpty(seatTypeStats)}"></canvas>
+                <div class="no-data-msg" th:if="${#lists.isEmpty(seatTypeStats)}">Không có dữ liệu ghế</div>
+            </div>
         </div>
 
-        <!-- Hiển thị thông báo lỗi (nếu có từ redirect flash attribute) -->
-        <div th:if="${errorMessage}" class="alert alert-danger"
-            style="padding:15px; background-color:#ef4444; color:white; border-radius:8px; margin-bottom:20px;">
-            <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+        <div class="panel">
+            <div class="panel-header">Cổng thanh toán tích cực (Tỷ lệ tròn Pie)</div>
+            <div class="chart-container">
+                <canvas id="paymentChart" th:if="${!#lists.isEmpty(paymentStats)}"></canvas>
+                <div class="no-data-msg" th:if="${#lists.isEmpty(paymentStats)}">Không có dữ liệu thanh toán</div>
+            </div>
         </div>
+    </div>
 
-        <section class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-film"></i></div>
-                <div class="stat-info">
-                    <h3 th:text="${movieCount}">0</h3>
-                    <p>Phim</p>
-                </div>
+    <section class="stats-grid">
+        <div class="stat-card" style="border-left-color: var(--success);">
+            <div class="stat-icon" style="background: #ecfdf5; color: var(--success);"><i class="fas fa-wallet"></i></div>
+            <div class="stat-info">
+                <h3 th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">0 đ</h3>
+                <p>Doanh Thu Tiền Mặt</p>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-theater-masks"></i></div>
-                <div class="stat-info">
-                    <h3 th:text="${roomCount}">0</h3>
-                    <p>Phòng chiếu</p>
-                </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-film"></i></div>
+            <div class="stat-info">
+                <h3 th:text="${movieCount != null ? movieCount : 0}">0</h3>
+                <p>Phim</p>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-chair"></i></div>
-                <div class="stat-info">
-                    <h3 th:text="${seatCount}">0</h3>
-                    <p>Ghế</p>
-                </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+            <div class="stat-info">
+                <h3 th:text="${showtimeCount != null ? showtimeCount : 0}">0</h3>
+                <p>Lịch chiếu</p>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
-                <div class="stat-info">
-                    <h3 th:text="${showtimeCount}">0</h3>
-                    <p>Lịch chiếu</p>
-                </div>
+        </div>
+        <div class="stat-card" style="border-left-color: var(--warning);">
+            <div class="stat-icon" style="background: #fffbeb; color: var(--warning);"><i class="fas fa-utensils"></i></div>
+            <div class="stat-info">
+                <h3 th:text="${comboStats != null ? comboStats.size() : 0}">0</h3>
+                <p>Gói Combo Bán Ra</p>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section class="panel">
-            <div class="panel-header">Truy cập nhanh</div>
-            <div class="quick-grid">
-                <a class="quick-link" href="/manage_movies.html"><i class="fas fa-film"></i> Quản lý phim</a>
-                <a class="quick-link" href="/manage_showtime.html"><i class="fas fa-calendar-alt"></i> Quản lý lịch
-                    chiếu</a>
-                <a class="quick-link" th:href="@{/admin/rooms}"><i class="fas fa-theater-masks"></i> Rạp &amp; Phòng</a>
-                <a class="quick-link" th:href="@{/admin/banners}"><i class="fas fa-images"></i> Quản lý banner</a>
-                <a class="quick-link" th:href="@{/admin/catalogs}"><i class="fas fa-list"></i> Danh mục phòng</a>
-                <a class="quick-link" th:href="@{/admin/combos}"><i class="fas fa-utensils"></i> Quản lý Combo</a>
-                <a class="quick-link" th:href="@{/admin/posts}"><i class="fas fa-newspaper"></i> Quản lý tin tức</a>
-                <a class="quick-link" th:href="@{/admin/create-manager}"><i class="fas fa-user-shield"></i> Tạo tài
-                    khoản Quản lý</a>
-            </div>
-        </section>
-    </main>
+    <section class="panel">
+        <div class="panel-header">Truy cập nhanh</div>
+        <div class="quick-grid">
+            <a class="quick-link" href="/manage_movies.html"><i class="fas fa-film"></i> Quản lý phim</a>
+            <a class="quick-link" href="/manage_showtime.html"><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</a>
+            <a class="quick-link" th:href="@{/admin/rooms}"><i class="fas fa-theater-masks"></i> Rạp &amp; Phòng</a>
+            <a class="quick-link" th:href="@{/admin/banners}"><i class="fas fa-images"></i> Quản lý banner</a>
+            <a class="quick-link" th:href="@{/admin/catalogs}"><i class="fas fa-list"></i> Danh mục phòng</a>
+            <a class="quick-link" th:href="@{/admin/combos}"><i class="fas fa-utensils"></i> Quản lý Combo</a>
+            <a class="quick-link" th:href="@{/admin/posts}"><i class="fas fa-newspaper"></i> Quản lý tin tức</a>
+            <a class="quick-link" th:href="@{/admin/create-manager}"><i class="fas fa-user-shield"></i> Tạo tài khoản Quản lý</a>
+        </div>
+    </section>
+</main>
+
+<script th:inline="javascript">
+    const moneyFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+
+    // 1. Biểu đồ phim
+    const rawMovie = /*[[${movieStats}]]*/ [];
+    if (rawMovie && rawMovie.length > 0) {
+        new Chart(document.getElementById('movieChart'), {
+            type: 'bar',
+            data: {
+                labels: rawMovie.map(row => row[0]),
+                datasets: [{
+                    label: 'Doanh thu phim',
+                    data: rawMovie.map(row => row[1]),
+                    backgroundColor: '#0054a6',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: (ctx) => ' ' + moneyFormatter.format(ctx.raw) }
+                    }
+                },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // 2. Biểu đồ Combo
+    const rawCombo = /*[[${comboStats}]]*/ [];
+    if (rawCombo && rawCombo.length > 0) {
+        new Chart(document.getElementById('comboChart'), {
+            type: 'bar',
+            data: {
+                labels: rawCombo.map(row => row[0]),
+                datasets: [{
+                    label: 'Tổng thu',
+                    data: rawCombo.map(row => row[2]),
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: (ctx) => ' Tổng thu: ' + moneyFormatter.format(ctx.raw) }
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Biểu đồ Hạng ghế
+    const rawSeat = /*[[${seatTypeStats}]]*/ [];
+    if (rawSeat && rawSeat.length > 0) {
+        new Chart(document.getElementById('seatChart'), {
+            type: 'doughnut',
+            data: {
+                labels: rawSeat.map(row => row[0]),
+                datasets: [{
+                    data: rawSeat.map(row => row[2]),
+                    backgroundColor: ['#10b981', '#334155', '#ef4444', '#a50064']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: { label: (ctx) => ' ' + moneyFormatter.format(ctx.raw) }
+                    }
+                }
+            }
+        });
+    }
+
+    // 4. Biểu đồ Cổng thanh toán
+    const rawPayment = /*[[${paymentStats}]]*/ [];
+    if (rawPayment && rawPayment.length > 0) {
+        new Chart(document.getElementById('paymentChart'), {
+            type: 'pie',
+            data: {
+                labels: rawPayment.map(row => row[0]),
+                datasets: [{
+                    data: rawPayment.map(row => row[1]),
+                    backgroundColor: ['#0054a6', '#ed1c24', '#a50064']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: { label: (ctx) => ' Dòng tiền: ' + moneyFormatter.format(ctx.raw) }
+                    }
+                }
+            }
+        });
+    }
+</script>
 </body>
 
 </html>

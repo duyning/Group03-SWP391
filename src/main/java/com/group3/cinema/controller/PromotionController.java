@@ -2,19 +2,18 @@ package com.group3.cinema.controller;
 
 /*
  * Created on 2026-06-25: Admin controller for promotion campaign management.
- * Created by: NinhDD - HE186113
+ * Updated: Added automated notification triggers.
  */
 
+import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.NotificationType;
 import com.group3.cinema.entity.Promotion;
+import com.group3.cinema.service.AccountService;
+import com.group3.cinema.service.NotificationService;
 import com.group3.cinema.service.PromotionService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -26,11 +25,18 @@ import java.util.List;
 public class PromotionController {
 
     private final PromotionService promotionService;
+    private final NotificationService notificationService; // Thêm
+    private final AccountService accountService;             // Thêm
 
-    public PromotionController(PromotionService promotionService) {
+    public PromotionController(PromotionService promotionService,
+                               NotificationService notificationService,
+                               AccountService accountService) {
         this.promotionService = promotionService;
+        this.notificationService = notificationService;
+        this.accountService = accountService;
     }
 
+    // --- CÁC METHOS GET, EDIT, HIDE... GIỮ NGUYÊN NHƯ CŨ ---
     @GetMapping
     public String listPromotions(@RequestParam(value = "keyword", required = false) String keyword,
                                  @RequestParam(value = "type", required = false) Promotion.CampaignType type,
@@ -67,6 +73,8 @@ public class PromotionController {
                                 RedirectAttributes redirectAttributes) {
         try {
             promotionService.createPromotion(promotion, bannerFile);
+            // Gửi thông báo sau khi lưu thành công
+            sendNotificationToAll("Khuyến mãi mới: " + promotion.getTitle(), promotion.getDescription());
             redirectAttributes.addFlashAttribute("successMessage", "Đã tạo chiến dịch khuyến mãi.");
             return "redirect:/admin/promotions";
         } catch (IllegalArgumentException | IOException e) {
@@ -125,11 +133,22 @@ public class PromotionController {
     public String activatePromotion(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
         try {
             promotionService.activatePromotion(id);
+            // Gửi thông báo sau khi kích hoạt thành công
+            Promotion p = promotionService.getPromotion(id);
+            sendNotificationToAll("Ưu đãi đặc biệt: " + p.getTitle(), p.getDescription());
             redirectAttributes.addFlashAttribute("successMessage", "Đã kích hoạt chiến dịch khuyến mãi.");
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/admin/promotions";
+    }
+
+    // --- HÀM HỖ TRỢ GỬI THÔNG BÁO (THÊM MỚI) ---
+    private void sendNotificationToAll(String title, String content) {
+        List<Account> accounts = accountService.findAll();
+        for (Account acc : accounts) {
+            notificationService.sendNotification(acc.getAccountID(), title, content, NotificationType.PROMOTION);
+        }
     }
 
     private void addFormOptions(Model model) {
