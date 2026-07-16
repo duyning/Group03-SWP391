@@ -48,9 +48,9 @@ public class PostService {
     }
 
     @Transactional
-    public void createPost(Post post, MultipartFile file) throws IOException {
+    public Post createPost(Post post, MultipartFile file) throws IOException {
         updateThumbnailIfPresent(post, file);
-        postRepository.save(post);
+        return postRepository.save(post);
     }
 
     @Transactional

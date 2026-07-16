@@ -933,12 +933,22 @@ async function handleMovieSave(e) {
         const method = id ? 'PUT' : 'POST';
         const r = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify(body)
         });
+        const responseText = await r.text();
+        let payload = null;
+        try {
+            payload = responseText ? JSON.parse(responseText) : null;
+        } catch (parseError) {
+            throw new Error('Phiên đăng nhập không hợp lệ hoặc máy chủ trả về dữ liệu không đúng. Vui lòng đăng nhập lại rồi thử thêm phim.');
+        }
         if (!r.ok) {
-            const payload = await r.json().catch(() => ({}));
             throw new Error(payload.message || payload.error || 'Lỗi khi lưu phim. Vui lòng thử lại.');
+        }
+        if (!payload || !payload.id) {
+            throw new Error('Không nhận được dữ liệu phim sau khi lưu. Vui lòng đăng nhập lại rồi thử thêm phim lần nữa.');
         }
         showToast('success', id ? 'Cập nhật thành công!' : 'Thêm phim thành công!',
                   id ? 'Thông tin phim đã được cập nhật.' : 'Phim mới đã được thêm vào hệ thống.');

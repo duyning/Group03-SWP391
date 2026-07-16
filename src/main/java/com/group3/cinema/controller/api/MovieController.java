@@ -22,6 +22,8 @@ package com.group3.cinema.controller.api;
  */
 
 import com.group3.cinema.entity.Movie;
+import com.group3.cinema.entity.NotificationType;
+import com.group3.cinema.service.CustomerNotificationBroadcastService;
 import com.group3.cinema.service.api.MovieService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,6 +33,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // Đánh dấu lớp này là một RestController để Spring Boot định cấu hình các API endpoint trả về dữ liệu JSON
 @RestController("apiMovieController")
@@ -40,15 +44,21 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class MovieController {
 
+    private static final Logger log = LoggerFactory.getLogger(MovieController.class);
+
     // Khai báo kết nối đến MovieService xử lý nghiệp vụ
     private final MovieService movieService;
     private final com.group3.cinema.repository.api.ShowtimeRepository showtimeRepository;
+    private final CustomerNotificationBroadcastService notificationBroadcastService;
 
     // Tiêm (Inject) MovieService thông qua Constructor Injection
     @Autowired
-    public MovieController(MovieService movieService, com.group3.cinema.repository.api.ShowtimeRepository showtimeRepository) {
+    public MovieController(MovieService movieService,
+                           com.group3.cinema.repository.api.ShowtimeRepository showtimeRepository,
+                           CustomerNotificationBroadcastService notificationBroadcastService) {
         this.movieService = movieService;
         this.showtimeRepository = showtimeRepository;
+        this.notificationBroadcastService = notificationBroadcastService;
     }
 
     // Endpoint: GET /api/movies
@@ -82,10 +92,43 @@ public class MovieController {
     public ResponseEntity<?> createMovie(@RequestBody Movie movie) {
         try {
             Movie savedMovie = movieService.saveMovie(movie);
+            notifyCustomersAboutNewMovie(savedMovie);
             return ResponseEntity.ok(savedMovie); // Trả về HTTP 200 OK kèm đối tượng phim đã được lưu thành công
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Không thể thêm phim mới '{}': {}", movie != null ? movie.getTitle() : null, e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Không thể lưu phim vào cơ sở dữ liệu. Vui lòng kiểm tra log hệ thống."));
         }
+    }
+
+    private void notifyCustomersAboutNewMovie(Movie savedMovie) {
+        if (savedMovie == null || !savedMovie.isActive() || savedMovie.getStatus() == Movie.MovieStatus.STOPPED) {
+            return;
+        }
+        try {
+            notificationBroadcastService.sendToActiveCustomers(
+                    "Phim mới: " + savedMovie.getTitle(),
+                    savedMovie.getSummary(),
+                    NotificationType.MOVIE,
+                    resolveMovieNotificationImage(savedMovie),
+                    "/movies/" + savedMovie.getId()
+            );
+        } catch (Exception exception) {
+            log.warn("Phim '{}' đã lưu thành công nhưng không gửi được thông báo: {}",
+                    savedMovie.getTitle(), exception.getMessage());
+        }
+    }
+
+    private String resolveMovieNotificationImage(Movie movie) {
+        if (movie.getPosterUrl() != null && !movie.getPosterUrl().isBlank()) {
+            return movie.getPosterUrl();
+        }
+        if (movie.getBannerUrl() != null && !movie.getBannerUrl().isBlank()) {
+            return movie.getBannerUrl();
+        }
+        return null;
     }
 
     // Endpoint: PUT /api/movies/{id}

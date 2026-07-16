@@ -37,6 +37,8 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     boolean existsByPhoneNumAndAccountIDNot(String phoneNum, Integer accountID);
 
+    List<Account> findByRoleAndStatusTrue(Role role);
+
     @Query("""
             SELECT a
             FROM Account a

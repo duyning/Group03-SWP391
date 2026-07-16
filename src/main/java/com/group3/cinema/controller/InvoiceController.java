@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Controller
 public class InvoiceController {
@@ -42,7 +43,7 @@ public class InvoiceController {
         model.addAttribute("filter", filter);
         model.addAttribute("page", invoiceService.searchInvoices(filter));
         model.addAttribute("paymentStatuses", Payment.Status.values());
-        model.addAttribute("paymentMethods", Payment.Method.values());
+        model.addAttribute("paymentMethods", List.of(Payment.Method.CASH, Payment.Method.PAYOS));
         return "invoice-list";
     }
 
@@ -122,6 +123,9 @@ public class InvoiceController {
                                                      LocalDate toDate,
                                                      Integer page,
                                                      Integer size) {
-        return new InvoiceService.InvoiceFilter(keyword, bookingStatus, paymentStatus, paymentMethod, fromDate, toDate, page, size);
+        Payment.Method normalizedPaymentMethod = paymentMethod == Payment.Method.CASH || paymentMethod == Payment.Method.PAYOS
+                ? paymentMethod
+                : null;
+        return new InvoiceService.InvoiceFilter(keyword, bookingStatus, paymentStatus, normalizedPaymentMethod, fromDate, toDate, page, size);
     }
 }

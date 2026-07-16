@@ -25,6 +25,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("""
             SELECT b
             FROM Booking b
+            WHERE b.status = :status
+              AND ((b.paidAt IS NOT NULL AND b.paidAt BETWEEN :fromDate AND :toDate)
+                   OR (b.paidAt IS NULL AND b.createdAt BETWEEN :fromDate AND :toDate))
+            ORDER BY b.paidAt ASC, b.createdAt ASC
+            """)
+    List<Booking> findByStatusAndPaidWindow(@Param("status") Booking.Status status,
+                                            @Param("fromDate") LocalDateTime fromDate,
+                                            @Param("toDate") LocalDateTime toDate);
+
+    @Query("""
+            SELECT b
+            FROM Booking b
             WHERE (:status IS NULL OR b.status = :status)
               AND (:fromDate IS NULL OR b.createdAt >= :fromDate)
               AND (:toDate IS NULL OR b.createdAt <= :toDate)

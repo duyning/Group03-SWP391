@@ -367,7 +367,6 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Mã HD</th>
                             <th>Khách hàng</th>
                             <th>Phim</th>
                             <th>Số vé</th>
@@ -378,7 +377,6 @@
                     </thead>
                     <tbody>
                         <tr th:each="b : ${bookings}">
-                            <td style="font-weight:700; color:var(--primary);" th:text="'HD-' + ${b.id}">HD-001</td>
                             <td th:text="${b.customerName}">Nguyễn Văn A</td>
                             <td style="font-weight:600;" th:text="${b.movieTitle}">Bầy xác sống</td>
                             <td th:text="${b.ticketQuantity}">2</td>
@@ -390,7 +388,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(bookings)}">
-                            <td colspan="7" style="text-align:center; color:#64748b; padding: 30px;">Chưa có giao dịch nào được ghi nhận.</td>
+                            <td colspan="6" style="text-align:center; color:#64748b; padding: 30px;">Chưa có giao dịch đã thanh toán nào được ghi nhận.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -465,11 +463,8 @@
                 datasets: [{
                     data: paymentValues,
                     backgroundColor: [
-                        '#10b981', // green
-                        '#3b82f6', // blue
-                        '#ec4899', // pink
-                        '#f59e0b', // amber
-                        '#6b7280'  // gray
+                        '#10b981',
+                        '#2563eb'
                     ]
                 }]
             },

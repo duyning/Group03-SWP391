@@ -159,11 +159,7 @@
                         <select class="form-select" name="paymentMethod">
                             <option value="">Tất cả</option>
                             <option value="CASH" th:selected="${filter.paymentMethod != null && filter.paymentMethod.name() == 'CASH'}">Tiền mặt</option>
-                            <option value="CARD" th:selected="${filter.paymentMethod != null && filter.paymentMethod.name() == 'CARD'}">Thẻ tại quầy</option>
-                            <option value="BANK_TRANSFER" th:selected="${filter.paymentMethod != null && filter.paymentMethod.name() == 'BANK_TRANSFER'}">Chuyển khoản</option>
                             <option value="PAYOS" th:selected="${filter.paymentMethod != null && filter.paymentMethod.name() == 'PAYOS'}">PayOS</option>
-                            <option value="VNPAY" th:selected="${filter.paymentMethod != null && filter.paymentMethod.name() == 'VNPAY'}">VNPay</option>
-                            <option value="MOMO" th:selected="${filter.paymentMethod != null && filter.paymentMethod.name() == 'MOMO'}">MoMo</option>
                         </select>
                     </div>
                     <div>

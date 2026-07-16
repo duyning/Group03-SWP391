@@ -5,11 +5,9 @@ package com.group3.cinema.controller;
  * Updated: Added automated notification triggers.
  */
 
-import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.NotificationType;
 import com.group3.cinema.entity.Promotion;
-import com.group3.cinema.service.AccountService;
-import com.group3.cinema.service.NotificationService;
+import com.group3.cinema.service.CustomerNotificationBroadcastService;
 import com.group3.cinema.service.PromotionService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,15 +23,12 @@ import java.util.List;
 public class PromotionController {
 
     private final PromotionService promotionService;
-    private final NotificationService notificationService; // Thêm
-    private final AccountService accountService;             // Thêm
+    private final CustomerNotificationBroadcastService notificationBroadcastService;
 
     public PromotionController(PromotionService promotionService,
-                               NotificationService notificationService,
-                               AccountService accountService) {
+                               CustomerNotificationBroadcastService notificationBroadcastService) {
         this.promotionService = promotionService;
-        this.notificationService = notificationService;
-        this.accountService = accountService;
+        this.notificationBroadcastService = notificationBroadcastService;
     }
 
     // --- CÁC METHOS GET, EDIT, HIDE... GIỮ NGUYÊN NHƯ CŨ ---
@@ -74,7 +69,7 @@ public class PromotionController {
         try {
             promotionService.createPromotion(promotion, bannerFile);
             // Gửi thông báo sau khi lưu thành công
-            sendNotificationToAll("Khuyến mãi mới: " + promotion.getTitle(), promotion.getDescription());
+            sendNotificationToCustomers("Khuyến mãi mới: " + promotion.getTitle(), promotion.getDescription());
             redirectAttributes.addFlashAttribute("successMessage", "Đã tạo chiến dịch khuyến mãi.");
             return "redirect:/admin/promotions";
         } catch (IllegalArgumentException | IOException e) {
@@ -135,7 +130,7 @@ public class PromotionController {
             promotionService.activatePromotion(id);
             // Gửi thông báo sau khi kích hoạt thành công
             Promotion p = promotionService.getPromotion(id);
-            sendNotificationToAll("Ưu đãi đặc biệt: " + p.getTitle(), p.getDescription());
+            sendNotificationToCustomers("Ưu đãi đặc biệt: " + p.getTitle(), p.getDescription());
             redirectAttributes.addFlashAttribute("successMessage", "Đã kích hoạt chiến dịch khuyến mãi.");
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -144,11 +139,8 @@ public class PromotionController {
     }
 
     // --- HÀM HỖ TRỢ GỬI THÔNG BÁO (THÊM MỚI) ---
-    private void sendNotificationToAll(String title, String content) {
-        List<Account> accounts = accountService.findAll();
-        for (Account acc : accounts) {
-            notificationService.sendNotification(acc.getAccountID(), title, content, NotificationType.PROMOTION);
-        }
+    private void sendNotificationToCustomers(String title, String content) {
+        notificationBroadcastService.sendToActiveCustomers(title, content, NotificationType.PROMOTION);
     }
 
     private void addFormOptions(Model model) {

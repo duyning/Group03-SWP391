@@ -86,7 +86,7 @@
             <div class="page-head">
                 <div>
                     <h1><i class="fa-solid fa-chart-pie"></i> Báo cáo thống kê</h1>
-                    <p>Theo dõi doanh thu, phương thức thanh toán, phim, combo và loại ghế bán chạy.</p>
+                    <p>Đối soát doanh thu đã thanh toán theo ngày, phòng chiếu, combo và loại ghế trong khoảng thời gian chọn.</p>
                 </div>
             </div>
 
@@ -106,47 +106,49 @@
 
             <section class="stats-grid">
                 <article class="stat-card revenue">
-                    <span>Tổng doanh thu</span>
-                    <strong th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</strong>
+                    <span>Doanh thu đã thanh toán</span>
+                    <strong th:text="${#numbers.formatDecimal(totalRevenue, 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</strong>
                 </article>
                 <article class="stat-card">
-                    <span>Phương thức thanh toán</span>
-                    <strong th:text="${paymentStats != null ? paymentStats.size() : 0}">0</strong>
+                    <span>Đơn đã thanh toán</span>
+                    <strong th:text="${paidBookingCount != null ? paidBookingCount : 0}">0</strong>
                 </article>
                 <article class="stat-card">
-                    <span>Phim có doanh thu</span>
-                    <strong th:text="${movieStats != null ? movieStats.size() : 0}">0</strong>
+                    <span>Vé đã bán</span>
+                    <strong th:text="${totalTickets != null ? totalTickets : 0}">0</strong>
                 </article>
                 <article class="stat-card">
-                    <span>Combo đã bán</span>
-                    <strong th:text="${comboStats != null ? comboStats.size() : 0}">0</strong>
+                    <span>Giá trị đơn trung bình</span>
+                    <strong th:text="${#numbers.formatDecimal(averageOrderValue, 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</strong>
                 </article>
             </section>
 
             <section class="panel-grid">
                 <article class="panel">
-                    <h2>Doanh thu theo phương thức thanh toán</h2>
-                    <div class="empty-state" th:if="${paymentStats == null || paymentStats.isEmpty()}">Chưa có dữ liệu thanh toán.</div>
-                    <table class="data-table" th:if="${paymentStats != null && !paymentStats.isEmpty()}">
-                        <thead><tr><th>Phương thức</th><th>Doanh thu</th></tr></thead>
+                    <h2>Doanh thu theo ngày</h2>
+                    <div class="empty-state" th:if="${dailyRevenue == null || dailyRevenue.isEmpty()}">Chưa có dữ liệu doanh thu theo ngày.</div>
+                    <table class="data-table" th:if="${dailyRevenue != null && !dailyRevenue.isEmpty()}">
+                        <thead><tr><th>Ngày</th><th>Số đơn</th><th>Doanh thu</th></tr></thead>
                         <tbody>
-                        <tr th:each="item : ${paymentStats}">
-                            <td th:text="${item[0] != null ? item[0] : 'Không xác định'}">PAYOS</td>
-                            <td class="money" th:text="${#numbers.formatDecimal(item[1], 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                        <tr th:each="item : ${dailyRevenue}">
+                            <td th:text="${#temporals.format(item[0], 'dd/MM/yyyy')}">17/07/2026</td>
+                            <td th:text="${item[1]}">0</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</td>
                         </tr>
                         </tbody>
                     </table>
                 </article>
 
                 <article class="panel">
-                    <h2>Doanh thu theo phim</h2>
-                    <div class="empty-state" th:if="${movieStats == null || movieStats.isEmpty()}">Chưa có dữ liệu phim.</div>
-                    <table class="data-table" th:if="${movieStats != null && !movieStats.isEmpty()}">
-                        <thead><tr><th>Phim</th><th>Doanh thu</th></tr></thead>
+                    <h2>Hiệu suất phòng chiếu</h2>
+                    <div class="empty-state" th:if="${roomStats == null || roomStats.isEmpty()}">Chưa có dữ liệu phòng chiếu.</div>
+                    <table class="data-table" th:if="${roomStats != null && !roomStats.isEmpty()}">
+                        <thead><tr><th>Phòng</th><th>Vé đã bán</th><th>Doanh thu</th></tr></thead>
                         <tbody>
-                        <tr th:each="item : ${movieStats}">
-                            <td th:text="${item[0]}">Tên phim</td>
-                            <td class="money" th:text="${#numbers.formatDecimal(item[1], 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                        <tr th:each="item : ${roomStats}">
+                            <td th:text="${item[0]}">Phòng 01</td>
+                            <td th:text="${item[1]}">0</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</td>
                         </tr>
                         </tbody>
                     </table>
@@ -161,7 +163,7 @@
                         <tr th:each="item : ${comboStats}">
                             <td th:text="${item[0]}">Combo</td>
                             <td th:text="${item[1]}">0</td>
-                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</td>
                         </tr>
                         </tbody>
                     </table>
@@ -176,7 +178,7 @@
                         <tr th:each="item : ${seatTypeStats}">
                             <td th:text="${item[0]}">Ghế thường</td>
                             <td th:text="${item[1]}">0</td>
-                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</td>
                         </tr>
                         </tbody>
                     </table>

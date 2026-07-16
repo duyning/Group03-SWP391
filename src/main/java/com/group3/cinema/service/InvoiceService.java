@@ -267,10 +267,11 @@ public class InvoiceService {
     private List<PaymentMethodSummary> summarizeByPaymentMethod(List<InvoiceRow> rows) {
         Map<Payment.Method, PaymentMethodSummaryBuilder> summaries = new EnumMap<>(Payment.Method.class);
         for (InvoiceRow row : rows) {
-            if (row.paymentMethod() == null || row.refunded() || row.bookingStatus() != Booking.Status.PAID) {
+            Payment.Method method = normalizedBusinessPaymentMethod(row.paymentMethod());
+            if (method == null || row.refunded() || row.bookingStatus() != Booking.Status.PAID) {
                 continue;
             }
-            summaries.computeIfAbsent(row.paymentMethod(), ignored -> new PaymentMethodSummaryBuilder())
+            summaries.computeIfAbsent(method, ignored -> new PaymentMethodSummaryBuilder())
                     .add(row.totalAmount());
         }
         return summaries.entrySet().stream()
@@ -362,7 +363,7 @@ public class InvoiceService {
                 booking.getVoucherCode(),
                 booking.getStatus(),
                 payment != null ? payment.getStatus() : null,
-                payment != null ? payment.getPaymentMethod() : null,
+                normalizedBusinessPaymentMethod(payment != null ? payment.getPaymentMethod() : null),
                 source,
                 refunded,
                 payment != null ? payment.getErrorMessage() : null,
@@ -577,17 +578,22 @@ public class InvoiceService {
     }
 
     private static String paymentMethodText(Payment.Method method) {
-        if (method == null) {
+        Payment.Method normalizedMethod = normalizedBusinessPaymentMethod(method);
+        if (normalizedMethod == null) {
             return "";
         }
-        return switch (method) {
+        return switch (normalizedMethod) {
             case CASH -> "Tiền mặt";
-            case CARD -> "Thẻ tại quầy";
-            case BANK_TRANSFER -> "Chuyển khoản";
-            case VNPAY -> "VNPay";
-            case MOMO -> "MoMo";
             case PAYOS -> "PayOS";
+            default -> "PayOS";
         };
+    }
+
+    private static Payment.Method normalizedBusinessPaymentMethod(Payment.Method method) {
+        if (method == null) {
+            return null;
+        }
+        return method == Payment.Method.CASH ? Payment.Method.CASH : Payment.Method.PAYOS;
     }
 
     public record InvoiceDetails(InvoiceRow row, Booking booking, Account account,

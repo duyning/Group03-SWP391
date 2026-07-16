@@ -9,7 +9,7 @@
     <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
     <style>
         body { background: #f4f7fb; color: #172033; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .notification-shell { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        .notification-shell { max-width: 920px; margin: 40px auto; padding: 0 20px; }
         .surface { background: #ffffff; border: 1px solid #dbe5ef; border-radius: 12px; box-shadow: 0 4px 12px rgba(15, 55, 104, 0.04); overflow: hidden; }
 
         /* Header thông báo */
@@ -36,6 +36,8 @@
 
         /* Icon và nội dung */
         .noti-icon-box { width: 48px; height: 48px; min-width: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .noti-media { width: 96px; height: 70px; min-width: 96px; border-radius: 12px; overflow: hidden; border: 1px solid #dbe5ef; background: #e2e8f0; box-shadow: 0 8px 18px rgba(15, 55, 104, 0.08); }
+        .noti-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .noti-content { flex: 1; }
         .noti-title { font-size: 1.05rem; margin: 0 0 4px 0; }
         .noti-text { font-size: 0.95rem; margin: 0 0 8px 0; line-height: 1.5; }
@@ -43,6 +45,11 @@
 
         .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
         .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
+        @media (max-width: 640px) {
+            .noti-item { padding: 16px; gap: 12px; }
+            .noti-media { width: 76px; height: 58px; min-width: 76px; }
+            .noti-icon-box { width: 42px; height: 42px; min-width: 42px; }
+        }
     </style>
 </head>
 <body>
@@ -72,11 +79,17 @@
                th:href="@{/notifications/read/{id}(id=${noti.id})}"
                th:classappend="${!noti.isRead} ? 'noti-item noti-unread' : 'noti-item noti-read'">
 
-                <div class="noti-icon-box">
+                <div class="noti-media" th:if="${noti.imageUrl != null && !#strings.isEmpty(noti.imageUrl)}">
+                    <img th:src="${noti.imageUrl}" th:alt="${noti.title}">
+                </div>
+
+                <div class="noti-icon-box" th:unless="${noti.imageUrl != null && !#strings.isEmpty(noti.imageUrl)}">
                     <i th:if="${noti.type.name() == 'BOOKING'}" class="fa-solid fa-ticket"></i>
                     <i th:if="${noti.type.name() == 'PAYMENT'}" class="fa-solid fa-credit-card"></i>
                     <i th:if="${noti.type.name() == 'PROMOTION'}" class="fa-solid fa-bullhorn"></i>
                     <i th:if="${noti.type.name() == 'VOUCHER'}" class="fa-solid fa-gift"></i>
+                    <i th:if="${noti.type.name() == 'MOVIE'}" class="fa-solid fa-film"></i>
+                    <i th:if="${noti.type.name() == 'NEWS'}" class="fa-solid fa-newspaper"></i>
                     <i th:if="${noti.type.name() == 'SYSTEM'}" class="fa-solid fa-gear"></i>
                 </div>
 
