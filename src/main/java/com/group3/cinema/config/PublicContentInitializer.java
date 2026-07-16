@@ -102,16 +102,7 @@ public class PublicContentInitializer {
                         "Dužan Duong", "Bùi Thế Dương, Hoang Anh Doan, Tô Tiến Tài, Lê Quỳnh Lan, Dung Nguyen", "Tiếng Việt", "C-18")
         );
 
-        java.util.Set<String> betaTitles = betaMovies.stream()
-                .map(Movie::getTitle)
-                .collect(java.util.stream.Collectors.toSet());
         List<Movie> existingMovies = movieRepository.findAll();
-        existingMovies.stream()
-                .filter(movie -> !betaTitles.contains(movie.getTitle()))
-                .forEach(movie -> movie.setActive(false));
-        movieRepository.saveAll(existingMovies);
-        deleteUnreferencedNonBetaMovies(betaTitles);
-
         movieRepository.saveAll(betaMovies.stream()
                 .map(betaMovie -> existingMovies.stream()
                         .filter(existing -> existing.getTitle().equals(betaMovie.getTitle()))
@@ -119,21 +110,6 @@ public class PublicContentInitializer {
                         .map(existing -> copyMovieData(existing, betaMovie))
                         .orElse(betaMovie))
                 .toList());
-    }
-
-    private void deleteUnreferencedNonBetaMovies(java.util.Set<String> betaTitles) {
-        try {
-            String placeholders = String.join(",", java.util.Collections.nCopies(betaTitles.size(), "?"));
-            String sql = """
-                    DELETE FROM movie
-                    WHERE title NOT IN (%s)
-                      AND NOT EXISTS (SELECT 1 FROM showtimes WHERE showtimes.movie_id = movie.id)
-                      AND NOT EXISTS (SELECT 1 FROM tickets WHERE tickets.movie_id = movie.id)
-                    """.formatted(placeholders);
-            jdbcTemplate.update(sql, betaTitles.toArray());
-        } catch (Exception ignored) {
-            // If existing movie rows are referenced, they stay hidden instead of breaking booking history.
-        }
     }
 
     private void seedDemoMoviesUnused() {

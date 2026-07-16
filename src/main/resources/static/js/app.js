@@ -1642,6 +1642,24 @@ function groupShowtimes(list) {
     });
 }
 
+function isGroupEnded(g, todayStr) {
+    if (g.maxDate < todayStr) return true;
+    if (g.maxDate === todayStr) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        return g.slots.every(slot => {
+            if (!slot.showTime) return true;
+            const p = slot.showTime.split(':');
+            const h = parseInt(p[0]);
+            const m = parseInt(p[1]);
+            // Giờ kết thúc = Giờ chiếu + 10p quảng cáo + thời lượng phim + 20p dọn phòng
+            const endMinutes = h * 60 + m + 10 + (g.movie.duration || 120) + 20;
+            return endMinutes <= currentMinutes;
+        });
+    }
+    return false;
+}
+
 // --- Render bảng lịch chiếu (hiển thị riêng từng ngày) ---
 async function renderShowtimeTable() {
     const tbody = document.getElementById('showtimeTableBody');
@@ -1674,12 +1692,16 @@ async function renderShowtimeTable() {
     if (statusVal) {
         const todayStr = new Date().toLocaleDateString('sv');
         groups = groups.filter(g => {
+            const isEnded = isGroupEnded(g, todayStr);
+            const isComingSoon = g.minDate > todayStr;
+            const isActive = !isEnded && !isComingSoon;
+
             if (statusVal === 'Đã kết thúc') {
-                return g.maxDate < todayStr;
+                return isEnded;
             } else if (statusVal === 'Sắp chiếu') {
-                return g.minDate > todayStr;
+                return isComingSoon;
             } else if (statusVal === 'Đang hoạt động') {
-                return g.minDate <= todayStr && g.maxDate >= todayStr;
+                return isActive;
             }
             return true;
         });
@@ -1740,7 +1762,8 @@ async function renderShowtimeTable() {
 
         const todayStr = new Date().toLocaleDateString('sv');
         let statusBadge = '';
-        if (g.maxDate < todayStr) {
+        const isEnded = isGroupEnded(g, todayStr);
+        if (isEnded) {
             statusBadge = `<span style="background:#64748b;color:#fff;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;display:inline-block;white-space:nowrap;">Đã kết thúc</span>`;
         } else if (g.minDate > todayStr) {
             statusBadge = `<span style="background:#f59e0b;color:#fff;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;display:inline-block;white-space:nowrap;">Sắp chiếu</span>`;

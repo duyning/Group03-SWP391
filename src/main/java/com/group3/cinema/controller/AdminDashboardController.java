@@ -116,13 +116,7 @@ public class AdminDashboardController {
         double totalRevenue = ticketRevenue + comboRevenue;
         model.addAttribute("totalRevenue", totalRevenue);
 
-        // 5. Calculate Occupancy Rate
-        List<Showtime> showtimes = showtimeRepository.findAll();
-        long totalCapacity = showtimes.stream()
-                .mapToLong(s -> roomRepository.findFirstByRoomNameIgnoreCase(s.getRoom()).map(Room::getTotalSeats).orElse(0))
-                .sum();
-        double occupancyRate = totalCapacity > 0 ? ((double) totalTicketsSold / totalCapacity) * 100 : 0.0;
-        model.addAttribute("occupancyRate", Math.round(occupancyRate * 10.0) / 10.0);
+
 
         // 6. Top 5 Movies by Revenue
         Map<String, MovieRevenueDto> movieStats = new HashMap<>();
@@ -165,6 +159,7 @@ public class AdminDashboardController {
         // 8. Recent bookings history list
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         List<BookingDto> bookingHistory = allBookings.stream()
+                .filter(b -> b.getStatus() == Booking.Status.PAID || b.getStatus() == Booking.Status.CANCELLED)
                 .map(b -> {
                     String custName = accountRepository.findById(b.getAccountId())
                             .map(Account::getName)
