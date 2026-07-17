@@ -80,6 +80,11 @@ public class AdminDashboardController {
         if (loggedInUser != null) {
             model.addAttribute("user", loggedInUser);
         }
+        Object errorMessage = session.getAttribute("errorMessage");
+        if (errorMessage != null) {
+            model.addAttribute("errorMessage", errorMessage);
+            session.removeAttribute("errorMessage");
+        }
 
         // Fetch counts for entities
         model.addAttribute("movieCount", movieRepository.count());

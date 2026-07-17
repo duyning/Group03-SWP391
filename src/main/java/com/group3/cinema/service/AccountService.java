@@ -60,10 +60,12 @@ public class AccountService {
      * @return the matching Account, or null if not found / wrong password
      */
     public Account login(String email, String password) {
+        String normalizedEmail = email == null ? "" : email.trim();
+        String normalizedPassword = password == null ? "" : password.trim();
         // Dùng findByEmailWithVouchers để load savedVouchers eager (JOIN FETCH),
         // tránh LazyInitializationException khi Account được lưu vào HTTP session.
-        Account account = accountRepository.findByEmailWithVouchers(email);
-        if (account != null && account.getPassword().equals(password)) {
+        Account account = accountRepository.findByEmailWithVouchers(normalizedEmail);
+        if (account != null && account.getPassword().equals(normalizedPassword)) {
             return account;
         }
         return null;

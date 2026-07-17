@@ -13,13 +13,25 @@ import java.util.List;
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final List<Role> allowedRoles;
+    private final String accessDeniedRedirect;
+    private final String accessDeniedMessage;
 
     public AuthInterceptor() {
         this.allowedRoles = null;
+        this.accessDeniedRedirect = "/access-denied";
+        this.accessDeniedMessage = null;
     }
 
     public AuthInterceptor(Role... allowedRoles) {
         this.allowedRoles = Arrays.asList(allowedRoles);
+        this.accessDeniedRedirect = "/access-denied";
+        this.accessDeniedMessage = null;
+    }
+
+    public AuthInterceptor(String accessDeniedRedirect, String accessDeniedMessage, Role... allowedRoles) {
+        this.allowedRoles = Arrays.asList(allowedRoles);
+        this.accessDeniedRedirect = accessDeniedRedirect;
+        this.accessDeniedMessage = accessDeniedMessage;
     }
 
     @Override
@@ -45,7 +57,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        response.sendRedirect(request.getContextPath() + "/access-denied");
+        if (accessDeniedMessage != null && !accessDeniedMessage.isBlank()) {
+            session.setAttribute("errorMessage", accessDeniedMessage);
+        }
+        response.sendRedirect(request.getContextPath() + accessDeniedRedirect);
         return false;
     }
 }

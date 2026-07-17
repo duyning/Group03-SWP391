@@ -39,6 +39,7 @@
             width: min(100%, 760px) !important;
             max-width: 760px !important;
             animation: fadeIn 0.5s ease-out;
+            position: relative;
         }
 
         @keyframes fadeIn {
@@ -191,6 +192,19 @@
             color: white;
         }
 
+        .btn-back-top {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            flex: 0 0 auto;
+            width: auto;
+            min-width: auto;
+            padding: 9px 14px;
+            border-radius: 999px;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
         .btn-edit {
             background: linear-gradient(135deg, #a78bfa, #ec4899);
             color: white;
@@ -212,11 +226,25 @@
             box-shadow: 0 8px 20px rgba(245, 158, 11, 0.35);
             color: white;
         }
+
+        @media (max-width: 576px) {
+            .btn-back-top {
+                top: 12px;
+                right: 12px;
+                padding: 8px 12px;
+                font-size: 0.78rem;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div class="profile-card">
+    <a th:href="${account.role != null && (account.role.name() == 'ADMIN' || account.role.name() == 'MANAGER')} ? @{/admin/dashboard} : @{/home}"
+       class="btn-action btn-back btn-back-top">
+        <i class="fas fa-arrow-left"></i> Quay lại
+    </a>
+
     <div class="profile-header">
         <div class="profile-avatar" th:text="${account.name != null && !account.name.isEmpty() ? account.name.substring(0,1).toUpperCase() : 'U'}">U</div>
     </div>
@@ -303,10 +331,6 @@
     </div>
 
     <div class="profile-actions">
-        <a th:href="${account.role != null && (account.role.name() == 'ADMIN' || account.role.name() == 'MANAGER')} ? @{/admin/dashboard} : @{/home}"
-           class="btn-action btn-back">
-            <i class="fas fa-arrow-left"></i> Quay lại
-        </a>
         <a th:href="@{/profile/edit}" class="btn-action btn-edit">
             <i class="fas fa-user-edit"></i> Chỉnh sửa hồ sơ
         </a>

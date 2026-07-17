@@ -8,7 +8,6 @@
 <aside class="sidebar" th:fragment="adminSidebar(active)">
     <div class="sidebar-header">
         <img src="/images/cineflow-logo-light.svg" height="35" alt="CineFlow Cinema">
-        <span>ADMIN</span>
         <button type="button" class="sidebar-toggle" aria-label="Thu gọn/mở rộng sidebar" title="Thu gọn/mở rộng sidebar">
             <i class="fas fa-bars"></i>
         </button>
@@ -24,7 +23,7 @@
             </details>
         </li>
 
-        <li class="sidebar-section">
+        <li class="sidebar-section" th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'MANAGER'}">
             <details th:attr="open=${active == 'movies' || active == 'showtimes' || active == 'tickets'} ? 'open' : null">
                 <summary><span><i class="fas fa-film"></i> Phim &amp; lịch chiếu</span><b></b></summary>
                 <div class="sidebar-subnav">
@@ -35,7 +34,7 @@
             </details>
         </li>
 
-        <li class="sidebar-section">
+        <li class="sidebar-section" th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'MANAGER'}">
             <details th:attr="open=${active == 'counter-sales' || active == 'invoices' || active == 'combos'} ? 'open' : null">
                 <summary><span><i class="fas fa-cash-register"></i> Bán hàng &amp; hóa đơn</span><b></b></summary>
                 <div class="sidebar-subnav">
@@ -46,7 +45,7 @@
             </details>
         </li>
 
-        <li class="sidebar-section">
+        <li class="sidebar-section" th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'MANAGER'}">
             <details th:attr="open=${active == 'promotions' || active == 'vouchers' || active == 'holidays' || active == 'banners'} ? 'open' : null">
                 <summary><span><i class="fas fa-bullhorn"></i> Marketing</span><b></b></summary>
                 <div class="sidebar-subnav">
@@ -58,7 +57,7 @@
             </details>
         </li>
 
-        <li class="sidebar-section">
+        <li class="sidebar-section" th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'MANAGER'}">
             <details th:attr="open=${active == 'contacts' || active == 'reviews' || active == 'rooms' || active == 'catalogs' || active == 'posts'} ? 'open' : null">
                 <summary><span><i class="fas fa-theater-masks"></i> Rạp, phòng &amp; nội dung</span><b></b></summary>
                 <div class="sidebar-subnav">

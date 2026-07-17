@@ -48,15 +48,14 @@ public class AdminAccountController {
             return "redirect:/admin/dashboard";
         }
 
+        String normalizedSearch = search == null ? "" : search.trim();
         List<Account> accounts = accountService.getAllAccounts();
 
         // Apply search filter
-        if (!search.isBlank()) {
-            String q = search.toLowerCase();
+        if (!normalizedSearch.isBlank()) {
+            String q = normalizedSearch.toLowerCase();
             accounts = accounts.stream()
-                    .filter(a -> (a.getName() != null && a.getName().toLowerCase().contains(q))
-                            || (a.getEmail() != null && a.getEmail().toLowerCase().contains(q))
-                            || (a.getPhoneNum() != null && a.getPhoneNum().contains(q)))
+                    .filter(a -> a.getEmail() != null && a.getEmail().toLowerCase().startsWith(q))
                     .collect(Collectors.toList());
         }
 
@@ -78,7 +77,7 @@ public class AdminAccountController {
         }
 
         model.addAttribute("accounts", accounts);
-        model.addAttribute("search", search);
+        model.addAttribute("search", normalizedSearch);
         model.addAttribute("roleFilter", roleFilter);
         model.addAttribute("statusFilter", statusFilter);
         model.addAttribute("totalCount", accounts.size());
