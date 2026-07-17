@@ -5,9 +5,9 @@ spring:
   config:
     import: optional:classpath:application-vnpay-local.yaml
   datasource:
-    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=Group3_SWP391;encrypt=false;trustServerCertificate=true}
+    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=sample;encrypt=false;trustServerCertificate=true}
     username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:123}
+    password: ${DB_PASSWORD:sa}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
     hikari:
       connection-timeout: 20000
@@ -61,7 +61,7 @@ spring:
             enable: true
 
 server:
-  port: 8080
+  port: 8081
   servlet:
     context-path: /
 
@@ -78,21 +78,21 @@ payment:
     pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
     tmn-code: ${VNPAY_TMN_CODE:}
     hash-secret: ${VNPAY_HASH_SECRET:}
-    return-url: ${VNPAY_RETURN_URL:http://localhost:8080/payment/vnpay/return}
-    ipn-url: ${VNPAY_IPN_URL:http://localhost:8080/payment/vnpay/ipn}
+    return-url: ${VNPAY_RETURN_URL:http://localhost:8081/payment/vnpay/return}
+    ipn-url: ${VNPAY_IPN_URL:http://localhost:8081/payment/vnpay/ipn}
   momo:
     enabled: false
     endpoint: ${MOMO_ENDPOINT:https://test-payment.momo.vn/v2/gateway/api/create}
     partner-code: ${MOMO_PARTNER_CODE:}
     access-key: ${MOMO_ACCESS_KEY:}
     secret-key: ${MOMO_SECRET_KEY:}
-    return-url: ${MOMO_RETURN_URL:http://localhost:8080/payment/momo/return}
-    ipn-url: ${MOMO_IPN_URL:http://localhost:8080/payment/momo/ipn}
+    return-url: ${MOMO_RETURN_URL:http://localhost:8081/payment/momo/return}
+    ipn-url: ${MOMO_IPN_URL:http://localhost:8081/payment/momo/ipn}
   payos:
     enabled: ${PAYOS_ENABLED:false}
     endpoint: ${PAYOS_ENDPOINT:https://api-merchant.payos.vn/v2/payment-requests}
     client-id: ${PAYOS_CLIENT_ID:}
     api-key: ${PAYOS_API_KEY:}
     checksum-key: ${PAYOS_CHECKSUM_KEY:}
-    return-url: ${PAYOS_RETURN_URL:http://localhost:8080/payment/payos/return}
-    cancel-url: ${PAYOS_CANCEL_URL:http://localhost:8080/payment/payos/cancel}
+    return-url: ${PAYOS_RETURN_URL:http://localhost:8081/payment/payos/return}
+    cancel-url: ${PAYOS_CANCEL_URL:http://localhost:8081/payment/payos/cancel}

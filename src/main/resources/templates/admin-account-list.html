@@ -135,6 +135,45 @@
             padding: 20px 24px;
             margin-bottom: 20px;
         }
+        .filter-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .filter-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-subtitle {
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+        .filter-rules {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .rule-chip {
+            background: #eff6ff;
+            color: #075985;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
         .filter-row {
             display: flex;
             gap: 12px;
@@ -143,6 +182,17 @@
         }
         .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
         .filter-group label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .search-field {
+            position: relative;
+        }
+        .search-field i {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
+        }
         .filter-group input,
         .filter-group select {
             padding: 9px 13px;
@@ -153,8 +203,36 @@
             outline: none;
             transition: border-color 0.2s;
         }
+        .search-field input {
+            padding-left: 38px;
+        }
         .filter-group input:focus,
         .filter-group select:focus { border-color: var(--primary); }
+        .field-hint {
+            color: #64748b;
+            font-size: 0.76rem;
+            line-height: 1.45;
+        }
+        .active-filter-summary {
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+        .active-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            padding: 5px 10px;
+            color: #334155;
+            font-weight: 700;
+        }
 
         .btn {
             padding: 9px 20px;
@@ -355,11 +433,30 @@
 
         <!-- Filter card -->
         <div class="filter-card">
+            <div class="filter-heading">
+                <div>
+                    <div class="filter-title">
+                        <i class="fas fa-filter" style="color:var(--primary);"></i>
+                        Bộ lọc tài khoản
+                    </div>
+                    <div class="filter-subtitle">
+                        Rule tìm kiếm: email bắt đầu bằng từ khóa, không phân biệt chữ hoa thường.
+                    </div>
+                </div>
+                <div class="filter-rules">
+                    <span class="rule-chip"><i class="fas fa-envelope"></i> Email bắt đầu bằng từ khóa</span>
+                </div>
+            </div>
             <form th:action="@{/admin/accounts}" method="get" class="filter-row">
                 <div class="filter-group" style="flex:3;min-width:220px;">
-                    <label>Tìm kiếm</label>
-                    <input type="text" name="search" th:value="${search}"
-                           placeholder="Tên, email hoặc số điện thoại...">
+                    <label>Tìm kiếm theo email</label>
+                    <div class="search-field">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="search" th:value="${search}"
+                               autocomplete="off"
+                               placeholder="Ví dụ: admin@group03.com, minh@gmail.com">
+                    </div>
+                    <div class="field-hint">Nhập các ký tự đầu của email tài khoản.</div>
                 </div>
                 <div class="filter-group">
                     <label>Vai trò</label>
@@ -369,6 +466,7 @@
                         <option value="MANAGER"  th:selected="${roleFilter == 'MANAGER'}">Quản lý</option>
                         <option value="CUSTOMER" th:selected="${roleFilter == 'CUSTOMER'}">Khách hàng</option>
                     </select>
+                    <div class="field-hint">Lọc theo quyền của tài khoản.</div>
                 </div>
                 <div class="filter-group">
                     <label>Trạng thái</label>
@@ -377,16 +475,33 @@
                         <option value="active"   th:selected="${statusFilter == 'active'}">Đang hoạt động</option>
                         <option value="inactive" th:selected="${statusFilter == 'inactive'}">Đã vô hiệu hóa</option>
                     </select>
+                    <div class="field-hint">Active: được đăng nhập. Inactive: bị khóa đăng nhập.</div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px;">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> Lọc
+                        <i class="fas fa-search"></i> Áp dụng
                     </button>
                     <a th:href="@{/admin/accounts}" class="btn btn-outline">
                         <i class="fas fa-redo"></i> Đặt lại
                     </a>
                 </div>
             </form>
+            <div class="active-filter-summary"
+                 th:if="${(search != null && !search.isBlank()) || (roleFilter != null && !roleFilter.isBlank()) || (statusFilter != null && !statusFilter.isBlank())}">
+                <span>Đang áp dụng:</span>
+                <span class="active-filter-chip" th:if="${search != null && !search.isBlank()}">
+                    <i class="fas fa-keyboard"></i>
+                    <span th:text="'Từ khóa: ' + ${search}">Từ khóa</span>
+                </span>
+                <span class="active-filter-chip" th:if="${roleFilter != null && !roleFilter.isBlank()}">
+                    <i class="fas fa-user-tag"></i>
+                    <span th:text="${roleFilter == 'ADMIN'} ? 'Vai trò: Admin' : (${roleFilter == 'MANAGER'} ? 'Vai trò: Quản lý' : 'Vai trò: Khách hàng')">Vai trò</span>
+                </span>
+                <span class="active-filter-chip" th:if="${statusFilter != null && !statusFilter.isBlank()}">
+                    <i class="fas fa-toggle-on"></i>
+                    <span th:text="${statusFilter == 'active'} ? 'Trạng thái: Đang hoạt động' : 'Trạng thái: Đã vô hiệu hóa'">Trạng thái</span>
+                </span>
+            </div>
         </div>
 
         <!-- Table -->

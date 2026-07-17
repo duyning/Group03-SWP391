@@ -59,11 +59,46 @@ public class AccountSeedInitializer {
     }
 
     private void createAccountIfMissing(String name, String email, String password, String phoneNum, Role role) {
-        if (accountRepository.existsByEmail(email) || accountRepository.existsByPhoneNum(phoneNum)) {
+        Account account = accountRepository.findByEmail(email);
+        if (account != null) {
+            boolean changed = false;
+            if (!name.equals(account.getName())) {
+                account.setName(name);
+                changed = true;
+            }
+            if (!password.equals(account.getPassword())) {
+                account.setPassword(password);
+                changed = true;
+            }
+            if (account.getRole() != role) {
+                account.setRole(role);
+                changed = true;
+            }
+            if (!account.isStatus()) {
+                account.setStatus(true);
+                changed = true;
+            }
+            if (account.getDob() == null) {
+                account.setDob(java.time.LocalDate.of(2000, 1, 1));
+                changed = true;
+            }
+            if (account.getMembershipLevel() == null) {
+                account.setMembershipLevel(MembershipLevel.SILVER);
+                changed = true;
+            }
+            if (changed) {
+                accountRepository.save(account);
+            }
             return;
         }
 
-        Account account = new Account();
+        Account accountWithPhone = accountRepository.findFirstByPhoneNum(phoneNum).orElse(null);
+        if (accountWithPhone != null) {
+            System.err.println("Khong the tao tai khoan seed " + email + " vi so dien thoai " + phoneNum + " da ton tai.");
+            return;
+        }
+
+        account = new Account();
         account.setName(name);
         account.setEmail(email);
         account.setPassword(password);

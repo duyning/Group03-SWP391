@@ -89,5 +89,43 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/upload/**",
                         "/api/suggestions/persons/**"
                 );
+
+        registry.addInterceptor(new AuthInterceptor(
+                        "/admin/dashboard",
+                        "Chức năng này chỉ dành cho Admin.",
+                        Role.ADMIN
+                ))
+                .addPathPatterns(
+                        "/admin/create-manager",
+                        "/admin/accounts",
+                        "/admin/accounts/**"
+                );
+
+        registry.addInterceptor(new AuthInterceptor(
+                        "/admin/dashboard",
+                        "Chức năng này chỉ dành cho Manager.",
+                        Role.MANAGER
+                ))
+                .addPathPatterns(
+                        "/admin/**",
+                        "/manage_movies.html",
+                        "/manage_showtime.html",
+                        "/manage_ticket.html",
+                        "/api/movies/**",
+                        "/api/showtimes/**",
+                        "/api/tickets/**",
+                        "/api/counter-sales/**",
+                        "/api/rooms/**",
+                        "/api/upload/**",
+                        "/api/suggestions/persons/**"
+                )
+                .excludePathPatterns(
+                        "/admin/dashboard",
+                        "/admin/reports",
+                        "/admin/reports/**",
+                        "/admin/create-manager",
+                        "/admin/accounts",
+                        "/admin/accounts/**"
+                );
     }
 }

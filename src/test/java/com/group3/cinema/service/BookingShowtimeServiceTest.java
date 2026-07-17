@@ -9,6 +9,8 @@ import com.group3.cinema.entity.SeatType;
 import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.RoomRepository;
+import com.group3.cinema.repository.SeatRepository;
+import com.group3.cinema.repository.SeatTypeRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.SeatRepository;
@@ -106,6 +108,8 @@ class BookingShowtimeServiceTest {
         when(roomRepository.findFirstByRoomNameIgnoreCase("Phòng 03"))
                 .thenReturn(Optional.of(room));
 
+        mockAvailableSeats(12L, 80);
+
         List<BookingShowtimeView> result = service.getAvailableShowtimes(7, tomorrow);
 
         assertThat(result).singleElement().satisfies(view -> {
@@ -123,6 +127,8 @@ class BookingShowtimeServiceTest {
         when(showtimeRepository.findById(12L)).thenReturn(Optional.of(showtime));
         when(roomRepository.findFirstByRoomNameIgnoreCase("Phòng 03"))
                 .thenReturn(Optional.of(room));
+
+        mockAvailableSeats(12L, 80);
 
         BookingSelection selection = service.validateAndCreateSelection(12L, 7, tomorrow);
 
@@ -151,5 +157,17 @@ class BookingShowtimeServiceTest {
         showtime.setShowTime(time);
         showtime.setRoom("Phòng 03");
         return showtime;
+    }
+
+    private void mockAvailableSeats(Long showtimeId, int totalSeats) {
+        SeatType standardSeat = new SeatType(1L, "std", "Ghe thuong", "#e5e7eb", 1, true, true);
+        List<Seat> seats = IntStream.rangeClosed(1, totalSeats)
+                .mapToObj(index -> new Seat((long) index, room.getId(), (index - 1) / 10, (index - 1) % 10,
+                        "A" + index, "std"))
+                .toList();
+
+        when(seatTypeRepository.findAllByOrderByIdAsc()).thenReturn(List.of(standardSeat));
+        when(seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(room.getId())).thenReturn(seats);
+        when(ticketRepository.findByShowtimeId(showtimeId)).thenReturn(List.of());
     }
 }
