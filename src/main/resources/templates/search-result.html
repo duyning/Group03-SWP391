@@ -550,6 +550,20 @@
                     </div>
                 </div>
 
+                <div class="filter-group" th:if="${!#lists.isEmpty(statuses)}">
+                    <div class="filter-title">Trạng thái</div>
+                    <div class="pill-row">
+                        <button type="button"
+                                th:each="s : ${statuses}"
+                                th:if="${s.name() != 'STOPPED'}"
+                                class="filter-pill"
+                                data-name="status"
+                                th:data-value="${s.name()}"
+                                th:classappend="${status == s.name()} ? ' active'"
+                                th:text="${s.displayName}"></button>
+                    </div>
+                </div>
+
                 <input type="hidden" name="sort" th:value="${sort}">
 
                 <div class="form-actions">
@@ -568,6 +582,7 @@
                 <input type="hidden" name="format" th:each="item : ${selectedFormats}" th:value="${item}">
                 <input type="hidden" name="language" th:each="item : ${selectedLanguages}" th:value="${item}">
                 <input type="hidden" name="age" th:each="item : ${selectedAges}" th:value="${item}">
+                <input type="hidden" name="status" th:value="${status}" th:if="${status != null && !status.isBlank()}">
                 <select class="sort-select" name="sort" onchange="this.form.submit()">
                     <option value="featured" th:selected="${sort == 'featured'}">Nổi bật nhất</option>
                     <option value="releaseDate" th:selected="${sort == 'releaseDate'}">Ngày chiếu gần nhất</option>
@@ -621,15 +636,15 @@
         <nav class="pagination" th:if="${totalPages > 1}">
             <a class="page-link"
                th:if="${currentPage > 1}"
-               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, sort=${sort}, page=${currentPage - 1})}">Trước</a>
+               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, status=${status}, sort=${sort}, page=${currentPage - 1})}">Trước</a>
             <a class="page-link"
                th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
                th:classappend="${pageNumber == currentPage} ? ' active'"
-               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, sort=${sort}, page=${pageNumber})}"
+               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, status=${status}, sort=${sort}, page=${pageNumber})}"
                th:text="${pageNumber}">1</a>
             <a class="page-link"
                th:if="${currentPage < totalPages}"
-               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, sort=${sort}, page=${currentPage + 1})}">Sau</a>
+               th:href="@{/search(keyword=${keyword}, genre=${selectedGenres}, format=${selectedFormats}, language=${selectedLanguages}, age=${selectedAges}, status=${status}, sort=${sort}, page=${currentPage + 1})}">Sau</a>
         </nav>
     </main>
 
@@ -669,6 +684,10 @@
 
         document.querySelectorAll(".filter-pill").forEach((pill) => {
             pill.addEventListener("click", () => {
+                if (pill.dataset.name === "status" && !pill.classList.contains("active")) {
+                    document.querySelectorAll('.filter-pill[data-name="status"].active')
+                        .forEach((activeStatus) => activeStatus.classList.remove("active"));
+                }
                 pill.classList.toggle("active");
                 syncSelectedPills();
             });
