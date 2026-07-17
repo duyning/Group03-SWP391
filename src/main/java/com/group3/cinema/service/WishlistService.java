@@ -44,12 +44,17 @@ public class WishlistService {
     }
 
     public boolean isWishlisted(int accountId, int movieId) {
+        Optional<Movie> movieOpt = movieRepository.findById(movieId);
+        if (movieOpt.isEmpty() || !movieOpt.get().isActive() || movieOpt.get().isDeleted()) {
+            return false;
+        }
         return wishlistRepository.existsByAccountAccountIDAndMovieId(accountId, movieId);
     }
 
     public List<Movie> getWishlistMovies(int accountId) {
         return wishlistRepository.findByAccountAccountID(accountId).stream()
                 .map(WishlistItem::getMovie)
+                .filter(movie -> movie != null && movie.isActive() && !movie.isDeleted())
                 .toList();
     }
 }

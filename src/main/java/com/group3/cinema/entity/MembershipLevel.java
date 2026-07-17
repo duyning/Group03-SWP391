@@ -8,6 +8,7 @@ package com.group3.cinema.entity;
  * Táº¡o bá»Ÿi: DuongND_HE186619
  */
 public enum MembershipLevel {
+    BRONZE,
     SILVER,
     GOLD,
     PLAT

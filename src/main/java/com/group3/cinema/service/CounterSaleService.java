@@ -71,6 +71,7 @@ public class CounterSaleService {
     private final SeatHoldingService seatHoldingService;
     private final TicketService ticketService;
     private final PaymentGatewayRouter paymentGatewayRouter;
+    private final LoyaltyService loyaltyService;
 
     public CounterSaleService(ShowtimeRepository showtimeRepository,
                               RoomRepository roomRepository,
@@ -86,7 +87,8 @@ public class CounterSaleService {
                               HolidayRepository holidayRepository,
                               SeatHoldingService seatHoldingService,
                               TicketService ticketService,
-                              PaymentGatewayRouter paymentGatewayRouter) {
+                              PaymentGatewayRouter paymentGatewayRouter,
+                              LoyaltyService loyaltyService) {
         this.showtimeRepository = showtimeRepository;
         this.roomRepository = roomRepository;
         this.seatRepository = seatRepository;
@@ -102,6 +104,7 @@ public class CounterSaleService {
         this.seatHoldingService = seatHoldingService;
         this.ticketService = ticketService;
         this.paymentGatewayRouter = paymentGatewayRouter;
+        this.loyaltyService = loyaltyService;
     }
 
     @Transactional(readOnly = true)
@@ -268,6 +271,11 @@ public class CounterSaleService {
         payment = paymentRepository.save(payment);
 
         createDisplayTickets(customer, draft, heldTickets, booking, payment, request);
+
+        // Award loyalty points to non-walk-in customer
+        if (customer != null && !WALK_IN_EMAIL.equals(customer.getEmail())) {
+            loyaltyService.addLoyaltyPoints(customer.getAccountID(), booking.getTotalAmount());
+        }
 
         return new CounterSaleResult(
                 booking.getId(),
@@ -575,7 +583,7 @@ public class CounterSaleService {
         account.setGender("Khác");
         account.setAddress("Counter POS");
         account.setLoyaltyPoint(0);
-        account.setMembershipLevel(MembershipLevel.SILVER);
+        account.setMembershipLevel(MembershipLevel.BRONZE);
         account.setStatus(true);
         account.setRole(Role.CUSTOMER);
         return accountRepository.save(account);

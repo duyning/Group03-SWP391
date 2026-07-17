@@ -235,6 +235,222 @@
                 font-size: 0.78rem;
             }
         }
+
+        /* Loyalty Program Styles */
+        .loyalty-section {
+            border-top: 1px solid var(--account-border);
+            padding-top: 30px;
+            margin-top: 35px;
+        }
+
+        .loyalty-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--beta-blue);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .loyalty-header-box {
+            background: var(--account-bg);
+            border: 1px solid var(--account-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .loyalty-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .tier-badge {
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 6px 16px;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+
+        .tier-bronze {
+            background: linear-gradient(135deg, #cd7f32, #b87333);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(205, 127, 50, 0.35);
+        }
+
+        .tier-silver {
+            background: linear-gradient(135deg, #c0c0c0, #a9a9a9);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(192, 192, 192, 0.35);
+        }
+
+        .tier-gold {
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.35);
+        }
+
+        .points-display {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--account-text);
+        }
+
+        .points-num {
+            color: #f59e0b;
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .progress-label {
+            font-size: 0.85rem;
+            color: var(--account-muted);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar-bg {
+            background: var(--account-border);
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #f59e0b, #ec4899);
+            transition: width 0.5s ease-in-out;
+        }
+
+        .loyalty-sub-section {
+            margin-top: 25px;
+        }
+
+        .sub-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--beta-blue);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .benefits-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .benefits-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .benefit-card {
+            background: var(--account-bg);
+            border: 1px solid var(--account-border);
+            border-radius: 14px;
+            padding: 16px;
+            transition: all 0.2s;
+            color: var(--account-text);
+        }
+
+        .benefit-card.active {
+            background: #ffffff;
+            border-color: var(--beta-blue);
+            box-shadow: 0 4px 15px rgba(0, 84, 166, 0.1);
+        }
+
+        .benefit-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .benefit-desc {
+            font-size: 0.8rem;
+            color: var(--account-muted);
+            line-height: 1.4;
+        }
+
+        .vouchers-history-box {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--account-border);
+            border-radius: 14px;
+            background: #ffffff;
+        }
+
+        .vouchers-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            text-align: left;
+            color: var(--account-text);
+        }
+
+        .vouchers-table th,
+        .vouchers-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--account-border);
+        }
+
+        .vouchers-table th {
+            background: var(--account-bg);
+            font-weight: 600;
+            color: var(--account-muted);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .vouchers-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .voucher-badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .badge-available {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-used {
+            background: rgba(156, 163, 175, 0.15);
+            color: #9ca3af;
+            border: 1px solid rgba(156, 163, 175, 0.2);
+        }
+
+        .badge-expired {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .loyalty-muted {
+            color: var(--account-muted) !important;
+        }
     </style>
 </head>
 <body>
@@ -326,6 +542,128 @@
                 <div class="info-label">Địa chỉ</div>
                 <div class="info-value" th:if="${account.address != null && !account.address.isEmpty()}" th:text="${account.address}">Hà Nội</div>
                 <div class="info-value empty" th:if="${account.address == null || account.address.isEmpty()}">Chưa cập nhật</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loyalty Program Section -->
+    <div class="loyalty-section">
+        <h3 class="loyalty-title">
+            <i class="fas fa-crown text-warning"></i> Chương Trình Thành Viên Thân Thiết
+        </h3>
+
+        <!-- Tổng quan và Tiến độ -->
+        <div class="loyalty-header-box">
+            <div class="loyalty-stats">
+                <div>
+                    <span class="loyalty-muted small d-block mb-1">Hạng thành viên</span>
+                    <span class="tier-badge" 
+                          th:classappend="${account.membershipLevel != null ? 'tier-' + account.membershipLevel.name().toLowerCase() : 'tier-bronze'}"
+                          th:text="${tierName}">Đồng</span>
+                </div>
+                <div class="text-end">
+                    <span class="loyalty-muted small d-block mb-1">Điểm tích lũy hiện tại</span>
+                    <span class="points-display"><span class="points-num" th:text="${account.loyaltyPoint}">0</span> điểm</span>
+                </div>
+            </div>
+
+            <!-- Thanh tiến độ thăng hạng -->
+            <div class="progress-bar-section" th:if="${tierName != 'Vàng'}">
+                <div class="progress-label">
+                    <span>Tiến độ thăng hạng <b th:text="${nextTierName}">Bạc</b></span>
+                    <span th:text="${account.loyaltyPoint} + '/' + ${threshold} + ' điểm'">0/1000 điểm</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" th:style="'width: ' + ${progressPercent} + '%'"></div>
+                </div>
+                <div class="loyalty-muted small mt-2">
+                    <i class="fas fa-info-circle"></i> Bạn cần tích lũy thêm <b class="text-warning" th:text="${pointsNeeded} + ' điểm'">1000 điểm</b> nữa để lên hạng <b th:text="${nextTierName}">Bạc</b>.
+                </div>
+            </div>
+            
+            <div class="progress-bar-section text-center py-2" th:if="${tierName == 'Vàng'}">
+                <div class="text-warning font-weight-bold">
+                    <i class="fas fa-medal"></i> Chúc mừng! Bạn đã đạt hạng thành viên <b>Vàng</b> cao nhất!
+                </div>
+                <div class="loyalty-muted small mt-1">
+                    Nhận voucher giảm 25% tối đa 60.000đ tự động mỗi tháng.
+                </div>
+            </div>
+        </div>
+
+        <!-- Quyền lợi theo hạng -->
+        <div class="loyalty-sub-section">
+            <h4 class="sub-title"><i class="fas fa-gift"></i> Quyền lợi theo hạng thành viên</h4>
+            <div class="benefits-list">
+                <!-- Đồng -->
+                <div class="benefit-card" th:classappend="${tierName == 'Đồng'} ? 'active' : ''">
+                    <div class="benefit-header text-warning">
+                        <i class="fas fa-medal"></i> Hạng Đồng
+                    </div>
+                    <div class="benefit-desc">
+                        • Hạng mặc định khi đăng ký tài khoản.<br>
+                        • Tích luỹ điểm: 1.000đ chi tiêu = 1 điểm.<br>
+                        • Đạt 1.000 điểm để thăng hạng Bạc.
+                    </div>
+                </div>
+                <!-- Bạc -->
+                <div class="benefit-card" th:classappend="${tierName == 'Bạc'} ? 'active' : ''">
+                    <div class="benefit-header text-muted">
+                        <i class="fas fa-award"></i> Hạng Bạc
+                    </div>
+                    <div class="benefit-desc">
+                        • Tích luỹ điểm: 1.000đ chi tiêu = 1 điểm.<br>
+                        • Tặng ngay <b>Voucher Bạc 15%</b> (tối đa 40.000đ cho đơn từ 150.000đ) khi thăng hạng. Dùng 1 lần, hạn 15 ngày.
+                    </div>
+                </div>
+                <!-- Vàng -->
+                <div class="benefit-card" th:classappend="${tierName == 'Vàng'} ? 'active' : ''">
+                    <div class="benefit-header text-warning">
+                        <i class="fas fa-crown"></i> Hạng Vàng
+                    </div>
+                    <div class="benefit-desc">
+                        • Tích luỹ điểm: 1.000đ chi tiêu = 1 điểm.<br>
+                        • Tặng ngay <b>Voucher Vàng 25%</b> (tối đa 60.000đ cho đơn từ 250.000đ).<br>
+                        • Tự động nhận lại voucher Vàng này <b>mỗi tháng</b>!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lịch sử nhận thưởng / Ví Voucher -->
+        <div class="loyalty-sub-section">
+            <h4 class="sub-title"><i class="fas fa-wallet"></i> Lịch sử nhận thưởng & Ví Voucher</h4>
+            <div class="vouchers-history-box">
+                <table class="vouchers-table">
+                    <thead>
+                        <tr>
+                            <th>Mã Voucher</th>
+                            <th>Tên phần thưởng</th>
+                            <th>Mức giảm</th>
+                            <th>Ngày hết hạn</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="v : ${formattedVouchers}">
+                            <td class="font-monospace text-warning" th:text="${v.code}">CODE</td>
+                            <td th:text="${v.title}">Voucher thăng hạng</td>
+                            <td>
+                                <span class="d-block" th:text="${v.discountText}">Giảm 15%</span>
+                                <span class="loyalty-muted small" th:text="${v.minOrderText}">Đơn tối thiểu 150k</span>
+                            </td>
+                            <td th:text="${v.expiryText}">01/01/2026</td>
+                            <td>
+                                <span class="voucher-badge" 
+                                      th:classappend="${v.statusClass}"
+                                      th:text="${v.statusText}">Chưa dùng</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(formattedVouchers)}">
+                            <td colspan="5" class="text-center loyalty-muted py-4">Bạn chưa nhận được phần thưởng voucher nào. Hãy tích lũy điểm ngay nhé!</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

@@ -41,6 +41,7 @@ public class PaymentService {
     private final AccountRepository accountRepository;
     private final VoucherRepository voucherRepository;
     private final WishlistRepository wishlistRepository;
+    private final LoyaltyService loyaltyService;
 
     public PaymentService(PaymentRepository paymentRepository,
                           BookingRepository bookingRepository,
@@ -50,7 +51,8 @@ public class PaymentService {
                           ShowtimeRepository showtimeRepository,
                           AccountRepository accountRepository,
                           VoucherRepository voucherRepository,
-                          WishlistRepository wishlistRepository) {
+                          WishlistRepository wishlistRepository,
+                          LoyaltyService loyaltyService) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.ticketRepository = ticketRepository;
@@ -60,6 +62,7 @@ public class PaymentService {
         this.accountRepository = accountRepository;
         this.voucherRepository = voucherRepository;
         this.wishlistRepository = wishlistRepository;
+        this.loyaltyService = loyaltyService;
     }
 
 
@@ -340,17 +343,39 @@ public class PaymentService {
                     t.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
                     realTicketRepository.save(t);
                 }
-
-                // Tự động xoá khỏi wishlist khi thanh toán/đặt mua thành công bộ phim này
-                try {
-                    wishlistRepository.findByAccountAccountIDAndMovieId(account.getAccountID(), movie.getId())
-                            .ifPresent(wishlistRepository::delete);
-                } catch (Exception ex) {
-                    System.err.println("Warning: Failed to auto-remove movie from wishlist: " + ex.getMessage());
-                }
+                
+                // Award loyalty points to the customer
+                loyaltyService.addLoyaltyPoints(booking.getAccountId(), booking.getTotalAmount());
             }
         } catch (Exception ex) {
             System.err.println("Warning: Failed to copy tickets to customer account display: " + ex.getMessage());
+        }
+    }
+
+    public void cleanWishlistIfFromWishlist(jakarta.servlet.http.HttpSession session, Payment payment) {
+        if (session == null || payment == null) {
+            return;
+        }
+        try {
+            bookingRepository.findById(payment.getBookingId()).ifPresent(booking -> {
+                showtimeRepository.findById(booking.getShowtimeId()).ifPresent(showtime -> {
+                    var movie = showtime.getMovie();
+                    if (movie != null) {
+                        String attrName = "from_wishlist_movie_" + movie.getId();
+                        Boolean fromWishlist = (Boolean) session.getAttribute(attrName);
+                        if (fromWishlist != null && fromWishlist) {
+                            wishlistRepository.findByAccountAccountIDAndMovieId(booking.getAccountId(), movie.getId())
+                                    .ifPresent(item -> {
+                                        wishlistRepository.delete(item);
+                                        System.out.println("Success: Auto-removed movie " + movie.getTitle() + " from wishlist for account " + booking.getAccountId());
+                                    });
+                            session.removeAttribute(attrName);
+                        }
+                    }
+                });
+            });
+        } catch (Exception ex) {
+            System.err.println("Warning: Failed to clean wishlist for checkout: " + ex.getMessage());
         }
     }
     public List<BookingHistoryDto> getBookingHistory(Integer accountId) {

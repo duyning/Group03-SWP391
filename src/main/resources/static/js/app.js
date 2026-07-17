@@ -1359,11 +1359,25 @@ async function populateMovieDropdowns(forceRefresh = false) {
         const formSel   = document.getElementById('showtimeMovieSelect');
         if (filterSel) {
             filterSel.innerHTML = '<option value="">-- Tất cả phim --</option>';
-            list.forEach(mv => {
-                const opt = document.createElement('option');
-                opt.value = mv.id; opt.textContent = mv.title;
-                filterSel.appendChild(opt);
-            });
+            try {
+                const rShowtimes = await fetch(API_SHOWTIMES);
+                const showtimes = await rShowtimes.json();
+                const activeMovieIds = new Set(showtimes.map(s => s.movie ? s.movie.id : null).filter(id => id != null));
+                const listWithShowtimes = list.filter(mv => activeMovieIds.has(mv.id));
+                
+                listWithShowtimes.forEach(mv => {
+                    const opt = document.createElement('option');
+                    opt.value = mv.id; opt.textContent = mv.title;
+                    filterSel.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Lỗi lọc phim có suất chiếu:', err);
+                list.forEach(mv => {
+                    const opt = document.createElement('option');
+                    opt.value = mv.id; opt.textContent = mv.title;
+                    filterSel.appendChild(opt);
+                });
+            }
         }
         if (formSel) {
             formSel.innerHTML = '<option value="">-- Chọn bộ phim --</option>';
@@ -3352,10 +3366,17 @@ async function populateMapMovies() {
         const r = await fetch(API_MOVIES);
         const list = await r.json();
         _cachedMovieList = list; // Cache lại danh sách phim
+
+        // Fetch showtimes to filter movies that have showtimes
+        const rShowtimes = await fetch(API_SHOWTIMES);
+        const showtimes = await rShowtimes.json();
+        const activeMovieIds = new Set(showtimes.map(s => s.movie ? s.movie.id : null).filter(id => id != null));
+        const listWithShowtimes = list.filter(m => activeMovieIds.has(m.id));
+
         const sel = document.getElementById('mapMovieSelect');
         if (!sel) return;
         sel.innerHTML = '<option value="">-- Chọn phim --</option>';
-        list.forEach(m => {
+        listWithShowtimes.forEach(m => {
             const opt = document.createElement('option');
             opt.value = m.id;
             opt.textContent = m.title;

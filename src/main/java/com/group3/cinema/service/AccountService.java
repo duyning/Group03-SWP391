@@ -35,7 +35,7 @@ public class AccountService {
     public Account register(Account account) {
         account.setRole(Role.CUSTOMER);
         account.setStatus(true);
-        account.setMembershipLevel(MembershipLevel.SILVER);
+        account.setMembershipLevel(MembershipLevel.BRONZE);
         account.setLoyaltyPoint(0);
         return accountRepository.save(account);
     }

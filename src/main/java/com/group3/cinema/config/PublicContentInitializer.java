@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @DependsOn("roomUnicodeMigration")
@@ -111,13 +112,18 @@ public class PublicContentInitializer {
         );
 
         List<Movie> existingMovies = movieRepository.findAll();
-        movieRepository.saveAll(betaMovies.stream()
-                .map(betaMovie -> existingMovies.stream()
-                        .filter(existing -> existing.getTitle().equals(betaMovie.getTitle()))
-                        .findFirst()
-                        .map(existing -> copyMovieData(existing, betaMovie))
-                        .orElse(betaMovie))
-                .toList());
+        List<Movie> moviesToSave = betaMovies.stream()
+                .map(betaMovie -> {
+                    Optional<Movie> existingOpt = existingMovies.stream()
+                            .filter(existing -> existing.getTitle().equalsIgnoreCase(betaMovie.getTitle()))
+                            .findFirst();
+                    if (existingOpt.isPresent()) {
+                        return copyMovieData(existingOpt.get(), betaMovie);
+                    }
+                    return betaMovie;
+                })
+                .toList();
+        movieRepository.saveAll(moviesToSave);
     }
     private void seedDemoMoviesUnused() {
         if (movieRepository.count() > 0) {
@@ -309,5 +315,22 @@ public class PublicContentInitializer {
         promotion.setEndDate(endDate);
         promotion.setStatus(Promotion.PromotionStatus.ACTIVE);
         return promotion;
+    }
+
+    private Movie copyMovieData(Movie target, Movie source) {
+        target.setGenre(source.getGenre());
+        target.setDuration(source.getDuration());
+        target.setReleaseDate(source.getReleaseDate());
+        target.setPosterUrl(source.getPosterUrl());
+        target.setTrailerUrl(source.getTrailerUrl());
+        target.setSummary(source.getSummary());
+        target.setDirector(source.getDirector());
+        target.setActors(source.getActors());
+        target.setLanguage(source.getLanguage());
+        target.setAgeRating(source.getAgeRating());
+        target.setFormat(source.getFormat());
+        target.setStatus(source.getStatus());
+        target.setActive(source.isActive());
+        return target;
     }
 }
