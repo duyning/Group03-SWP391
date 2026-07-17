@@ -360,7 +360,6 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Mã HD</th>
                             <th>Khách hàng</th>
                             <th>Phim</th>
                             <th>Số vé</th>
@@ -371,7 +370,6 @@
                     </thead>
                     <tbody>
                         <tr th:each="b : ${bookings}">
-                            <td style="font-weight:700; color:var(--primary);" th:text="'HD-' + ${b.id}">HD-001</td>
                             <td th:text="${b.customerName}">Nguyễn Văn A</td>
                             <td style="font-weight:600;" th:text="${b.movieTitle}">Bầy xác sống</td>
                             <td th:text="${b.ticketQuantity}">2</td>
@@ -383,7 +381,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(bookings)}">
-                            <td colspan="7" style="text-align:center; color:#64748b; padding: 30px;">Chưa có giao dịch nào được ghi nhận.</td>
+                            <td colspan="6" style="text-align:center; color:#64748b; padding: 30px;">Chưa có giao dịch đã thanh toán nào được ghi nhận.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -393,16 +391,17 @@
         <section class="panel">
             <div class="panel-header">Truy cập nhanh</div>
             <div class="quick-grid">
-                <a class="quick-link" href="/manage_movies.html"><i class="fas fa-film"></i> Quản lý phim</a>
-                <a class="quick-link" href="/manage_showtime.html"><i class="fas fa-calendar-alt"></i> Quản lý lịch
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" href="/manage_movies.html"><i class="fas fa-film"></i> Quản lý phim</a>
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" href="/manage_showtime.html"><i class="fas fa-calendar-alt"></i> Quản lý lịch
                     chiếu</a>
-                <a class="quick-link" th:href="@{/admin/rooms}"><i class="fas fa-theater-masks"></i> Rạp &amp; Phòng</a>
-                <a class="quick-link" th:href="@{/admin/banners}"><i class="fas fa-images"></i> Quản lý banner</a>
-                <a class="quick-link" th:href="@{/admin/catalogs}"><i class="fas fa-list"></i> Danh mục phòng</a>
-                <a class="quick-link" th:href="@{/admin/combos}"><i class="fas fa-utensils"></i> Quản lý Combo</a>
-                <a class="quick-link" th:href="@{/admin/posts}"><i class="fas fa-newspaper"></i> Quản lý tin tức</a>
-                <a class="quick-link" th:href="@{/admin/create-manager}"><i class="fas fa-user-shield"></i> Tạo tài
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" th:href="@{/admin/rooms}"><i class="fas fa-theater-masks"></i> Rạp &amp; Phòng</a>
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" th:href="@{/admin/banners}"><i class="fas fa-images"></i> Quản lý banner</a>
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" th:href="@{/admin/catalogs}"><i class="fas fa-list"></i> Danh mục phòng</a>
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" th:href="@{/admin/combos}"><i class="fas fa-utensils"></i> Quản lý Combo</a>
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" th:href="@{/admin/posts}"><i class="fas fa-newspaper"></i> Quản lý tin tức</a>
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'ADMIN'}" th:href="@{/admin/create-manager}"><i class="fas fa-user-shield"></i> Tạo tài
                     khoản Quản lý</a>
+                <a class="quick-link" th:if="${user != null && user.role.name() == 'ADMIN'}" th:href="@{/admin/accounts}"><i class="fas fa-users-cog"></i> Quản lý tài khoản</a>
             </div>
         </section>
     <script th:inline="javascript">
@@ -458,11 +457,8 @@
                 datasets: [{
                     data: paymentValues,
                     backgroundColor: [
-                        '#10b981', // green
-                        '#3b82f6', // blue
-                        '#ec4899', // pink
-                        '#f59e0b', // amber
-                        '#6b7280'  // gray
+                        '#10b981',
+                        '#2563eb'
                     ]
                 }]
             },

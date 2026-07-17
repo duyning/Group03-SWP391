@@ -7,9 +7,9 @@ package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Booking;
+import com.group3.cinema.entity.Payment;
 import com.group3.cinema.entity.Room;
 import com.group3.cinema.entity.Showtime;
-import com.group3.cinema.entity.Ticket;
 import com.group3.cinema.repository.*;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import jakarta.servlet.http.HttpSession;
@@ -32,7 +32,7 @@ public class AdminDashboardController {
     private final BookingRepository bookingRepository;
     private final AccountRepository accountRepository;
     private final BookingTicketRepository bookingTicketRepository;
-    private final TicketRepository ticketRepository;
+    private final PaymentRepository paymentRepository;
 
     public AdminDashboardController(MovieRepository movieRepository,
                                     RoomRepository roomRepository,
@@ -41,7 +41,7 @@ public class AdminDashboardController {
                                     BookingRepository bookingRepository,
                                     AccountRepository accountRepository,
                                     BookingTicketRepository bookingTicketRepository,
-                                    TicketRepository ticketRepository) {
+                                    PaymentRepository paymentRepository) {
         this.movieRepository = movieRepository;
         this.roomRepository = roomRepository;
         this.seatRepository = seatRepository;
@@ -49,7 +49,7 @@ public class AdminDashboardController {
         this.bookingRepository = bookingRepository;
         this.accountRepository = accountRepository;
         this.bookingTicketRepository = bookingTicketRepository;
-        this.ticketRepository = ticketRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     public record BookingDto(
@@ -80,6 +80,11 @@ public class AdminDashboardController {
         if (loggedInUser != null) {
             model.addAttribute("user", loggedInUser);
         }
+        Object errorMessage = session.getAttribute("errorMessage");
+        if (errorMessage != null) {
+            model.addAttribute("errorMessage", errorMessage);
+            session.removeAttribute("errorMessage");
+        }
 
         // Fetch counts for entities
         model.addAttribute("movieCount", movieRepository.count());
@@ -89,42 +94,43 @@ public class AdminDashboardController {
 
         // Fetch all bookings and tickets
         List<Booking> allBookings = bookingRepository.findAll();
-        List<Ticket> allTickets = ticketRepository.findAll();
-
-        // 1. Filter sold tickets: status is CONFIRMED, BOOKED, USED, or Đã bán
-        Set<String> soldStatuses = Set.of("CONFIRMED", "BOOKED", "USED", "Đã bán");
-        List<Ticket> soldTickets = allTickets.stream()
-                .filter(t -> !t.isDeleted() && soldStatuses.contains(t.getStatus()))
+        List<Booking> paidBookings = allBookings.stream()
+                .filter(b -> b.getStatus() == Booking.Status.PAID)
                 .collect(Collectors.toList());
+        Set<Long> paidBookingIds = paidBookings.stream().map(Booking::getId).collect(Collectors.toSet());
+        Map<Long, Payment> latestPayments = paidBookingIds.isEmpty()
+                ? Collections.emptyMap()
+                : paymentRepository.findByBookingIdIn(paidBookingIds).stream()
+                .sorted(Comparator.comparing(Payment::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .collect(Collectors.toMap(Payment::getBookingId, payment -> payment, (first, ignored) -> first));
 
         // 2. Total tickets sold count
-        long totalTicketsSold = soldTickets.size();
+        long totalTicketsSold = paidBookings.stream()
+                .mapToLong(b -> bookingTicketRepository.findByBookingId(b.getId()).size())
+                .sum();
         model.addAttribute("totalTicketsSold", totalTicketsSold);
 
         // 3. Paid bookings count
-        long totalBookingsPaid = allBookings.stream()
-                .filter(b -> b.getStatus() == Booking.Status.PAID)
-                .count();
+        long totalBookingsPaid = paidBookings.size();
         model.addAttribute("totalBookingsPaid", totalBookingsPaid);
 
-        // 4. Calculate total revenue: Sum of finalPrice of all sold tickets + Sum of comboSubtotal of PAID bookings
-        double ticketRevenue = soldTickets.stream().mapToDouble(Ticket::getFinalPrice).sum();
-        double comboRevenue = allBookings.stream()
-                .filter(b -> b.getStatus() == Booking.Status.PAID)
-                .mapToDouble(b -> b.getComboSubtotal() != null ? b.getComboSubtotal().doubleValue() : 0.0)
+        // 4. Calculate total revenue from paid booking totals only.
+        double totalRevenue = paidBookings.stream()
+                .mapToDouble(b -> b.getTotalAmount() != null ? b.getTotalAmount().doubleValue() : 0.0)
                 .sum();
-        double totalRevenue = ticketRevenue + comboRevenue;
         model.addAttribute("totalRevenue", totalRevenue);
 
 
 
         // 6. Top 5 Movies by Revenue
         Map<String, MovieRevenueDto> movieStats = new HashMap<>();
-        for (Ticket t : soldTickets) {
-            String title = t.getMovie() != null ? t.getMovie().getTitle() : "N/A";
-            double price = t.getFinalPrice();
-            movieStats.merge(title, new MovieRevenueDto(title, price, 1), (oldVal, newVal) ->
-                new MovieRevenueDto(title, oldVal.revenue() + newVal.revenue(), oldVal.ticketsSold() + 1)
+        for (Booking booking : paidBookings) {
+            Optional<Showtime> showtime = showtimeRepository.findById(booking.getShowtimeId());
+            String title = showtime.map(s -> s.getMovie().getTitle()).orElse("N/A");
+            double revenue = booking.getTotalAmount() != null ? booking.getTotalAmount().doubleValue() : 0.0;
+            long ticketCount = bookingTicketRepository.findByBookingId(booking.getId()).size();
+            movieStats.merge(title, new MovieRevenueDto(title, revenue, ticketCount), (oldVal, newVal) ->
+                new MovieRevenueDto(title, oldVal.revenue() + newVal.revenue(), oldVal.ticketsSold() + newVal.ticketsSold())
             );
         }
         List<MovieRevenueDto> topMovies = movieStats.values().stream()
@@ -133,22 +139,12 @@ public class AdminDashboardController {
                 .collect(Collectors.toList());
         model.addAttribute("topMovies", topMovies);
 
-        // 7. Payment Statistics (Group tickets by method)
+        // 7. Payment Statistics: the system currently supports Cash and PayOS.
         Map<String, PaymentMethodStatDto> paymentStats = new HashMap<>();
-        for (Ticket t : soldTickets) {
-            String rawMethod = t.getPaymentMethod();
-            String method = "Tiền mặt / Khác";
-            if (rawMethod != null && !rawMethod.isBlank()) {
-                String upper = rawMethod.trim().toUpperCase();
-                method = switch (upper) {
-                    case "PAYOS" -> "PayOS";
-                    case "VNPAY" -> "VNPay";
-                    case "MOMO" -> "MoMo";
-                    case "CASH" -> "Tiền mặt";
-                    default -> rawMethod;
-                };
-            }
-            double price = t.getFinalPrice();
+        for (Booking booking : paidBookings) {
+            Payment payment = latestPayments.get(booking.getId());
+            String method = payment != null && payment.getPaymentMethod() == Payment.Method.CASH ? "Tiền mặt" : "PayOS";
+            double price = booking.getTotalAmount() != null ? booking.getTotalAmount().doubleValue() : 0.0;
             final String finalMethod = method;
             paymentStats.merge(finalMethod, new PaymentMethodStatDto(finalMethod, price, 1), (oldVal, newVal) ->
                 new PaymentMethodStatDto(finalMethod, oldVal.revenue() + newVal.revenue(), oldVal.count() + 1)
@@ -178,6 +174,7 @@ public class AdminDashboardController {
                     return new BookingDto(b.getId(), custName, movieTitle, ticketQty, b.getTotalAmount(), timeStr, statusLabel);
                 })
                 .sorted((b1, b2) -> b2.id().compareTo(b1.id())) // Latest first
+                .limit(10)
                 .collect(Collectors.toList());
         model.addAttribute("bookings", bookingHistory);
 

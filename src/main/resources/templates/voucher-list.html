@@ -68,7 +68,7 @@
         }
         .table {
             table-layout: fixed;
-            min-width: 1260px;
+            min-width: 1380px;
             margin-bottom: 0;
             color: #334155;
         }
@@ -130,6 +130,23 @@
             white-space: normal;
             line-height: 1.3;
         }
+
+        .voucher-state {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: .78rem;
+            font-weight: 850;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+        .voucher-state.active { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+        .voucher-state.upcoming { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+        .voucher-state.sold-out { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+        .voucher-state.expired { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        .voucher-state.hidden { background: #e5e7eb; color: #374151; border-color: #d1d5db; }
 
         .voucher-title-cell {
             font-weight: 700;
@@ -343,6 +360,7 @@
                     <col style="width: 170px;">
                     <col style="width: 115px;">
                     <col style="width: 105px;">
+                    <col style="width: 125px;">
                     <col style="width: 180px;">
                     <col style="width: 145px;">
                     <col style="width: 220px;">
@@ -355,6 +373,7 @@
                     <th>Tên Chương Trình</th>
                     <th>Loại Hình</th>
                     <th>Mức Giảm</th>
+                    <th>Trạng Thái</th>
                     <th>Điều Kiện Áp Dụng</th>
                     <th>Số Lượng (Đã dùng/Tổng)</th>
                     <th>Phạm Vi & Lịch Chạy</th>
@@ -363,7 +382,7 @@
                 </thead>
                 <tbody>
                 <tr th:if="${#lists.isEmpty(voucherList)}">
-                    <td colspan="9" class="text-center py-5 text-muted bg-white">
+                    <td colspan="10" class="text-center py-5 text-muted bg-white">
                         <i class="fa-regular fa-folder-open display-5 d-block mb-3 text-secondary"></i>
                         <span class="fw-semibold">Không tìm thấy mã Voucher nào trong cơ sở dữ liệu.</span>
                     </td>
@@ -380,6 +399,23 @@
                     </td>
                     <td class="fw-bold text-success">
                         <span th:text="${voucher.discountType.name() == 'PERCENTAGE' ? voucher.discountValue + '%' : #numbers.formatDecimal(voucher.discountValue, 0, 'COMMA', 0, 'POINT') + ' đ'}">10%</span>
+                    </td>
+                    <td>
+                        <span th:if="${voucher.isDeleted}" class="voucher-state hidden">
+                            <i class="fa-solid fa-eye-slash"></i> Đã ẩn
+                        </span>
+                        <span th:if="${!voucher.isDeleted && voucher.endDate != null && !voucher.endDate.isAfter(T(java.time.LocalDateTime).now())}" class="voucher-state expired">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Hết hạn
+                        </span>
+                        <span th:if="${!voucher.isDeleted && voucher.endDate != null && voucher.endDate.isAfter(T(java.time.LocalDateTime).now()) && voucher.totalQuantity != null && voucher.usedQuantity != null && voucher.usedQuantity >= voucher.totalQuantity}" class="voucher-state sold-out">
+                            <i class="fa-solid fa-box-open"></i> Đã dùng hết
+                        </span>
+                        <span th:if="${!voucher.isDeleted && voucher.startDate != null && voucher.startDate.isAfter(T(java.time.LocalDateTime).now()) && (voucher.totalQuantity == null || voucher.usedQuantity == null || voucher.usedQuantity < voucher.totalQuantity)}" class="voucher-state upcoming">
+                            <i class="fa-solid fa-calendar-plus"></i> Chưa bắt đầu
+                        </span>
+                        <span th:if="${!voucher.isDeleted && (voucher.startDate == null || !voucher.startDate.isAfter(T(java.time.LocalDateTime).now())) && (voucher.endDate == null || voucher.endDate.isAfter(T(java.time.LocalDateTime).now())) && (voucher.totalQuantity == null || voucher.usedQuantity == null || voucher.usedQuantity < voucher.totalQuantity)}" class="voucher-state active">
+                            <i class="fa-solid fa-circle-check"></i> Đang phát hành
+                        </span>
                     </td>
                     <td>
                         <div class="condition-list">

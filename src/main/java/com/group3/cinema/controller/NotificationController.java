@@ -52,8 +52,12 @@ public class NotificationController {
             return "redirect:/login";
         }
 
+        String actionUrl = notificationService.getActionUrl(id, sessionAccount.getAccountID());
         notificationService.markAsRead(id);
 
+        if (actionUrl != null && !actionUrl.isBlank()) {
+            return "redirect:" + actionUrl;
+        }
         return "redirect:/notifications";
     }
 

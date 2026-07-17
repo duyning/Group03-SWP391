@@ -25,6 +25,12 @@ public class NotificationService {
     // 1. Hàm dùng để HỆ THỐNG GỬI THÔNG BÁO cho user (Ví dụ: gọi sau khi đặt vé thành công)
     @Transactional
     public void sendNotification(int accountId, String title, String content, NotificationType type) {
+        sendNotification(accountId, title, content, type, null, null);
+    }
+
+    @Transactional
+    public void sendNotification(int accountId, String title, String content, NotificationType type,
+                                 String imageUrl, String actionUrl) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản"));
 
@@ -33,6 +39,8 @@ public class NotificationService {
         notification.setTitle(title);
         notification.setContent(content);
         notification.setType(type);
+        notification.setImageUrl(normalizeOptionalUrl(imageUrl));
+        notification.setActionUrl(normalizeInternalUrl(actionUrl));
         // isRead và createdAt đã được tự động set trong @PrePersist ở Entity
 
         notificationRepository.save(notification);
@@ -59,5 +67,26 @@ public class NotificationService {
     @Transactional
     public void markAllAsRead(int accountId) {
         notificationRepository.markAllAsRead(accountId);
+    }
+
+    public String getActionUrl(Long notificationId, int accountId) {
+        return notificationRepository.findById(notificationId)
+                .filter(notification -> notification.getAccount() != null
+                        && notification.getAccount().getAccountID() == accountId)
+                .map(Notification::getActionUrl)
+                .map(this::normalizeInternalUrl)
+                .orElse(null);
+    }
+
+    private String normalizeOptionalUrl(String url) {
+        return url == null || url.isBlank() ? null : url.trim();
+    }
+
+    private String normalizeInternalUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        String normalized = url.trim();
+        return normalized.startsWith("/") && !normalized.startsWith("//") ? normalized : null;
     }
 }

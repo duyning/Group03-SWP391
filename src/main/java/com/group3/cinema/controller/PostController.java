@@ -1,6 +1,8 @@
 package com.group3.cinema.controller;
 
 import com.group3.cinema.entity.Post;
+import com.group3.cinema.entity.NotificationType;
+import com.group3.cinema.service.CustomerNotificationBroadcastService;
 import com.group3.cinema.service.PostService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,9 +23,12 @@ import java.io.IOException;
 public class PostController {
 
     private final PostService postService;
+    private final CustomerNotificationBroadcastService notificationBroadcastService;
 
-    public PostController(PostService postService) {
+    public PostController(PostService postService,
+                          CustomerNotificationBroadcastService notificationBroadcastService) {
         this.postService = postService;
+        this.notificationBroadcastService = notificationBroadcastService;
     }
 
     @GetMapping
@@ -55,7 +60,16 @@ public class PostController {
             return "create-post";
         }
 
-        postService.createPost(post, file);
+        Post savedPost = postService.createPost(post, file);
+        if ("PUBLISHED".equalsIgnoreCase(savedPost.getStatus())) {
+            notificationBroadcastService.sendToActiveCustomers(
+                    "Tin tức mới: " + savedPost.getTitle(),
+                    savedPost.getSummary(),
+                    NotificationType.NEWS,
+                    savedPost.getThumbnail(),
+                    "/posts/" + savedPost.getId()
+            );
+        }
         redirectAttributes.addFlashAttribute("successMessage", "Đã thêm bài viết mới.");
         return "redirect:/admin/posts";
     }

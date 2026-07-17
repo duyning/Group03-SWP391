@@ -65,22 +65,22 @@ public class Ticket {
     private LocalTime showTime;
 
     @Column(name = "base_price", nullable = false)
-    private double basePrice;
+    private Double basePrice = 0.0;
 
     @Column(name = "price", nullable = false)
-    private double price;
+    private Double price = 0.0;
 
     @Column(name = "seat_surcharge", nullable = false)
-    private double seatSurcharge;
+    private Double seatSurcharge = 0.0;
 
     @Column(name = "format_surcharge", nullable = false)
-    private double formatSurcharge;
+    private Double formatSurcharge = 0.0;
 
     @Column(name = "discount_amount", nullable = false)
-    private double discountAmount;
+    private Double discountAmount = 0.0;
 
     @Column(name = "final_price", nullable = false)
-    private double finalPrice;
+    private Double finalPrice = 0.0;
 
     @Column(name = "booking_time")
     private LocalDateTime bookingTime;
@@ -216,7 +216,7 @@ public class Ticket {
     }
 
     public double getBasePrice() {
-        return basePrice;
+        return basePrice != null ? basePrice : 0.0;
     }
 
     public void setBasePrice(double basePrice) {
@@ -224,12 +224,12 @@ public class Ticket {
     }
 
     public double getPrice() {
-        return price;
+        return price != null ? price : 0.0;
     }
 
     public void setPrice(double price) {
         this.price = price;
-        if (this.finalPrice <= 0) {
+        if (getFinalPrice() <= 0) {
             this.finalPrice = price;
         }
     }
@@ -239,11 +239,11 @@ public class Ticket {
     }
 
     public BigDecimal getPriceAsBigDecimal() {
-        return BigDecimal.valueOf(price);
+        return BigDecimal.valueOf(getPrice());
     }
 
     public double getSeatSurcharge() {
-        return seatSurcharge;
+        return seatSurcharge != null ? seatSurcharge : 0.0;
     }
 
     public void setSeatSurcharge(double seatSurcharge) {
@@ -251,7 +251,7 @@ public class Ticket {
     }
 
     public double getFormatSurcharge() {
-        return formatSurcharge;
+        return formatSurcharge != null ? formatSurcharge : 0.0;
     }
 
     public void setFormatSurcharge(double formatSurcharge) {
@@ -259,7 +259,7 @@ public class Ticket {
     }
 
     public double getDiscountAmount() {
-        return discountAmount;
+        return discountAmount != null ? discountAmount : 0.0;
     }
 
     public void setDiscountAmount(double discountAmount) {
@@ -267,7 +267,8 @@ public class Ticket {
     }
 
     public double getFinalPrice() {
-        return finalPrice > 0 ? finalPrice : price;
+        double safeFinalPrice = finalPrice != null ? finalPrice : 0.0;
+        return safeFinalPrice > 0 ? safeFinalPrice : getPrice();
     }
 
     public void setFinalPrice(double finalPrice) {

@@ -28,7 +28,7 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
      * Load account kèm theo savedVouchers (JOIN FETCH) để tránh LazyInitializationException
      * khi Account được lưu vào HTTP session sau khi Hibernate session đã đóng.
      */
-    @Query("SELECT a FROM Account a LEFT JOIN FETCH a.savedVouchers WHERE a.email = :email")
+    @Query("SELECT DISTINCT a FROM Account a LEFT JOIN FETCH a.savedVouchers WHERE a.email = :email")
     Account findByEmailWithVouchers(@Param("email") String email);
 
     boolean existsByEmail(String email);
@@ -36,6 +36,8 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
     boolean existsByPhoneNum(String phoneNum);
 
     boolean existsByPhoneNumAndAccountIDNot(String phoneNum, Integer accountID);
+
+    List<Account> findByRoleAndStatusTrue(Role role);
 
     @Query("""
             SELECT a

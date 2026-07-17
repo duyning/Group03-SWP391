@@ -103,25 +103,43 @@ public class MovieService {
     }
 
     public List<String> getActiveGenres() {
-        return distinctMovieValues(Movie::getGenre);
+        return List.of(
+                "Hành động",
+                "Tình cảm",
+                "Kinh dị",
+                "Hài hước",
+                "Hoạt hình",
+                "Viễn tưởng",
+                "Phiêu lưu",
+                "Kịch tính",
+                "Thần thoại",
+                "Tội phạm",
+                "Gia đình",
+                "Nhạc kịch"
+        );
     }
 
     public List<String> getActiveFormats() {
-        return distinctMovieValues(Movie::getFormat);
+        return List.of("2D", "3D", "IMAX 2D", "IMAX 3D", "4DX", "ScreenX");
     }
 
     public List<String> getActiveLanguages() {
-        return distinctMovieValues(Movie::getLanguage);
+        return List.of(
+                "Tiếng Việt",
+                "Lồng tiếng Tiếng Việt",
+                "Tiếng Anh - Phụ đề Tiếng Việt & Tiếng Anh",
+                "Tiếng Hàn - Phụ đề Tiếng Việt & Tiếng Anh",
+                "Tiếng Nhật - Phụ đề Tiếng Việt & Tiếng Anh",
+                "Tiếng Trung - Phụ đề Tiếng Việt",
+                "Tiếng Thái - Phụ đề Tiếng Việt",
+                "Tiếng Ấn Độ - Phụ đề Tiếng Việt",
+                "Tiếng Pháp - Phụ đề Tiếng Việt",
+                "Tiếng Tây Ban Nha - Phụ đề Tiếng Việt"
+        );
     }
 
     public List<String> getActiveAgeRatings() {
-        return movieRepository.findByActiveTrue().stream()
-                .map(Movie::getAgeRating)
-                .map(this::trimToNull)
-                .filter(value -> value != null)
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .toList();
+        return List.of("P", "K", "T13", "T16", "T18", "C");
     }
 
     public Movie.MovieStatus[] getMovieStatuses() {

@@ -12,8 +12,8 @@ import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.PostRepository;
 import com.group3.cinema.repository.PromotionRepository;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,25 +28,33 @@ public class PublicContentInitializer {
     private final MovieRepository movieRepository;
     private final PostRepository postRepository;
     private final PromotionRepository promotionRepository;
-    private final JdbcTemplate jdbcTemplate;
+    private final boolean seedPublicContentEnabled;
 
     public PublicContentInitializer(MovieRepository movieRepository, PostRepository postRepository,
-                                    PromotionRepository promotionRepository, JdbcTemplate jdbcTemplate) {
+                                    PromotionRepository promotionRepository,
+                                    @Value("${app.seed.public-content:false}") boolean seedPublicContentEnabled) {
         this.movieRepository = movieRepository;
         this.postRepository = postRepository;
         this.promotionRepository = promotionRepository;
-        this.jdbcTemplate = jdbcTemplate;
+        this.seedPublicContentEnabled = seedPublicContentEnabled;
     }
 
     @PostConstruct
     @Transactional
     public void seedPublicContent() {
+        if (!seedPublicContentEnabled) {
+            return;
+        }
         seedMovies();
         seedPosts();
         seedPromotions();
     }
 
     private void seedMovies() {
+        if (movieRepository.count() > 0) {
+            return;
+        }
+
         List<Movie> betaMovies = List.of(
                 betaMovie("Bầy Xác Sống", "Kinh dị, Hồi Hộp", 122, LocalDate.of(2026, 6, 12), Movie.MovieStatus.NOW_SHOWING,
                         "https://files.betacorp.vn/media%2fimages%2f2026%2f06%2f09%2f400x633%2D1%2D143138%2D090626%2D39.jpg", "https://www.youtube.com/watch?v=WFu0aDRxj0U",
@@ -111,7 +119,6 @@ public class PublicContentInitializer {
                         .orElse(betaMovie))
                 .toList());
     }
-
     private void seedDemoMoviesUnused() {
         if (movieRepository.count() > 0) {
             return;
@@ -183,26 +190,6 @@ public class PublicContentInitializer {
         movie.setProducer("Beta Cinemas");
         movie.setFormat("2D");
         return movie;
-    }
-
-    private Movie copyMovieData(Movie target, Movie source) {
-        target.setGenre(source.getGenre());
-        target.setDuration(source.getDuration());
-        target.setReleaseDate(source.getReleaseDate());
-        target.setPosterUrl(source.getPosterUrl());
-        target.setBannerUrl(source.getBannerUrl());
-        target.setTrailerUrl(source.getTrailerUrl());
-        target.setDescription(source.getDescription());
-        target.setDirector(source.getDirector());
-        target.setCast(source.getCast());
-        target.setLanguage(source.getLanguage());
-        target.setAgeRating(source.getAgeRating());
-        target.setReleaseYear(source.getReleaseYear());
-        target.setProducer(source.getProducer());
-        target.setStatus(source.getStatus());
-        target.setFormat(source.getFormat());
-        target.setActive(true);
-        return target;
     }
 
     private void seedPosts() {
