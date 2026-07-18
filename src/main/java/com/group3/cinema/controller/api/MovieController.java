@@ -152,6 +152,8 @@ public class MovieController {
         try {
             movieService.deleteMovie(id);
             return ResponseEntity.ok(Map.of("message", "Phim đã được ẩn thành công."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi xóa phim."));
         }

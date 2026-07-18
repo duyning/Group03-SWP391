@@ -9,10 +9,13 @@ import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.TicketRepository;
+import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -33,6 +36,9 @@ public class ShowtimeService {
     private final ShowtimeRepository showtimeRepository;
     private final MovieRepository movieRepository;
     private final TicketRepository ticketRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     public ShowtimeService(ShowtimeRepository showtimeRepository,
                            MovieRepository movieRepository,
@@ -65,6 +71,7 @@ public class ShowtimeService {
     @Transactional
     public Showtime updateShowtime(Long id, Showtime updatedShowtime) {
         return showtimeRepository.findById(id).map(showtime -> {
+            validateShowtimeEditable(id);
             prepareAndValidateShowtime(updatedShowtime, id, true);
             showtime.setMovie(updatedShowtime.getMovie());
             showtime.setShowDate(updatedShowtime.getShowDate());
@@ -79,9 +86,13 @@ public class ShowtimeService {
     public List<Showtime> updateShowtimeBatch(Long id, com.group3.cinema.controller.api.ShowtimeController.ShowtimeRequest req) {
         if (req.getGroupIds() != null && !req.getGroupIds().isEmpty()) {
             for (Long oldId : req.getGroupIds()) {
+                validateShowtimeEditable(oldId);
+            }
+            for (Long oldId : req.getGroupIds()) {
                 deleteShowtimeInternal(oldId);
             }
         } else {
+            validateShowtimeEditable(id);
             deleteShowtimeInternal(id);
         }
 
@@ -278,21 +289,32 @@ public class ShowtimeService {
         if (id == null || !showtimeRepository.existsById(id)) {
             return false;
         }
-
-        boolean hasSold = ticketRepository.existsByShowtimeIdAndStatusAndDeletedFalse(id, "BOOKED")
-                || ticketRepository.existsByShowtimeIdAndStatusAndDeletedFalse(id, "Đã bán")
-                || ticketRepository.existsByShowtimeIdAndStatus(id, "CONFIRMED");
-        if (hasSold) {
-            showtimeRepository.findById(id).ifPresent(showtime -> {
-                showtime.setActive(false);
-                showtimeRepository.save(showtime);
-            });
-            return true;
-        }
+        validateShowtimeEditable(id);
 
         ticketRepository.deleteAllByShowtimeId(id);
         showtimeRepository.deleteById(id);
         return false;
+    }
+
+    private void validateShowtimeEditable(Long id) {
+        if (id == null) return;
+        Showtime showtime = showtimeRepository.findById(id).orElse(null);
+        if (showtime == null) return;
+
+        // Check if the showtime has already ended
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime showDateTime = LocalDateTime.of(showtime.getShowDate(), showtime.getShowTime());
+        if (showDateTime.isBefore(now)) {
+            throw new IllegalArgumentException("Suất chiếu đã kết thúc, không thể chỉnh sửa hoặc xóa.");
+        }
+
+        // Check booked tickets and active bookings
+        if (ticketRepository.hasBookedTicketsForShowtime(id)) {
+            throw new IllegalArgumentException("Không thể chỉnh sửa hoặc xóa suất chiếu này vì đã có vé được đặt.");
+        }
+        if (bookingRepository.hasActiveBookingsForShowtime(id, now)) {
+            throw new IllegalArgumentException("Không thể chỉnh sửa hoặc xóa suất chiếu này vì đang có khách hàng thực hiện mua vé.");
+        }
     }
 
     private void prepareAndValidateShowtime(Showtime showtime, Long editingId, boolean allowPastWhenEditing) {

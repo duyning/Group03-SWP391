@@ -54,6 +54,9 @@ public class MovieRecommendationService {
             if (watchedMovieIds.contains(movie.getId())) {
                 continue;
             }
+            if (movie.getStatus() == Movie.MovieStatus.STOPPED) {
+                continue;
+            }
 
             Set<String> movieGenres = normalizeGenres(List.of(movie.getGenre()));
             boolean genreMatch = !preferredGenres.isEmpty() && movieGenres.stream().anyMatch(preferredGenres::contains);
