@@ -107,6 +107,7 @@ class BookingShowtimeServiceTest {
                 .thenReturn(List.of(showtime));
         when(roomRepository.findFirstByRoomNameIgnoreCase("Phòng 03"))
                 .thenReturn(Optional.of(room));
+        mockSeatCapacity(80);
 
         mockAvailableSeats(12L, 80);
 
@@ -127,6 +128,7 @@ class BookingShowtimeServiceTest {
         when(showtimeRepository.findById(12L)).thenReturn(Optional.of(showtime));
         when(roomRepository.findFirstByRoomNameIgnoreCase("Phòng 03"))
                 .thenReturn(Optional.of(room));
+        mockSeatCapacity(80);
 
         mockAvailableSeats(12L, 80);
 
@@ -147,6 +149,24 @@ class BookingShowtimeServiceTest {
                 12L, 7, tomorrow.plusDays(1)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("không khớp");
+    }
+
+    private void mockSeatCapacity(int capacity) {
+        SeatType stdType = new SeatType();
+        stdType.setCode("std");
+        stdType.setCapacity(1);
+        stdType.setActive(true);
+        stdType.setSellable(true);
+        when(seatTypeRepository.findAllByOrderByIdAsc()).thenReturn(List.of(stdType));
+
+        List<Seat> seats = new java.util.ArrayList<>();
+        for (int i = 0; i < capacity; i++) {
+            Seat seat = new Seat();
+            seat.setId((long) (i + 1));
+            seat.setSeatType("std");
+            seats.add(seat);
+        }
+        when(seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(room.getId())).thenReturn(seats);
     }
 
     private Showtime showtime(Long id, LocalDate date, LocalTime time) {

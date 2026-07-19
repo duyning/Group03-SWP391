@@ -174,7 +174,6 @@
         <aside class="admin-sidebar">
             <div class="sidebar-header">
                 <img src="/images/cineflow-logo-light.svg" height="35" alt="CineFlow Cinema">
-                <span>ADMIN</span>
                 <button type="button" class="sidebar-toggle" aria-label="Thu gọn/mở rộng sidebar" title="Thu gọn/mở rộng sidebar">
                     <i class="fas fa-bars"></i>
                 </button>
@@ -334,6 +333,14 @@
                                 <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: block; color: var(--text-main);"><i class="fa-solid fa-magnifying-glass"></i> TÌM THEO NGÀY / LOẠI NGÀY / GHI CHÚ</label>
                                 <input type="text" id="filterPriceDayType" class="form-control" placeholder="Nhập loại ngày, ngày chiếu hoặc ghi chú..." oninput="filterBasePrices()" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; height: 36px;">
                             </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: block; color: var(--text-main);"><i class="fa-solid fa-circle-check"></i> LỌC TRẠNG THÁI</label>
+                                <select id="filterPriceStatus" class="form-control" onchange="filterBasePrices()" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; height: 36px;">
+                                    <option value="">-- Tất cả trạng thái --</option>
+                                    <option value="active">Đang hoạt động</option>
+                                    <option value="expired">Hết hạn</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="table-responsive">
@@ -348,11 +355,12 @@
                                         <th>Giờ bắt đầu</th>
                                         <th>Giờ kết thúc</th>
                                         <th>Giá cơ bản</th>
+                                        <th>Trạng thái</th>
                                         <th class="text-center">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tblPricingBase">
-                                    <tr><td colspan="9" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Đang tải cấu hình...</td></tr>
+                                    <tr><td colspan="10" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Đang tải cấu hình...</td></tr>
                                 </tbody>
                             </table>
                         </div>

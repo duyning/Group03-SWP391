@@ -23,19 +23,22 @@ public class TicketApiController {
     private final FormatSurchargeRepository formatSurchargeRepository;
     private final CustomerDiscountRepository customerDiscountRepository;
     private final BookingTicketRepository bookingTicketRepository;
+    private final TicketRepository ticketRepository;
 
     public TicketApiController(TicketService ticketService,
                                TicketPriceConfigRepository ticketPriceConfigRepository,
                                SeatTypeSurchargeRepository seatTypeSurchargeRepository,
                                FormatSurchargeRepository formatSurchargeRepository,
                                CustomerDiscountRepository customerDiscountRepository,
-                               BookingTicketRepository bookingTicketRepository) {
+                               BookingTicketRepository bookingTicketRepository,
+                               TicketRepository ticketRepository) {
         this.ticketService = ticketService;
         this.ticketPriceConfigRepository = ticketPriceConfigRepository;
         this.seatTypeSurchargeRepository = seatTypeSurchargeRepository;
         this.formatSurchargeRepository = formatSurchargeRepository;
         this.customerDiscountRepository = customerDiscountRepository;
         this.bookingTicketRepository = bookingTicketRepository;
+        this.ticketRepository = ticketRepository;
     }
 
     /**
@@ -205,6 +208,46 @@ public class TicketApiController {
         }
     }
 
+    private boolean isPriceConfigBooked(TicketPriceConfig config) {
+        if (config == null || config.getId() == null) {
+            return false;
+        }
+        List<Ticket> bookedTickets = ticketRepository.findAllBookedTickets();
+        for (Ticket t : bookedTickets) {
+            // 1. Check movie
+            if (config.getMovieId() != null) {
+                if (t.getMovie() == null || !config.getMovieId().equals((long) t.getMovie().getId())) {
+                    continue;
+                }
+            }
+            // 2. Check time slot
+            java.time.LocalTime ticketTime = t.getShowTime();
+            if (ticketTime != null) {
+                if (ticketTime.isBefore(config.getStartTime()) || ticketTime.isAfter(config.getEndTime())) {
+                    continue;
+                }
+            }
+            // 3. Check dayType / date
+            java.time.LocalDate ticketDate = t.getShowDate();
+            if (ticketDate != null) {
+                String ticketDateStr = ticketDate.toString();
+                if (config.getDayType().equals(ticketDateStr)) {
+                    return true;
+                }
+                // Check if day type matches weekday/weekend
+                boolean isWeekend = ticketDate.getDayOfWeek() == java.time.DayOfWeek.SATURDAY 
+                                 || ticketDate.getDayOfWeek() == java.time.DayOfWeek.SUNDAY;
+                if ("Cuối tuần".equals(config.getDayType()) && isWeekend) {
+                    return true;
+                }
+                if ("Trong tuần".equals(config.getDayType()) && !isWeekend) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @PostMapping("/configs/base")
     public ResponseEntity<?> updateBasePrice(@RequestBody TicketPriceConfig req) {
         if (req.getId() != null) {
@@ -213,6 +256,9 @@ public class TicketApiController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy cấu hình!"));
             }
             TicketPriceConfig config = configOpt.get();
+            if (isPriceConfigBooked(config)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không thể chỉnh sửa cấu hình giá vé này vì đã có vé đặt theo cấu hình này!"));
+            }
             config.setDayType(req.getDayType());
             config.setSlotName(req.getSlotName());
             config.setStartTime(req.getStartTime());
@@ -240,6 +286,10 @@ public class TicketApiController {
     @DeleteMapping("/configs/base/{id}")
     public ResponseEntity<?> deleteBasePrice(@PathVariable("id") Long id) {
         try {
+            Optional<TicketPriceConfig> configOpt = ticketPriceConfigRepository.findById(id);
+            if (configOpt.isPresent() && isPriceConfigBooked(configOpt.get())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không thể xóa cấu hình giá vé này vì đã có vé đặt theo cấu hình này!"));
+            }
             ticketPriceConfigRepository.deleteById(id);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {

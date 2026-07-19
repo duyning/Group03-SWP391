@@ -116,8 +116,13 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE Movie m SET m.status = :stoppedStatus WHERE m.active = true AND m.status <> :stoppedStatus AND m.releaseDate < :today AND m.id IN (SELECT s.movie.id FROM Showtime s GROUP BY s.movie.id HAVING MAX(s.showDate) < :today AND MAX(s.showDate) >= :thresholdDate)")
+    @Query("UPDATE Movie m SET m.status = :stoppedStatus, m.active = false WHERE m.active = true AND m.status <> :stoppedStatus AND m.releaseDate < :today AND m.id IN (SELECT s.movie.id FROM Showtime s GROUP BY s.movie.id HAVING MAX(s.showDate) < :today AND MAX(s.showDate) >= :thresholdDate)")
     int autoDeactivateExpiredMovies(@Param("today") LocalDate today, @Param("thresholdDate") LocalDate thresholdDate, @Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Movie m SET m.active = false WHERE m.status = :stoppedStatus AND m.active = true")
+    int deactivateStoppedMovies(@Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
 
     @Query("""
             SELECT DISTINCT m.genre

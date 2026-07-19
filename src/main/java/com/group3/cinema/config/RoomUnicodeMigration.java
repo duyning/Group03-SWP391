@@ -47,6 +47,7 @@ public class RoomUnicodeMigration {
         runMigrationStep("migrate text columns", this::migrateTextColumns);
         runMigrationStep("normalize Vietnamese values", this::normalizeVietnameseValues);
         runMigrationStep("fix movie status constraint", this::fixMovieStatusConstraint);
+        runMigrationStep("fix membership level constraint", this::fixMembershipLevelConstraint);
         runMigrationStep("seed pricing configs", this::seedPricingConfigs);
     }
 
@@ -479,6 +480,61 @@ public class RoomUnicodeMigration {
             }
         } catch (Exception e) {
             log.warn("[TrienLX - 2026-06-23] Không thể tạo constraint mới CK_movie_status_allowed: {}", e.getMessage());
+        }
+    }
+
+    private void fixMembershipLevelConstraint() {
+        if (!tableExists("account")) {
+            return;
+        }
+        try {
+            // Kiểm tra xem constraint cũ CK__account__members__4BAC3F29 có tồn tại không trước khi xóa
+            Integer oldConstraintCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys.check_constraints WHERE name = 'CK__account__members__4BAC3F29'",
+                    Integer.class
+            );
+            if (oldConstraintCount != null && oldConstraintCount > 0) {
+                jdbcTemplate.execute("ALTER TABLE account DROP CONSTRAINT CK__account__members__4BAC3F29");
+                log.info("Đã xóa constraint cũ CK__account__members__4BAC3F29 khỏi bảng account");
+            }
+        } catch (Exception e) {
+            log.warn("Không thể xóa constraint cũ CK__account__members__4BAC3F29: {}", e.getMessage());
+        }
+
+        try {
+            // Xóa toàn bộ constraint CHECK trên cột membership_level của bảng account
+            String dropAllConstraints = """
+                    DECLARE @constraintName NVARCHAR(256)
+                    SELECT @constraintName = name
+                    FROM sys.check_constraints cc
+                    JOIN sys.columns c ON cc.parent_object_id = c.object_id AND cc.parent_column_id = c.column_id
+                    JOIN sys.tables t ON c.object_id = t.object_id
+                    WHERE t.name = 'account' AND c.name = 'membership_level'
+                    IF @constraintName IS NOT NULL
+                        EXEC('ALTER TABLE account DROP CONSTRAINT [' + @constraintName + ']')
+                    """;
+            jdbcTemplate.execute(dropAllConstraints);
+            log.info("Đã xóa tất cả CHECK constraint trên cột account.membership_level (nếu có)");
+        } catch (Exception e) {
+            log.warn("Không thể xóa CHECK constraint trên cột account.membership_level: {}", e.getMessage());
+        }
+
+        try {
+            // Kiểm tra xem constraint mới đã tồn tại chưa
+            Integer newConstraintCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys.check_constraints WHERE name = 'CK_account_membership_level_allowed'",
+                    Integer.class
+            );
+            if (newConstraintCount == null || newConstraintCount == 0) {
+                // Tạo constraint mới với đầy đủ 4 giá trị bao gồm BRONZE
+                jdbcTemplate.execute(
+                        "ALTER TABLE account ADD CONSTRAINT CK_account_membership_level_allowed "
+                        + "CHECK (membership_level IN ('BRONZE', 'SILVER', 'GOLD', 'PLAT'))"
+                );
+                log.info("Đã tạo constraint mới CK_account_membership_level_allowed cho bảng account");
+            }
+        } catch (Exception e) {
+            log.warn("Không thể tạo constraint mới CK_account_membership_level_allowed: {}", e.getMessage());
         }
     }
 

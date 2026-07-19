@@ -23,11 +23,8 @@ public class PaymentGatewayRouter {
     }
 
     public String createRedirectUrl(Payment payment, Booking booking, HttpServletRequest request) {
-        PaymentGatewayService gateway = gateways.get(payment.getPaymentMethod());
-        if (gateway == null || !gateway.isConfigured()) {
-            return request.getContextPath() + "/payment/gateway/" + payment.getOrderCode();
-        }
-        return gateway.createPaymentUrl(payment, booking, request);
+        // Luôn chuyển hướng sang cổng mô phỏng thanh toán nội bộ để demo/test nhanh
+        return request.getContextPath() + "/payment/gateway/" + payment.getOrderCode();
     }
 
     public PaymentGatewayService gateway(Payment.Method method) {

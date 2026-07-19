@@ -83,7 +83,7 @@ public class AccountSeedInitializer {
                 changed = true;
             }
             if (account.getMembershipLevel() == null) {
-                account.setMembershipLevel(MembershipLevel.SILVER);
+                account.setMembershipLevel(MembershipLevel.BRONZE);
                 changed = true;
             }
             if (changed) {
@@ -107,7 +107,7 @@ public class AccountSeedInitializer {
         account.setGender("Nam");
         account.setAddress("CinemaBook");
         account.setLoyaltyPoint(0);
-        account.setMembershipLevel(MembershipLevel.SILVER);
+        account.setMembershipLevel(MembershipLevel.BRONZE);
         account.setStatus(true);
         account.setRole(role);
 

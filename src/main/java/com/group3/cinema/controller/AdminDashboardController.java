@@ -120,13 +120,7 @@ public class AdminDashboardController {
                 .sum();
         model.addAttribute("totalRevenue", totalRevenue);
 
-        // 5. Calculate Occupancy Rate
-        List<Showtime> showtimes = showtimeRepository.findAll();
-        long totalCapacity = showtimes.stream()
-                .mapToLong(s -> roomRepository.findFirstByRoomNameIgnoreCase(s.getRoom()).map(Room::getTotalSeats).orElse(0))
-                .sum();
-        double occupancyRate = totalCapacity > 0 ? ((double) totalTicketsSold / totalCapacity) * 100 : 0.0;
-        model.addAttribute("occupancyRate", Math.round(occupancyRate * 10.0) / 10.0);
+
 
         // 6. Top 5 Movies by Revenue
         Map<String, MovieRevenueDto> movieStats = new HashMap<>();
@@ -160,7 +154,8 @@ public class AdminDashboardController {
 
         // 8. Recent bookings history list
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        List<BookingDto> bookingHistory = paidBookings.stream()
+        List<BookingDto> bookingHistory = allBookings.stream()
+                .filter(b -> b.getStatus() == Booking.Status.PAID || b.getStatus() == Booking.Status.CANCELLED)
                 .map(b -> {
                     String custName = accountRepository.findById(b.getAccountId())
                             .map(Account::getName)
@@ -170,7 +165,13 @@ public class AdminDashboardController {
                             .orElse("N/A");
                     int ticketQty = bookingTicketRepository.findByBookingId(b.getId()).size();
                     String timeStr = b.getCreatedAt().format(formatter);
-                    return new BookingDto(b.getId(), custName, movieTitle, ticketQty, b.getTotalAmount(), timeStr, "Đã thanh toán");
+                    String statusLabel = switch (b.getStatus()) {
+                        case PAID -> "Đã thanh toán";
+                        case PENDING -> "Chờ thanh toán";
+                        case CANCELLED -> "Đã hủy";
+                        case EXPIRED -> "Hết hạn";
+                    };
+                    return new BookingDto(b.getId(), custName, movieTitle, ticketQty, b.getTotalAmount(), timeStr, statusLabel);
                 })
                 .sorted((b1, b2) -> b2.id().compareTo(b1.id())) // Latest first
                 .limit(10)

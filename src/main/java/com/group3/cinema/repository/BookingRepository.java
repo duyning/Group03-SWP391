@@ -134,4 +134,23 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             GROUP BY s.movie.id
             """)
     List<Object[]> countPaidBookingsByMovie(@Param("paidStatus") Booking.Status paidStatus);
+
+    @Query("""
+            SELECT COUNT(b) > 0 
+            FROM Booking b 
+            WHERE b.showtimeId = :showtimeId 
+              AND (b.status = com.group3.cinema.entity.Booking$Status.PAID 
+                   OR (b.status = com.group3.cinema.entity.Booking$Status.PENDING AND b.expiresAt > :now))
+            """)
+    boolean hasActiveBookingsForShowtime(@Param("showtimeId") Long showtimeId, @Param("now") LocalDateTime now);
+
+    @Query("""
+            SELECT COUNT(b) > 0 
+            FROM Booking b 
+            JOIN Showtime s ON s.id = b.showtimeId 
+            WHERE s.movie.id = :movieId 
+              AND (b.status = com.group3.cinema.entity.Booking$Status.PAID 
+                   OR (b.status = com.group3.cinema.entity.Booking$Status.PENDING AND b.expiresAt > :now))
+            """)
+    boolean hasActiveBookingsForMovie(@Param("movieId") Integer movieId, @Param("now") LocalDateTime now);
 }

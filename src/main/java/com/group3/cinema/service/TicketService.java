@@ -24,6 +24,7 @@ import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collections;
@@ -120,12 +121,27 @@ public class TicketService {
         ticket.setPrice(finalPrice);
     }
 
+    private boolean isConfigActive(TicketPriceConfig c) {
+        if (c.getDayType() != null && c.getDayType().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+            try {
+                LocalDate configDate = LocalDate.parse(c.getDayType());
+                if (configDate.isBefore(LocalDate.now())) {
+                    return false;
+                }
+            } catch (Exception e) {
+                // Ignore parse errors
+            }
+        }
+        return true;
+    }
+
     private double resolveBasePrice(Long movieId, String dateStr, String dayType, String slotName) {
         List<TicketPriceConfig> configs = ticketPriceConfigRepository.findAll();
 
         Optional<TicketPriceConfig> matched = Optional.empty();
         if (movieId != null && dateStr != null && !dateStr.isBlank()) {
             matched = configs.stream()
+                    .filter(this::isConfigActive)
                     .filter(c -> movieId.equals(c.getMovieId()))
                     .filter(c -> dateStr.equals(c.getDayType()))
                     .filter(c -> slotName.equals(c.getSlotName()))
@@ -133,6 +149,7 @@ public class TicketService {
         }
         if (matched.isEmpty() && movieId != null) {
             matched = configs.stream()
+                    .filter(this::isConfigActive)
                     .filter(c -> movieId.equals(c.getMovieId()))
                     .filter(c -> dayType.equalsIgnoreCase(c.getDayType()))
                     .filter(c -> slotName.equals(c.getSlotName()))
@@ -140,6 +157,7 @@ public class TicketService {
         }
         if (matched.isEmpty() && dateStr != null && !dateStr.isBlank()) {
             matched = configs.stream()
+                    .filter(this::isConfigActive)
                     .filter(c -> c.getMovieId() == null)
                     .filter(c -> dateStr.equals(c.getDayType()))
                     .filter(c -> slotName.equals(c.getSlotName()))
@@ -147,6 +165,7 @@ public class TicketService {
         }
         if (matched.isEmpty()) {
             matched = configs.stream()
+                    .filter(this::isConfigActive)
                     .filter(c -> c.getMovieId() == null)
                     .filter(c -> dayType.equalsIgnoreCase(c.getDayType()))
                     .filter(c -> slotName.equals(c.getSlotName()))

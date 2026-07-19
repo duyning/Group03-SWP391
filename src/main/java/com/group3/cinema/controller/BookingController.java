@@ -50,9 +50,15 @@ public class BookingController {
     public String selectShowtime(@RequestParam("movieId") int movieId,
                                  @RequestParam(value = "date", required = false)
                                  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                 @RequestParam(value = "from", required = false) String from,
                                  HttpSession session, Model model, RedirectAttributes redirectAttributes) {
         try {
             Movie movie = bookingShowtimeService.getBookableMovie(movieId);
+            if ("wishlist".equalsIgnoreCase(from)) {
+                session.setAttribute("from_wishlist_movie_" + movieId, true);
+            } else {
+                session.removeAttribute("from_wishlist_movie_" + movieId);
+            }
             var schedule = bookingShowtimeService.getAvailableShowtimeSchedule(movieId);
             LocalDate firstShowDate = schedule.stream().findFirst()
                     .map(com.group3.cinema.dto.BookingShowtimeDateView::date)

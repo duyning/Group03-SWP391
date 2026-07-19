@@ -365,7 +365,7 @@
                 
                 <a class="buy-btn"
                    th:if="${movie.status != null && movie.status.name() != 'COMING_SOON'}"
-                   th:href="@{/booking/showtimes(movieId=${movie.id})}">Mua vé</a>
+                   th:href="@{/booking/showtimes(movieId=${movie.id}, from='wishlist')}">Mua vé</a>
                 <a class="buy-btn"
                    th:if="${movie.status == null || movie.status.name() == 'COMING_SOON'}"
                    th:href="@{/movies/{id}(id=${movie.id})}">Chi tiết</a>

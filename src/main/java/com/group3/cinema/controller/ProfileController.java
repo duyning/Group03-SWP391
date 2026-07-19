@@ -5,6 +5,9 @@ import com.group3.cinema.entity.ActivityLog;
 import com.group3.cinema.entity.ActivityLog.ActionType;
 import com.group3.cinema.service.AccountService;
 import com.group3.cinema.service.ActivityLogService;
+import com.group3.cinema.service.LoyaltyService;
+import com.group3.cinema.repository.VoucherRepository;
+import com.group3.cinema.repository.AccountRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -31,6 +34,15 @@ public class ProfileController {
     @Autowired
     private ActivityLogService activityLogService;
 
+    @Autowired
+    private VoucherRepository voucherRepository;
+
+    @Autowired
+    private LoyaltyService loyaltyService;
+
+    @Autowired
+    private AccountRepository accountRepository;
+
     @GetMapping
     public String viewProfile(HttpSession session, Model model) {
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
@@ -44,7 +56,96 @@ public class ProfileController {
             return "redirect:/login";
         }
 
+        // Tự động kiểm tra và sửa đổi hạng thành viên nếu không đúng với số điểm hiện có (Self-healing)
+        int points = account.getLoyaltyPoint();
+        com.group3.cinema.entity.MembershipLevel correctLevel = com.group3.cinema.entity.MembershipLevel.BRONZE;
+        if (points >= 5000) {
+            correctLevel = com.group3.cinema.entity.MembershipLevel.GOLD;
+        } else if (points >= 1000) {
+            correctLevel = com.group3.cinema.entity.MembershipLevel.SILVER;
+        }
+        if (account.getMembershipLevel() != correctLevel) {
+            account.setMembershipLevel(correctLevel);
+            accountRepository.save(account);
+        }
+
+        // Tự động kiểm tra và cấp voucher định kỳ hàng tháng cho hạng Vàng
+        loyaltyService.checkAndGrantGoldMonthlyVoucher(account);
+
+        // Nạp lại thông tin mới nhất
+        account = accountService.findById(loggedInUser.getAccountID());
+        points = account.getLoyaltyPoint();
+        com.group3.cinema.entity.MembershipLevel level = account.getMembershipLevel() != null
+                ? account.getMembershipLevel() : com.group3.cinema.entity.MembershipLevel.BRONZE;
+
+        String tierName = "Đồng";
+        String nextTierName = "Bạc";
+        int pointsNeeded = 0;
+        int progressPercent = 0;
+        int threshold = 0;
+
+        if (level == com.group3.cinema.entity.MembershipLevel.BRONZE) {
+            tierName = "Đồng";
+            nextTierName = "Bạc";
+            threshold = 1000;
+            pointsNeeded = Math.max(0, 1000 - points);
+            progressPercent = Math.min(100, (points * 100) / 1000);
+        } else if (level == com.group3.cinema.entity.MembershipLevel.SILVER) {
+            tierName = "Bạc";
+            nextTierName = "Vàng";
+            threshold = 5000;
+            pointsNeeded = Math.max(0, 5000 - points);
+            progressPercent = Math.min(100, ((points - 1000) * 100) / 4000);
+        } else if (level == com.group3.cinema.entity.MembershipLevel.GOLD || level == com.group3.cinema.entity.MembershipLevel.PLAT) {
+            tierName = "Vàng";
+            nextTierName = "Đã đạt cấp tối đa";
+            threshold = 5000;
+            pointsNeeded = 0;
+            progressPercent = 100;
+        }
+
+        // Lấy danh sách ví voucher (lịch sử nhận thưởng)
+        List<com.group3.cinema.entity.Voucher> walletVouchers = voucherRepository.findWalletVouchers(account.getAccountID());
+        List<java.util.Map<String, Object>> formattedVouchers = new java.util.ArrayList<>();
+        for (com.group3.cinema.entity.Voucher v : walletVouchers) {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("code", v.getCode());
+            map.put("title", v.getTitle());
+            
+            String discountText = "";
+            if (v.getDiscountType() == com.group3.cinema.entity.Voucher.DiscountType.PERCENTAGE) {
+                discountText = "Giảm " + v.getDiscountValue().stripTrailingZeros().toPlainString() + "%" 
+                        + (v.getMaxDiscountAmount() != null ? " (Tối đa " + String.format("%,.0f", v.getMaxDiscountAmount().doubleValue()) + "đ)" : "");
+            } else {
+                discountText = "Giảm " + String.format("%,.0f", v.getDiscountValue().doubleValue()) + "đ";
+            }
+            map.put("discountText", discountText);
+            map.put("minOrderText", "Đơn tối thiểu " + String.format("%,.0f", v.getMinOrderValue().doubleValue()) + "đ");
+            map.put("expiryText", v.getEndDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+            
+            String statusText = "Chưa dùng";
+            String statusClass = "badge-available";
+            if (v.getUsedQuantity() != null && v.getUsedQuantity() > 0) {
+                statusText = "Đã dùng";
+                statusClass = "badge-used";
+            } else if (v.getEndDate().isBefore(java.time.LocalDateTime.now())) {
+                statusText = "Hết hạn";
+                statusClass = "badge-expired";
+            }
+            map.put("statusText", statusText);
+            map.put("statusClass", statusClass);
+            
+            formattedVouchers.add(map);
+        }
+
         model.addAttribute("account", account);
+        model.addAttribute("tierName", tierName);
+        model.addAttribute("nextTierName", nextTierName);
+        model.addAttribute("pointsNeeded", pointsNeeded);
+        model.addAttribute("progressPercent", progressPercent);
+        model.addAttribute("threshold", threshold);
+        model.addAttribute("formattedVouchers", formattedVouchers);
+        model.addAttribute("active", "profile");
         return "profile";
     }
 
