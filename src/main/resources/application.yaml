@@ -5,9 +5,9 @@ spring:
   config:
     import: optional:classpath:application-vnpay-local.yaml
   datasource:
-    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=sample;encrypt=false;trustServerCertificate=true}
+    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=Group3_SWP391;encrypt=false;trustServerCertificate=true}
     username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:sa}
+    password: ${DB_PASSWORD:123}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
     hikari:
       connection-timeout: 20000
@@ -61,7 +61,7 @@ spring:
             enable: true
 
 server:
-  port: 8081
+  port: 8080
   servlet:
     context-path: /
 
