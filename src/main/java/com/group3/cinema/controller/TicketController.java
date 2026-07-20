@@ -25,6 +25,9 @@ public class TicketController {
 
     @Autowired
     private TicketService ticketService;
+    
+    @Autowired
+    private com.group3.cinema.service.PaymentService paymentService;
 
     /**
      * Hiển thị danh sách vé của người dùng đang đăng nhập.
@@ -49,7 +52,7 @@ public class TicketController {
      * Chỉ cho phép xem vé của chính mình (bảo mật).
      */
     @GetMapping("/{id}")
-    public String viewTicketDetail(@PathVariable Long id, HttpSession session, Model model) {
+    public String viewTicketDetail(@PathVariable("id") Long id, HttpSession session, Model model) {
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
         if (loggedInUser == null) {
             return "redirect:/login";
@@ -63,5 +66,22 @@ public class TicketController {
         model.addAttribute("ticket", ticketOpt.get());
         model.addAttribute("user", loggedInUser);
         return "ticket-detail";
+    }
+
+    /**
+     * Hiển thị trang Lịch sử giao dịch (Booking History)
+     * GET /my-tickets/booking-history
+     */
+    @GetMapping("/booking-history")
+    public String viewBookingHistory(HttpSession session, Model model) {
+        Account loggedInUser = (Account) session.getAttribute("loggedInUser");
+        if (loggedInUser == null) {
+            return "redirect:/login";
+        }
+
+        List<com.group3.cinema.dto.BookingHistoryDto> history = paymentService.getBookingHistory(loggedInUser.getAccountID());
+        model.addAttribute("history", history);
+        model.addAttribute("user", loggedInUser);
+        return "booking-history";
     }
 }

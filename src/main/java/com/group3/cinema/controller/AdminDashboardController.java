@@ -6,14 +6,21 @@ package com.group3.cinema.controller;
  */
 
 import com.group3.cinema.entity.Account;
-import com.group3.cinema.repository.MovieRepository;
-import com.group3.cinema.repository.RoomRepository;
-import com.group3.cinema.repository.SeatRepository;
+import com.group3.cinema.entity.Booking;
+import com.group3.cinema.entity.Payment;
+import com.group3.cinema.entity.Room;
+import com.group3.cinema.entity.Showtime;
+import com.group3.cinema.repository.*;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class AdminDashboardController {
@@ -22,16 +29,50 @@ public class AdminDashboardController {
     private final RoomRepository roomRepository;
     private final SeatRepository seatRepository;
     private final ShowtimeRepository showtimeRepository;
+    private final BookingRepository bookingRepository;
+    private final AccountRepository accountRepository;
+    private final BookingTicketRepository bookingTicketRepository;
+    private final PaymentRepository paymentRepository;
 
     public AdminDashboardController(MovieRepository movieRepository,
                                     RoomRepository roomRepository,
                                     SeatRepository seatRepository,
-                                    ShowtimeRepository showtimeRepository) {
+                                    ShowtimeRepository showtimeRepository,
+                                    BookingRepository bookingRepository,
+                                    AccountRepository accountRepository,
+                                    BookingTicketRepository bookingTicketRepository,
+                                    PaymentRepository paymentRepository) {
         this.movieRepository = movieRepository;
         this.roomRepository = roomRepository;
         this.seatRepository = seatRepository;
         this.showtimeRepository = showtimeRepository;
+        this.bookingRepository = bookingRepository;
+        this.accountRepository = accountRepository;
+        this.bookingTicketRepository = bookingTicketRepository;
+        this.paymentRepository = paymentRepository;
     }
+
+    public record BookingDto(
+        Long id,
+        String customerName,
+        String movieTitle,
+        int ticketQuantity,
+        BigDecimal totalPrice,
+        String bookingTime,
+        String status
+    ) {}
+
+    public record MovieRevenueDto(
+        String title,
+        double revenue,
+        long ticketsSold
+    ) {}
+
+    public record PaymentMethodStatDto(
+        String method,
+        double revenue,
+        long count
+    ) {}
 
     @GetMapping("/admin/dashboard")
     public String showDashboard(HttpSession session, Model model) {
@@ -39,11 +80,104 @@ public class AdminDashboardController {
         if (loggedInUser != null) {
             model.addAttribute("user", loggedInUser);
         }
+        Object errorMessage = session.getAttribute("errorMessage");
+        if (errorMessage != null) {
+            model.addAttribute("errorMessage", errorMessage);
+            session.removeAttribute("errorMessage");
+        }
 
+        // Fetch counts for entities
         model.addAttribute("movieCount", movieRepository.count());
         model.addAttribute("roomCount", roomRepository.count());
         model.addAttribute("seatCount", seatRepository.count());
         model.addAttribute("showtimeCount", showtimeRepository.count());
+
+        // Fetch all bookings and tickets
+        List<Booking> allBookings = bookingRepository.findAll();
+        List<Booking> paidBookings = allBookings.stream()
+                .filter(b -> b.getStatus() == Booking.Status.PAID)
+                .collect(Collectors.toList());
+        Set<Long> paidBookingIds = paidBookings.stream().map(Booking::getId).collect(Collectors.toSet());
+        Map<Long, Payment> latestPayments = paidBookingIds.isEmpty()
+                ? Collections.emptyMap()
+                : paymentRepository.findByBookingIdIn(paidBookingIds).stream()
+                .sorted(Comparator.comparing(Payment::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .collect(Collectors.toMap(Payment::getBookingId, payment -> payment, (first, ignored) -> first));
+
+        // 2. Total tickets sold count
+        long totalTicketsSold = paidBookings.stream()
+                .mapToLong(b -> bookingTicketRepository.findByBookingId(b.getId()).size())
+                .sum();
+        model.addAttribute("totalTicketsSold", totalTicketsSold);
+
+        // 3. Paid bookings count
+        long totalBookingsPaid = paidBookings.size();
+        model.addAttribute("totalBookingsPaid", totalBookingsPaid);
+
+        // 4. Calculate total revenue from paid booking totals only.
+        double totalRevenue = paidBookings.stream()
+                .mapToDouble(b -> b.getTotalAmount() != null ? b.getTotalAmount().doubleValue() : 0.0)
+                .sum();
+        model.addAttribute("totalRevenue", totalRevenue);
+
+
+
+        // 6. Top 5 Movies by Revenue
+        Map<String, MovieRevenueDto> movieStats = new HashMap<>();
+        for (Booking booking : paidBookings) {
+            Optional<Showtime> showtime = showtimeRepository.findById(booking.getShowtimeId());
+            String title = showtime.map(s -> s.getMovie().getTitle()).orElse("N/A");
+            double revenue = booking.getTotalAmount() != null ? booking.getTotalAmount().doubleValue() : 0.0;
+            long ticketCount = bookingTicketRepository.findByBookingId(booking.getId()).size();
+            movieStats.merge(title, new MovieRevenueDto(title, revenue, ticketCount), (oldVal, newVal) ->
+                new MovieRevenueDto(title, oldVal.revenue() + newVal.revenue(), oldVal.ticketsSold() + newVal.ticketsSold())
+            );
+        }
+        List<MovieRevenueDto> topMovies = movieStats.values().stream()
+                .sorted((m1, m2) -> Double.compare(m2.revenue(), m1.revenue()))
+                .limit(5)
+                .collect(Collectors.toList());
+        model.addAttribute("topMovies", topMovies);
+
+        // 7. Payment Statistics: the system currently supports Cash and PayOS.
+        Map<String, PaymentMethodStatDto> paymentStats = new HashMap<>();
+        for (Booking booking : paidBookings) {
+            Payment payment = latestPayments.get(booking.getId());
+            String method = payment != null && payment.getPaymentMethod() == Payment.Method.CASH ? "Tiền mặt" : "PayOS";
+            double price = booking.getTotalAmount() != null ? booking.getTotalAmount().doubleValue() : 0.0;
+            final String finalMethod = method;
+            paymentStats.merge(finalMethod, new PaymentMethodStatDto(finalMethod, price, 1), (oldVal, newVal) ->
+                new PaymentMethodStatDto(finalMethod, oldVal.revenue() + newVal.revenue(), oldVal.count() + 1)
+            );
+        }
+        model.addAttribute("paymentStats", paymentStats.values());
+
+        // 8. Recent bookings history list
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        List<BookingDto> bookingHistory = allBookings.stream()
+                .filter(b -> b.getStatus() == Booking.Status.PAID || b.getStatus() == Booking.Status.CANCELLED)
+                .map(b -> {
+                    String custName = accountRepository.findById(b.getAccountId())
+                            .map(Account::getName)
+                            .orElse("Khách vãng lai");
+                    String movieTitle = showtimeRepository.findById(b.getShowtimeId())
+                            .map(s -> s.getMovie().getTitle())
+                            .orElse("N/A");
+                    int ticketQty = bookingTicketRepository.findByBookingId(b.getId()).size();
+                    String timeStr = b.getCreatedAt().format(formatter);
+                    String statusLabel = switch (b.getStatus()) {
+                        case PAID -> "Đã thanh toán";
+                        case PENDING -> "Chờ thanh toán";
+                        case CANCELLED -> "Đã hủy";
+                        case EXPIRED -> "Hết hạn";
+                    };
+                    return new BookingDto(b.getId(), custName, movieTitle, ticketQty, b.getTotalAmount(), timeStr, statusLabel);
+                })
+                .sorted((b1, b2) -> b2.id().compareTo(b1.id())) // Latest first
+                .limit(10)
+                .collect(Collectors.toList());
+        model.addAttribute("bookings", bookingHistory);
+
         model.addAttribute("active", "dashboard");
         return "admin_dashboard";
     }

@@ -17,7 +17,7 @@ public class SeatTypeSurcharge {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "seat_type_code", nullable = false, unique = true, length = 30)
+    @Column(name = "seat_type_code", nullable = false, unique = true, length = 30, columnDefinition = "NVARCHAR(30)")
     private String seatTypeCode; // "std", "vip", "couple"
 
     @Column(name = "surcharge_amount", nullable = false)

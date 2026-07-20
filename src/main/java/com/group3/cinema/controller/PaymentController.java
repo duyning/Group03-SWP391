@@ -266,6 +266,12 @@ public class PaymentController {
                         "Giao dịch cho mã thanh toán " + orderCode + " đã hoàn tất. Bạn có thể kiểm tra vé trong mục 'Vé của tôi'!",
                         NotificationType.PAYMENT
                 );
+                
+                // Clear wishlist entry if booking was initiated from the wishlist page
+                Payment payment = paymentService.getPaymentPublic(orderCode);
+                if (payment != null) {
+                    paymentService.cleanWishlistIfFromWishlist(session, payment);
+                }
             }
         } catch (Exception e) {
             // Bắt lỗi để nếu có trục trặc phần thông báo cũng không làm hỏng luồng thanh toán chính

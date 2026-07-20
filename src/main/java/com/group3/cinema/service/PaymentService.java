@@ -16,6 +16,7 @@ import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.PaymentRepository;
 import com.group3.cinema.repository.TicketRepository;
 import com.group3.cinema.repository.VoucherRepository;
+import com.group3.cinema.repository.WishlistRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import com.group3.cinema.dto.BookingHistoryDto;
+import com.group3.cinema.entity.Showtime;
 
 @Service
 public class PaymentService {
@@ -35,6 +40,8 @@ public class PaymentService {
     private final ShowtimeRepository showtimeRepository;
     private final AccountRepository accountRepository;
     private final VoucherRepository voucherRepository;
+    private final WishlistRepository wishlistRepository;
+    private final LoyaltyService loyaltyService;
 
     public PaymentService(PaymentRepository paymentRepository,
                           BookingRepository bookingRepository,
@@ -43,7 +50,9 @@ public class PaymentService {
                           TicketRepository realTicketRepository,
                           ShowtimeRepository showtimeRepository,
                           AccountRepository accountRepository,
-                          VoucherRepository voucherRepository) {
+                          VoucherRepository voucherRepository,
+                          WishlistRepository wishlistRepository,
+                          LoyaltyService loyaltyService) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.ticketRepository = ticketRepository;
@@ -52,7 +61,10 @@ public class PaymentService {
         this.showtimeRepository = showtimeRepository;
         this.accountRepository = accountRepository;
         this.voucherRepository = voucherRepository;
+        this.wishlistRepository = wishlistRepository;
+        this.loyaltyService = loyaltyService;
     }
+
 
     @Transactional
     public Payment createPayment(Long bookingId, Integer accountId, String method) {
@@ -331,9 +343,107 @@ public class PaymentService {
                     t.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
                     realTicketRepository.save(t);
                 }
+                
+                // Award loyalty points to the customer
+                loyaltyService.addLoyaltyPoints(booking.getAccountId(), booking.getTotalAmount());
             }
         } catch (Exception ex) {
             System.err.println("Warning: Failed to copy tickets to customer account display: " + ex.getMessage());
         }
+    }
+
+    public void cleanWishlistIfFromWishlist(jakarta.servlet.http.HttpSession session, Payment payment) {
+        if (session == null || payment == null) {
+            return;
+        }
+        try {
+            bookingRepository.findById(payment.getBookingId()).ifPresent(booking -> {
+                showtimeRepository.findById(booking.getShowtimeId()).ifPresent(showtime -> {
+                    var movie = showtime.getMovie();
+                    if (movie != null) {
+                        String attrName = "from_wishlist_movie_" + movie.getId();
+                        Boolean fromWishlist = (Boolean) session.getAttribute(attrName);
+                        if (fromWishlist != null && fromWishlist) {
+                            wishlistRepository.findByAccountAccountIDAndMovieId(booking.getAccountId(), movie.getId())
+                                    .ifPresent(item -> {
+                                        wishlistRepository.delete(item);
+                                        System.out.println("Success: Auto-removed movie " + movie.getTitle() + " from wishlist for account " + booking.getAccountId());
+                                    });
+                            session.removeAttribute(attrName);
+                        }
+                    }
+                });
+            });
+        } catch (Exception ex) {
+            System.err.println("Warning: Failed to clean wishlist for checkout: " + ex.getMessage());
+        }
+    }
+    public List<BookingHistoryDto> getBookingHistory(Integer accountId) {
+        List<Booking> bookings = bookingRepository.findByAccountIdOrderByCreatedAtDesc(accountId);
+        List<BookingHistoryDto> dtos = new ArrayList<>();
+        
+        for (Booking booking : bookings) {
+            BookingHistoryDto dto = new BookingHistoryDto();
+            dto.setBookingTime(booking.getCreatedAt());
+            dto.setTotalAmount(booking.getTotalAmount());
+            
+            Payment payment = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId()).orElse(null);
+            
+            if (payment != null) {
+                dto.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
+                dto.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "Thẻ/Ví");
+                
+                switch (payment.getStatus()) {
+                    case SUCCESS:
+                        dto.setStatus("Thành công");
+                        dto.setStatusClass("status-success");
+                        break;
+                    case FAILED:
+                        dto.setStatus("Thất bại");
+                        dto.setStatusClass("status-failed");
+                        break;
+                    case CANCELLED:
+                        dto.setStatus("Đã hủy");
+                        dto.setStatusClass("status-cancelled");
+                        break;
+                    case PENDING:
+                    default:
+                        dto.setStatus("Đang xử lý");
+                        dto.setStatusClass("status-pending");
+                        break;
+                }
+            } else {
+                dto.setBookingCode("CF-" + booking.getId());
+                dto.setPaymentMethod("Chưa chọn");
+                
+                switch (booking.getStatus()) {
+                    case CANCELLED:
+                    case EXPIRED:
+                        dto.setStatus("Đã hủy");
+                        dto.setStatusClass("status-cancelled");
+                        break;
+                    case PENDING:
+                    default:
+                        dto.setStatus("Đang chờ thanh toán");
+                        dto.setStatusClass("status-pending");
+                        break;
+                }
+            }
+            
+            Showtime showtime = showtimeRepository.findById(booking.getShowtimeId()).orElse(null);
+            String movieTitle = (showtime != null && showtime.getMovie() != null) ? showtime.getMovie().getTitle() : "Phim không xác định";
+            List<BookingTicket> tickets = ticketRepository.findByBookingId(booking.getId());
+            
+            if (!tickets.isEmpty()) {
+                String seats = tickets.stream().map(BookingTicket::getSeatLabel).collect(Collectors.joining(", "));
+                dto.setSummary(String.format("Thanh toán %d vé xem phim \"%s\" (Ghế %s)", tickets.size(), movieTitle, seats));
+            } else {
+                dto.setSummary("Không có thông tin vé");
+            }
+            
+            dtos.add(dto);
+        }
+        
+        return dtos;
     }
 }

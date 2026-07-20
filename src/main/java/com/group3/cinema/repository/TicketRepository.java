@@ -62,9 +62,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
               AND (:toDate IS NULL OR t.showtime.showDate <= :toDate)
               AND (:searchTerm IS NULL OR
                    CAST(t.id AS string) LIKE %:searchTerm% OR
-                   t.seatNumber LIKE %:searchTerm% OR
-                   t.customerPhone LIKE %:searchTerm% OR
-                   t.customerName LIKE %:searchTerm%)
+                   t.seatNumber LIKE %:searchTerm%)
             ORDER BY t.createdAt DESC, t.id DESC
             """)
     List<Ticket> searchTickets(@Param("movieId") Integer movieId,
@@ -83,4 +81,13 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     @Transactional
     @Query("DELETE FROM Ticket t WHERE t.showtime.id = :showtimeId")
     void deleteAllByShowtimeId(@Param("showtimeId") Long showtimeId);
+
+    @Query("SELECT t FROM Ticket t WHERE t.status <> 'Còn trống' AND t.deleted = false")
+    List<Ticket> findAllBookedTickets();
+
+    @Query("SELECT COUNT(t) > 0 FROM Ticket t WHERE t.showtime.movie.id = :movieId AND t.status <> 'Còn trống' AND t.deleted = false")
+    boolean hasBookedTicketsForMovie(@Param("movieId") Integer movieId);
+
+    @Query("SELECT COUNT(t) > 0 FROM Ticket t WHERE t.showtime.id = :showtimeId AND t.status <> 'Còn trống' AND t.deleted = false")
+    boolean hasBookedTicketsForShowtime(@Param("showtimeId") Long showtimeId);
 }

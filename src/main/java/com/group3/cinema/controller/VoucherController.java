@@ -17,13 +17,18 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Controller
 @RequestMapping("/admin/vouchers")
-@RequiredArgsConstructor
 public class VoucherController {
 
     private final VoucherService voucherService;
+
+    @Autowired
+    public VoucherController(VoucherService voucherService) {
+        this.voucherService = voucherService;
+    }
 
     /**
      * HÀM BỔ TRỢ: Đổ động danh sách các Inner Enum từ Entity Voucher vào Model
@@ -38,7 +43,7 @@ public class VoucherController {
      * 1. TRANG DANH SÁCH VOUCHER (ĐÃ CẬP NHẬT BỘ LỌC TÌM KIẾM)
      * Đường dẫn file HTML: src/main/resources/templates/voucher-list.html
      */
-    @GetMapping({"", "/list"})
+    @GetMapping({ "", "/list" })
     public String listVouchers(
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "discountType", required = false) String discountType,
@@ -49,7 +54,8 @@ public class VoucherController {
         List<Voucher> vouchers = voucherService.searchVouchers(keyword, discountType, serviceScope);
         model.addAttribute("voucherList", vouchers);
 
-        // 2. Nạp các Enum để hiển thị dữ liệu cho các ô Select của thanh Filter Bar bên HTML
+        // 2. Nạp các Enum để hiển thị dữ liệu cho các ô Select của thanh Filter Bar bên
+        // HTML
         populateEnums(model);
 
         return "voucher-list";
@@ -73,11 +79,12 @@ public class VoucherController {
      */
     @PostMapping("/add")
     public String createVoucher(@Valid @ModelAttribute("voucher") Voucher voucher,
-                                BindingResult result,
-                                Model model,
-                                RedirectAttributes redirectAttributes) {
+            BindingResult result,
+            Model model,
+            RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
-            populateEnums(model); // Nạp lại danh sách enum để tránh trắng dữ liệu Dropdown select khi lỗi validate
+            populateEnums(model); // Nạp lại danh sách enum để tránh trắng dữ liệu Dropdown select khi lỗi
+                                  // validate
             return "voucher-form";
         }
 
@@ -90,7 +97,8 @@ public class VoucherController {
             redirectAttributes.addFlashAttribute("voucher", voucher);
             return "redirect:/admin/vouchers/add";
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi bất ngờ hệ thống không thể lưu voucher!");
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Đã xảy ra lỗi bất ngờ hệ thống không thể lưu voucher!");
             return "redirect:/admin/vouchers/add";
         }
     }
@@ -119,10 +127,10 @@ public class VoucherController {
      */
     @PostMapping("/edit/{id}")
     public String updateVoucher(@PathVariable("id") Long id,
-                                @Valid @ModelAttribute("voucher") Voucher voucher,
-                                BindingResult result,
-                                Model model,
-                                RedirectAttributes redirectAttributes) {
+            @Valid @ModelAttribute("voucher") Voucher voucher,
+            BindingResult result,
+            Model model,
+            RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             populateEnums(model); // Nạp lại danh sách enum nếu lỗi binding dữ liệu sửa
             return "voucher-form";
@@ -150,7 +158,8 @@ public class VoucherController {
         try {
             // Gọi service xử lý ẩn mã
             voucherService.deleteVoucher(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã ẩn mã Voucher thành công ra khỏi hệ thống công khai!");
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã ẩn mã Voucher thành công ra khỏi hệ thống công khai!");
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (Exception e) {
@@ -158,6 +167,5 @@ public class VoucherController {
         }
         return "redirect:/admin/vouchers/list";
     }
-
 
 }

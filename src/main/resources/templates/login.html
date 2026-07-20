@@ -206,7 +206,6 @@
         }
     }
 
-    // Form submit animation
     document.getElementById('loginForm').addEventListener('submit', function (e) {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value.trim();
@@ -216,11 +215,6 @@
             if (!email) document.getElementById('emailWrapper').classList.add('focused');
             return;
         }
-
-        const btn = document.getElementById('btnLogin');
-        btn.querySelector('.btn-text').style.display = 'none';
-        btn.querySelector('.btn-loader').style.display = 'inline-block';
-        btn.disabled = true;
     });
 
     // Input focus animation

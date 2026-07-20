@@ -47,6 +47,7 @@ public class RoomUnicodeMigration {
         runMigrationStep("migrate text columns", this::migrateTextColumns);
         runMigrationStep("normalize Vietnamese values", this::normalizeVietnameseValues);
         runMigrationStep("fix movie status constraint", this::fixMovieStatusConstraint);
+        runMigrationStep("fix membership level constraint", this::fixMembershipLevelConstraint);
         runMigrationStep("seed pricing configs", this::seedPricingConfigs);
     }
 
@@ -342,11 +343,11 @@ public class RoomUnicodeMigration {
         alterColumn("rooms", "audio_tech", "NVARCHAR(80) NULL");
         alterColumn("rooms", "status", "NVARCHAR(20) NULL");
 
-        alterColumn("room_types", "name", "NVARCHAR(50) NOT NULL");
+        migrateColumnToNvarcharWithConstraints("room_types", "name", "NVARCHAR(50) NOT NULL", "UQ_room_types_name");
         alterColumn("room_types", "description", "NVARCHAR(255) NULL");
-        alterColumn("audio_technologies", "name", "NVARCHAR(80) NOT NULL");
+        migrateColumnToNvarcharWithConstraints("audio_technologies", "name", "NVARCHAR(80) NOT NULL", "UQ_audio_technologies_name");
         alterColumn("audio_technologies", "description", "NVARCHAR(255) NULL");
-        alterColumn("seat_types", "code", "NVARCHAR(20) NOT NULL");
+        migrateColumnToNvarcharWithConstraints("seat_types", "code", "NVARCHAR(20) NOT NULL", "UQ_seat_types_code");
         alterColumn("seat_types", "display_name", "NVARCHAR(80) NOT NULL");
         alterColumn("seats", "seat_label", "NVARCHAR(20) NULL");
         alterColumn("seats", "seat_type", "NVARCHAR(30) NOT NULL");
@@ -409,9 +410,9 @@ public class RoomUnicodeMigration {
         alterColumn("ticket_price_configs", "day_type", "NVARCHAR(30) NOT NULL");
         alterColumn("ticket_price_configs", "slot_name", "NVARCHAR(30) NOT NULL");
         alterColumn("ticket_price_configs", "note", "NVARCHAR(100) NULL");
-        alterColumn("customer_discounts", "customer_type", "NVARCHAR(50) NOT NULL");
-        alterColumn("seat_type_surcharges", "seat_type_code", "NVARCHAR(30) NOT NULL");
-        alterColumn("format_surcharges", "format_code", "NVARCHAR(30) NOT NULL");
+        migrateColumnToNvarcharWithConstraints("customer_discounts", "customer_type", "NVARCHAR(50) NOT NULL", "UQ_customer_discounts_type");
+        migrateColumnToNvarcharWithConstraints("seat_type_surcharges", "seat_type_code", "NVARCHAR(30) NOT NULL", "UQ_seat_type_surcharges_code");
+        migrateColumnToNvarcharWithConstraints("format_surcharges", "format_code", "NVARCHAR(30) NOT NULL", "UQ_format_surcharges_code");
     }
 
     /**
@@ -479,6 +480,61 @@ public class RoomUnicodeMigration {
             }
         } catch (Exception e) {
             log.warn("[TrienLX - 2026-06-23] Không thể tạo constraint mới CK_movie_status_allowed: {}", e.getMessage());
+        }
+    }
+
+    private void fixMembershipLevelConstraint() {
+        if (!tableExists("account")) {
+            return;
+        }
+        try {
+            // Kiểm tra xem constraint cũ CK__account__members__4BAC3F29 có tồn tại không trước khi xóa
+            Integer oldConstraintCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys.check_constraints WHERE name = 'CK__account__members__4BAC3F29'",
+                    Integer.class
+            );
+            if (oldConstraintCount != null && oldConstraintCount > 0) {
+                jdbcTemplate.execute("ALTER TABLE account DROP CONSTRAINT CK__account__members__4BAC3F29");
+                log.info("Đã xóa constraint cũ CK__account__members__4BAC3F29 khỏi bảng account");
+            }
+        } catch (Exception e) {
+            log.warn("Không thể xóa constraint cũ CK__account__members__4BAC3F29: {}", e.getMessage());
+        }
+
+        try {
+            // Xóa toàn bộ constraint CHECK trên cột membership_level của bảng account
+            String dropAllConstraints = """
+                    DECLARE @constraintName NVARCHAR(256)
+                    SELECT @constraintName = name
+                    FROM sys.check_constraints cc
+                    JOIN sys.columns c ON cc.parent_object_id = c.object_id AND cc.parent_column_id = c.column_id
+                    JOIN sys.tables t ON c.object_id = t.object_id
+                    WHERE t.name = 'account' AND c.name = 'membership_level'
+                    IF @constraintName IS NOT NULL
+                        EXEC('ALTER TABLE account DROP CONSTRAINT [' + @constraintName + ']')
+                    """;
+            jdbcTemplate.execute(dropAllConstraints);
+            log.info("Đã xóa tất cả CHECK constraint trên cột account.membership_level (nếu có)");
+        } catch (Exception e) {
+            log.warn("Không thể xóa CHECK constraint trên cột account.membership_level: {}", e.getMessage());
+        }
+
+        try {
+            // Kiểm tra xem constraint mới đã tồn tại chưa
+            Integer newConstraintCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys.check_constraints WHERE name = 'CK_account_membership_level_allowed'",
+                    Integer.class
+            );
+            if (newConstraintCount == null || newConstraintCount == 0) {
+                // Tạo constraint mới với đầy đủ 4 giá trị bao gồm BRONZE
+                jdbcTemplate.execute(
+                        "ALTER TABLE account ADD CONSTRAINT CK_account_membership_level_allowed "
+                        + "CHECK (membership_level IN ('BRONZE', 'SILVER', 'GOLD', 'PLAT'))"
+                );
+                log.info("Đã tạo constraint mới CK_account_membership_level_allowed cho bảng account");
+            }
+        } catch (Exception e) {
+            log.warn("Không thể tạo constraint mới CK_account_membership_level_allowed: {}", e.getMessage());
         }
     }
 
@@ -598,13 +654,13 @@ public class RoomUnicodeMigration {
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Giờ thường', '12:00:00', '16:59:59', 60000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Giờ vàng', '17:00:00', '21:59:59', 75000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Trong tuần', N'Suất khuya', '22:00:00', '23:59:59', 65000.0)");
-                    
+
                     // Cuối tuần
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Suất sớm', '00:00:00', '11:59:59', 65000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Giờ thường', '12:00:00', '16:59:59', 80000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Giờ vàng', '17:00:00', '21:59:59', 95000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Cuối tuần', N'Suất khuya', '22:00:00', '23:59:59', 85000.0)");
-                    
+
                     // Ngày lễ
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Ngày lễ', N'Suất sớm', '00:00:00', '11:59:59', 80000.0)");
                     jdbcTemplate.execute("INSERT INTO ticket_price_configs (day_type, slot_name, start_time, end_time, base_price) VALUES (N'Ngày lễ', N'Giờ thường', '12:00:00', '16:59:59', 95000.0)");
@@ -650,6 +706,51 @@ public class RoomUnicodeMigration {
             }
         } catch (Exception e) {
             log.warn("Lỗi nạp seed data cho ma trận giá vé: {}", e.getMessage());
+        }
+    }
+
+    private void migrateColumnToNvarcharWithConstraints(String tableName, String columnName, String definition, String uniqueConstraintName) {
+        if (!tableExists(tableName) || !columnExists(tableName, columnName)) {
+            return;
+        }
+        try {
+            // Drop unique constraints
+            java.util.List<String> constraints = jdbcTemplate.query(
+                "SELECT name FROM sys.objects WHERE (type = 'UQ' OR type = 'F' OR type = 'PK') AND parent_object_id = OBJECT_ID('" + tableName + "')",
+                (rs, rowNum) -> rs.getString("name")
+            );
+            for (String cn : constraints) {
+                try {
+                    jdbcTemplate.execute("ALTER TABLE " + tableName + " DROP CONSTRAINT [" + cn + "]");
+                    log.info("Dropped constraint {} on table {}", cn, tableName);
+                } catch (Exception ignored) {}
+            }
+
+            // Drop unique indexes
+            java.util.List<String> indexes = jdbcTemplate.query(
+                "SELECT name FROM sys.indexes WHERE object_id = OBJECT_ID('" + tableName + "') AND is_unique = 1 AND name NOT LIKE 'PK_%'",
+                (rs, rowNum) -> rs.getString("name")
+            );
+            for (String idx : indexes) {
+                try {
+                    jdbcTemplate.execute("DROP INDEX [" + idx + "] ON " + tableName);
+                    log.info("Dropped index {} on table {}", idx, tableName);
+                } catch (Exception ignored) {}
+            }
+
+            // Alter column
+            jdbcTemplate.execute("ALTER TABLE " + tableName + " ALTER COLUMN " + columnName + " " + definition);
+            log.info("Successfully altered column {}.{} to {}", tableName, columnName, definition);
+
+            // Recreate unique constraint
+            try {
+                jdbcTemplate.execute("ALTER TABLE " + tableName + " ADD CONSTRAINT [" + uniqueConstraintName + "] UNIQUE (" + columnName + ")");
+                log.info("Re-created unique constraint {} on {}({})", uniqueConstraintName, tableName, columnName);
+            } catch (Exception e) {
+                log.warn("Could not re-create unique constraint {} on {}: {}", uniqueConstraintName, tableName, e.getMessage());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to migrate column {}.{} to NVARCHAR: {}", tableName, columnName, e.getMessage());
         }
     }
 }

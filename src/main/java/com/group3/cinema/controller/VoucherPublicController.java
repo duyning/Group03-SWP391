@@ -16,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 @Controller
-@RequiredArgsConstructor
 public class VoucherPublicController {
 
     private static final Logger log = LoggerFactory.getLogger(VoucherPublicController.class);
@@ -33,6 +33,15 @@ public class VoucherPublicController {
     private final VoucherService voucherService;
     private final AccountService accountService;
     private final NotificationService notificationService;
+
+    @Autowired
+    public VoucherPublicController(VoucherService voucherService,
+                                   AccountService accountService,
+                                   NotificationService notificationService) {
+        this.voucherService = voucherService;
+        this.accountService = accountService;
+        this.notificationService = notificationService;
+    }
 
     /**
      * 1. TRANG KHO VOUCHER CÔNG KHAI
@@ -48,7 +57,8 @@ public class VoucherPublicController {
             model.addAttribute("user", currentAccount);
 
             Set<Long> savedVoucherIds = new HashSet<>();
-            // Duyệt danh sách voucher tài khoản đã lưu để đánh dấu trạng thái "Đã lưu" trên giao diện
+            // Duyệt danh sách voucher tài khoản đã lưu để đánh dấu trạng thái "Đã lưu" trên
+            // giao diện
             if (currentAccount != null && currentAccount.getSavedVouchers() != null) {
                 for (Voucher v : currentAccount.getSavedVouchers()) {
                     savedVoucherIds.add(v.getId());
@@ -60,7 +70,8 @@ public class VoucherPublicController {
             model.addAttribute("savedVoucherIds", new HashSet<Long>());
         }
 
-        // Đổ danh sách voucher đã lọc sạch (isDeleted = false & endDate > now) ra kho voucher
+        // Đổ danh sách voucher đã lọc sạch (isDeleted = false & endDate > now) ra kho
+        // voucher
         model.addAttribute("vouchers", voucherService.getAllVouchers());
         return "voucher-public-list";
     }

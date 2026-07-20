@@ -174,25 +174,18 @@
         <aside class="admin-sidebar">
             <div class="sidebar-header">
                 <img src="/images/cineflow-logo-light.svg" height="35" alt="CineFlow Cinema">
-                <span>ADMIN</span>
+                <button type="button" class="sidebar-toggle" aria-label="Thu gọn/mở rộng sidebar" title="Thu gọn/mở rộng sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
             <ul class="sidebar-nav">
-                <a href="/admin/dashboard"><li><i class="fas fa-chart-line"></i> Dashboard</li></a>
-                <a href="/manage_movies.html"><li><i class="fas fa-film"></i> Quản lý phim</li></a>
-                <a href="/manage_showtime.html"><li><i class="fas fa-calendar-alt"></i> Quản lý lịch chiếu</li></a>
-                <a href="/manage_ticket.html"><li class="active"><i class="fas fa-ticket-alt"></i> Quản lý bán vé</li></a>
-                <a href="/admin/combos"><li><i class="fas fa-utensils"></i> Quản lý Combo</li></a>
-                <a href="/admin/promotions"><li><i class="fas fa-bullhorn"></i> Quản lý khuyến mãi</li></a>
-                <a href="/admin/vouchers/list"><li><i class="fas fa-ticket-simple"></i> Quản lý Voucher</li></a>
-                <a href="/admin/holidays"><li><i class="fas fa-calendar-days"></i> Cấu hình ngày lễ</li></a>
-                <a href="/admin/banners"><li><i class="fas fa-images"></i> Quản lý banner</li></a>
-                <a href="/admin/contacts"><li><i class="fas fa-envelope-open-text"></i> Liên hệ khách hàng</li></a>
-                <a href="/admin/rooms"><li><i class="fas fa-theater-masks"></i> Rạp & Phòng</li></a>
-                <a href="/admin/catalogs"><li><i class="fas fa-list"></i> Danh mục phòng</li></a>
-                <a href="/admin/posts"><li><i class="fas fa-newspaper"></i> Quản lý tin tức</li></a>
-                <a href="/profile"><li><i class="fas fa-user-circle"></i> Thông tin cá nhân</li></a>
-                <a href="/admin/create-manager"><li><i class="fas fa-user-shield"></i> Tạo tài khoản Quản lý</li></a>
-                <a href="/logout"><li><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-chart-line"></i> Tổng quan</span><b></b></summary><div class="sidebar-subnav"><a href="/admin/dashboard"><span>Dashboard</span></a><a href="/admin/reports"><span>Báo cáo thống kê</span></a></div></details></li>
+                <li class="sidebar-section"><details open><summary><span><i class="fas fa-film"></i> Phim & lịch chiếu</span><b></b></summary><div class="sidebar-subnav"><a href="/manage_movies.html"><span>Quản lý phim</span></a><a href="/manage_showtime.html"><span>Quản lý lịch chiếu</span></a><a href="/manage_ticket.html"><span class="active">Quản lý bán vé</span></a></div></details></li>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-cash-register"></i> Bán hàng & hóa đơn</span><b></b></summary><div class="sidebar-subnav"><a href="/admin/counter-sales"><span>Bán vé tại quầy</span></a><a href="/admin/invoices"><span>Quản lý hóa đơn</span></a><a href="/admin/combos"><span>Quản lý Combo</span></a></div></details></li>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-bullhorn"></i> Marketing</span><b></b></summary><div class="sidebar-subnav"><a href="/admin/promotions"><span>Quản lý khuyến mãi</span></a><a href="/admin/vouchers/list"><span>Quản lý Voucher</span></a><a href="/admin/holidays"><span>Cấu hình ngày lễ</span></a><a href="/admin/banners"><span>Quản lý banner</span></a></div></details></li>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-theater-masks"></i> Rạp, phòng & nội dung</span><b></b></summary><div class="sidebar-subnav"><a href="/admin/contacts"><span>Liên hệ khách hàng</span></a><a href="/admin/reviews"><span>Quản lý đánh giá</span></a><a href="/admin/rooms"><span>Rạp & Phòng</span></a><a href="/admin/catalogs"><span>Danh mục phòng</span></a><a href="/admin/posts"><span>Quản lý tin tức</span></a></div></details></li>
+                <li class="sidebar-section"><details><summary><span><i class="fas fa-user-circle"></i> Tài khoản</span><b></b></summary><div class="sidebar-subnav"><a href="/profile"><span>Thông tin cá nhân</span></a><a href="/admin/create-manager"><span>Tạo tài khoản Quản lý</span></a><a href="/admin/accounts"><span>Quản lý tài khoản</span></a></div></details></li>
+                <a href="/logout"><li class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</li></a>
             </ul>
         </aside>
 
@@ -238,7 +231,8 @@
                                 <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#475569;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Standard (Thường)</span></div>
                                 <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#8b5cf6;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>VIP (Vip)</span></div>
                                 <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ec4899;border-radius:4px;display:inline-block;opacity:0.4;"></span> <span>Sweetbox (Đôi)</span></div>
-                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ef4444;border-radius:4px;display:inline-block;"></span> <span>Đã bán / Giữ chỗ</span></div>
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#ef4444;border-radius:4px;display:inline-block;"></span> <span>Đã bán (BOOKED)</span></div>
+                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:#eab308;border-radius:4px;display:inline-block;animation:pulse-yellow 1.5s infinite;"></span> <span>Đang giữ chỗ (PENDING)</span></div>
                                 <div style="display:flex; align-items:center; gap:6px; color: var(--text-main);"><span style="width:16px;height:16px;background:var(--primary-color);border-radius:4px;display:inline-block;box-shadow:0 0 10px var(--primary-color);"></span> <span>Đang chọn</span></div>
                             </div>
 
@@ -257,16 +251,32 @@
                         <!-- Panel thông tin & tính giá bên phải -->
                         <div class="panel-booking-info" style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.05); min-height: 300px;">
                             <h3 style="font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-top:0; color: var(--text-main);"><i class="fa-solid fa-ticket-alt"></i> Thông tin giá ghế</h3>
-                            
+
                             <div id="bookingPanelActive" style="display: none; margin-top: 1rem;">
+                                <!-- Thông tin cơ bản về ghế -->
                                 <div style="font-size: 0.9rem; line-height: 1.6rem; color: var(--text-main); margin-bottom: 1.2rem; background: var(--bg-app); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
                                     <div><strong>Ghế chọn:</strong> <span id="bookSeatLabel" style="font-weight: 700; color: var(--primary-color);">--</span> (<span id="bookSeatType">--</span>)</div>
                                     <div><strong>Phòng:</strong> <span id="bookRoomLabel">--</span></div>
                                     <div><strong>Suất chiếu:</strong> <span id="bookShowtimeLabel">--</span></div>
                                 </div>
 
-                                <!-- Chi tiết cơ cấu giá gốc -->
+                                <!-- Panel vé đã bán / đang giữ chỗ -->
+                                <div id="bookedSeatInfoPanel" style="display: none; margin-bottom: 1.2rem; border-radius: 10px; overflow: hidden;">
+                                    <div id="bookedSeatInfoHeader" style="padding: 0.6rem 1rem; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                                        <i id="bookedSeatInfoIcon" class="fa-solid fa-lock"></i>
+                                        <span id="bookedSeatInfoTitle">Ghế đang được giữ chỗ</span>
+                                    </div>
+                                    <div style="background: var(--bg-app); padding: 1rem; font-size: 0.85rem; color: var(--text-main); line-height: 1.7rem; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 10px 10px;">
+                                        <div><strong>Mã vé:</strong> <span id="bookedTicketId" style="font-family: monospace; color: var(--primary-color);">--</span></div>
+                                        <div><strong>Loại khách:</strong> <span id="bookedCustomerType">--</span></div>
+                                        <div><strong>Trạng thái:</strong> <span id="bookedStatus" style="font-weight: 700;">--</span></div>
+                                        <div id="bookedPriceRow"><strong>Giá vé:</strong> <span id="bookedFinalPrice" style="font-weight: 700; color: var(--stat-green);">--</span></div>
+                                    </div>
+                                </div>
+
+                                <!-- Chi tiết cơ cấu giá gốc (chỉ hiển thị với ghế trống) -->
                                 <div class="price-breakdown-box" id="bookPriceBreakdown" style="background: var(--bg-app); border-radius: 8px; padding: 1rem; border: 1px dashed var(--border-color); font-size: 0.85rem; margin-bottom: 1.2rem;">
+                                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px;">Cơ cấu giá vé (Ước tính)</div>
                                     <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Giá cơ bản (Giờ/Ngày):</span><span id="bookBasePrice">0đ</span></div>
                                     <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Phụ thu loại ghế:</span><span id="bookSeatSurcharge">0đ</span></div>
                                     <div class="breakdown-row" style="display:flex; justify-content:space-between; margin-bottom:0.4rem; color:var(--text-muted);"><span>Phụ thu định dạng:</span><span id="bookFormatSurcharge">0đ</span></div>
@@ -275,8 +285,9 @@
                             </div>
 
                             <div id="bookingPanelEmpty" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 250px; color: var(--text-muted); font-size: 0.88rem; text-align: center;">
-                                <i class="fa-solid fa-calculator" style="font-size: 2.2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                                <span>Chọn một ghế trống trên sơ đồ để xem thông tin chi tiết và giá vé.</span>
+                                <i class="fa-solid fa-map-location-dot" style="font-size: 2.2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                                <span>Chọn một ghế trên sơ đồ để xem thông tin chi tiết.</span>
+                                <span style="font-size: 0.8rem; margin-top: 0.3rem; opacity: 0.7;">🟥 Đã bán &nbsp;&nbsp; 🟨 Đang giữ &nbsp;&nbsp; ⬜ Còn trống</span>
                             </div>
                         </div>
                     </div>
@@ -322,6 +333,14 @@
                                 <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: block; color: var(--text-main);"><i class="fa-solid fa-magnifying-glass"></i> TÌM THEO NGÀY / LOẠI NGÀY / GHI CHÚ</label>
                                 <input type="text" id="filterPriceDayType" class="form-control" placeholder="Nhập loại ngày, ngày chiếu hoặc ghi chú..." oninput="filterBasePrices()" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; height: 36px;">
                             </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: block; color: var(--text-main);"><i class="fa-solid fa-circle-check"></i> LỌC TRẠNG THÁI</label>
+                                <select id="filterPriceStatus" class="form-control" onchange="filterBasePrices()" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; height: 36px;">
+                                    <option value="">-- Tất cả trạng thái --</option>
+                                    <option value="active">Đang hoạt động</option>
+                                    <option value="expired">Hết hạn</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="table-responsive">
@@ -336,11 +355,12 @@
                                         <th>Giờ bắt đầu</th>
                                         <th>Giờ kết thúc</th>
                                         <th>Giá cơ bản</th>
+                                        <th>Trạng thái</th>
                                         <th class="text-center">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tblPricingBase">
-                                    <tr><td colspan="9" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Đang tải cấu hình...</td></tr>
+                                    <tr><td colspan="10" class="text-center" style="color:var(--text-muted); padding:1.5rem;">Đang tải cấu hình...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -539,7 +559,7 @@
             </div>
             <form id="ticketCrudForm" class="modal-body" onsubmit="event.preventDefault();">
                 <input type="hidden" id="ticketCrudId">
-                
+
                 <div class="form-group" style="margin-bottom: 1rem;">
                     <label for="ticketCrudMovie" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Chọn Phim <span class="required">*</span></label>
                     <select id="ticketCrudMovie" class="form-control" style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);" onchange="handleCrudMovieChange()">
@@ -581,16 +601,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-                    <div class="form-group">
-                        <label for="ticketCrudCustomerName" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Tên khách hàng</label>
-                        <input type="text" id="ticketCrudCustomerName" class="form-control" placeholder="Nhập tên khách..." style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);">
-                    </div>
-                    <div class="form-group">
-                        <label for="ticketCrudCustomerPhone" style="font-weight: 500; display: block; margin-bottom: 0.5rem; color: var(--text-main);">Số điện thoại</label>
-                        <input type="text" id="ticketCrudCustomerPhone" class="form-control" placeholder="Nhập số điện thoại..." style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-main);">
-                    </div>
-                </div>
+
 
                 <!-- Phân tích cơ cấu giá vé tự động -->
                 <div class="price-breakdown-box" id="crudPriceBreakdownBox" style="display: none; background: var(--bg-app); border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color); font-size: 0.88rem; margin-bottom: 1.5rem;">
@@ -624,7 +635,7 @@
                 box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
             }
         }
-        
+
         .slot-chip-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -772,6 +783,6 @@
     <div id="toast-container"></div>
 
     <script src="/js/app.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
 </body>
 </html>
-

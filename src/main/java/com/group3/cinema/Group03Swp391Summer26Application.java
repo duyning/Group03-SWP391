@@ -18,5 +18,3 @@ public class Group03Swp391Summer26Application {
         SpringApplication.run(Group03Swp391Summer26Application.class, args);
     }
 }
-
-

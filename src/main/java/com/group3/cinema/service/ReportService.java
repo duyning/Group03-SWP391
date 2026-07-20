@@ -1,51 +1,134 @@
 package com.group3.cinema.service;
 
-import com.group3.cinema.repository.ReportRepository;
+import com.group3.cinema.entity.Booking;
+import com.group3.cinema.entity.BookingCombo;
+import com.group3.cinema.entity.BookingTicket;
+import com.group3.cinema.entity.Showtime;
+import com.group3.cinema.repository.BookingComboRepository;
+import com.group3.cinema.repository.BookingRepository;
+import com.group3.cinema.repository.BookingTicketRepository;
+import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class ReportService {
 
-    private final ReportRepository reportRepository;
+    private final BookingRepository bookingRepository;
+    private final BookingTicketRepository bookingTicketRepository;
+    private final BookingComboRepository bookingComboRepository;
+    private final ShowtimeRepository showtimeRepository;
 
-    // Dùng constructor truyền thống để đảm bảo không lỗi nếu cậu không cài Lombok
-    public ReportService(ReportRepository reportRepository) {
-        this.reportRepository = reportRepository;
+    public ReportService(BookingRepository bookingRepository,
+                         BookingTicketRepository bookingTicketRepository,
+                         BookingComboRepository bookingComboRepository,
+                         ShowtimeRepository showtimeRepository) {
+        this.bookingRepository = bookingRepository;
+        this.bookingTicketRepository = bookingTicketRepository;
+        this.bookingComboRepository = bookingComboRepository;
+        this.showtimeRepository = showtimeRepository;
     }
 
     public Map<String, Object> getRevenueAnalysis(LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> reportData = new HashMap<>();
+        LocalDateTime start = (startDate != null ? startDate : LocalDate.now().minusDays(30)).atStartOfDay();
+        LocalDateTime end = (endDate != null ? endDate : LocalDate.now()).atTime(LocalTime.MAX);
 
-        // Nếu admin không chọn ngày, mặc định lấy 30 ngày gần nhất
-        LocalDateTime start = (startDate != null) ? startDate.atStartOfDay() : LocalDate.now().minusDays(30).atStartOfDay();
-        LocalDateTime end = (endDate != null) ? endDate.atTime(LocalTime.MAX) : LocalDateTime.now();
+        List<Booking> paidBookings = bookingRepository.findByStatusAndPaidWindow(Booking.Status.PAID, start, end);
 
-        // 1. Tổng doanh thu tiền mặt thu về trong khoảng thời gian chọn
-        Double totalRevenue = reportRepository.sumRevenueByDateRange(start, end);
-        reportData.put("totalRevenue", totalRevenue != null ? totalRevenue : 0.0);
+        BigDecimal totalRevenue = paidBookings.stream()
+                .map(Booking::getTotalAmount)
+                .filter(value -> value != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 2. Thống kê doanh thu theo Phương thức thanh toán (VNPAY, PAYOS...)
-        List<Object[]> paymentStats = reportRepository.sumRevenueByPaymentMethod();
-        reportData.put("paymentStats", paymentStats);
+        long totalTickets = paidBookings.stream()
+                .mapToLong(booking -> bookingTicketRepository.findByBookingId(booking.getId()).size())
+                .sum();
 
-        // 3. Thống kê doanh thu theo Phim
-        List<Object[]> movieStats = reportRepository.sumRevenueByMovie();
-        reportData.put("movieStats", movieStats);
+        BigDecimal averageOrderValue = paidBookings.isEmpty()
+                ? BigDecimal.ZERO
+                : totalRevenue.divide(BigDecimal.valueOf(paidBookings.size()), 0, RoundingMode.HALF_UP);
 
-        // 4. Thống kê doanh thu theo Combo bỏng nước
-        List<Object[]> comboStats = reportRepository.sumRevenueByCombo();
-        reportData.put("comboStats", comboStats);
+        Map<LocalDate, StatBucket> dailyRevenue = new LinkedHashMap<>();
+        Map<String, StatBucket> comboStats = new LinkedHashMap<>();
+        Map<String, StatBucket> seatTypeStats = new LinkedHashMap<>();
+        Map<String, StatBucket> roomStats = new LinkedHashMap<>();
 
-        // 5. Thống kê số lượng & doanh thu theo Loại ghế (Standard, VIP...)
-        List<Object[]> seatTypeStats = reportRepository.sumRevenueBySeatType();
-        reportData.put("seatTypeStats", seatTypeStats);
+        for (Booking booking : paidBookings) {
+            BigDecimal bookingTotal = defaultAmount(booking.getTotalAmount());
+            LocalDate paidDate = (booking.getPaidAt() != null ? booking.getPaidAt() : booking.getCreatedAt()).toLocalDate();
+            dailyRevenue.computeIfAbsent(paidDate, ignored -> new StatBucket()).add(1, bookingTotal);
 
+            Showtime showtime = showtimeRepository.findById(booking.getShowtimeId()).orElse(null);
+            String roomName = showtime != null && showtime.getRoom() != null && !showtime.getRoom().isBlank()
+                    ? showtime.getRoom()
+                    : "Không xác định";
+
+            List<BookingTicket> tickets = bookingTicketRepository.findByBookingId(booking.getId());
+            roomStats.computeIfAbsent(roomName, ignored -> new StatBucket()).add(tickets.size(), bookingTotal);
+
+            for (BookingTicket ticket : tickets) {
+                String seatType = ticket.getSeatType() != null && !ticket.getSeatType().isBlank()
+                        ? ticket.getSeatType()
+                        : "Không xác định";
+                seatTypeStats.computeIfAbsent(seatType, ignored -> new StatBucket()).add(1, defaultAmount(ticket.getPrice()));
+            }
+
+            for (BookingCombo combo : bookingComboRepository.findByBookingId(booking.getId())) {
+                String comboName = combo.getComboName() != null && !combo.getComboName().isBlank()
+                        ? combo.getComboName()
+                        : "Combo không tên";
+                comboStats.computeIfAbsent(comboName, ignored -> new StatBucket())
+                        .add(combo.getQuantity() != null ? combo.getQuantity() : 0, defaultAmount(combo.getSubtotal()));
+            }
+        }
+
+        Map<String, Object> reportData = new LinkedHashMap<>();
+        reportData.put("totalRevenue", totalRevenue);
+        reportData.put("paidBookingCount", paidBookings.size());
+        reportData.put("totalTickets", totalTickets);
+        reportData.put("averageOrderValue", averageOrderValue);
+        reportData.put("dailyRevenue", toRowsInInsertionOrder(dailyRevenue));
+        reportData.put("comboStats", toRows(comboStats));
+        reportData.put("seatTypeStats", toRows(seatTypeStats));
+        reportData.put("roomStats", toRows(roomStats));
         return reportData;
+    }
+
+    private static BigDecimal defaultAmount(BigDecimal amount) {
+        return amount != null ? amount : BigDecimal.ZERO;
+    }
+
+    private static List<Object[]> toRows(Map<?, StatBucket> source) {
+        List<Object[]> rows = new ArrayList<>();
+        source.forEach((label, bucket) -> rows.add(new Object[]{label, bucket.quantity, bucket.revenue}));
+        rows.sort(Comparator.comparing(row -> row[2] instanceof BigDecimal amount ? amount : BigDecimal.ZERO,
+                Comparator.reverseOrder()));
+        return rows;
+    }
+
+    private static List<Object[]> toRowsInInsertionOrder(Map<?, StatBucket> source) {
+        List<Object[]> rows = new ArrayList<>();
+        source.forEach((label, bucket) -> rows.add(new Object[]{label, bucket.quantity, bucket.revenue}));
+        return rows;
+    }
+
+    private static class StatBucket {
+        private long quantity;
+        private BigDecimal revenue = BigDecimal.ZERO;
+
+        private void add(long quantity, BigDecimal revenue) {
+            this.quantity += quantity;
+            this.revenue = this.revenue.add(defaultAmount(revenue));
+        }
     }
 }

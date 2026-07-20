@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineFlow | Danh sách yêu thích</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
+    <style>
+        body {
+            margin: 0;
+            font-family: "Be Vietnam Pro", "Inter", Arial, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            text-rendering: optimizeLegibility;
+        }
+
+        .top-bar {
+            background: #0054a6;
+            color: white;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .top-container,
+        .header-container,
+        .content-container,
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .top-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .top-link {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .top-link:hover {
+            opacity: 0.8;
+        }
+
+        .lang-icon {
+            height: 14px;
+            margin-left: 15px;
+        }
+
+        .header-main {
+            background: white;
+            padding: 15px 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .logo {
+            height: 55px;
+        }
+
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            flex-grow: 1;
+            gap: 25px;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #334155;
+            font-weight: 700;
+            font-size: 16px;
+            white-space: nowrap;
+            transition: color 0.2s;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: #0054a6;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-form input {
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            padding: 8px 14px;
+            min-width: 210px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-form input:focus {
+            border-color: #0054a6;
+        }
+
+        .search-form button,
+        .buy-btn,
+        .remove-btn {
+            border: none;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-form button {
+            background: #0054a6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin: 50px 0 30px;
+        }
+
+        .page-title h1 {
+            color: #0054a6;
+            font-size: 34px;
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        .page-title p {
+            color: #64748b;
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .movies {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .movie-card {
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .movie-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0, 84, 166, 0.08);
+            border-color: #cbd5e1;
+        }
+
+        .movie-poster {
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            border-radius: 14px;
+            margin-bottom: 15px;
+            background: #f1f5f9;
+            transition: transform 0.5s ease;
+        }
+
+        .movie-card:hover .movie-poster {
+            transform: scale(1.02);
+        }
+
+        .movie-card h3 {
+            font-size: 18px;
+            color: #0f172a;
+            margin: 0 0 10px;
+            font-weight: 800;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 50px;
+        }
+
+        .movie-card p {
+            font-size: 14px;
+            margin: 6px 0;
+            color: #475569;
+        }
+
+        .date-blue {
+            color: #0054a6;
+            font-weight: 800;
+        }
+
+        .buy-btn {
+            background: linear-gradient(135deg, #0054a6 0%, #003e7a 100%);
+            color: white;
+            width: 100%;
+            padding: 12px 0;
+            margin-top: 15px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 12px rgba(0, 84, 166, 0.15);
+        }
+        .buy-btn:hover {
+            background: linear-gradient(135deg, #0066c7 0%, #004d99 100%);
+            box-shadow: 0 6px 20px rgba(0, 84, 166, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .remove-btn {
+            background: #fff;
+            color: #ef4444;
+            border: 1.5px solid #fee2e2;
+            width: 100%;
+            padding: 10px 0;
+            margin-top: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+            gap: 8px;
+        }
+
+        .remove-btn:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #dc2626;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            padding: 80px 30px;
+            color: #64748b;
+            text-align: center;
+            font-size: 18px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+            max-width: 600px;
+            margin: 40px auto;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            color: #f1f5f9;
+            background: #fef2f2;
+            color: #f87171;
+            width: 120px;
+            height: 120px;
+            border-radius: 60px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px rgba(248, 113, 113, 0.1);
+        }
+
+        .footer {
+            background: #0054a6;
+            color: white;
+            padding: 45px 0;
+            margin-top: 100px;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 45px;
+        }
+
+        /* Toast Container */
+        #toastContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast-msg {
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-weight: 600;
+            animation: slideIn 0.3s ease forwards;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast-msg.success { background: #10b981; }
+        .toast-msg.error { background: #ef4444; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; transform: scale(0.9); }
+        }
+
+        @media (max-width: 900px) {
+            .header-container,
+            .nav-menu {
+                flex-wrap: wrap;
+            }
+
+            .search-form {
+                width: 100%;
+            }
+
+            .search-form input {
+                flex: 1;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div th:replace="~{fragments/common_header :: customerHeader('wishlist', null)}"></div>
+
+    <main class="content-container">
+        <div class="page-title">
+            <h1>Phim Yêu Thích Của Tôi</h1>
+            <p>Danh sách các bộ phim bạn đã lưu và quan tâm</p>
+        </div>
+
+        <section class="movies" id="wishlistSection" th:if="${!#lists.isEmpty(wishlist)}">
+            <article class="movie-card" th:each="movie : ${wishlist}" th:id="'movie-card-' + ${movie.id}">
+                <a th:href="@{/movies/{id}(id=${movie.id})}">
+                    <img class="movie-poster" th:src="${movie.posterUrl}" th:alt="${movie.title}">
+                </a>
+                <h3 th:text="${movie.title}">Tên phim</h3>
+                <p><b>Thể loại:</b> <span th:text="${movie.genre}">Hành động</span></p>
+                <p><b>Trạng thái:</b> 
+                    <span class="date-blue" th:text="${movie.status.name() == 'NOW_SHOWING' ? 'Đang chiếu' : (movie.status.name() == 'COMING_SOON' ? 'Sắp chiếu' : 'Suất chiếu đặc biệt')}">Đang chiếu</span>
+                </p>
+                
+                <a class="buy-btn"
+                   th:if="${movie.status != null && movie.status.name() != 'COMING_SOON'}"
+                   th:href="@{/booking/showtimes(movieId=${movie.id}, from='wishlist')}">Mua vé</a>
+                <a class="buy-btn"
+                   th:if="${movie.status == null || movie.status.name() == 'COMING_SOON'}"
+                   th:href="@{/movies/{id}(id=${movie.id})}">Chi tiết</a>
+
+                <button class="remove-btn" th:onclick="'removeFromWishlist(' + ${movie.id} + ')'">
+                    <i class="fa-solid fa-trash-can"></i> Xóa yêu thích
+                </button>
+            </article>
+        </section>
+
+        <div class="empty-state" id="wishlistEmptyState" th:classappend="${#lists.isEmpty(wishlist)} ? '' : 'd-none'" th:style="${#lists.isEmpty(wishlist)} ? 'display: block;' : 'display: none;'">
+            <i class="fa-solid fa-heart-broken"></i>
+            <p>Danh sách yêu thích của bạn đang trống.</p>
+            <a th:href="@{/movies}" class="buy-btn" style="width: auto; padding: 10px 24px; margin-top: 15px;">Khám phá phim ngay</a>
+        </div>
+    </main>
+
+    <div id="toastContainer"></div>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div>
+                <h4>BETA CINEMAS</h4>
+                <p>Hệ thống rạp chiếu phim hàng đầu cho giới trẻ.</p>
+            </div>
+            <div>
+                <h4>LIÊN HỆ</h4>
+                <p>Hotline: 1900 636807</p>
+            </div>
+            <div>
+                <h4>KẾT NỐI</h4>
+                <p>Facebook | Youtube | TikTok</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function showToast(type, message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast-msg ${type}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.5s ease forwards';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        async function removeFromWishlist(movieId) {
+            try {
+                const response = await fetch(`/api/wishlist/toggle?movieId=${movieId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast('success', data.message || 'Đã xóa khỏi danh sách yêu thích.');
+                    
+                    const card = document.getElementById(`movie-card-${movieId}`);
+                    if (card) {
+                        card.style.animation = 'fadeOut 0.5s ease forwards';
+                        setTimeout(() => {
+                            card.remove();
+                            
+                            // Check if wishlist is now empty
+                            const section = document.getElementById('wishlistSection');
+                            const cards = section.querySelectorAll('.movie-card');
+                            if (cards.length === 0) {
+                                section.remove();
+                                document.getElementById('wishlistEmptyState').style.display = 'block';
+                            }
+                        }, 500);
+                    }
+                } else {
+                    showToast('error', data.message || 'Lỗi khi xóa khỏi danh sách yêu thích.');
+                }
+            } catch (error) {
+                showToast('error', 'Lỗi kết nối mạng.');
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -14,10 +14,14 @@ import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.MoviePersonSuggestion;
 import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.MoviePersonSuggestionRepository;
+import com.group3.cinema.repository.TicketRepository;
+import com.group3.cinema.repository.BookingRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +32,12 @@ public class MovieService {
 
     private final MovieRepository movieRepository;
     private final MoviePersonSuggestionRepository suggestionRepository;
+
+    @Autowired
+    private TicketRepository ticketRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     public MovieService(MovieRepository movieRepository, MoviePersonSuggestionRepository suggestionRepository) {
         this.movieRepository = movieRepository;
@@ -129,11 +139,11 @@ public class MovieService {
             existing.setReleaseYear(movie.getReleaseYear());
             existing.setProducer(movie.getProducer());
             existing.setFormat(movie.getFormat());
-            
+
             // Khôi phục trạng thái hoạt động
             existing.setActive(true);
             existing.setDeleted(false);
-            
+
             // Tính trạng thái phim theo ngày hiện tại
             LocalDate today = LocalDate.now();
             if (movie.getReleaseDate() != null && movie.getReleaseDate().isAfter(today)) {
@@ -141,7 +151,7 @@ public class MovieService {
             } else {
                 existing.setStatus(Movie.MovieStatus.NOW_SHOWING);
             }
-            
+
             validateMovie(existing, existing.getId()); // validate sử dụng chính ID của nó để loại trừ trùng lặp tự thân
             Movie savedMovie = movieRepository.save(existing);
             saveSuggestions(savedMovie);
@@ -156,6 +166,9 @@ public class MovieService {
 
     @Transactional
     public Movie updateMovie(Integer id, Movie updatedMovie) {
+        if (ticketRepository.hasBookedTicketsForMovie(id)) {
+            throw new IllegalArgumentException("Không thể sửa đổi thông tin phim này vì đã có vé được đặt.");
+        }
         validateMovie(updatedMovie, id);
         return movieRepository.findById(id).map(movie -> {
             movie.setTitle(updatedMovie.getTitle());
@@ -190,6 +203,12 @@ public class MovieService {
     @Transactional
     public void deleteMovie(Integer id) {
         movieRepository.findById(id).ifPresent(movie -> {
+            if (ticketRepository.hasBookedTicketsForMovie(id)) {
+                throw new IllegalArgumentException("Không thể xóa phim này vì đã có vé được đặt.");
+            }
+            if (bookingRepository.hasActiveBookingsForMovie(id, LocalDateTime.now())) {
+                throw new IllegalArgumentException("Không thể xóa phim này vì đang có khách hàng thực hiện mua vé.");
+            }
             movie.setDeleted(true);
             movie.setActive(false);
             movie.setStatus(Movie.MovieStatus.STOPPED);
@@ -205,6 +224,9 @@ public class MovieService {
     public Movie toggleActive(Integer id) {
         return movieRepository.findById(id).map(movie -> {
             boolean newActive = !movie.isActive();
+            if (!newActive && ticketRepository.hasBookedTicketsForMovie(id)) {
+                throw new IllegalArgumentException("Không thể tạm ẩn phim này vì đã có vé được đặt.");
+            }
             movie.setActive(newActive);
             // [SỬA - TrienLX - 2026-06-23]:
             // - Nếu ẩn phim: chuyển trạng thái phim sang STOPPED (Ngừng chiếu)
@@ -246,5 +268,6 @@ public class MovieService {
         );
         // [SỬA - TrienLX - 2026-06-23]: Truyền thêm tham số MovieStatus.STOPPED để cập nhật trạng thái trong SQL an toàn
         movieRepository.autoDeactivateExpiredMovies(today, today.minusDays(7), Movie.MovieStatus.STOPPED);
+        movieRepository.deactivateStoppedMovies(Movie.MovieStatus.STOPPED);
     }
 }

@@ -7,6 +7,7 @@
     <title>Beta Cinemas | Kho Voucher</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
 
     <style>
         body {
@@ -409,47 +410,7 @@
 </head>
 
 <body>
-<div class="top-bar">
-    <div class="top-container">
-        <th:block th:if="${user == null}">
-            <a th:href="@{/login}" class="top-link">Đăng nhập</a>
-            <span style="opacity: 0.5">|</span>
-            <a th:href="@{/register}" class="top-link">Đăng ký</a>
-        </th:block>
-        <th:block th:if="${user != null}">
-            <span>Xin chào,</span>
-            <a th:href="@{/profile}" class="top-link" th:text="${user.name}">Tên User</a>
-            <span style="opacity: 0.5">|</span>
-            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
-            <span style="opacity: 0.5">|</span>
-            <a th:href="@{/logout}" class="top-link">Đăng xuất</a>
-        </th:block>
-        <img src="https://flagcdn.com/w40/gb.png" class="lang-icon" alt="Tiếng Anh">
-    </div>
-</div>
-
-<header class="header-main">
-    <div class="header-container">
-        <a th:href="@{/}">
-            <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
-        </a>
-
-        <nav class="nav-menu">
-            <a th:href="@{/}">TRANG CHỦ</a>
-            <a th:href="@{/movies}">PHIM</a>
-            <a href="#">RẠP</a>
-            <a href="#">GIÁ VÉ</a>
-            <a th:href="@{/vouchers}" class="active">KHO VOUCHER</a>
-            <a th:href="@{/posts}">TIN TỨC</a>
-            <a href="#">CỘNG ĐỒNG</a>
-        </nav>
-
-        <form class="search-form" th:action="@{/search}" method="get">
-            <input type="search" name="keyword" placeholder="Tìm phim">
-            <button type="submit">Tìm</button>
-        </form>
-    </div>
-</header>
+<div th:replace="~{fragments/common_header :: customerHeader('voucher', '')}"></div>
 
 <main class="content-container">
     <div class="tabs">

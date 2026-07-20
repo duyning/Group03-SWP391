@@ -41,7 +41,7 @@ public class PaymentSchemaMigration {
                     )
                     BEGIN
                         ALTER TABLE payments ADD CONSTRAINT CK_payments_payment_method
-                        CHECK (payment_method IN ('VNPAY', 'MOMO', 'PAYOS'));
+                        CHECK (payment_method IN ('VNPAY', 'MOMO', 'PAYOS', 'CASH', 'CARD', 'BANK_TRANSFER'));
                     END
                     """);
             jdbcTemplate.execute("""

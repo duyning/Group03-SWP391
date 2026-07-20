@@ -68,6 +68,7 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
             SELECT m
             FROM Movie m
             WHERE m.active = true AND m.deleted = false
+              AND (m.status <> com.group3.cinema.entity.Movie$MovieStatus.STOPPED OR :status = com.group3.cinema.entity.Movie$MovieStatus.STOPPED)
               AND (:keyword IS NULL OR LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
               AND (:genre IS NULL OR LOWER(m.genre) LIKE LOWER(CONCAT('%', :genre, '%')))
               AND (:status IS NULL OR m.status = :status)
@@ -115,8 +116,13 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE Movie m SET m.active = false, m.status = :stoppedStatus WHERE m.active = true AND m.releaseDate < :today AND m.id IN (SELECT s.movie.id FROM Showtime s GROUP BY s.movie.id HAVING MAX(s.showDate) < :today AND MAX(s.showDate) >= :thresholdDate)")
+    @Query("UPDATE Movie m SET m.status = :stoppedStatus, m.active = false WHERE m.active = true AND m.status <> :stoppedStatus AND m.releaseDate < :today AND m.id IN (SELECT s.movie.id FROM Showtime s GROUP BY s.movie.id HAVING MAX(s.showDate) < :today AND MAX(s.showDate) >= :thresholdDate)")
     int autoDeactivateExpiredMovies(@Param("today") LocalDate today, @Param("thresholdDate") LocalDate thresholdDate, @Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Movie m SET m.active = false WHERE m.status = :stoppedStatus AND m.active = true")
+    int deactivateStoppedMovies(@Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
 
     @Query("""
             SELECT DISTINCT m.genre

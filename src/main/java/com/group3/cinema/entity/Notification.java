@@ -34,6 +34,12 @@ public class Notification {
     @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
+    @Column(name = "image_url", columnDefinition = "NVARCHAR(500)")
+    private String imageUrl;
+
+    @Column(name = "action_url", columnDefinition = "NVARCHAR(500)")
+    private String actionUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private NotificationType type;
@@ -86,6 +92,22 @@ public class Notification {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getActionUrl() {
+        return actionUrl;
+    }
+
+    public void setActionUrl(String actionUrl) {
+        this.actionUrl = actionUrl;
     }
 
     public NotificationType getType() {

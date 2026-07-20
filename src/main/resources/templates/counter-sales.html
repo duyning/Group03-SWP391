@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bán vé tại quầy | CineFlow Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
+    <style>
+        body.admin-page {
+            background: #eef3f8;
+            color: #142033;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .pos-shell {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .pos-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: center;
+            padding: 24px;
+            border-radius: 18px;
+            background: #0f315e;
+            color: #fff;
+            box-shadow: 0 18px 44px rgba(15, 49, 94, 0.18);
+            margin-bottom: 18px;
+        }
+
+        .pos-title {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .pos-title-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.14);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.22);
+        }
+
+        .pos-title h1 {
+            font-size: 1.55rem;
+            font-weight: 850;
+            margin: 0 0 4px;
+            letter-spacing: 0;
+        }
+
+        .pos-title p {
+            margin: 0;
+            color: rgba(255,255,255,0.72);
+        }
+
+        .pos-status {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 12px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: rgba(255,255,255,0.86);
+            font-size: 0.86rem;
+            font-weight: 700;
+        }
+
+        .pos-grid {
+            display: grid;
+            grid-template-columns: 360px minmax(0, 1fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .checkout-panel {
+            display: none;
+        }
+
+        .pos-panel {
+            background: #fff;
+            border: 1px solid #d9e2ec;
+            border-radius: 16px;
+            box-shadow: 0 14px 34px rgba(15,23,42,0.06);
+            overflow: hidden;
+        }
+
+        .panel-head {
+            padding: 16px 18px;
+            border-bottom: 1px solid #e7eef6;
+            background: #f8fafc;
+        }
+
+        .panel-head h2 {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 850;
+            color: #0f172a;
+        }
+
+        .panel-body {
+            padding: 18px;
+        }
+
+        .filter-stack {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .field-label {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #475569;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            border-color: #cbd5e1;
+            min-height: 42px;
+        }
+
+        .showtime-list {
+            display: grid;
+            gap: 10px;
+            max-height: 610px;
+            overflow: auto;
+            padding-right: 3px;
+        }
+
+        .showtime-card {
+            border: 1px solid #dbe5ef;
+            border-radius: 14px;
+            padding: 13px;
+            cursor: pointer;
+            background: #fff;
+            transition: 0.18s ease;
+        }
+
+        .showtime-card:hover,
+        .showtime-card.active {
+            border-color: #0d6efd;
+            box-shadow: 0 10px 22px rgba(13,110,253,0.12);
+            transform: translateY(-1px);
+        }
+
+        .showtime-card .time {
+            font-size: 1.28rem;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .showtime-card .movie {
+            font-weight: 800;
+            color: #1e293b;
+            margin: 4px 0;
+            line-height: 1.35;
+        }
+
+        .showtime-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .showtime-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            background: #f1f5f9;
+        }
+
+        .seat-toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .seat-toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .screen {
+            width: min(560px, 80%);
+            height: 34px;
+            margin: 0 auto 18px;
+            border-top: 4px solid #91a8c2;
+            border-radius: 50% 50% 0 0;
+            color: #60758f;
+            text-align: center;
+            font-weight: 850;
+            letter-spacing: 8px;
+            font-size: 0.82rem;
+            padding-top: 8px;
+        }
+
+        .seat-map-wrap {
+            overflow: auto;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #f8fbff;
+            min-height: 360px;
+        }
+
+        .seat-map {
+            display: grid;
+            grid-template-columns: repeat(var(--cols), var(--seat-size, 46px));
+            grid-auto-rows: var(--seat-height, 42px);
+            gap: var(--seat-gap, 9px);
+            justify-content: center;
+            min-height: 220px;
+            min-width: max-content;
+            align-items: start;
+        }
+
+        .seat {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 0.74rem;
+            font-weight: 850;
+            color: #10243f;
+            background: #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            min-width: 0;
+            min-height: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 -3px 0 rgba(15,23,42,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .seat[data-capacity="2"]::after {
+            content: "";
+            position: absolute;
+            top: 8px;
+            bottom: 8px;
+            left: 50%;
+            width: 1px;
+            background: rgba(15,23,42,0.18);
+        }
+
+        .seat.available:hover {
+            outline: 3px solid rgba(13,110,253,0.16);
+            transform: translateY(-1px);
+        }
+
+        .seat.selected {
+            background: #0054a6 !important;
+            color: #fff;
+            border-color: #003f7d;
+            box-shadow: 0 8px 18px rgba(0,84,166,0.24);
+        }
+
+        .seat.booked {
+            background: #fca5a5 !important;
+            color: #7f1d1d;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .seat.holding {
+            background: #fde68a !important;
+            color: #78350f;
+            cursor: not-allowed;
+        }
+
+        .seat.unavailable {
+            background: transparent !important;
+            color: transparent;
+            border-style: dashed;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+            color: #64748b;
+            font-size: 0.82rem;
+            justify-content: center;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend i {
+            width: 16px;
+            height: 16px;
+            border-radius: 5px;
+            border: 1px solid #cbd5e1;
+            display: inline-block;
+        }
+
+        .customer-result {
+            display: grid;
+            gap: 8px;
+            margin-top: 8px;
+            max-height: 170px;
+            overflow: auto;
+        }
+
+        .customer-result button {
+            border: 1px solid #dbe5ef;
+            background: #f8fafc;
+            border-radius: 10px;
+            text-align: left;
+            padding: 9px 10px;
+            color: #1e293b;
+        }
+
+        .customer-result button.active {
+            border-color: #0d6efd;
+            background: #eff6ff;
+        }
+
+        .combo-card-pos,
+        .combo-row,
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .combo-list {
+            display: grid;
+            gap: 10px;
+            max-height: 330px;
+            overflow: auto;
+        }
+
+        .combo-card-pos {
+            display: grid;
+            grid-template-columns: 74px minmax(0, 1fr) auto;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #fbfdff;
+            gap: 12px;
+        }
+
+        .combo-thumb {
+            width: 74px;
+            height: 74px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: #eef3f8;
+            border: 1px solid #dbe5ef;
+        }
+
+        .combo-info strong {
+            display: block;
+            color: #172033;
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+
+        .combo-info p {
+            margin: 0 0 5px;
+            color: #64748b;
+            font-size: 0.78rem;
+            line-height: 1.35;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .combo-price {
+            color: #0054a6;
+            font-weight: 900;
+        }
+
+        .combo-stepper {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #cbd8e6;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .combo-stepper button {
+            width: 34px;
+            height: 34px;
+            border: 0;
+            background: #edf4fb;
+            color: #0054a6;
+            font-weight: 900;
+        }
+
+        .combo-stepper button:hover {
+            background: #0054a6;
+            color: #fff;
+        }
+
+        .combo-stepper .qty-input {
+            width: 44px;
+            min-height: 34px;
+            border: 0;
+            border-left: 1px solid #dbe5ef;
+            border-right: 1px solid #dbe5ef;
+            border-radius: 0;
+            padding: 4px;
+        }
+
+        .combo-row {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #fbfdff;
+        }
+
+        .combo-row strong {
+            display: block;
+            color: #172033;
+            line-height: 1.3;
+        }
+
+        .combo-row small {
+            color: #64748b;
+        }
+
+        .qty-input {
+            width: 70px;
+            text-align: center;
+        }
+
+        .summary-box {
+            display: grid;
+            gap: 10px;
+            padding: 14px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            margin-top: 14px;
+        }
+
+        .summary-line {
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .summary-line.total {
+            border-top: 1px solid #dbe5ef;
+            padding-top: 12px;
+            color: #0054a6;
+            font-size: 1.2rem;
+            font-weight: 900;
+        }
+
+        .selected-seats {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            min-height: 28px;
+        }
+
+        .selected-seats span {
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #e0f2fe;
+            color: #075985;
+            font-weight: 800;
+            font-size: 0.78rem;
+        }
+
+        .seat-step-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-top: 16px;
+            padding: 14px;
+            border: 1px solid #dbe5ef;
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .seat-step-footer .selected-seats {
+            flex: 1;
+        }
+
+        .btn-next-step {
+            border: 0;
+            border-radius: 12px;
+            min-height: 46px;
+            padding: 0 18px;
+            background: #0054a6;
+            color: #fff;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .btn-next-step:hover {
+            background: #003f7d;
+        }
+
+        .btn-pay {
+            width: 100%;
+            border: 0;
+            border-radius: 12px;
+            min-height: 48px;
+            background: #0054a6;
+            color: #fff;
+            font-weight: 900;
+            margin-top: 14px;
+        }
+
+        .btn-pay:hover {
+            background: #003f7d;
+            color: #fff;
+        }
+
+        .payment-code-hint {
+            display: none;
+            margin-top: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #0f4f91;
+            border: 1px solid #bfdbfe;
+            font-size: 0.82rem;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+
+        .payment-code-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: rgba(15,23,42,0.58);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+        }
+
+        .payment-code-overlay.open {
+            display: flex;
+        }
+
+        .payment-code-modal {
+            width: min(760px, 100%);
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 28px 90px rgba(15,23,42,0.32);
+            overflow: hidden;
+        }
+
+        .payment-code-head {
+            padding: 20px 22px;
+            background: #0f315e;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .payment-code-head h3 {
+            margin: 0 0 4px;
+            font-weight: 900;
+        }
+
+        .payment-code-head p {
+            margin: 0;
+            color: rgba(255,255,255,0.76);
+        }
+
+        .payment-code-body {
+            display: grid;
+            grid-template-columns: 240px minmax(0, 1fr);
+            gap: 20px;
+            padding: 22px;
+        }
+
+        .payment-qr-box {
+            border: 1px solid #dbe5ef;
+            border-radius: 18px;
+            background: #f8fbff;
+            padding: 14px;
+            display: grid;
+            gap: 12px;
+            justify-items: center;
+        }
+
+        .payment-qr-box img {
+            width: 190px;
+            height: 190px;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 12px;
+        }
+
+        .payment-code-value {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #fff;
+            border: 1px dashed #9ab1ca;
+            color: #0054a6;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 0.06em;
+            word-break: break-word;
+        }
+
+        .payment-code-detail {
+            display: grid;
+            gap: 12px;
+        }
+
+        .payment-code-detail dl {
+            display: grid;
+            grid-template-columns: 130px 1fr;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .payment-code-detail dt {
+            color: #64748b;
+        }
+
+        .payment-code-detail dd {
+            margin: 0;
+            color: #172033;
+            font-weight: 850;
+        }
+
+        .payment-code-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 0 22px 22px;
+            flex-wrap: wrap;
+        }
+
+        body.pos-seat-fullscreen {
+            overflow: hidden;
+        }
+
+        body.pos-seat-fullscreen .seat-panel {
+            position: fixed;
+            inset: 14px;
+            z-index: 4500;
+            display: flex;
+            flex-direction: column;
+            border-radius: 20px;
+        }
+
+        body.pos-seat-fullscreen .seat-panel .panel-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.pos-seat-fullscreen .seat-map-wrap {
+            flex: 1;
+            min-height: 0;
+        }
+
+        body.pos-seat-fullscreen .screen {
+            width: min(900px, 86%);
+        }
+
+        .empty-state {
+            min-height: 200px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            color: #64748b;
+            padding: 24px;
+        }
+
+        .toast-area {
+            position: fixed;
+            right: 24px;
+            top: 24px;
+            z-index: 9999;
+            display: grid;
+            gap: 10px;
+        }
+
+        .app-toast {
+            min-width: 280px;
+            max-width: 420px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            box-shadow: 0 18px 42px rgba(15,23,42,0.2);
+            color: #fff;
+            background: #0f315e;
+            font-weight: 750;
+        }
+
+        .app-toast.error {
+            background: #b91c1c;
+        }
+
+        .app-toast.success {
+            background: #047857;
+        }
+
+        @media (max-width: 1300px) {
+            .pos-grid {
+                grid-template-columns: 320px 1fr;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .pos-header,
+            .pos-title {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            .pos-status {
+                justify-content: flex-start;
+            }
+            .pos-grid {
+                grid-template-columns: 1fr;
+            }
+            .seat-map {
+                justify-content: start;
+            }
+            .combo-card-pos,
+            .payment-code-body {
+                grid-template-columns: 1fr;
+            }
+            .combo-thumb {
+                width: 100%;
+                height: 120px;
+            }
+            .seat-step-footer {
+                align-items: stretch;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body class="admin-page">
+<div class="toast-area" id="toastArea"></div>
+<div class="admin-layout">
+    <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('counter-sales')}"></aside>
+    <main class="admin-main">
+        <div class="pos-shell">
+            <section class="pos-header">
+                <div class="pos-title">
+                    <div class="pos-title-icon"><i class="fa-solid fa-cash-register fa-xl"></i></div>
+                    <div>
+                        <h1>Bán vé tại quầy</h1>
+                        <p>Chọn suất chiếu, giữ ghế, áp dụng combo/voucher và hoàn tất thanh toán trực tiếp.</p>
+                    </div>
+                </div>
+                <div class="pos-status">
+                    <span class="status-pill"><i class="fa-solid fa-shield-halved"></i> Chống trùng ghế</span>
+                    <span class="status-pill"><i class="fa-solid fa-qrcode"></i> Vé QR</span>
+                    <span class="status-pill"><i class="fa-solid fa-clock"></i> Giữ ghế 5 phút</span>
+                </div>
+            </section>
+
+            <section class="pos-grid">
+                <aside class="pos-panel">
+                    <div class="panel-head">
+                        <h2><i class="fa-solid fa-calendar-check text-primary"></i>Suất chiếu còn bán</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="filter-stack">
+                            <div>
+                                <label class="field-label" for="saleDate"><i class="fa-regular fa-calendar"></i>Ngày bán</label>
+                                <input class="form-control" type="date" id="saleDate">
+                            </div>
+                            <div>
+                                <label class="field-label" for="movieSearch"><i class="fa-solid fa-film"></i>Phim</label>
+                                <input class="form-control" id="movieSearch" list="movieSuggestions"
+                                       placeholder="Gõ tên phim để tìm nhanh">
+                                <input type="hidden" id="movieFilter">
+                                <datalist id="movieSuggestions"></datalist>
+                            </div>
+                        </div>
+                        <div class="showtime-list" id="showtimeList">
+                            <div class="empty-state">Đang tải lịch chiếu...</div>
+                        </div>
+                    </div>
+                </aside>
+
+                <section class="pos-panel seat-panel" id="seatPanel">
+                    <div class="panel-head">
+                        <h2><i class="fa-solid fa-couch text-primary"></i>Sơ đồ ghế</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="seat-toolbar">
+                            <div>
+                                <div class="fw-bold" id="selectedShowtimeTitle">Chưa chọn suất chiếu</div>
+                                <div class="text-muted small" id="selectedShowtimeMeta">Chọn một suất chiếu ở bên trái để mở sơ đồ ghế.</div>
+                            </div>
+                            <div class="seat-toolbar-actions">
+                                <button class="btn btn-outline-primary btn-sm" id="btnFullscreenSeats" type="button">
+                                    <i class="fa-solid fa-expand me-1"></i><span id="fullscreenSeatLabel">Toàn màn hình</span>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" id="btnClearSeats" type="button">
+                                    <i class="fa-solid fa-rotate-left me-1"></i>Bỏ chọn ghế
+                                </button>
+                            </div>
+                        </div>
+                        <div class="screen">MÀN HÌNH</div>
+                        <div class="seat-map-wrap" id="seatMapWrap">
+                            <div class="seat-map" id="seatMap" style="--cols: 10;">
+                                <div class="empty-state">Chưa có sơ đồ ghế.</div>
+                            </div>
+                        </div>
+                        <div class="legend" id="seatLegend">
+                            <span><i style="background:#e2e8f0"></i> Trống</span>
+                            <span><i style="background:#0054a6"></i> Đang chọn</span>
+                            <span><i style="background:#fde68a"></i> Đang giữ</span>
+                            <span><i style="background:#fca5a5"></i> Đã bán</span>
+                            <span><i style="background:transparent"></i> Không bán</span>
+                        </div>
+                        <div class="seat-step-footer">
+                            <div>
+                                <label class="field-label mb-1"><i class="fa-solid fa-chair"></i>Ghế đã chọn</label>
+                                <div class="selected-seats" id="selectedSeatsStep"></div>
+                            </div>
+                            <button class="btn-next-step" id="btnGoCheckout" type="button">
+                                Tiếp tục lập hóa đơn <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="pos-panel checkout-panel">
+                    <div class="panel-head">
+                        <h2><i class="fa-solid fa-receipt text-primary"></i>Hóa đơn tại quầy</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="mb-3">
+                            <label class="field-label" for="customerSearch"><i class="fa-solid fa-user-magnifying-glass"></i>Tìm khách thành viên</label>
+                            <input class="form-control" id="customerSearch" placeholder="Tên, email hoặc số điện thoại">
+                            <div class="customer-result" id="customerResults"></div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-12">
+                                <label class="field-label" for="customerName">Tên khách</label>
+                                <input class="form-control" id="customerName" placeholder="Khách vãng lai">
+                            </div>
+                            <div class="col-6">
+                                <label class="field-label" for="customerPhone">Số điện thoại</label>
+                                <input class="form-control" id="customerPhone" placeholder="09xxxxxxxx">
+                            </div>
+                            <div class="col-6">
+                                <label class="field-label" for="customerEmail">Email</label>
+                                <input class="form-control" id="customerEmail" placeholder="email@domain.com">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="field-label" for="customerType">Loại khách</label>
+                                <select class="form-select" id="customerType">
+                                    <option value="ADULT">Người lớn</option>
+                                    <option value="STUDENT">Học sinh/Sinh viên</option>
+                                    <option value="CHILD">Trẻ em</option>
+                                    <option value="SENIOR">Người cao tuổi</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="field-label" for="paymentMethod">Thanh toán</label>
+                                <select class="form-select" id="paymentMethod">
+                                    <option value="CASH">Tiền mặt</option>
+                                    <option value="CARD">Thẻ ngân hàng</option>
+                                    <option value="BANK_TRANSFER">Chuyển khoản</option>
+                                    <option value="MOMO">Ví MoMo</option>
+                                    <option value="PAYOS">PayOS</option>
+                                </select>
+                                <div class="payment-code-hint" id="paymentCodeHint">
+                                    Phương thức này sẽ hiển thị mã thanh toán để nhân viên xác nhận trước khi phát hành vé.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="field-label"><i class="fa-solid fa-chair"></i>Ghế đã chọn</label>
+                            <div class="selected-seats" id="selectedSeats"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="field-label"><i class="fa-solid fa-burger"></i>Combo bán kèm</label>
+                            <div class="combo-list" id="comboList">
+                                <div class="text-muted small">Đang tải combo...</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="field-label" for="voucherCode"><i class="fa-solid fa-ticket-simple"></i>Voucher</label>
+                            <input class="form-control" id="voucherCode" list="voucherOptions" placeholder="Nhập hoặc chọn mã voucher">
+                            <datalist id="voucherOptions"></datalist>
+                            <div class="small mt-1" id="voucherMessage"></div>
+                        </div>
+
+                        <div class="summary-box">
+                            <div class="summary-line"><span>Tiền vé</span><strong id="ticketSubtotal">0 đ</strong></div>
+                            <div class="summary-line"><span>Combo</span><strong id="comboSubtotal">0 đ</strong></div>
+                            <div class="summary-line"><span>Giảm giá</span><strong id="discountAmount">0 đ</strong></div>
+                            <div class="summary-line total"><span>Tổng thanh toán</span><strong id="totalAmount">0 đ</strong></div>
+                        </div>
+
+                        <button class="btn-pay" id="btnCompleteSale">
+                            <i class="fa-solid fa-check-circle me-2"></i>Hoàn tất bán vé
+                        </button>
+                    </div>
+                </aside>
+            </section>
+        </div>
+    </main>
+</div>
+
+<div class="payment-code-overlay" id="paymentCodeModal" aria-hidden="true">
+    <div class="payment-code-modal" role="dialog" aria-modal="true" aria-labelledby="paymentCodeTitle">
+        <div class="payment-code-head">
+            <div>
+                <h3 id="paymentCodeTitle">Mã thanh toán tại quầy</h3>
+                <p>Đưa mã này cho khách quét/chuyển khoản, sau đó xác nhận đã thu tiền để phát hành vé.</p>
+            </div>
+            <button class="btn btn-sm btn-outline-light" id="btnClosePaymentCode" type="button">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="payment-code-body">
+            <div class="payment-qr-box">
+                <img id="paymentQrImage" alt="Mã thanh toán">
+                <div class="payment-code-value" id="paymentCodeValue">POS-000000</div>
+                <button class="btn btn-outline-primary btn-sm w-100" id="btnCopyPaymentCode" type="button">
+                    <i class="fa-regular fa-copy me-1"></i>Sao chép mã
+                </button>
+            </div>
+            <div class="payment-code-detail">
+                <dl>
+                    <dt>Phương thức</dt><dd id="paymentCodeMethod">Chuyển khoản</dd>
+                    <dt>Khách hàng</dt><dd id="paymentCodeCustomer">Khách vãng lai</dd>
+                    <dt>Phim</dt><dd id="paymentCodeMovie">--</dd>
+                    <dt>Ghế</dt><dd id="paymentCodeSeats">--</dd>
+                    <dt>Số tiền</dt><dd id="paymentCodeAmount">0 đ</dd>
+                    <dt>Nội dung</dt><dd id="paymentCodeContent">--</dd>
+                </dl>
+                <div class="alert alert-info mb-0">
+                    Chỉ bấm xác nhận sau khi nhân viên đã kiểm tra tiền vào tài khoản hoặc máy POS báo giao dịch thành công.
+                </div>
+            </div>
+        </div>
+        <div class="payment-code-actions">
+            <button class="btn btn-outline-secondary" id="btnCancelCodePayment" type="button">Quay lại sửa đơn</button>
+            <button class="btn btn-primary" id="btnConfirmCodePayment" type="button">
+                <i class="fa-solid fa-check me-1"></i>Đã thu tiền, phát hành vé
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const state = {
+        movies: [],
+        showtimes: [],
+        combos: [],
+        selectedShowtime: null,
+        seats: [],
+        seatRows: 0,
+        seatCols: 10,
+        selectedSeatIds: new Set(),
+        holdToken: null,
+        selectedCustomer: null,
+        debounceTimer: null,
+        pendingPaymentCode: null,
+        lastSummary: null,
+        returnState: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+    const timeText = (value) => value ? value.substring(0, 5) : '--:--';
+    const dateText = (value) => value ? value.split('-').reverse().join('/') : '--/--/----';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        state.returnState = readReturnState();
+        $('saleDate').valueAsDate = new Date();
+        bindEvents();
+        await Promise.all([loadMovies(), loadCombos(), loadVouchers()]);
+        applyReturnStateFilters();
+        await loadShowtimes();
+        await restoreReturnShowtime();
+        renderSelectedSeats();
+    });
+
+    function bindEvents() {
+        $('saleDate').addEventListener('change', loadShowtimes);
+        $('movieSearch').addEventListener('input', () => debounce(applyMovieSearch, 220));
+        $('movieSearch').addEventListener('change', applyMovieSearch);
+        $('btnClearSeats').addEventListener('click', clearSeats);
+        $('btnFullscreenSeats').addEventListener('click', toggleSeatFullscreen);
+        $('btnGoCheckout').addEventListener('click', goCheckout);
+        $('customerType').addEventListener('change', previewSale);
+        $('paymentMethod').addEventListener('change', () => {
+            state.pendingPaymentCode = null;
+            renderPaymentHint();
+            previewSale();
+        });
+        $('customerName').addEventListener('input', previewSale);
+        $('customerPhone').addEventListener('input', previewSale);
+        $('customerEmail').addEventListener('input', previewSale);
+        $('voucherCode').addEventListener('input', () => debounce(previewSale, 300));
+        $('customerSearch').addEventListener('input', () => debounce(searchCustomers, 320));
+        $('btnCompleteSale').addEventListener('click', completeSale);
+        $('btnClosePaymentCode').addEventListener('click', closePaymentCodeModal);
+        $('btnCancelCodePayment').addEventListener('click', closePaymentCodeModal);
+        $('btnConfirmCodePayment').addEventListener('click', submitSale);
+        $('btnCopyPaymentCode').addEventListener('click', copyPaymentCode);
+        window.addEventListener('resize', () => debounce(fitSeatMap, 120));
+        window.addEventListener('pageshow', restoreAfterBrowserBack);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                if ($('paymentCodeModal').classList.contains('open')) closePaymentCodeModal();
+                else if (document.body.classList.contains('pos-seat-fullscreen')) toggleSeatFullscreen();
+            }
+        });
+        renderPaymentHint();
+    }
+
+    async function restoreAfterBrowserBack(event) {
+        if (!event.persisted) return;
+        const returnState = readReturnState();
+        if (!returnState) return;
+        state.returnState = returnState;
+        state.selectedSeatIds.clear();
+        state.holdToken = null;
+        state.pendingPaymentCode = null;
+        state.lastSummary = null;
+        renderSelectedSeats();
+        resetSummary();
+        applyReturnStateFilters();
+        await loadShowtimes();
+        await restoreReturnShowtime();
+    }
+
+    async function api(url, options = {}) {
+        const response = await fetch(url, {
+            headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+            ...options
+        });
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : null;
+        if (!response.ok) {
+            throw new Error(data?.message || data?.error || 'Thao tác không thành công.');
+        }
+        return data;
+    }
+
+    function debounce(fn, delay) {
+        clearTimeout(state.debounceTimer);
+        state.debounceTimer = setTimeout(fn, delay);
+    }
+
+    function readReturnState() {
+        try {
+            return JSON.parse(sessionStorage.getItem('counterSaleReturnState') || 'null');
+        } catch (ignored) {
+            return null;
+        }
+    }
+
+    function applyReturnStateFilters() {
+        if (!state.returnState) return;
+        if (state.returnState.saleDate) {
+            $('saleDate').value = state.returnState.saleDate;
+        }
+        if (state.returnState.movieId) {
+            $('movieFilter').value = String(state.returnState.movieId);
+            const movie = state.movies.find(item => String(item.id) === String(state.returnState.movieId));
+            if (movie) $('movieSearch').value = movie.title || '';
+        }
+    }
+
+    async function restoreReturnShowtime() {
+        if (!state.returnState?.showtimeId) return;
+        const targetId = Number(state.returnState.showtimeId);
+        const exists = state.showtimes.some(item => Number(item.id) === targetId);
+        sessionStorage.removeItem('counterSaleReturnState');
+        state.returnState = null;
+        if (!exists) {
+            toast('Suất chiếu cũ không còn trong danh sách còn bán.', 'error');
+            return;
+        }
+        await selectShowtime(targetId);
+        toast('Đã quay lại đúng suất chiếu trước đó. Ghế cũ đã được nhả để chọn lại.', 'success');
+    }
+
+    async function loadMovies() {
+        try {
+            state.movies = await api('/api/movies');
+            $('movieSuggestions').innerHTML = state.movies
+                .filter(movie => movie.active !== false)
+                .map(movie => `<option value="${escapeHtml(movie.title)}"></option>`)
+                .join('');
+        } catch (error) {
+            toast(error.message, 'error');
+        }
+    }
+
+    function applyMovieSearch() {
+        const keyword = $('movieSearch').value.trim().toLowerCase();
+        if (!keyword) {
+            if ($('movieFilter').value !== '') {
+                $('movieFilter').value = '';
+                loadShowtimes();
+            }
+            renderLocalMovieSuggestions('');
+            return;
+        }
+        renderLocalMovieSuggestions(keyword);
+        const exact = state.movies.find(movie => (movie.title || '').trim().toLowerCase() === keyword);
+        const nextMovieId = exact ? String(exact.id) : '';
+        if ($('movieFilter').value !== nextMovieId) {
+            $('movieFilter').value = nextMovieId;
+            loadShowtimes();
+        }
+    }
+
+    function renderLocalMovieSuggestions(keyword) {
+        const normalized = (keyword || '').toLowerCase();
+        const matches = state.movies
+            .filter(movie => movie.active !== false)
+            .filter(movie => !normalized || (movie.title || '').toLowerCase().includes(normalized))
+            .slice(0, 30);
+        $('movieSuggestions').innerHTML = matches
+            .map(movie => `<option value="${escapeHtml(movie.title)}"></option>`)
+            .join('');
+    }
+
+    async function loadShowtimes() {
+        try {
+            state.selectedShowtime = null;
+            state.selectedSeatIds.clear();
+            state.holdToken = null;
+            state.pendingPaymentCode = null;
+            state.lastSummary = null;
+            renderSelectedShowtime();
+            renderSelectedSeats();
+            resetSummary();
+            const params = new URLSearchParams();
+            if ($('saleDate').value) params.set('date', $('saleDate').value);
+            if ($('movieFilter').value) params.set('movieId', $('movieFilter').value);
+            state.showtimes = await api(`/api/counter-sales/showtimes?${params}`);
+            renderShowtimes();
+            renderSeatEmpty('Chọn suất chiếu để mở sơ đồ ghế.');
+        } catch (error) {
+            toast(error.message, 'error');
+        }
+    }
+
+    function renderShowtimes() {
+        if (!state.showtimes.length) {
+            $('showtimeList').innerHTML = '<div class="empty-state">Không có suất chiếu còn bán trong ngày đã chọn.</div>';
+            return;
+        }
+        $('showtimeList').innerHTML = state.showtimes.map(item => `
+            <div class="showtime-card" data-id="${item.id}" onclick="selectShowtime(${item.id})">
+                <div class="time">${timeText(item.showTime)}</div>
+                <div class="movie">${escapeHtml(item.movieTitle)}</div>
+                <div class="showtime-meta">
+                    <span><i class="fa-solid fa-door-open"></i>${escapeHtml(item.roomName || '')}</span>
+                    <span><i class="fa-solid fa-clapperboard"></i>${escapeHtml(item.format || '2D')}</span>
+                    <span><i class="fa-solid fa-chair"></i>${item.availableSeats}/${item.capacity || 0} ghế</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function selectShowtime(id) {
+        try {
+            state.selectedShowtime = state.showtimes.find(item => item.id === id);
+            state.selectedSeatIds.clear();
+            state.holdToken = null;
+            document.querySelectorAll('.showtime-card').forEach(card => {
+                card.classList.toggle('active', Number(card.dataset.id) === id);
+            });
+            renderSelectedShowtime();
+            renderSelectedSeats();
+            resetSummary();
+            await loadSeats();
+        } catch (error) {
+            toast(error.message, 'error');
+        }
+    }
+
+    async function loadSeats() {
+        if (!state.selectedShowtime) return;
+        const params = new URLSearchParams({ showtimeId: state.selectedShowtime.id });
+        if (state.holdToken) params.set('holdToken', state.holdToken);
+        const data = await api(`/api/counter-sales/seats?${params}`);
+        state.seats = data.seats || [];
+        state.seatRows = data.rows || 0;
+        state.seatCols = data.cols || 10;
+        renderSeats(state.seatCols, state.seatRows);
+        renderSelectedSeats();
+    }
+
+    function renderSelectedShowtime() {
+        if (!state.selectedShowtime) {
+            $('selectedShowtimeTitle').textContent = 'Chưa chọn suất chiếu';
+            $('selectedShowtimeMeta').textContent = 'Chọn một suất chiếu ở bên trái để mở sơ đồ ghế.';
+            return;
+        }
+        $('selectedShowtimeTitle').textContent = state.selectedShowtime.movieTitle;
+        $('selectedShowtimeMeta').textContent =
+            `${dateText(state.selectedShowtime.showDate)} • ${timeText(state.selectedShowtime.showTime)} • ${state.selectedShowtime.roomName} • ${state.selectedShowtime.format || '2D'}`;
+    }
+
+    function renderSeats(cols, rows = 0) {
+        const map = $('seatMap');
+        map.style.setProperty('--cols', cols);
+        map.style.setProperty('--rows', rows);
+        if (!state.seats.length) {
+            renderSeatEmpty('Phòng này chưa có sơ đồ ghế.');
+            return;
+        }
+        map.innerHTML = state.seats.map(seat => {
+            const status = (seat.status || '').toLowerCase();
+            const selected = state.selectedSeatIds.has(seat.id) || status === 'selected';
+            const css = selected ? 'selected' : status === 'booked' ? 'booked' : status === 'holding' ? 'holding'
+                : status === 'unavailable' ? 'unavailable' : 'available';
+            const disabled = css === 'booked' || css === 'holding' || css === 'unavailable';
+            const capacity = Math.max(1, Number(seat.capacity || 1));
+            return `<button type="button"
+                    class="seat ${css}"
+                    data-capacity="${capacity}"
+                    style="grid-column:${seat.colIndex + 1} / span ${capacity};grid-row:${seat.rowIndex + 1};background:${seat.color || '#e2e8f0'}"
+                    ${disabled ? 'disabled' : ''}
+                    title="${escapeHtml(seat.displayName || '')} - ${money(seat.price)}"
+                    onclick="toggleSeat(${seat.id})">${escapeHtml(seat.label)}</button>`;
+        }).join('');
+        renderSeatLegend();
+        requestAnimationFrame(fitSeatMap);
+    }
+
+    function renderSeatEmpty(message) {
+        $('seatMap').innerHTML = `<div class="empty-state" style="grid-column:1/-1">${message}</div>`;
+        $('seatLegend').innerHTML = `
+            <span><i style="background:#e2e8f0"></i> Trống</span>
+            <span><i style="background:#0054a6"></i> Đang chọn</span>
+            <span><i style="background:#fde68a"></i> Đang giữ</span>
+            <span><i style="background:#fca5a5"></i> Đã bán</span>
+            <span><i style="background:transparent"></i> Không bán</span>
+        `;
+    }
+
+    function renderSeatLegend() {
+        const types = new Map();
+        state.seats.forEach(seat => {
+            if (!seat.sellable) return;
+            const key = `${seat.type || ''}-${seat.displayName || ''}-${seat.color || ''}-${seat.capacity || 1}`;
+            if (!types.has(key)) {
+                types.set(key, seat);
+            }
+        });
+        const typeItems = Array.from(types.values()).map(seat => `
+            <span><i style="background:${seat.color || '#e2e8f0'}"></i>
+                ${escapeHtml(seat.displayName || 'Loại ghế')}${Number(seat.capacity || 1) > 1 ? ` (${seat.capacity} chỗ)` : ''}
+            </span>
+        `).join('');
+        $('seatLegend').innerHTML = `
+            ${typeItems}
+            <span><i style="background:#0054a6"></i> Đang chọn</span>
+            <span><i style="background:#fde68a"></i> Đang giữ</span>
+            <span><i style="background:#fca5a5"></i> Đã bán</span>
+            <span><i style="background:transparent"></i> Không bán</span>
+        `;
+    }
+
+    function fitSeatMap() {
+        const map = $('seatMap');
+        const wrap = $('seatMapWrap');
+        if (!map || !wrap || !state.seatCols) return;
+        const fullscreen = document.body.classList.contains('pos-seat-fullscreen');
+        const cols = Math.max(1, Number(state.seatCols || 10));
+        const rows = Math.max(1, Number(state.seatRows || 1));
+        const gap = fullscreen ? 8 : 7;
+        const maxCell = fullscreen ? 56 : 48;
+        const minCell = fullscreen ? 26 : 32;
+        const availableWidth = Math.max(260, wrap.clientWidth - 28);
+        const availableHeight = fullscreen ? Math.max(260, wrap.clientHeight - 28) : Infinity;
+        const byWidth = (availableWidth - (cols - 1) * gap) / cols;
+        const byHeight = (availableHeight - (rows - 1) * gap) / rows;
+        const cell = Math.max(minCell, Math.min(maxCell, Math.floor(Math.min(byWidth, byHeight))));
+        map.style.setProperty('--seat-size', `${cell}px`);
+        map.style.setProperty('--seat-height', `${Math.max(28, Math.round(cell * 0.86))}px`);
+        map.style.setProperty('--seat-gap', `${gap}px`);
+    }
+
+    function toggleSeatFullscreen() {
+        document.body.classList.toggle('pos-seat-fullscreen');
+        const enabled = document.body.classList.contains('pos-seat-fullscreen');
+        $('fullscreenSeatLabel').textContent = enabled ? 'Thu nhỏ' : 'Toàn màn hình';
+        $('btnFullscreenSeats').querySelector('i').className = enabled
+            ? 'fa-solid fa-compress me-1'
+            : 'fa-solid fa-expand me-1';
+        setTimeout(fitSeatMap, 60);
+    }
+
+    async function toggleSeat(id) {
+        if (!state.selectedShowtime) return;
+        if (state.selectedSeatIds.has(id)) state.selectedSeatIds.delete(id);
+        else state.selectedSeatIds.add(id);
+        renderSelectedSeats();
+        await syncHold();
+    }
+
+    async function syncHold() {
+        try {
+            if (!state.selectedSeatIds.size) {
+                await releaseHold();
+                await loadSeats();
+                resetSummary();
+                return;
+            }
+            const hold = await api('/api/counter-sales/hold', {
+                method: 'POST',
+                body: JSON.stringify({
+                    showtimeId: state.selectedShowtime.id,
+                    seatIds: Array.from(state.selectedSeatIds),
+                    holdToken: state.holdToken
+                })
+            });
+            state.holdToken = hold.holdToken;
+            await loadSeats();
+            await previewSale();
+        } catch (error) {
+            toast(error.message, 'error');
+            state.selectedSeatIds.clear();
+            renderSelectedSeats();
+            await loadSeats();
+            resetSummary();
+        }
+    }
+
+    async function clearSeats() {
+        state.selectedSeatIds.clear();
+        renderSelectedSeats();
+        await releaseHold();
+        if (state.selectedShowtime) await loadSeats();
+        resetSummary();
+    }
+
+    async function releaseHold() {
+        if (!state.holdToken) return;
+        try {
+            await api('/api/counter-sales/release', {
+                method: 'POST',
+                body: JSON.stringify({ holdToken: state.holdToken })
+            });
+        } finally {
+            state.holdToken = null;
+        }
+    }
+
+    function renderSelectedSeats() {
+        const selected = state.seats.filter(seat => state.selectedSeatIds.has(seat.id));
+        const html = selected.length
+            ? selected.map(seat => `<span>${escapeHtml(seat.label)}</span>`).join('')
+            : '<span style="background:#f1f5f9;color:#64748b">Chưa chọn ghế</span>';
+        if ($('selectedSeats')) $('selectedSeats').innerHTML = html;
+        if ($('selectedSeatsStep')) $('selectedSeatsStep').innerHTML = html;
+    }
+
+    function goCheckout() {
+        if (!state.selectedShowtime) {
+            toast('Vui lòng chọn suất chiếu trước.', 'error');
+            return;
+        }
+        if (!state.holdToken || !state.selectedSeatIds.size) {
+            toast('Vui lòng chọn ghế để hệ thống giữ ghế trước khi lập hóa đơn.', 'error');
+            return;
+        }
+        const selectedSeats = state.seats.filter(seat => state.selectedSeatIds.has(seat.id));
+        sessionStorage.setItem('counterSaleDraft', JSON.stringify({
+            showtime: state.selectedShowtime,
+            holdToken: state.holdToken,
+            seats: selectedSeats,
+            seatIds: Array.from(state.selectedSeatIds),
+            createdAt: new Date().toISOString()
+        }));
+        window.location.href = '/admin/counter-sales/checkout';
+    }
+
+    async function loadCombos() {
+        try {
+            state.combos = await api('/api/counter-sales/combos');
+            renderCombos();
+        } catch (error) {
+            toast(error.message, 'error');
+        }
+    }
+
+    function renderCombos() {
+        if (!state.combos.length) {
+            $('comboList').innerHTML = '<div class="text-muted small">Chưa có combo đang bán.</div>';
+            return;
+        }
+        $('comboList').innerHTML = state.combos.map(combo => `
+            <div class="combo-card-pos">
+                <img class="combo-thumb"
+                     src="${escapeHtml(combo.image || '/images/cineflow-logo-light.svg')}"
+                     alt="${escapeHtml(combo.name)}"
+                     onerror="this.src='/images/cineflow-logo-light.svg'">
+                <div class="combo-info">
+                    <strong>${escapeHtml(combo.name)}</strong>
+                    <p>${escapeHtml(combo.description || 'Combo bắp nước bán kèm vé tại quầy.')}</p>
+                    <span class="combo-price">${money(combo.price)}</span>
+                    <div class="small text-muted combo-line-total" id="comboTotal-${combo.id}">Tạm tính: 0 đ</div>
+                </div>
+                <div class="combo-stepper">
+                    <button type="button" onclick="changeComboQty(${combo.id}, -1)" aria-label="Giảm ${escapeHtml(combo.name)}">−</button>
+                    <input class="form-control qty-input combo-qty" type="number" min="0" max="20" value="0"
+                           data-id="${combo.id}" data-price="${Number(combo.price || 0)}"
+                           onchange="onComboQtyChange(this)" oninput="onComboQtyInput(this)">
+                    <button type="button" onclick="changeComboQty(${combo.id}, 1)" aria-label="Tăng ${escapeHtml(combo.name)}">+</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function changeComboQty(id, delta) {
+        const input = document.querySelector(`.combo-qty[data-id="${id}"]`);
+        if (!input) return;
+        input.value = Math.max(0, Math.min(20, Number(input.value || 0) + delta));
+        onComboQtyChange(input);
+    }
+
+    function onComboQtyInput(input) {
+        input.value = Math.max(0, Math.min(20, Number(input.value || 0)));
+        updateComboLineTotal(input);
+        debounce(previewSale, 250);
+    }
+
+    function onComboQtyChange(input) {
+        input.value = Math.max(0, Math.min(20, Number(input.value || 0)));
+        updateComboLineTotal(input);
+        previewSale();
+    }
+
+    function updateComboLineTotal(input) {
+        const totalEl = $(`comboTotal-${input.dataset.id}`);
+        if (!totalEl) return;
+        const subtotal = Number(input.dataset.price || 0) * Number(input.value || 0);
+        totalEl.textContent = `Tạm tính: ${money(subtotal)}`;
+    }
+
+    async function loadVouchers() {
+        try {
+            const vouchers = await api('/api/counter-sales/vouchers');
+            $('voucherOptions').innerHTML = vouchers.map(v =>
+                `<option value="${escapeHtml(v.code)}">${escapeHtml(v.title)} - tối thiểu ${money(v.minOrderValue)}</option>`
+            ).join('');
+        } catch (error) {
+            toast(error.message, 'error');
+        }
+    }
+
+    async function searchCustomers() {
+        const keyword = $('customerSearch').value.trim();
+        if (keyword.length < 2) {
+            $('customerResults').innerHTML = '';
+            state.selectedCustomer = null;
+            return;
+        }
+        try {
+            const customers = await api(`/api/counter-sales/customers?keyword=${encodeURIComponent(keyword)}`);
+            $('customerResults').innerHTML = customers.length ? customers.map(customer => `
+                <button type="button" onclick="selectCustomer(${customer.id})" data-customer='${escapeAttr(JSON.stringify(customer))}'>
+                    <strong>${escapeHtml(customer.name)}</strong>
+                    <div class="small text-muted">${escapeHtml(customer.phone || '')} • ${escapeHtml(customer.email || '')}</div>
+                </button>
+            `).join('') : '<div class="text-muted small">Không tìm thấy thành viên phù hợp.</div>';
+        } catch (error) {
+            toast(error.message, 'error');
+        }
+    }
+
+    function selectCustomer(id) {
+        const btn = Array.from(document.querySelectorAll('#customerResults button')).find(item => Number(item.textContent && item.getAttribute('onclick')?.match(/\d+/)?.[0]) === id);
+        const dataButton = Array.from(document.querySelectorAll('#customerResults button')).find(item => item.getAttribute('onclick') === `selectCustomer(${id})`);
+        const source = dataButton || btn;
+        if (!source) return;
+        state.selectedCustomer = JSON.parse(source.dataset.customer);
+        $('customerName').value = state.selectedCustomer.name || '';
+        $('customerPhone').value = state.selectedCustomer.phone || '';
+        $('customerEmail').value = state.selectedCustomer.email || '';
+        document.querySelectorAll('#customerResults button').forEach(item => item.classList.toggle('active', item === source));
+        previewSale();
+    }
+
+    async function previewSale() {
+        if (!state.selectedShowtime || !state.holdToken || !state.selectedSeatIds.size) {
+            resetSummary();
+            return null;
+        }
+        try {
+            const summary = await api('/api/counter-sales/preview', {
+                method: 'POST',
+                body: JSON.stringify(buildPayload())
+            });
+            state.lastSummary = summary;
+            renderSummary(summary);
+            return summary;
+        } catch (error) {
+            $('voucherMessage').textContent = error.message;
+            $('voucherMessage').className = 'small mt-1 text-danger';
+            return null;
+        }
+    }
+
+    async function completeSale() {
+        if (!state.selectedShowtime || !state.holdToken || !state.selectedSeatIds.size) {
+            toast('Vui lòng chọn suất chiếu và ghế trước khi bán vé.', 'error');
+            return;
+        }
+        if ($('paymentMethod').value !== 'CASH') {
+            const summary = await previewSale();
+            if (!summary) return;
+            openPaymentCodeModal(summary);
+            return;
+        }
+        await submitSale();
+    }
+
+    async function submitSale() {
+        if (!state.selectedShowtime || !state.holdToken || !state.selectedSeatIds.size) {
+            toast('Vui lòng chọn suất chiếu và ghế trước khi bán vé.', 'error');
+            return;
+        }
+        $('btnCompleteSale').disabled = true;
+        $('btnConfirmCodePayment').disabled = true;
+        try {
+            const result = await api('/api/counter-sales/complete', {
+                method: 'POST',
+                body: JSON.stringify(buildPayload())
+            });
+            closePaymentCodeModal();
+            const method = result.paymentMethod === 'CASH' ? 'tiền mặt' : paymentMethodLabel(result.paymentMethod);
+            toast(`${result.message} ${method}: ${result.orderCode}`, 'success');
+            state.selectedSeatIds.clear();
+            state.holdToken = null;
+            state.pendingPaymentCode = null;
+            state.lastSummary = null;
+            renderSelectedSeats();
+            resetSummary();
+            await loadSeats();
+            await loadShowtimes();
+        } catch (error) {
+            toast(error.message, 'error');
+        } finally {
+            $('btnCompleteSale').disabled = false;
+            $('btnConfirmCodePayment').disabled = false;
+        }
+    }
+
+    function buildPayload() {
+        return {
+            showtimeId: state.selectedShowtime?.id,
+            holdToken: state.holdToken,
+            customerType: $('customerType').value,
+            customerAccountId: state.selectedCustomer?.id || null,
+            customerName: $('customerName').value,
+            customerPhone: $('customerPhone').value,
+            customerEmail: $('customerEmail').value,
+            voucherCode: $('voucherCode').value,
+            paymentMethod: $('paymentMethod').value,
+            counterPaymentCode: $('paymentMethod').value === 'CASH' ? null : state.pendingPaymentCode,
+            comboItems: Array.from(document.querySelectorAll('.combo-qty'))
+                .map(input => ({ comboId: Number(input.dataset.id), quantity: Number(input.value || 0) }))
+                .filter(item => item.quantity > 0)
+        };
+    }
+
+    function openPaymentCodeModal(summary) {
+        state.pendingPaymentCode = state.pendingPaymentCode || generatePaymentCode();
+        const method = $('paymentMethod').value;
+        const customerName = $('customerName').value.trim() || state.selectedCustomer?.name || 'Khách vãng lai';
+        const selectedSeats = state.seats
+            .filter(seat => state.selectedSeatIds.has(seat.id))
+            .map(seat => seat.label)
+            .join(', ');
+        const qrContent = buildPaymentQrContent(summary);
+
+        $('paymentCodeMethod').textContent = paymentMethodLabel(method);
+        $('paymentCodeCustomer').textContent = customerName;
+        $('paymentCodeMovie').textContent = state.selectedShowtime?.movieTitle || '--';
+        $('paymentCodeSeats').textContent = selectedSeats || '--';
+        $('paymentCodeAmount').textContent = money(summary.total);
+        $('paymentCodeContent').textContent = state.pendingPaymentCode;
+        $('paymentCodeValue').textContent = state.pendingPaymentCode;
+        $('paymentQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(qrContent)}`;
+        $('paymentCodeModal').classList.add('open');
+        $('paymentCodeModal').setAttribute('aria-hidden', 'false');
+    }
+
+    function closePaymentCodeModal() {
+        $('paymentCodeModal').classList.remove('open');
+        $('paymentCodeModal').setAttribute('aria-hidden', 'true');
+    }
+
+    function generatePaymentCode() {
+        const raw = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`.toUpperCase();
+        return `POS-${raw}`.slice(0, 50);
+    }
+
+    function buildPaymentQrContent(summary) {
+        return [
+            'BETA CINEMAS',
+            `MA THANH TOAN: ${state.pendingPaymentCode}`,
+            `SO TIEN: ${Number(summary?.total || 0).toLocaleString('vi-VN')} VND`,
+            `NOI DUNG: ${state.pendingPaymentCode}`
+        ].join('\n');
+    }
+
+    async function copyPaymentCode() {
+        try {
+            await navigator.clipboard.writeText(state.pendingPaymentCode || $('paymentCodeValue').textContent);
+            toast('Đã sao chép mã thanh toán.', 'success');
+        } catch (error) {
+            toast('Không thể sao chép tự động, hãy bôi đen mã để copy thủ công.', 'error');
+        }
+    }
+
+    function renderPaymentHint() {
+        const isCash = $('paymentMethod').value === 'CASH';
+        $('paymentCodeHint').style.display = isCash ? 'none' : 'block';
+        $('btnCompleteSale').innerHTML = isCash
+            ? '<i class="fa-solid fa-check-circle me-2"></i>Hoàn tất bán vé'
+            : '<i class="fa-solid fa-qrcode me-2"></i>Hiển thị mã thanh toán';
+    }
+
+    function paymentMethodLabel(method) {
+        return ({
+            CASH: 'Tiền mặt',
+            CARD: 'Thẻ ngân hàng',
+            BANK_TRANSFER: 'Chuyển khoản',
+            MOMO: 'Ví MoMo',
+            PAYOS: 'PayOS / VietQR',
+            VNPAY: 'VNPay'
+        })[method] || method || 'Thanh toán';
+    }
+
+    function renderSummary(summary) {
+        $('ticketSubtotal').textContent = money(summary.ticketSubtotal);
+        $('comboSubtotal').textContent = money(summary.comboSubtotal);
+        $('discountAmount').textContent = money(summary.discount);
+        $('totalAmount').textContent = money(summary.total);
+        if (summary.voucherMessage) {
+            $('voucherMessage').textContent = summary.voucherMessage;
+            $('voucherMessage').className = 'small mt-1 text-warning';
+        } else if (summary.voucherCode) {
+            $('voucherMessage').textContent = `Đã áp dụng ${summary.voucherCode}`;
+            $('voucherMessage').className = 'small mt-1 text-success';
+        } else {
+            $('voucherMessage').textContent = '';
+        }
+    }
+
+    function resetSummary() {
+        $('ticketSubtotal').textContent = money(0);
+        $('comboSubtotal').textContent = money(0);
+        $('discountAmount').textContent = money(0);
+        $('totalAmount').textContent = money(0);
+        $('voucherMessage').textContent = '';
+    }
+
+    function toast(message, type = '') {
+        const el = document.createElement('div');
+        el.className = `app-toast ${type}`;
+        el.textContent = message;
+        $('toastArea').appendChild(el);
+        setTimeout(() => el.remove(), 5000);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        }[ch]));
+    }
+
+    function escapeAttr(value) {
+        return escapeHtml(value).replace(/`/g, '&#096;');
+    }
+</script>
+</body>
+</html>

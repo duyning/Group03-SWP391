@@ -5,5 +5,7 @@ public enum NotificationType {
     PAYMENT,
     PROMOTION,
     VOUCHER,
+    MOVIE,
+    NEWS,
     SYSTEM
 }

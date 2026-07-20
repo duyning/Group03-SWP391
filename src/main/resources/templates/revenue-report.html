@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!--
+  Created on 2026-07-13: Revenue report page wired to the shared admin sidebar.
+  Created by: NinhDD - HE186113
+-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo cáo thống kê | CineFlow Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
+    <style>
+        body.admin-page { font-family: "Inter", "Segoe UI", Arial, sans-serif; color: #172033; }
+        .report-shell { max-width: 1500px; margin: 0 auto; }
+        .page-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #d8e3ef;
+        }
+        .page-head h1 { margin: 0; color: #1f5bd8; font-size: 2rem; font-weight: 900; }
+        .page-head p { margin: 6px 0 0; color: #64748b; }
+        .filter-card,
+        .stat-card,
+        .panel {
+            background: #fff;
+            border: 1px solid #d9e2ec;
+            border-radius: 16px;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
+        }
+        .filter-card { padding: 18px; margin-bottom: 18px; }
+        .filter-row { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+        .field { display: grid; gap: 6px; }
+        .field label { color: #475569; font-size: .82rem; font-weight: 850; }
+        .field input {
+            min-height: 42px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0 12px;
+            font: inherit;
+        }
+        .btn-primary {
+            min-height: 42px;
+            border: 0;
+            border-radius: 10px;
+            padding: 0 18px;
+            background: #1f5bd8;
+            color: #fff;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+        .stat-card { padding: 18px; }
+        .stat-card span { display: block; color: #64748b; font-size: .82rem; font-weight: 850; margin-bottom: 8px; }
+        .stat-card strong { display: block; color: #0f172a; font-size: 1.55rem; font-weight: 950; }
+        .stat-card.revenue strong { color: #047857; }
+        .panel-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+        .panel { overflow: hidden; }
+        .panel h2 {
+            margin: 0;
+            padding: 16px 18px;
+            border-bottom: 1px solid #edf2f7;
+            color: #0f315e;
+            font-size: 1rem;
+            font-weight: 950;
+        }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th,
+        .data-table td { padding: 13px 18px; border-bottom: 1px solid #edf2f7; text-align: left; vertical-align: middle; }
+        .data-table th { background: #f8fafc; color: #64748b; font-size: .76rem; text-transform: uppercase; letter-spacing: .03em; }
+        .money { color: #047857; font-weight: 950; white-space: nowrap; }
+        .empty-state { padding: 28px 18px; color: #64748b; text-align: center; }
+        @media (max-width: 1100px) { .stats-grid, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 720px) { .stats-grid, .panel-grid { grid-template-columns: 1fr; } .page-head { flex-direction: column; } }
+    </style>
+</head>
+<body class="admin-page">
+<div class="admin-layout">
+    <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('reports')}"></aside>
+    <main class="admin-main">
+        <div class="report-shell">
+            <div class="page-head">
+                <div>
+                    <h1><i class="fa-solid fa-chart-pie"></i> Báo cáo thống kê</h1>
+                    <p>Đối soát doanh thu đã thanh toán theo ngày, phòng chiếu, combo và loại ghế trong khoảng thời gian chọn.</p>
+                </div>
+            </div>
+
+            <form class="filter-card" th:action="@{/admin/reports}" method="get">
+                <div class="filter-row">
+                    <div class="field">
+                        <label for="startDate">Từ ngày</label>
+                        <input id="startDate" type="date" name="startDate" th:value="${startDate}">
+                    </div>
+                    <div class="field">
+                        <label for="endDate">Đến ngày</label>
+                        <input id="endDate" type="date" name="endDate" th:value="${endDate}">
+                    </div>
+                    <button class="btn-primary" type="submit"><i class="fa-solid fa-filter"></i> Lọc báo cáo</button>
+                </div>
+            </form>
+
+            <section class="stats-grid">
+                <article class="stat-card revenue">
+                    <span>Doanh thu đã thanh toán</span>
+                    <strong th:text="${#numbers.formatDecimal(totalRevenue, 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</strong>
+                </article>
+                <article class="stat-card">
+                    <span>Đơn đã thanh toán</span>
+                    <strong th:text="${paidBookingCount != null ? paidBookingCount : 0}">0</strong>
+                </article>
+                <article class="stat-card">
+                    <span>Vé đã bán</span>
+                    <strong th:text="${totalTickets != null ? totalTickets : 0}">0</strong>
+                </article>
+                <article class="stat-card">
+                    <span>Giá trị đơn trung bình</span>
+                    <strong th:text="${#numbers.formatDecimal(averageOrderValue, 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</strong>
+                </article>
+            </section>
+
+            <section class="panel-grid">
+                <article class="panel">
+                    <h2>Doanh thu theo ngày</h2>
+                    <div class="empty-state" th:if="${dailyRevenue == null || dailyRevenue.isEmpty()}">Chưa có dữ liệu doanh thu theo ngày.</div>
+                    <table class="data-table" th:if="${dailyRevenue != null && !dailyRevenue.isEmpty()}">
+                        <thead><tr><th>Ngày</th><th>Số đơn</th><th>Doanh thu</th></tr></thead>
+                        <tbody>
+                        <tr th:each="item : ${dailyRevenue}">
+                            <td th:text="${#temporals.format(item[0], 'dd/MM/yyyy')}">17/07/2026</td>
+                            <td th:text="${item[1]}">0</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <article class="panel">
+                    <h2>Hiệu suất phòng chiếu</h2>
+                    <div class="empty-state" th:if="${roomStats == null || roomStats.isEmpty()}">Chưa có dữ liệu phòng chiếu.</div>
+                    <table class="data-table" th:if="${roomStats != null && !roomStats.isEmpty()}">
+                        <thead><tr><th>Phòng</th><th>Vé đã bán</th><th>Doanh thu</th></tr></thead>
+                        <tbody>
+                        <tr th:each="item : ${roomStats}">
+                            <td th:text="${item[0]}">Phòng 01</td>
+                            <td th:text="${item[1]}">0</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <article class="panel">
+                    <h2>Combo bán kèm</h2>
+                    <div class="empty-state" th:if="${comboStats == null || comboStats.isEmpty()}">Chưa có dữ liệu combo.</div>
+                    <table class="data-table" th:if="${comboStats != null && !comboStats.isEmpty()}">
+                        <thead><tr><th>Combo</th><th>Số lượng</th><th>Doanh thu</th></tr></thead>
+                        <tbody>
+                        <tr th:each="item : ${comboStats}">
+                            <td th:text="${item[0]}">Combo</td>
+                            <td th:text="${item[1]}">0</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <article class="panel">
+                    <h2>Vé theo loại ghế</h2>
+                    <div class="empty-state" th:if="${seatTypeStats == null || seatTypeStats.isEmpty()}">Chưa có dữ liệu loại ghế.</div>
+                    <table class="data-table" th:if="${seatTypeStats != null && !seatTypeStats.isEmpty()}">
+                        <thead><tr><th>Loại ghế</th><th>Số vé</th><th>Doanh thu</th></tr></thead>
+                        <tbody>
+                        <tr th:each="item : ${seatTypeStats}">
+                            <td th:text="${item[0]}">Ghế thường</td>
+                            <td th:text="${item[1]}">0</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(item[2], 0, 'POINT', 0, 'POINT')} + ' đ'">0 đ</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </article>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -12,14 +12,15 @@ import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.PostRepository;
 import com.group3.cinema.repository.PromotionRepository;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @DependsOn("roomUnicodeMigration")
@@ -28,25 +29,33 @@ public class PublicContentInitializer {
     private final MovieRepository movieRepository;
     private final PostRepository postRepository;
     private final PromotionRepository promotionRepository;
-    private final JdbcTemplate jdbcTemplate;
+    private final boolean seedPublicContentEnabled;
 
     public PublicContentInitializer(MovieRepository movieRepository, PostRepository postRepository,
-                                    PromotionRepository promotionRepository, JdbcTemplate jdbcTemplate) {
+                                    PromotionRepository promotionRepository,
+                                    @Value("${app.seed.public-content:false}") boolean seedPublicContentEnabled) {
         this.movieRepository = movieRepository;
         this.postRepository = postRepository;
         this.promotionRepository = promotionRepository;
-        this.jdbcTemplate = jdbcTemplate;
+        this.seedPublicContentEnabled = seedPublicContentEnabled;
     }
 
     @PostConstruct
     @Transactional
     public void seedPublicContent() {
+        if (!seedPublicContentEnabled) {
+            return;
+        }
         seedMovies();
         seedPosts();
         seedPromotions();
     }
 
     private void seedMovies() {
+        if (movieRepository.count() > 0) {
+            return;
+        }
+
         List<Movie> betaMovies = List.of(
                 betaMovie("Bầy Xác Sống", "Kinh dị, Hồi Hộp", 122, LocalDate.of(2026, 6, 12), Movie.MovieStatus.NOW_SHOWING,
                         "https://files.betacorp.vn/media%2fimages%2f2026%2f06%2f09%2f400x633%2D1%2D143138%2D090626%2D39.jpg", "https://www.youtube.com/watch?v=WFu0aDRxj0U",
@@ -102,40 +111,20 @@ public class PublicContentInitializer {
                         "Dužan Duong", "Bùi Thế Dương, Hoang Anh Doan, Tô Tiến Tài, Lê Quỳnh Lan, Dung Nguyen", "Tiếng Việt", "C-18")
         );
 
-        java.util.Set<String> betaTitles = betaMovies.stream()
-                .map(Movie::getTitle)
-                .collect(java.util.stream.Collectors.toSet());
         List<Movie> existingMovies = movieRepository.findAll();
-        existingMovies.stream()
-                .filter(movie -> !betaTitles.contains(movie.getTitle()))
-                .forEach(movie -> movie.setActive(false));
-        movieRepository.saveAll(existingMovies);
-        deleteUnreferencedNonBetaMovies(betaTitles);
-
-        movieRepository.saveAll(betaMovies.stream()
-                .map(betaMovie -> existingMovies.stream()
-                        .filter(existing -> existing.getTitle().equals(betaMovie.getTitle()))
-                        .findFirst()
-                        .map(existing -> copyMovieData(existing, betaMovie))
-                        .orElse(betaMovie))
-                .toList());
+        List<Movie> moviesToSave = betaMovies.stream()
+                .map(betaMovie -> {
+                    Optional<Movie> existingOpt = existingMovies.stream()
+                            .filter(existing -> existing.getTitle().equalsIgnoreCase(betaMovie.getTitle()))
+                            .findFirst();
+                    if (existingOpt.isPresent()) {
+                        return copyMovieData(existingOpt.get(), betaMovie);
+                    }
+                    return betaMovie;
+                })
+                .toList();
+        movieRepository.saveAll(moviesToSave);
     }
-
-    private void deleteUnreferencedNonBetaMovies(java.util.Set<String> betaTitles) {
-        try {
-            String placeholders = String.join(",", java.util.Collections.nCopies(betaTitles.size(), "?"));
-            String sql = """
-                    DELETE FROM movie
-                    WHERE title NOT IN (%s)
-                      AND NOT EXISTS (SELECT 1 FROM showtimes WHERE showtimes.movie_id = movie.id)
-                      AND NOT EXISTS (SELECT 1 FROM tickets WHERE tickets.movie_id = movie.id)
-                    """.formatted(placeholders);
-            jdbcTemplate.update(sql, betaTitles.toArray());
-        } catch (Exception ignored) {
-            // If existing movie rows are referenced, they stay hidden instead of breaking booking history.
-        }
-    }
-
     private void seedDemoMoviesUnused() {
         if (movieRepository.count() > 0) {
             return;
@@ -207,26 +196,6 @@ public class PublicContentInitializer {
         movie.setProducer("Beta Cinemas");
         movie.setFormat("2D");
         return movie;
-    }
-
-    private Movie copyMovieData(Movie target, Movie source) {
-        target.setGenre(source.getGenre());
-        target.setDuration(source.getDuration());
-        target.setReleaseDate(source.getReleaseDate());
-        target.setPosterUrl(source.getPosterUrl());
-        target.setBannerUrl(source.getBannerUrl());
-        target.setTrailerUrl(source.getTrailerUrl());
-        target.setDescription(source.getDescription());
-        target.setDirector(source.getDirector());
-        target.setCast(source.getCast());
-        target.setLanguage(source.getLanguage());
-        target.setAgeRating(source.getAgeRating());
-        target.setReleaseYear(source.getReleaseYear());
-        target.setProducer(source.getProducer());
-        target.setStatus(source.getStatus());
-        target.setFormat(source.getFormat());
-        target.setActive(true);
-        return target;
     }
 
     private void seedPosts() {
@@ -346,5 +315,22 @@ public class PublicContentInitializer {
         promotion.setEndDate(endDate);
         promotion.setStatus(Promotion.PromotionStatus.ACTIVE);
         return promotion;
+    }
+
+    private Movie copyMovieData(Movie target, Movie source) {
+        target.setGenre(source.getGenre());
+        target.setDuration(source.getDuration());
+        target.setReleaseDate(source.getReleaseDate());
+        target.setPosterUrl(source.getPosterUrl());
+        target.setTrailerUrl(source.getTrailerUrl());
+        target.setSummary(source.getSummary());
+        target.setDirector(source.getDirector());
+        target.setActors(source.getActors());
+        target.setLanguage(source.getLanguage());
+        target.setAgeRating(source.getAgeRating());
+        target.setFormat(source.getFormat());
+        target.setStatus(source.getStatus());
+        target.setActive(source.isActive());
+        return target;
     }
 }

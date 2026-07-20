@@ -9,7 +9,7 @@
         .ticket-card { width: min(760px, calc(100% - 28px)); margin: 34px auto 70px; text-align: left; }
         .ticket-card h1 { margin: 0 0 10px; color: #0054a6; }
         .ticket-card .poster-row { display: grid; grid-template-columns: 120px 1fr; gap: 18px; align-items: start; }
-        .ticket-card img { width: 120px; height: 170px; border-radius: 12px; object-fit: cover; }
+        .ticket-card .poster-row img { width: 120px; height: 170px; border-radius: 12px; object-fit: cover; }
         .ticket-card .badge { display: inline-flex; padding: 7px 12px; border-radius: 999px; background: #ecfdf3; color: #087443; font-weight: 800; font-size: 13px; }
         .ticket-card dl { display: grid; grid-template-columns: 150px 1fr; gap: 12px; margin: 22px 0; }
         .ticket-card dt { color: #68768b; }
@@ -52,6 +52,12 @@
         </div>
     </div>
 
+    <!-- QR Code hiển thị mã booking -->
+    <div style="text-align: center; margin: 20px 0;">
+        <div id="qrcode" style="display: inline-block; padding: 12px; background: #fff; border-radius: 12px; border: 1px solid #d9e6f5; box-shadow: 0 4px 16px rgba(0,84,166,0.08);"></div>
+        <p style="margin-top: 10px; font-size: 0.82rem; color: #68768b;">Quét mã QR tại quầy soát vé</p>
+    </div>
+
     <dl>
         <dt>Ngày chiếu</dt>
         <dd th:text="${#temporals.format(ticket.showDate, 'dd/MM/yyyy')}">01/01/2026</dd>
@@ -75,5 +81,25 @@
         <a class="btn" th:href="@{/}">Trang chủ</a>
     </div>
 </main>
+
+<!-- Thư viện tạo QR Code -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script th:inline="javascript">
+    // Lấy mã booking từ Thymeleaf
+    var code = /*[[${ticket.bookingCode}]]*/ 'CF-DEFAULT';
+
+    // Khởi tạo QR Code
+    var qrEl = document.getElementById("qrcode");
+    if (qrEl) {
+        new QRCode(qrEl, {
+            text: code,
+            width: 150,
+            height: 150,
+            colorDark: "#0054a6",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+</script>
 </body>
 </html>

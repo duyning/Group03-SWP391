@@ -9,18 +9,52 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "holidays",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "holiday_date", name = "uq_holiday_date")
-        }
-)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Table(name = "holidays", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "holiday_date", name = "uq_holiday_date")
+})
 public class Holiday {
+
+    public Holiday() {
+    }
+
+    public Holiday(Long id, String name, LocalDate holidayDate, LocalDateTime createdAt) {
+        this.id = id;
+        this.name = name;
+        this.holidayDate = holidayDate;
+        this.createdAt = createdAt;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public LocalDate getHolidayDate() {
+        return holidayDate;
+    }
+
+    public void setHolidayDate(LocalDate holidayDate) {
+        this.holidayDate = holidayDate;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

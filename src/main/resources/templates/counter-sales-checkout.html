@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hóa đơn bán vé tại quầy | CineFlow Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
+    <style>
+        body.admin-page{background:#eef3f8;color:#142033;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+        .checkout-shell{max-width:1480px;margin:0 auto}
+        .checkout-header{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:24px;border-radius:18px;background:#0f315e;color:#fff;box-shadow:0 18px 44px rgba(15,49,94,.18);margin-bottom:18px}
+        .checkout-title{display:flex;gap:15px;align-items:center}
+        .checkout-title-icon{width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.14);display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.22)}
+        .checkout-title h1{font-size:1.55rem;font-weight:850;margin:0 0 4px}
+        .checkout-title p{margin:0;color:rgba(255,255,255,.72)}
+        .step-link{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:10px 14px;font-weight:800;text-decoration:none}
+        .step-link:hover{background:#fff;color:#0f315e}
+        .checkout-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}
+        .panel{background:#fff;border:1px solid #d9e2ec;border-radius:16px;box-shadow:0 14px 34px rgba(15,23,42,.06);overflow:hidden}
+        .panel-head{padding:16px 18px;border-bottom:1px solid #e7eef6;background:#f8fafc}
+        .panel-head h2{display:flex;align-items:center;gap:9px;margin:0;font-size:1rem;font-weight:850;color:#0f172a}
+        .panel-body{padding:18px}
+        .field-label{font-size:.82rem;font-weight:800;color:#475569;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+        .form-control,.form-select{border-radius:10px;border-color:#cbd5e1;min-height:42px}
+        .order-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+        .order-chip{padding:14px;border:1px solid #dbe5ef;border-radius:14px;background:#f8fbff}
+        .order-chip span{display:block;color:#64748b;font-size:.8rem;font-weight:800;margin-bottom:4px}
+        .order-chip b{color:#172033}
+        .selected-seats{display:flex;gap:7px;flex-wrap:wrap}
+        .selected-seats span{padding:6px 10px;border-radius:999px;background:#e0f2fe;color:#075985;font-weight:850;font-size:.82rem}
+        .customer-result{display:grid;gap:8px;margin-top:8px;max-height:170px;overflow:auto}
+        .customer-result button{border:1px solid #dbe5ef;background:#f8fafc;border-radius:10px;text-align:left;padding:9px 10px;color:#1e293b}
+        .customer-result button.active{border-color:#0d6efd;background:#eff6ff}
+        .combo-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .combo-card{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:14px;background:#fbfdff}
+        .combo-card img{width:84px;height:84px;border-radius:12px;object-fit:cover;background:#eef3f8;border:1px solid #dbe5ef}
+        .combo-card strong{display:block;color:#172033;line-height:1.3}
+        .combo-card p{margin:5px 0;color:#64748b;font-size:.8rem;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .combo-price{color:#0054a6;font-weight:900}
+        .combo-stepper{display:inline-flex;align-items:center;border:1px solid #cbd8e6;border-radius:999px;overflow:hidden;background:#fff;margin-top:8px}
+        .combo-stepper button{width:34px;height:34px;border:0;background:#edf4fb;color:#0054a6;font-weight:900}
+        .combo-stepper button:hover{background:#0054a6;color:#fff}
+        .qty-input{width:44px;min-height:34px;border:0;border-left:1px solid #dbe5ef;border-right:1px solid #dbe5ef;border-radius:0;padding:4px;text-align:center;font-weight:900}
+        .summary-box{display:grid;gap:10px;padding:14px;border-radius:14px;background:#f8fafc;border:1px solid #e2e8f0;margin-top:14px}
+        .summary-line{display:flex;justify-content:space-between;gap:10px;color:#475569;font-weight:700}
+        .summary-line.total{border-top:1px solid #dbe5ef;padding-top:12px;color:#0054a6;font-size:1.2rem;font-weight:900}
+        .btn-pay{width:100%;border:0;border-radius:12px;min-height:48px;background:#0054a6;color:#fff;font-weight:900;margin-top:14px}
+        .btn-pay:hover{background:#003f7d;color:#fff}
+        .payment-code-hint{display:none;margin-top:8px;padding:10px 12px;border-radius:12px;background:#eff6ff;color:#0f4f91;border:1px solid #bfdbfe;font-size:.82rem;font-weight:700;line-height:1.45}
+        .toast-area{position:fixed;right:24px;top:24px;z-index:9999;display:grid;gap:10px}
+        .app-toast{min-width:280px;max-width:420px;padding:12px 14px;border-radius:12px;box-shadow:0 18px 42px rgba(15,23,42,.2);color:#fff;background:#0f315e;font-weight:750}
+        .app-toast.error{background:#b91c1c}.app-toast.success{background:#047857}
+        .payment-code-overlay{position:fixed;inset:0;z-index:5000;background:rgba(15,23,42,.58);display:none;align-items:center;justify-content:center;padding:22px}
+        .payment-code-overlay.open{display:flex}
+        .payment-code-modal{width:min(760px,100%);background:#fff;border-radius:20px;box-shadow:0 28px 90px rgba(15,23,42,.32);overflow:hidden}
+        .payment-code-head{padding:20px 22px;background:#0f315e;color:#fff;display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+        .payment-code-head h3{margin:0 0 4px;font-weight:900}.payment-code-head p{margin:0;color:rgba(255,255,255,.76)}
+        .payment-code-body{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px;padding:22px}
+        .payment-qr-box{border:1px solid #dbe5ef;border-radius:18px;background:#f8fbff;padding:14px;display:grid;gap:12px;justify-items:center}
+        .payment-qr-box img{width:190px;height:190px;object-fit:contain;background:#fff;border-radius:12px}
+        .payment-code-value{width:100%;padding:10px 12px;border-radius:12px;background:#fff;border:1px dashed #9ab1ca;color:#0054a6;font-weight:900;text-align:center;letter-spacing:.06em;word-break:break-word}
+        .payment-code-detail dl{display:grid;grid-template-columns:130px 1fr;gap:10px;margin:0}.payment-code-detail dt{color:#64748b}.payment-code-detail dd{margin:0;color:#172033;font-weight:850}
+        .payment-code-actions{display:flex;justify-content:flex-end;gap:10px;padding:0 22px 22px;flex-wrap:wrap}
+        @media(max-width:1050px){.checkout-grid,.order-strip{grid-template-columns:1fr}.combo-list{grid-template-columns:1fr}.payment-code-body{grid-template-columns:1fr}}
+    </style>
+</head>
+<body class="admin-page">
+<div class="toast-area" id="toastArea"></div>
+<div class="admin-layout">
+    <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('counter-sales')}"></aside>
+    <main class="admin-main">
+        <div class="checkout-shell">
+            <section class="checkout-header">
+                <div class="checkout-title">
+                    <div class="checkout-title-icon"><i class="fa-solid fa-receipt fa-xl"></i></div>
+                    <div>
+                        <h1>Hóa đơn bán vé tại quầy</h1>
+                        <p>Kiểm tra ghế đã giữ, chọn combo/voucher và hiển thị QR thanh toán khi cần.</p>
+                    </div>
+                </div>
+                <a class="step-link" href="/admin/counter-sales" id="btnChangeSeats"><i class="fa-solid fa-arrow-left me-1"></i>Đổi ghế</a>
+            </section>
+
+            <div class="order-strip">
+                <div class="order-chip"><span>Phim</span><b id="orderMovie">--</b></div>
+                <div class="order-chip"><span>Suất chiếu</span><b id="orderShowtime">--</b></div>
+                <div class="order-chip"><span>Phòng</span><b id="orderRoom">--</b></div>
+                <div class="order-chip"><span>Ghế</span><div class="selected-seats" id="selectedSeats"></div></div>
+            </div>
+
+            <section class="checkout-grid">
+                <div class="panel">
+                    <div class="panel-head"><h2><i class="fa-solid fa-burger text-primary"></i>Combo và voucher</h2></div>
+                    <div class="panel-body">
+                        <div class="combo-list" id="comboList"><div class="text-muted small">Đang tải combo...</div></div>
+                        <div class="mt-3">
+                            <label class="field-label" for="voucherCode"><i class="fa-solid fa-ticket-simple"></i>Voucher</label>
+                            <input class="form-control" id="voucherCode" list="voucherOptions" placeholder="Nhập hoặc chọn mã voucher">
+                            <datalist id="voucherOptions"></datalist>
+                            <div class="small mt-1" id="voucherMessage"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="panel">
+                    <div class="panel-head"><h2><i class="fa-solid fa-user-check text-primary"></i>Khách hàng và thanh toán</h2></div>
+                    <div class="panel-body">
+                        <div class="mb-3">
+                            <label class="field-label" for="customerSearch"><i class="fa-solid fa-user-magnifying-glass"></i>Tìm khách thành viên</label>
+                            <input class="form-control" id="customerSearch" placeholder="Tên, email hoặc số điện thoại">
+                            <div class="customer-result" id="customerResults"></div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-12">
+                                <label class="field-label" for="customerName">Tên khách</label>
+                                <input class="form-control" id="customerName" placeholder="Khách vãng lai">
+                            </div>
+                            <div class="col-6">
+                                <label class="field-label" for="customerPhone">Số điện thoại</label>
+                                <input class="form-control" id="customerPhone" placeholder="09xxxxxxxx">
+                            </div>
+                            <div class="col-6">
+                                <label class="field-label" for="customerEmail">Email</label>
+                                <input class="form-control" id="customerEmail" placeholder="email@domain.com">
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="field-label" for="customerType">Loại khách</label>
+                                <select class="form-select" id="customerType">
+                                    <option value="ADULT">Người lớn</option>
+                                    <option value="STUDENT">Học sinh/Sinh viên</option>
+                                    <option value="CHILD">Trẻ em</option>
+                                    <option value="SENIOR">Người cao tuổi</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="field-label" for="paymentMethod">Thanh toán</label>
+                                <select class="form-select" id="paymentMethod">
+                                    <option value="CASH">Tiền mặt</option>
+                                    <option value="PAYOS">payOS / VietQR</option>
+                                </select>
+                                <div class="payment-code-hint" id="paymentCodeHint">Phương thức này sẽ tạo mã QR bằng cấu hình payOS trong application-vnpay-local.yaml.</div>
+                            </div>
+                        </div>
+                        <div class="summary-box">
+                            <div class="summary-line"><span>Tiền vé</span><strong id="ticketSubtotal">0 đ</strong></div>
+                            <div class="summary-line"><span>Combo</span><strong id="comboSubtotal">0 đ</strong></div>
+                            <div class="summary-line"><span>Giảm giá</span><strong id="discountAmount">0 đ</strong></div>
+                            <div class="summary-line total"><span>Tổng thanh toán</span><strong id="totalAmount">0 đ</strong></div>
+                        </div>
+        <button class="btn-pay" id="btnCompleteSale"><i class="fa-solid fa-check-circle me-2"></i>Hoàn tất bán vé</button>
+                    </div>
+                </aside>
+            </section>
+        </div>
+    </main>
+</div>
+
+<div class="payment-code-overlay" id="paymentCodeModal" aria-hidden="true">
+    <div class="payment-code-modal" role="dialog" aria-modal="true">
+        <div class="payment-code-head">
+            <div>
+                <h3>Mã thanh toán tại quầy</h3>
+                <p>Mã QR được tạo từ checkout URL của payOS/VietQR trong cấu hình local của project.</p>
+            </div>
+            <button class="btn btn-sm btn-outline-light" id="btnClosePaymentCode" type="button"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="payment-code-body">
+            <div class="payment-qr-box">
+                <img id="paymentQrImage" alt="Mã thanh toán">
+                <div class="payment-code-value" id="paymentCodeValue">POS-000000</div>
+                <button class="btn btn-outline-primary btn-sm w-100" id="btnCopyPaymentCode" type="button"><i class="fa-regular fa-copy me-1"></i>Sao chép mã</button>
+            </div>
+            <div class="payment-code-detail">
+                <dl>
+                    <dt>Phương thức</dt><dd id="paymentCodeMethod">Chuyển khoản</dd>
+                    <dt>Khách hàng</dt><dd id="paymentCodeCustomer">Khách vãng lai</dd>
+                    <dt>Phim</dt><dd id="paymentCodeMovie">--</dd>
+                    <dt>Ghế</dt><dd id="paymentCodeSeats">--</dd>
+                    <dt>Số tiền</dt><dd id="paymentCodeAmount">0 đ</dd>
+                    <dt>Mã đơn</dt><dd id="paymentCodeContent">--</dd>
+                    <dt>Link payOS</dt><dd><a id="paymentCheckoutUrl" href="#" target="_blank" rel="noopener">Mở cổng thanh toán</a></dd>
+                </dl>
+                <div class="alert alert-info mb-0 mt-3">Sau khi khách thanh toán, callback payOS của project sẽ tự chuyển đơn sang đã thanh toán và phát hành vé.</div>
+            </div>
+        </div>
+        <div class="payment-code-actions">
+            <button class="btn btn-outline-secondary" id="btnCancelCodePayment" type="button">Quay lại sửa đơn</button>
+            <button class="btn btn-primary" id="btnConfirmCodePayment" type="button"><i class="fa-solid fa-up-right-from-square me-1"></i>Mở cổng payOS</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const state = {
+        draft:null,
+        combos:[],
+        selectedCustomer:null,
+        debounceTimer:null,
+        pendingPayment:null,
+        lastSummary:null,
+        leavingForPayment:false,
+        saleCompleted:false,
+        holdReleased:false
+    };
+    const $ = id => document.getElementById(id);
+    const money = value => `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+    const timeText = value => value ? value.substring(0,5) : '--:--';
+    const dateText = value => value ? value.split('-').reverse().join('/') : '--/--/----';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        state.draft = readDraft();
+        if (!state.draft) {
+            toast('Chưa có ghế được giữ. Vui lòng chọn suất chiếu và ghế trước.', 'error');
+            setTimeout(() => location.href = '/admin/counter-sales', 1200);
+            return;
+        }
+        renderDraft();
+        bindEvents();
+        await Promise.all([loadCombos(), loadVouchers()]);
+        await previewSale();
+    });
+
+    function bindEvents() {
+        $('customerType').addEventListener('change', previewSale);
+        $('paymentMethod').addEventListener('change', () => { state.pendingPayment = null; renderPaymentHint(); previewSale(); });
+        $('customerName').addEventListener('input', previewSale);
+        $('customerPhone').addEventListener('input', previewSale);
+        $('customerEmail').addEventListener('input', previewSale);
+        $('voucherCode').addEventListener('input', () => debounce(previewSale, 300));
+        $('customerSearch').addEventListener('input', () => debounce(searchCustomers, 320));
+        $('btnCompleteSale').addEventListener('click', completeSale);
+        $('btnChangeSeats').addEventListener('click', changeSeats);
+        $('btnClosePaymentCode').addEventListener('click', closePaymentCodeModal);
+        $('btnCancelCodePayment').addEventListener('click', closePaymentCodeModal);
+        $('btnConfirmCodePayment').addEventListener('click', openPayOsGateway);
+        $('btnCopyPaymentCode').addEventListener('click', copyPaymentCode);
+        window.addEventListener('pagehide', releaseHoldWhenLeavingCheckout);
+        renderPaymentHint();
+    }
+
+    function readDraft() {
+        try { return JSON.parse(sessionStorage.getItem('counterSaleDraft') || 'null'); }
+        catch (ignored) { return null; }
+    }
+
+    function renderDraft() {
+        $('orderMovie').textContent = state.draft.showtime?.movieTitle || '--';
+        $('orderShowtime').textContent = `${dateText(state.draft.showtime?.showDate)} • ${timeText(state.draft.showtime?.showTime)}`;
+        $('orderRoom').textContent = `${state.draft.showtime?.roomName || '--'} • ${state.draft.showtime?.format || '2D'}`;
+        $('selectedSeats').innerHTML = (state.draft.seats || []).length
+            ? state.draft.seats.map(seat => `<span>${escapeHtml(seat.label)}</span>`).join('')
+            : '<span style="background:#f1f5f9;color:#64748b">Chưa chọn ghế</span>';
+    }
+
+    async function api(url, options = {}) {
+        const response = await fetch(url, { headers:{'Content-Type':'application/json', ...(options.headers || {})}, ...options });
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : null;
+        if (!response.ok) throw new Error(data?.message || data?.error || 'Thao tác không thành công.');
+        return data;
+    }
+
+    function debounce(fn, delay) {
+        clearTimeout(state.debounceTimer);
+        state.debounceTimer = setTimeout(fn, delay);
+    }
+
+    async function loadCombos() {
+        try {
+            state.combos = await api('/api/counter-sales/combos');
+            renderCombos();
+        } catch (error) { toast(error.message, 'error'); }
+    }
+
+    function renderCombos() {
+        if (!state.combos.length) {
+            $('comboList').innerHTML = '<div class="text-muted small">Chưa có combo đang bán.</div>';
+            return;
+        }
+        $('comboList').innerHTML = state.combos.map(combo => `
+            <article class="combo-card">
+                <img src="${escapeHtml(combo.image || '/images/cineflow-logo-light.svg')}" alt="${escapeHtml(combo.name)}" onerror="this.src='/images/cineflow-logo-light.svg'">
+                <div>
+                    <strong>${escapeHtml(combo.name)}</strong>
+                    <p>${escapeHtml(combo.description || 'Combo bắp nước bán kèm vé tại quầy.')}</p>
+                    <span class="combo-price">${money(combo.price)}</span>
+                    <div class="small text-muted" id="comboTotal-${combo.id}">Tạm tính: 0 đ</div>
+                    <div class="combo-stepper">
+                        <button type="button" onclick="changeComboQty(${combo.id}, -1)">−</button>
+                        <input class="qty-input combo-qty" type="number" min="0" max="20" value="0" data-id="${combo.id}" data-price="${Number(combo.price || 0)}" oninput="onComboQtyInput(this)" onchange="onComboQtyChange(this)">
+                        <button type="button" onclick="changeComboQty(${combo.id}, 1)">+</button>
+                    </div>
+                </div>
+            </article>
+        `).join('');
+    }
+
+    function changeComboQty(id, delta) {
+        const input = document.querySelector(`.combo-qty[data-id="${id}"]`);
+        if (!input) return;
+        input.value = Math.max(0, Math.min(20, Number(input.value || 0) + delta));
+        onComboQtyChange(input);
+    }
+    function onComboQtyInput(input) {
+        input.value = Math.max(0, Math.min(20, Number(input.value || 0)));
+        updateComboLineTotal(input);
+        debounce(previewSale, 250);
+    }
+    function onComboQtyChange(input) {
+        input.value = Math.max(0, Math.min(20, Number(input.value || 0)));
+        updateComboLineTotal(input);
+        previewSale();
+    }
+    function updateComboLineTotal(input) {
+        const totalEl = $(`comboTotal-${input.dataset.id}`);
+        if (totalEl) totalEl.textContent = `Tạm tính: ${money(Number(input.dataset.price || 0) * Number(input.value || 0))}`;
+    }
+
+    async function loadVouchers() {
+        try {
+            const vouchers = await api('/api/counter-sales/vouchers');
+            $('voucherOptions').innerHTML = vouchers.map(v => `<option value="${escapeHtml(v.code)}">${escapeHtml(v.title)} - tối thiểu ${money(v.minOrderValue)}</option>`).join('');
+        } catch (error) { toast(error.message, 'error'); }
+    }
+
+    async function searchCustomers() {
+        const keyword = $('customerSearch').value.trim();
+        if (keyword.length < 2) {
+            $('customerResults').innerHTML = '';
+            state.selectedCustomer = null;
+            return;
+        }
+        try {
+            const customers = await api(`/api/counter-sales/customers?keyword=${encodeURIComponent(keyword)}`);
+            $('customerResults').innerHTML = customers.length ? customers.map(customer => `
+                <button type="button" onclick="selectCustomer(${customer.id})" data-customer='${escapeAttr(JSON.stringify(customer))}'>
+                    <strong>${escapeHtml(customer.name)}</strong>
+                    <div class="small text-muted">${escapeHtml(customer.phone || '')} • ${escapeHtml(customer.email || '')}</div>
+                </button>
+            `).join('') : '<div class="text-muted small">Không tìm thấy thành viên phù hợp.</div>';
+        } catch (error) { toast(error.message, 'error'); }
+    }
+
+    function selectCustomer(id) {
+        const source = Array.from(document.querySelectorAll('#customerResults button')).find(item => item.getAttribute('onclick') === `selectCustomer(${id})`);
+        if (!source) return;
+        state.selectedCustomer = JSON.parse(source.dataset.customer);
+        $('customerName').value = state.selectedCustomer.name || '';
+        $('customerPhone').value = state.selectedCustomer.phone || '';
+        $('customerEmail').value = state.selectedCustomer.email || '';
+        document.querySelectorAll('#customerResults button').forEach(item => item.classList.toggle('active', item === source));
+        previewSale();
+    }
+
+    async function previewSale() {
+        if (!state.draft?.holdToken) return null;
+        try {
+            const summary = await api('/api/counter-sales/preview', { method:'POST', body:JSON.stringify(buildPayload()) });
+            state.lastSummary = summary;
+            renderSummary(summary);
+            return summary;
+        } catch (error) {
+            $('voucherMessage').textContent = error.message;
+            $('voucherMessage').className = 'small mt-1 text-danger';
+            return null;
+        }
+    }
+
+    async function completeSale() {
+        const summary = await previewSale();
+        if (!summary) return;
+        if ($('paymentMethod').value !== 'CASH') {
+            await createPaymentLink();
+            return;
+        }
+        await submitSale();
+    }
+
+    async function createPaymentLink() {
+        $('btnCompleteSale').disabled = true;
+        try {
+            const payment = await api('/api/counter-sales/payment-link', { method:'POST', body:JSON.stringify(buildPayload()) });
+            state.pendingPayment = payment;
+            const checkoutUrl = payment.checkoutUrl || payment.qrContent;
+            if (!checkoutUrl) {
+                throw new Error('payOS không trả về link thanh toán.');
+            }
+            state.leavingForPayment = true;
+            window.location.href = checkoutUrl;
+        } catch (error) { toast(error.message, 'error'); }
+        finally { $('btnCompleteSale').disabled = false; }
+    }
+
+    async function submitSale() {
+        $('btnCompleteSale').disabled = true;
+        $('btnConfirmCodePayment').disabled = true;
+        try {
+            const result = await api('/api/counter-sales/complete', { method:'POST', body:JSON.stringify(buildPayload()) });
+            closePaymentCodeModal();
+            state.saleCompleted = true;
+            sessionStorage.removeItem('counterSaleDraft');
+            toast(`${result.message} Mã đơn: ${result.orderCode}`, 'success');
+            setTimeout(() => location.href = '/admin/counter-sales', 1400);
+        } catch (error) { toast(error.message, 'error'); }
+        finally {
+            $('btnCompleteSale').disabled = false;
+            $('btnConfirmCodePayment').disabled = false;
+        }
+    }
+
+    async function changeSeats(event) {
+        event.preventDefault();
+        rememberSeatSelectionContext();
+        await releaseDraftHold(false);
+        sessionStorage.removeItem('counterSaleDraft');
+        window.location.href = '/admin/counter-sales';
+    }
+
+    function rememberSeatSelectionContext() {
+        if (!state.draft?.showtime) return;
+        sessionStorage.setItem('counterSaleReturnState', JSON.stringify({
+            saleDate: state.draft.showtime.showDate,
+            movieId: state.draft.showtime.movieId,
+            showtimeId: state.draft.showtime.id,
+            restoredAt: new Date().toISOString()
+        }));
+    }
+
+    function releaseHoldWhenLeavingCheckout() {
+        if (state.leavingForPayment || state.saleCompleted || state.holdReleased) return;
+        rememberSeatSelectionContext();
+        releaseDraftHold(true);
+        sessionStorage.removeItem('counterSaleDraft');
+    }
+
+    async function releaseDraftHold(keepalive) {
+        if (!state.draft?.holdToken || state.holdReleased) return;
+        state.holdReleased = true;
+        try {
+            await fetch('/api/counter-sales/release', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ holdToken: state.draft.holdToken }),
+                keepalive: !!keepalive
+            });
+        } catch (ignored) {
+            // Releasing the hold is best-effort when the user leaves this page.
+        }
+    }
+
+    function buildPayload() {
+        return {
+            showtimeId: state.draft?.showtime?.id,
+            holdToken: state.draft?.holdToken,
+            customerType: $('customerType').value,
+            customerAccountId: state.selectedCustomer?.id || null,
+            customerName: $('customerName').value,
+            customerPhone: $('customerPhone').value,
+            customerEmail: $('customerEmail').value,
+            voucherCode: $('voucherCode').value,
+            paymentMethod: $('paymentMethod').value,
+            counterPaymentCode: null,
+            comboItems: Array.from(document.querySelectorAll('.combo-qty'))
+                .map(input => ({ comboId:Number(input.dataset.id), quantity:Number(input.value || 0) }))
+                .filter(item => item.quantity > 0)
+        };
+    }
+
+    function renderSummary(summary) {
+        $('ticketSubtotal').textContent = money(summary.ticketSubtotal);
+        $('comboSubtotal').textContent = money(summary.comboSubtotal);
+        $('discountAmount').textContent = money(summary.discount);
+        $('totalAmount').textContent = money(summary.total);
+        if (summary.voucherMessage) {
+            $('voucherMessage').textContent = summary.voucherMessage;
+            $('voucherMessage').className = 'small mt-1 text-warning';
+        } else if (summary.voucherCode) {
+            $('voucherMessage').textContent = `Đã áp dụng ${summary.voucherCode}`;
+            $('voucherMessage').className = 'small mt-1 text-success';
+        } else {
+            $('voucherMessage').textContent = '';
+        }
+    }
+
+    function openPaymentCodeModal(payment) {
+        const checkoutUrl = payment.checkoutUrl || payment.qrContent || '';
+        $('paymentCodeMethod').textContent = paymentMethodLabel(payment.paymentMethod || $('paymentMethod').value);
+        $('paymentCodeCustomer').textContent = $('customerName').value.trim() || state.selectedCustomer?.name || 'Khách vãng lai';
+        $('paymentCodeMovie').textContent = state.draft.showtime?.movieTitle || '--';
+        $('paymentCodeSeats').textContent = (state.draft.seats || []).map(seat => seat.label).join(', ');
+        $('paymentCodeAmount').textContent = money(payment.total);
+        $('paymentCodeContent').textContent = payment.orderCode;
+        $('paymentCodeValue').textContent = payment.orderCode;
+        $('paymentCheckoutUrl').href = checkoutUrl;
+        $('paymentCheckoutUrl').textContent = checkoutUrl || 'Không có link thanh toán';
+        $('paymentQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(checkoutUrl)}`;
+        $('paymentCodeModal').classList.add('open');
+    }
+    function closePaymentCodeModal() { $('paymentCodeModal').classList.remove('open'); }
+    async function copyPaymentCode() {
+        try {
+            await navigator.clipboard.writeText(state.pendingPayment?.checkoutUrl || $('paymentCheckoutUrl').href);
+            toast('Đã sao chép link thanh toán payOS.', 'success');
+        } catch (error) { toast('Không thể sao chép tự động, hãy bôi đen mã để copy thủ công.', 'error'); }
+    }
+    function openPayOsGateway() {
+        const url = state.pendingPayment?.checkoutUrl || $('paymentCheckoutUrl').href;
+        if (!url || url === '#') {
+            toast('Chưa có link thanh toán payOS.', 'error');
+            return;
+        }
+        window.open(url, '_blank', 'noopener');
+    }
+    function renderPaymentHint() {
+        const isCash = $('paymentMethod').value === 'CASH';
+        $('paymentCodeHint').style.display = isCash ? 'none' : 'block';
+        $('btnCompleteSale').innerHTML = isCash
+            ? '<i class="fa-solid fa-check-circle me-2"></i>Hoàn tất bán vé'
+            : '<i class="fa-solid fa-qrcode me-2"></i>Tạo QR payOS và chuyển thanh toán';
+    }
+    function paymentMethodLabel(method) {
+        return ({CASH:'Tiền mặt',CARD:'Thẻ ngân hàng',BANK_TRANSFER:'Chuyển khoản',MOMO:'Ví MoMo',PAYOS:'PayOS / VietQR',VNPAY:'VNPay'})[method] || method || 'Thanh toán';
+    }
+    function toast(message, type = '') {
+        const el = document.createElement('div');
+        el.className = `app-toast ${type}`;
+        el.textContent = message;
+        $('toastArea').appendChild(el);
+        setTimeout(() => el.remove(), 5000);
+    }
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+    }
+    function escapeAttr(value) { return escapeHtml(value).replace(/`/g, '&#096;'); }
+</script>
+</body>
+</html>

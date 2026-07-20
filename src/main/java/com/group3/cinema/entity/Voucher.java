@@ -11,12 +11,170 @@ import java.util.Set;
 
 @Entity
 @Table(name = "vouchers")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Voucher {
+
+    public Voucher() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
+    public DiscountType getDiscountType() {
+        return discountType;
+    }
+
+    public void setDiscountType(DiscountType discountType) {
+        this.discountType = discountType;
+    }
+
+    public BigDecimal getDiscountValue() {
+        return discountValue;
+    }
+
+    public void setDiscountValue(BigDecimal discountValue) {
+        this.discountValue = discountValue;
+    }
+
+    public BigDecimal getMaxDiscountAmount() {
+        return maxDiscountAmount;
+    }
+
+    public void setMaxDiscountAmount(BigDecimal maxDiscountAmount) {
+        this.maxDiscountAmount = maxDiscountAmount;
+    }
+
+    public LocalDateTime getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDateTime startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDateTime getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDateTime endDate) {
+        this.endDate = endDate;
+    }
+
+    public BigDecimal getMinOrderValue() {
+        return minOrderValue;
+    }
+
+    public void setMinOrderValue(BigDecimal minOrderValue) {
+        this.minOrderValue = minOrderValue;
+    }
+
+    public Integer getTotalQuantity() {
+        return totalQuantity;
+    }
+
+    public void setTotalQuantity(Integer totalQuantity) {
+        this.totalQuantity = totalQuantity;
+    }
+
+    public Integer getUsedQuantity() {
+        return usedQuantity;
+    }
+
+    public void setUsedQuantity(Integer usedQuantity) {
+        this.usedQuantity = usedQuantity;
+    }
+
+    public ServiceScope getServiceScope() {
+        return serviceScope;
+    }
+
+    public void setServiceScope(ServiceScope serviceScope) {
+        this.serviceScope = serviceScope;
+    }
+
+    public String getApplicableSeats() {
+        return applicableSeats;
+    }
+
+    public void setApplicableSeats(String applicableSeats) {
+        this.applicableSeats = applicableSeats;
+    }
+
+    public ApplicableDay getApplicableDays() {
+        return applicableDays;
+    }
+
+    public void setApplicableDays(ApplicableDay applicableDays) {
+        this.applicableDays = applicableDays;
+    }
+
+    public Boolean getIsHolidayApplicable() {
+        return isHolidayApplicable;
+    }
+
+    public void setIsHolidayApplicable(Boolean isHolidayApplicable) {
+        this.isHolidayApplicable = isHolidayApplicable;
+    }
+
+    public Integer getLimitPerUser() {
+        return limitPerUser;
+    }
+
+    public void setLimitPerUser(Integer limitPerUser) {
+        this.limitPerUser = limitPerUser;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Set<Account> getAccounts() {
+        return accounts;
+    }
+
+    public void setAccounts(Set<Account> accounts) {
+        this.accounts = accounts;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +195,7 @@ public class Voucher {
     // ==========================================
     @NotNull(message = "Trạng thái ẩn/hiện không được để trống")
     @Column(name = "is_deleted", nullable = false)
-    @Builder.Default  // Giúp Lombok Builder không ghi đè mất giá trị mặc định false
+    @Builder.Default // Giúp Lombok Builder không ghi đè mất giá trị mặc định false
     private Boolean isDeleted = false;
 
     @NotNull(message = "Vui lòng chọn loại giảm giá")
@@ -73,6 +231,7 @@ public class Voucher {
     private Integer totalQuantity;
 
     @Column(name = "used_quantity", nullable = false)
+    @Builder.Default
     private Integer usedQuantity = 0;
 
     @NotNull(message = "Vui lòng chọn dịch vụ được áp dụng")
@@ -90,11 +249,13 @@ public class Voucher {
 
     @NotNull(message = "Vui lòng chọn cấu hình áp dụng ngày Lễ, Tết")
     @Column(name = "is_holiday_applicable", nullable = false)
+    @Builder.Default
     private Boolean isHolidayApplicable = true;
 
     @NotNull(message = "Vui lòng cấu hình giới hạn lượt dùng")
     @Min(value = 1, message = "Giới hạn sử dụng mỗi tài khoản phải tối thiểu là 1")
     @Column(name = "limit_per_user", nullable = false)
+    @Builder.Default
     private Integer limitPerUser = 1;
 
     @Column(name = "created_at", updatable = false)
@@ -106,22 +267,28 @@ public class Voucher {
     // Trong Voucher.java
     @ManyToMany(mappedBy = "savedVouchers")
     @JsonIgnore // Tránh vòng lặp vô tận khi dùng JSON
+    @Builder.Default
     private Set<Account> accounts = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        if (this.usedQuantity == null) this.usedQuantity = 0;
-        if (this.isHolidayApplicable == null) this.isHolidayApplicable = true;
-        if (this.limitPerUser == null) this.limitPerUser = 1;
-        if (this.code != null) this.code = this.code.trim().toUpperCase();
+        if (this.usedQuantity == null)
+            this.usedQuantity = 0;
+        if (this.isHolidayApplicable == null)
+            this.isHolidayApplicable = true;
+        if (this.limitPerUser == null)
+            this.limitPerUser = 1;
+        if (this.code != null)
+            this.code = this.code.trim().toUpperCase();
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
-        if (this.code != null) this.code = this.code.trim().toUpperCase();
+        if (this.code != null)
+            this.code = this.code.trim().toUpperCase();
     }
 
     // ==========================================
@@ -133,8 +300,14 @@ public class Voucher {
         FIXED("Số tiền cố định (đ)");
 
         private final String displayName;
-        DiscountType(String displayName) { this.displayName = displayName; }
-        public String getDisplayName() { return displayName; }
+
+        DiscountType(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
     }
 
     public enum ServiceScope {
@@ -143,8 +316,14 @@ public class Voucher {
         WATER("Chỉ áp dụng bắp nước (Combo)");
 
         private final String displayName;
-        ServiceScope(String displayName) { this.displayName = displayName; }
-        public String getDisplayName() { return displayName; }
+
+        ServiceScope(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
     }
 
     public enum ApplicableDay {
@@ -153,7 +332,13 @@ public class Voucher {
         WEEKEND("Cuối tuần (Thứ 7 - Chủ Nhật)");
 
         private final String displayName;
-        ApplicableDay(String displayName) { this.displayName = displayName; }
-        public String getDisplayName() { return displayName; }
+
+        ApplicableDay(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
     }
 }

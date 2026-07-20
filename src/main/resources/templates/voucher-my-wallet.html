@@ -7,6 +7,7 @@
     <title>Beta Cinemas | Ví Voucher Của Tôi</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/commercial-cinema-ui.css}">
 
     <style>
         body {
@@ -440,55 +441,7 @@
 </head>
 
 <body>
-<!-- Top Bar -->
-<div class="top-bar">
-    <div class="top-container">
-        <!-- Kiểm tra Trạng thái thành viên đăng nhập -->
-        <th:block th:if="${user == null}">
-            <a th:href="@{/login}" class="top-link"><i class="fa-solid fa-lock"></i> Đăng nhập</a>
-            <span style="opacity: 0.3">|</span>
-            <a th:href="@{/register}" class="top-link"><i class="fa-solid fa-user-plus"></i> Đăng ký</a>
-        </th:block>
-        <th:block th:if="${user != null}">
-            <span>Xin chào, <b th:text="(${user.name != null} ? ${user.name} : 'Thành viên')">Thành viên</b></span>
-            <span style="opacity: 0.3">|</span>
-            <a th:href="@{/reset-password}" class="top-link">Đổi mật khẩu</a>
-            <span style="opacity: 0.3">|</span>
-            <a th:href="@{/logout}" class="top-link"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
-        </th:block>
-
-        <!-- Chọn ngôn ngữ Đông bộ -->
-        <img src="https://flagcdn.com/w20/vn.png" class="lang-icon" alt="Tiếng Việt">
-        <img src="https://flagcdn.com/w20/us.png" class="lang-icon" alt="Tiếng Anh">
-    </div>
-</div>
-
-<!-- Header Main -->
-<header class="header-main">
-    <div class="header-container">
-        <!-- Logo thương hiệu -->
-        <a th:href="@{/}">
-            <img src="https://www.betacinemas.vn/Assets/Common/logo/logo.png" alt="Beta Cinemas" class="logo">
-        </a>
-
-        <!-- Đầy đủ menu như trang chủ -->
-        <ul class="nav-menu">
-            <li><a th:href="@{/}">TRANG CHỦ</a></li>
-            <li><a th:href="@{/movies}">PHIM</a></li>
-            <li><a href="#">RẠP</a></li>
-            <li><li><a href="#">GIÁ VÉ</a></li>
-            <li><a th:href="@{/vouchers}" class="active">KHO VOUCHER</a></li>
-            <li><a href="#">TIN TỨC</a></li>
-            <li><a href="#">CỘNG ĐỒNG</a></li>
-        </ul>
-
-        <!-- Thanh Tìm kiếm phim chuẩn form -->
-        <form class="search-form" th:action="@{/search}" method="get">
-            <input type="search" name="keyword" placeholder="Tìm kiếm phim...">
-            <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
-        </form>
-    </div>
-</header>
+<div th:replace="~{fragments/common_header :: customerHeader('voucher', '')}"></div>
 
 <!-- Main Content -->
 <main class="content-container">
