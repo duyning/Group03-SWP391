@@ -147,6 +147,22 @@ public class ComboService {
         comboRepository.deleteById(id);
     }
 
+    /* =========================================================================
+       HÀM ĐỔI TRẠNG THÁI ACTIVE / INACTIVE CHO NÚT PUBLISH ĐÃ ĐƯỢC CHÈN VÀO ĐÂY
+       ========================================================================= */
+    @Transactional
+    public void toggleComboStatus(Long id) {
+        Combo combo = comboRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy gói combo này với ID: " + id));
+
+        if ("INACTIVE".equals(combo.getStatus())) {
+            combo.setStatus("ACTIVE");
+        } else {
+            combo.setStatus("INACTIVE");
+        }
+        comboRepository.save(combo);
+    }
+
     @Transactional
     public void createFoodItem(FoodItem foodItem) {
         validateFoodItem(foodItem, null);

@@ -5,11 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="notification">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ReportController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/repository/ReportRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ReportService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/admin_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/admin_dashboard.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ComboController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ComboController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ComboService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ComboService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-create.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-create.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-list.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,6 +29,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -38,7 +45,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/duyning/Group03-SWP391.git&quot;,
-    &quot;accountId&quot;: &quot;bd44d3ac-ed5c-4e52-8de4-319c1c04da7f&quot;
+    &quot;accountId&quot;: &quot;8acc8bf7-f2e2-4973-b2b1-03b678654fd9&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
@@ -50,32 +57,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.CinemaApplication.executor": "Run",
-    "Application.Group03Swp391Summer26Application.executor": "Run",
-    "DefaultHtmlFileTemplate": "HTML File",
-    "RequestMappingsPanelOrder0": "0",
-    "RequestMappingsPanelOrder1": "1",
-    "RequestMappingsPanelWidth0": "75",
-    "RequestMappingsPanelWidth1": "75",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "Spring Boot.CinemaApplication.executor": "Run",
-    "Spring Boot.Group03Swp391Summer26Application.executor": "Run",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "TuanPM",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.CinemaApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Group03Swp391Summer26Application.executor&quot;: &quot;Run&quot;,
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;Spring Boot.CinemaApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Spring Boot.Group03Swp391Summer26Application.executor&quot;: &quot;Run&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;TuanPM&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Spring Boot.Group03Swp391Summer26Application">
     <configuration name="CinemaApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
       <module name="Group03_SWP391_Summer26" />
@@ -107,8 +114,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-30f59d01ecdd-37e91769500f-intellij.indexing.shared.core-IU-261.25134.95" />
-        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-IU-261.25134.95" />
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.28238.7" />
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-IU-252.28238.7" />
       </set>
     </attachedChunks>
   </component>
@@ -132,6 +139,9 @@
       <workItem from="1782798150735" duration="7000" />
       <workItem from="1783016437331" duration="315000" />
       <workItem from="1783040374851" duration="5196000" />
+      <workItem from="1784541906472" duration="78000" />
+      <workItem from="1784542013258" duration="776000" />
+      <workItem from="1784560977966" duration="2493000" />
     </task>
     <task id="LOCAL-00001" summary="notification">
       <option name="closed" value="true" />

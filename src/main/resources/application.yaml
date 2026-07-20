@@ -5,7 +5,7 @@ spring:
   config:
     import: optional:classpath:application-vnpay-local.yaml
   datasource:
-    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=Group3_SWP391;encrypt=false;trustServerCertificate=true}
+    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=test1516;encrypt=false;trustServerCertificate=true}
     username: ${DB_USERNAME:sa}
     password: ${DB_PASSWORD:123}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver

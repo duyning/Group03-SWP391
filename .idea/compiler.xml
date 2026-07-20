@@ -17,14 +17,6 @@
         </processorPath>
         <module name="Group03_SWP391_Summer26" />
         <module name="cakeshop" />
-      </profile>
-      <profile name="Annotation profile for cinema" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-        </processorPath>
         <module name="cinema" />
       </profile>
     </annotationProcessing>

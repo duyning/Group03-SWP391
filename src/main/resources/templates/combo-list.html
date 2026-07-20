@@ -319,7 +319,7 @@
                             <th width="110" class="text-end">Chiết khấu</th>
                             <th width="145" class="text-end">Giá bán</th>
                             <th width="135" class="text-center">Trạng thái</th>
-                            <th width="120" class="text-end">Thao tác</th>
+                            <th width="165" class="text-end">Thao tác</th> <!-- Đã tăng từ 120 lên 165 để chứa vừa 3 nút -->
                         </tr>
                         </thead>
                         <tbody>
@@ -362,13 +362,23 @@
                                 <span th:if="${combo.status == 'INACTIVE'}" class="badge badge-status badge-inactive">Ngừng bán</span>
                             </td>
                             <td class="text-end">
-                                <a th:href="@{/admin/combos/edit/{id}(id=${combo.id})}" class="btn btn-warning text-white btn-icon" title="Sửa combo">
-                                    <i class="fa-solid fa-pen"></i>
-                                </a>
-                                <a th:href="@{/admin/combos/delete/{id}(id=${combo.id})}" class="btn btn-danger btn-icon"
-                                   title="Xóa combo" onclick="return confirm('Bạn có chắc muốn xóa combo này không?')">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
+                                <div class="d-inline-flex gap-1">
+                                    <!-- NÚT PHÁT HÀNH THÔNG MINH (SWITCH ACTIVE / INACTIVE) -->
+                                    <a th:href="@{/admin/combos/publish/{id}(id=${combo.id})}"
+                                       th:class="${combo.status == 'INACTIVE' ? 'btn btn-success text-white btn-icon' : 'btn btn-secondary text-white btn-icon'}"
+                                       th:title="${combo.status == 'INACTIVE' ? 'Phát hành / Mở bán combo' : 'Tạm dừng bán combo'}">
+                                        <i th:class="${combo.status == 'INACTIVE' ? 'fa-solid fa-paper-plane' : 'fa-solid fa-eye-slash'}"></i>
+                                    </a>
+                                    <!-- NÚT SỬA -->
+                                    <a th:href="@{/admin/combos/edit/{id}(id=${combo.id})}" class="btn btn-warning text-white btn-icon" title="Sửa combo">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <!-- NÚT XÓA -->
+                                    <a th:href="@{/admin/combos/delete/{id}(id=${combo.id})}" class="btn btn-danger btn-icon"
+                                       title="Xóa combo" onclick="return confirm('Bạn có chắc muốn xóa combo này không?')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(combos)}">
