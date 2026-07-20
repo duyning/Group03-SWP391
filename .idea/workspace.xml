@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="notification">
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+    <list default="true" id="660abab8-b65a-4ce9-9e59-4f8e65c19f7a" name="Changes" comment="add function publish combo">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ComboController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/controller/ComboController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ComboService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/service/ComboService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-create.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-create.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Combo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/group3/cinema/entity/Combo.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/templates/combo-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/combo-list.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -141,7 +137,7 @@
       <workItem from="1783040374851" duration="5196000" />
       <workItem from="1784541906472" duration="78000" />
       <workItem from="1784542013258" duration="776000" />
-      <workItem from="1784560977966" duration="2493000" />
+      <workItem from="1784560977966" duration="3172000" />
     </task>
     <task id="LOCAL-00001" summary="notification">
       <option name="closed" value="true" />
@@ -151,7 +147,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783652899040</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="add function publish combo">
+      <option name="closed" value="true" />
+      <created>1784563607295</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1784563607295</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -159,6 +163,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="notification" />
-    <option name="LAST_COMMIT_MESSAGE" value="notification" />
+    <MESSAGE value="add function publish combo" />
+    <option name="LAST_COMMIT_MESSAGE" value="add function publish combo" />
   </component>
 </project>

@@ -299,7 +299,7 @@
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="ACTIVE" th:selected="${param.status != null and param.status[0] == 'ACTIVE'}">Đang bán</option>
                                 <option value="NEW" th:selected="${param.status != null and param.status[0] == 'NEW'}">Món mới</option>
-                                <option value="INACTIVE" th:selected="${param.status != null and param.status[0] == 'INACTIVE'}">Ngừng bán</option>
+                                <option value="INACTIVE" th:selected="${param.status != null and param.status[0] == 'INACTIVE'}">Ngừng bán/Ẩn</option>
                             </select>
                         </div>
                         <div class="col-lg-3 d-flex gap-2">
@@ -359,7 +359,7 @@
                             <td class="text-center">
                                 <span th:if="${combo.status == 'ACTIVE'}" class="badge badge-status badge-active">Đang bán</span>
                                 <span th:if="${combo.status == 'NEW'}" class="badge badge-status badge-new">Món mới</span>
-                                <span th:if="${combo.status == 'INACTIVE'}" class="badge badge-status badge-inactive">Ngừng bán</span>
+                                <span th:if="${combo.status == 'INACTIVE'}" class="badge badge-status badge-inactive">Ngừng bán/Ẩn</span>
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-1">
@@ -431,7 +431,7 @@
                             <select class="form-select" th:field="*{status}" required>
                                 <option value="ACTIVE">Đang bán</option>
                                 <option value="NEW">Món mới</option>
-                                <option value="INACTIVE">Ngừng bán</option>
+                                <option value="INACTIVE">Ngừng bán/Ẩn</option>
                             </select>
                         </div>
                         <div class="col-lg-2 col-md-6">
@@ -456,7 +456,7 @@
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="ACTIVE" th:selected="${param.itemStatus != null and param.itemStatus[0] == 'ACTIVE'}">Đang bán</option>
                                 <option value="NEW" th:selected="${param.itemStatus != null and param.itemStatus[0] == 'NEW'}">Món mới</option>
-                                <option value="INACTIVE" th:selected="${param.itemStatus != null and param.itemStatus[0] == 'INACTIVE'}">Ngừng bán</option>
+                                <option value="INACTIVE" th:selected="${param.itemStatus != null and param.itemStatus[0] == 'INACTIVE'}">Ngừng bán/Ẩn</option>
                             </select>
                         </div>
                         <div class="col-lg-3 d-flex gap-2">
@@ -491,7 +491,7 @@
                         <select class="form-select" name="status" required>
                             <option value="ACTIVE" th:selected="${item.status == 'ACTIVE'}">Đang bán</option>
                             <option value="NEW" th:selected="${item.status == 'NEW'}">Món mới</option>
-                            <option value="INACTIVE" th:selected="${item.status == 'INACTIVE'}">Ngừng bán</option>
+                            <option value="INACTIVE" th:selected="${item.status == 'INACTIVE'}">Ngừng bán/Ẩn</option>
                         </select>
                         <input class="form-control" name="description" th:value="${item.description}" maxlength="255">
                         <div class="d-flex gap-2">
