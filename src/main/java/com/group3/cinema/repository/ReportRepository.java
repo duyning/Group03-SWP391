@@ -16,7 +16,7 @@ public interface ReportRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = 'SUCCESS' AND p.createdAt BETWEEN :start AND :end")
     Double sumRevenueByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    // 2. Doanh thu theo phương thức thanh toán (VNPAY, MOMO, PAYOS)
+    // 2. Doanh thu theo phương thức thanh toán
     @Query("SELECT p.paymentMethod, SUM(p.amount) FROM Payment p WHERE p.status = 'SUCCESS' GROUP BY p.paymentMethod")
     List<Object[]> sumRevenueByPaymentMethod();
 

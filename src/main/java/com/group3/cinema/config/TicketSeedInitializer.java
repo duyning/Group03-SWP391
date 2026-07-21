@@ -102,7 +102,7 @@ public class TicketSeedInitializer implements ApplicationRunner {
         t1.setPrice(new BigDecimal("85000"));
         t1.setBookingTime(LocalDateTime.now().minusHours(3));
         t1.setStatus("CONFIRMED");
-        t1.setPaymentMethod("Momo");
+        t1.setPaymentMethod("PAYOS");
         t1.setBookingCode("CF-" + today.toString().replace("-", "") + "-001");
         ticketRepository.save(t1);
 
@@ -134,7 +134,7 @@ public class TicketSeedInitializer implements ApplicationRunner {
         t3.setPrice(new BigDecimal("75000"));
         t3.setBookingTime(LocalDateTime.now().minusDays(8));
         t3.setStatus("USED");
-        t3.setPaymentMethod("VNPay");
+        t3.setPaymentMethod("PAYOS");
         t3.setBookingCode("CF-" + today.minusDays(8).toString().replace("-", "") + "-003");
         ticketRepository.save(t3);
 
@@ -166,7 +166,7 @@ public class TicketSeedInitializer implements ApplicationRunner {
         t5.setPrice(new BigDecimal("110000"));
         t5.setBookingTime(LocalDateTime.now().minusMinutes(30));
         t5.setStatus("CONFIRMED");
-        t5.setPaymentMethod("Momo");
+        t5.setPaymentMethod("PAYOS");
         t5.setBookingCode("CF-" + today.toString().replace("-", "") + "-005");
         ticketRepository.save(t5);
 

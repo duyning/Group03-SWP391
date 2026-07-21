@@ -24,8 +24,14 @@ public class PaymentGatewayRouter {
     }
 
     public String createRedirectUrl(Payment payment, Booking booking, HttpServletRequest request) {
-        // Bản demo luôn dùng cổng nội bộ; khi chạy thật có thể gọi gateway(payment.method()).createRedirectUrl(...).
-        return request.getContextPath() + "/payment/gateway/" + payment.getOrderCode();
+        PaymentGatewayService gateway = gateway(payment.getPaymentMethod());
+        if (!gateway.isConfigured()) {
+            throw new IllegalArgumentException(
+                    "payOS chưa được cấu hình. Vui lòng kiểm tra PAYOS_ENABLED, PAYOS_CLIENT_ID, "
+                            + "PAYOS_API_KEY, PAYOS_CHECKSUM_KEY, PAYOS_RETURN_URL và PAYOS_CANCEL_URL."
+            );
+        }
+        return gateway.createPaymentUrl(payment, booking, request);
     }
 
     public PaymentGatewayService gateway(Payment.Method method) {

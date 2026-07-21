@@ -23,6 +23,99 @@ body.admin-page {
     padding: 30px;
 }
 
+.admin-topbar {
+    width: 100%;
+    min-height: 64px;
+    margin-bottom: 24px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+    box-sizing: border-box;
+    font-family: 'Inter', Arial, sans-serif;
+}
+
+.admin-topbar-title,
+.admin-topbar-actions,
+.admin-topbar-link {
+    display: flex;
+    align-items: center;
+}
+
+.admin-topbar-title {
+    gap: 10px;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-topbar-status {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, .12);
+}
+
+.admin-topbar-actions {
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.admin-topbar-link {
+    min-height: 38px;
+    gap: 8px;
+    padding: 0 12px;
+    border-radius: 9px;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 750;
+    text-decoration: none;
+    transition: background .18s ease, color .18s ease;
+}
+
+.admin-topbar-link:hover {
+    background: #eff6ff;
+    color: #0054a6;
+}
+
+.admin-topbar-user {
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+.admin-topbar-logout {
+    color: #b42318;
+}
+
+.admin-topbar-logout:hover {
+    background: #fff1f2;
+    color: #991b1b;
+}
+
+@media (max-width: 760px) {
+    .admin-topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-topbar-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .admin-topbar-link span {
+        display: none;
+    }
+}
+
 .sidebar {
     width: 280px !important;
     background: #1e293b;

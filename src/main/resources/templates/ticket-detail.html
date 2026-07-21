@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Chi tiết vé | CineFlow</title>
     <link rel="stylesheet" th:href="@{/css/booking-flow.css}">
+    <link rel="stylesheet" th:href="@{/css/common-header.css}">
     <style>
         .ticket-card { width: min(760px, calc(100% - 28px)); margin: 34px auto 70px; text-align: left; }
         .ticket-card h1 { margin: 0 0 10px; color: #0054a6; }
@@ -27,8 +28,8 @@
         }
     </style>
 </head>
-<body>
-<header th:replace="~{fragments/common_header :: flowHeader('Chi tiết vé')}"></header>
+<body class="customer-header-page">
+<div th:replace="~{fragments/common_header :: customerHeader('', '')}"></div>
 <main class="panel ticket-card" th:if="${ticket != null}">
     <div class="poster-row">
         <img th:if="${ticket.movie.posterUrl != null && !ticket.movie.posterUrl.isEmpty()}"
@@ -68,7 +69,7 @@
         <dt>Ghế</dt>
         <dd th:text="${ticket.seatLabel + ' (' + ticket.seatTypeDisplayName + ')'}">A5 (Thường)</dd>
         <dt>Thanh toán</dt>
-        <dd th:text="${ticket.paymentMethod != null ? ticket.paymentMethod : 'Chưa xác định'}">Momo</dd>
+        <dd th:text="${ticket.paymentMethod != null ? ticket.paymentMethod : 'Chưa xác định'}">PAYOS</dd>
         <dt>Thời gian đặt</dt>
         <dd th:text="${#temporals.format(ticket.bookingTime, 'dd/MM/yyyy HH:mm')}">25/06/2026 15:30</dd>
         <dt>Tổng tiền</dt>

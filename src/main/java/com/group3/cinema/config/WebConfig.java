@@ -62,8 +62,6 @@ public class WebConfig implements WebMvcConfigurer {
                         "/quy-dinh-tai-rap",
                         "/api/promotions/active",
                         "/search",
-                        "/payment/vnpay/**",
-                        "/payment/momo/**",
                         "/payment/payos/**",
                         "/payment/result",
                         "/css/**",

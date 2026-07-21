@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.UUID;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import com.group3.cinema.dto.BookingHistoryDto;
@@ -73,6 +72,10 @@ public class PaymentService {
          * đang PENDING và voucher vẫn còn lượt. Giao dịch PENDING cũ được tái sử dụng
          * để thao tác double-click không tạo nhiều orderCode.
          */
+        if (method == null || !Payment.Method.PAYOS.name().equalsIgnoreCase(method.trim())) {
+            throw new IllegalArgumentException("Chỉ hỗ trợ thanh toán qua payOS.");
+        }
+
         Booking booking = requirePayableBooking(bookingId, accountId);
         ensureVoucherStillAvailable(booking);
         Payment existingPending = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(bookingId)
@@ -82,17 +85,10 @@ public class PaymentService {
             return existingPending;
         }
 
-        Payment.Method paymentMethod;
-        try {
-            paymentMethod = Payment.Method.valueOf(method.toUpperCase());
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Phương thức thanh toán không hợp lệ.");
-        }
-
         Payment payment = new Payment();
         payment.setBookingId(bookingId);
-        payment.setPaymentMethod(paymentMethod);
-        payment.setOrderCode(generateOrderCode(paymentMethod));
+        payment.setPaymentMethod(Payment.Method.PAYOS);
+        payment.setOrderCode(generatePayOsOrderCode());
         payment.setAmount(booking.getTotalAmount());
         payment.setStatus(Payment.Status.PENDING);
         payment.setCreatedAt(LocalDateTime.now());
@@ -100,65 +96,10 @@ public class PaymentService {
     }
 
     @Transactional
-    public Payment processResult(String orderCode, Integer accountId, String result) {
-        // Xử lý kết quả của cổng mô phỏng; luồng gateway thật dùng processGatewayResult bên dưới.
-        Payment payment = paymentRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch thanh toán."));
-        Booking booking = bookingRepository.findByIdAndAccountId(payment.getBookingId(), accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Giao dịch không thuộc tài khoản này."));
-        if (payment.getStatus() != Payment.Status.PENDING) {
-            return payment;
-        }
-
-        String normalized = result == null ? "FAILED" : result.toUpperCase();
-        if ("SUCCESS".equals(normalized)) {
-            if (booking.getStatus() != Booking.Status.PENDING
-                    || booking.getExpiresAt().isBefore(LocalDateTime.now())) {
-                expireBooking(booking);
-                payment.setStatus(Payment.Status.FAILED);
-                payment.setResponseCode("EXPIRED");
-                payment.setErrorMessage("Đơn đặt vé đã hết hạn trước khi thanh toán hoàn tất.");
-                return paymentRepository.save(payment);
-            }
-            markVoucherAsUsed(booking);
-            payment.setStatus(Payment.Status.SUCCESS);
-            payment.setResponseCode("00");
-            payment.setTransactionId(UUID.randomUUID().toString());
-            payment.setPaidAt(LocalDateTime.now());
-            booking.setStatus(Booking.Status.PAID);
-            booking.setPaidAt(LocalDateTime.now());
-            List<BookingTicket> tickets = ticketRepository.findByBookingId(booking.getId());
-            tickets.forEach(ticket -> {
-                ticket.setStatus(BookingTicket.Status.BOOKED);
-                ticket.setHoldToken(null);
-                ticket.setHoldExpiresAt(null);
-            });
-            ticketRepository.saveAll(tickets);
-            saveRealTickets(booking, tickets, payment);
-        } else if ("CANCELLED".equals(normalized)) {
-            payment.setStatus(Payment.Status.CANCELLED);
-            payment.setResponseCode("24");
-            cancelBookingAndReleaseSeats(booking);
-            payment.setErrorMessage("Khách hàng hủy thanh toán.");
-        } else {
-            payment.setStatus(Payment.Status.FAILED);
-            payment.setResponseCode("99");
-            payment.setErrorMessage("Giao dịch không thành công.");
-            booking.setStatus(Booking.Status.CANCELLED);
-            ticketRepository.deleteByBookingId(booking.getId());
-        }
-
-        bookingRepository.save(booking);
-        Payment savedPayment = paymentRepository.save(payment);
-        sendEmailIfPaid(savedPayment);
-        return savedPayment;
-    }
-
-    @Transactional
     public Payment processGatewayResult(String orderCode, boolean success, String responseCode,
                                         String transactionId, String message) {
         /*
-         * Đây là điểm hội tụ kết quả VNPay/MoMo/payOS. Chỉ giao dịch PENDING mới được
+         * Đây là điểm hội tụ kết quả từ payOS. Chỉ giao dịch PENDING mới được
          * chuyển trạng thái, giúp callback return và webhook gọi lặp vẫn an toàn.
          * Thành công sẽ chốt voucher, đổi ghế HOLDING thành BOOKED và phát hành Ticket.
          */
@@ -316,14 +257,10 @@ public class PaymentService {
         return voucherCode.trim().toUpperCase();
     }
 
-    private String generateOrderCode(Payment.Method method) {
-        // payOS yêu cầu mã đơn dạng số; các cổng còn lại dùng mã CF dễ nhận diện trong hệ thống.
-        if (method == Payment.Method.PAYOS) {
-            long epochSeconds = System.currentTimeMillis() / 1000;
-            int suffix = ThreadLocalRandom.current().nextInt(10, 99);
-            return String.valueOf(epochSeconds * 100 + suffix);
-        }
-        return "CF" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+    private String generatePayOsOrderCode() {
+        long epochSeconds = System.currentTimeMillis() / 1000;
+        int suffix = ThreadLocalRandom.current().nextInt(10, 99);
+        return String.valueOf(epochSeconds * 100 + suffix);
     }
 
     private void sendEmailIfPaid(Payment payment) {
@@ -357,7 +294,7 @@ public class PaymentService {
                     t.setPrice(bt.getPrice());
                     t.setBookingTime(booking.getCreatedAt());
                     t.setStatus("CONFIRMED");
-                    t.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "Momo");
+                    t.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "PAYOS");
                     t.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
                     realTicketRepository.save(t);
                 }

@@ -83,95 +83,6 @@ public class PaymentController {
         }
     }
 
-    @GetMapping("/gateway/{orderCode}")
-    /** Hiển thị cổng thanh toán mô phỏng dùng cho demo và kiểm thử nội bộ. */
-    public String gateway(@PathVariable String orderCode, HttpSession session, Model model) {
-        Account account = account(session);
-        Payment payment = paymentService.getPayment(orderCode, account.getAccountID());
-        model.addAttribute("user", account);
-        model.addAttribute("payment", payment);
-        model.addAttribute("details", bookingService.getBookingDetails(payment.getBookingId(), account.getAccountID()));
-        return "payment-gateway";
-    }
-
-    @PostMapping("/gateway/{orderCode}/complete")
-    /** Nhận kết quả từ cổng mô phỏng rồi chuyển trạng thái giao dịch và booking. */
-    public String complete(@PathVariable String orderCode, @RequestParam String result,
-                           HttpSession session, RedirectAttributes redirectAttributes) {
-        try {
-            Payment payment = paymentService.processResult(orderCode, account(session).getAccountID(), result);
-            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
-                // Bắn thông báo thanh toán thành công
-                sendPaymentSuccessNotification(session, payment.getOrderCode());
-                return "redirect:/my-tickets";
-            }
-        } catch (IllegalArgumentException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-        }
-        return "redirect:/payment/result?orderCode=" + orderCode;
-    }
-
-    @GetMapping("/vnpay/return")
-    public String vnpayReturn(@RequestParam Map<String, String> params,
-                              HttpSession session, // Bổ sung Session
-                              RedirectAttributes redirectAttributes) {
-        try {
-            Payment payment = handleGatewayCallback(Payment.Method.VNPAY, params, redirectAttributes);
-            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
-                // Bắn thông báo VNPay
-                sendPaymentSuccessNotification(session, payment.getOrderCode());
-                return "redirect:/my-tickets";
-            }
-            return "redirect:/payment/result?orderCode=" + (payment != null ? payment.getOrderCode() : params.getOrDefault("vnp_TxnRef", ""));
-        } catch (Exception ex) {
-            return "redirect:/payment/result?orderCode=" + params.getOrDefault("vnp_TxnRef", "");
-        }
-    }
-
-    @GetMapping("/vnpay/ipn")
-    @ResponseBody
-    /**
-     * IPN là callback server-to-server; phản hồi mã ngắn cho VNPay thay vì render HTML.
-     * Việc xử lý có tính idempotent vì giao dịch không còn PENDING sẽ được trả nguyên trạng.
-     */
-    public Map<String, String> vnpayIpn(@RequestParam Map<String, String> params) {
-        try {
-            handleGatewayCallback(Payment.Method.VNPAY, params, null);
-            return Map.of("RspCode", "00", "Message", "Confirm Success");
-        } catch (IllegalArgumentException ex) {
-            return Map.of("RspCode", "97", "Message", ex.getMessage());
-        }
-    }
-
-    @GetMapping("/momo/return")
-    public String momoReturn(@RequestParam Map<String, String> params,
-                             HttpSession session, // Bổ sung Session
-                             RedirectAttributes redirectAttributes) {
-        try {
-            Payment payment = handleGatewayCallback(Payment.Method.MOMO, params, redirectAttributes);
-            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
-                // Bắn thông báo MoMo
-                sendPaymentSuccessNotification(session, payment.getOrderCode());
-                return "redirect:/my-tickets";
-            }
-            return "redirect:/payment/result?orderCode=" + (payment != null ? payment.getOrderCode() : params.getOrDefault("orderId", ""));
-        } catch (Exception ex) {
-            return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderId", "");
-        }
-    }
-
-    @PostMapping("/momo/ipn")
-    @ResponseBody
-    /** Chuyển payload JSON của MoMo về chuỗi trước khi dùng chung bộ phân tích callback. */
-    public Map<String, Object> momoIpn(@RequestBody Map<String, Object> payload) {
-        try {
-            handleGatewayCallback(Payment.Method.MOMO, stringify(payload), null);
-            return Map.of("resultCode", 0, "message", "Success");
-        } catch (IllegalArgumentException ex) {
-            return Map.of("resultCode", 1, "message", ex.getMessage());
-        }
-    }
-
     @GetMapping("/payos/return")
     public String payosReturn(@RequestParam Map<String, String> params,
                               HttpSession session, // Bổ sung Session
@@ -249,12 +160,6 @@ public class PaymentController {
             }
             return null;
         }
-    }
-
-    private Map<String, String> stringify(Map<String, Object> payload) {
-        Map<String, String> result = new HashMap<>();
-        payload.forEach((key, value) -> result.put(key, value == null ? "" : String.valueOf(value)));
-        return result;
     }
 
     @SuppressWarnings("unchecked")
