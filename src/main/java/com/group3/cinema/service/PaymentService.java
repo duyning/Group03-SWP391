@@ -68,6 +68,11 @@ public class PaymentService {
 
     @Transactional
     public Payment createPayment(Long bookingId, Integer accountId, String method) {
+        /*
+         * Khóa nghiệp vụ trước khi tạo giao dịch: đơn phải thuộc tài khoản, còn hạn,
+         * đang PENDING và voucher vẫn còn lượt. Giao dịch PENDING cũ được tái sử dụng
+         * để thao tác double-click không tạo nhiều orderCode.
+         */
         Booking booking = requirePayableBooking(bookingId, accountId);
         ensureVoucherStillAvailable(booking);
         Payment existingPending = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(bookingId)
@@ -96,6 +101,7 @@ public class PaymentService {
 
     @Transactional
     public Payment processResult(String orderCode, Integer accountId, String result) {
+        // Xử lý kết quả của cổng mô phỏng; luồng gateway thật dùng processGatewayResult bên dưới.
         Payment payment = paymentRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch thanh toán."));
         Booking booking = bookingRepository.findByIdAndAccountId(payment.getBookingId(), accountId)
@@ -151,6 +157,11 @@ public class PaymentService {
     @Transactional
     public Payment processGatewayResult(String orderCode, boolean success, String responseCode,
                                         String transactionId, String message) {
+        /*
+         * Đây là điểm hội tụ kết quả VNPay/MoMo/payOS. Chỉ giao dịch PENDING mới được
+         * chuyển trạng thái, giúp callback return và webhook gọi lặp vẫn an toàn.
+         * Thành công sẽ chốt voucher, đổi ghế HOLDING thành BOOKED và phát hành Ticket.
+         */
         Payment payment = paymentRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch thanh toán."));
         Booking booking = bookingRepository.findById(payment.getBookingId())
@@ -242,6 +253,7 @@ public class PaymentService {
 
     @Transactional
     public Booking requirePayableBooking(Long id, Integer accountId) {
+        // Việc kiểm tra quyền sở hữu được thực hiện cùng truy vấn để không lộ booking của tài khoản khác.
         Booking booking = bookingRepository.findByIdAndAccountId(id, accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt vé."));
         if (booking.getStatus() != Booking.Status.PENDING) {
@@ -281,6 +293,7 @@ public class PaymentService {
     }
 
     private void markVoucherAsUsed(Booking booking) {
+        // Câu lệnh increment có điều kiện ngăn hai giao dịch cuối cùng cùng dùng một lượt voucher.
         String voucherCode = normalizeVoucherCode(booking.getVoucherCode());
         if (voucherCode == null) {
             return;
@@ -304,6 +317,7 @@ public class PaymentService {
     }
 
     private String generateOrderCode(Payment.Method method) {
+        // payOS yêu cầu mã đơn dạng số; các cổng còn lại dùng mã CF dễ nhận diện trong hệ thống.
         if (method == Payment.Method.PAYOS) {
             long epochSeconds = System.currentTimeMillis() / 1000;
             int suffix = ThreadLocalRandom.current().nextInt(10, 99);
@@ -319,6 +333,10 @@ public class PaymentService {
     }
 
     private void saveRealTickets(Booking booking, List<BookingTicket> bookingTickets, Payment payment) {
+        /*
+         * booking_tickets quản lý khóa/giữ ghế, còn tickets là dữ liệu vé điện tử
+         * hiển thị ở "Vé của tôi". Sau khi sao chép thành công, hệ thống cộng điểm thành viên.
+         */
         try {
             var accountOpt = accountRepository.findById(booking.getAccountId());
             var showtimeOpt = showtimeRepository.findById(booking.getShowtimeId());
@@ -344,7 +362,7 @@ public class PaymentService {
                     realTicketRepository.save(t);
                 }
                 
-                // Award loyalty points to the customer
+                // Điểm thành viên chỉ được cộng sau khi đã phát hành đủ vé của giao dịch thành công.
                 loyaltyService.addLoyaltyPoints(booking.getAccountId(), booking.getTotalAmount());
             }
         } catch (Exception ex) {

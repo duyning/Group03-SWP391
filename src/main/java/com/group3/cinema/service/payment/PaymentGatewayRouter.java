@@ -19,11 +19,12 @@ public class PaymentGatewayRouter {
     private final Map<Payment.Method, PaymentGatewayService> gateways = new EnumMap<>(Payment.Method.class);
 
     public PaymentGatewayRouter(List<PaymentGatewayService> gatewayServices) {
+        // Spring tự truyền mọi implementation; map enum giúp chọn gateway mà không dùng if/else dài.
         gatewayServices.forEach(gateway -> gateways.put(gateway.method(), gateway));
     }
 
     public String createRedirectUrl(Payment payment, Booking booking, HttpServletRequest request) {
-        // Luôn chuyển hướng sang cổng mô phỏng thanh toán nội bộ để demo/test nhanh
+        // Bản demo luôn dùng cổng nội bộ; khi chạy thật có thể gọi gateway(payment.method()).createRedirectUrl(...).
         return request.getContextPath() + "/payment/gateway/" + payment.getOrderCode();
     }
 

@@ -1,9 +1,8 @@
 package com.group3.cinema.service;
 
 /*
- * Added on 2026-07-10: Business rules for customer movie reviews and admin review moderation.
- * Updated on 2026-07-10: Reviews require a paid booking whose showtime has already passed.
- * Created by: HuyPB - HE191335
+ * Nghiệp vụ đánh giá phim của khách hàng và kiểm duyệt đánh giá của quản trị viên.
+ * Khách chỉ được đánh giá phim đã thanh toán và có suất chiếu thực sự kết thúc/đã qua.
  */
 
 import com.group3.cinema.entity.Account;
@@ -64,7 +63,7 @@ public class MovieReviewService {
         LocalDateTime startDateTime = startDate == null ? null : startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate == null ? null : endDate.atTime(23, 59, 59);
 
-        // Convert customer-facing date filters into an inclusive LocalDateTime range for reviewDate.
+        // Đổi bộ lọc ngày thành khoảng thời gian bao trọn hai đầu ngày để không bỏ sót đánh giá.
         if (ratingScore != null && ratingScore >= 1 && ratingScore <= 5) {
             return movieReviewRepository.searchVisibleReviews(movieId, VISIBLE_STATUS, ratingScore, startDateTime, endDateTime, pageable);
         }
@@ -90,7 +89,7 @@ public class MovieReviewService {
         String normalizedKeyword = normalize(keyword);
         String normalizedStatus = status == null ? "ALL" : status.trim().toUpperCase(Locale.ROOT);
 
-        // Admin search is intentionally tolerant: accents are stripped and status aliases are accepted.
+        // Tìm kiếm quản trị bỏ dấu, không phân biệt hoa/thường và chấp nhận bí danh trạng thái.
         return movieReviewRepository.findAllByOrderByReviewDateDesc().stream()
                 .filter(review -> matchesStatus(review, normalizedStatus))
                 .filter(review -> matchesDateRange(review, startDate, endDate))
@@ -114,7 +113,7 @@ public class MovieReviewService {
     }
 
     public boolean canReviewMovie(Integer accountId, int movieId) {
-        // Customers may review only after a paid showtime for this movie has already happened.
+        // Chỉ booking PAID với ngày/giờ chiếu đã qua mới cấp quyền mở form đánh giá.
         return accountId != null && bookingRepository.existsWatchedMovie(
                 accountId,
                 movieId,
@@ -126,6 +125,11 @@ public class MovieReviewService {
 
     @Transactional
     public void submitReview(int movieId, int accountId, int ratingScore, String comment) {
+        /*
+         * Xác minh điểm số, phim, tài khoản và bằng chứng đã xem trước khi ghi dữ liệu.
+         * Mỗi tài khoản chỉ có một review cho một phim; gửi lại sẽ cập nhật bản ghi cũ
+         * và đưa trạng thái về APPROVED để phản ánh nội dung mới nhất.
+         */
         if (ratingScore < 1 || ratingScore > 5) {
             throw new IllegalArgumentException("Điểm đánh giá phải từ 1 đến 5 sao.");
         }
@@ -146,7 +150,7 @@ public class MovieReviewService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Ban chi co the danh gia sau khi da xem phim."));
 
-        // Reuse the same row when a customer edits their previous review for the same movie.
+        // Tái sử dụng bản ghi giúp giữ ràng buộc một người–một đánh giá cho mỗi phim.
         MovieReview review = movieReviewRepository.findByMovieIdAndAccountAccountID(movieId, accountId)
                 .orElseGet(MovieReview::new);
         review.setMovie(movie);
@@ -163,6 +167,7 @@ public class MovieReviewService {
 
     @Transactional
     public void setReviewVisible(Long reviewId, int adminAccountId, boolean visible) {
+        // Không xóa vật lý: REJECTED tương ứng ẩn, APPROVED tương ứng hiển thị lại.
         MovieReview review = movieReviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đánh giá."));
         Account admin = accountRepository.findById(adminAccountId)
@@ -217,6 +222,7 @@ public class MovieReviewService {
     }
 
     private String normalize(String value) {
+        // Chuẩn hóa cả Đ/đ vì Normalizer không tự chuyển hai ký tự riêng của tiếng Việt này.
         if (value == null || value.isBlank()) {
             return null;
         }

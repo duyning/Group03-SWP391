@@ -21,6 +21,9 @@ public class Booking {
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private Status status;
     @Column(nullable = false, precision = 18, scale = 2) private BigDecimal ticketSubtotal;
     @Column(nullable = false, precision = 18, scale = 2) private BigDecimal comboSubtotal;
+    @Column(nullable = false, precision = 18, scale = 2,
+            columnDefinition = "DECIMAL(18,2) DEFAULT 0")
+    private BigDecimal foodSubtotal = BigDecimal.ZERO;
     @Column(nullable = false, precision = 18, scale = 2) private BigDecimal discountAmount;
     @Column(nullable = false, precision = 18, scale = 2) private BigDecimal totalAmount;
     @Column(length = 50) private String voucherCode;
@@ -39,6 +42,8 @@ public class Booking {
     public void setTicketSubtotal(BigDecimal value) { this.ticketSubtotal = value; }
     public BigDecimal getComboSubtotal() { return comboSubtotal; }
     public void setComboSubtotal(BigDecimal value) { this.comboSubtotal = value; }
+    public BigDecimal getFoodSubtotal() { return foodSubtotal == null ? BigDecimal.ZERO : foodSubtotal; }
+    public void setFoodSubtotal(BigDecimal value) { this.foodSubtotal = value == null ? BigDecimal.ZERO : value; }
     public BigDecimal getDiscountAmount() { return discountAmount; }
     public void setDiscountAmount(BigDecimal value) { this.discountAmount = value; }
     public BigDecimal getTotalAmount() { return totalAmount; }

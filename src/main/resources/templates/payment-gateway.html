@@ -1,4 +1,8 @@
 <!doctype html>
+<!--
+  Cổng thanh toán mô phỏng cho môi trường local/demo. Ba nút gửi cùng endpoint nhưng
+  khác giá trị result để kiểm thử đầy đủ SUCCESS, FAILED và CANCELLED mà không cần merchant key.
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -21,6 +25,7 @@
         <dt>Ghế</dt><dd th:text="${#strings.listJoin(details.tickets.![seatLabel], ', ')}">A1</dd>
         <dt>Số tiền</dt><dd th:text="${#numbers.formatDecimal(payment.amount,0,'COMMA',0,'POINT')} + 'đ'">0đ</dd>
     </dl>
+    <!-- Backend vẫn kiểm tra hạn booking trước khi chấp nhận kết quả SUCCESS. -->
     <form method="post" th:action="@{/payment/gateway/{code}/complete(code=${payment.orderCode})}" class="gateway-actions">
         <button class="btn success-bg" name="result" value="SUCCESS">Thanh toán thành công</button>
         <button class="btn danger-bg" name="result" value="FAILED">Mô phỏng thất bại</button>

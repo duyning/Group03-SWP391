@@ -3,11 +3,13 @@ package com.group3.cinema.service;
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Booking;
 import com.group3.cinema.entity.BookingCombo;
+import com.group3.cinema.entity.BookingFoodItem;
 import com.group3.cinema.entity.BookingTicket;
 import com.group3.cinema.entity.Payment;
 import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.repository.AccountRepository;
 import com.group3.cinema.repository.BookingComboRepository;
+import com.group3.cinema.repository.BookingFoodItemRepository;
 import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.PaymentRepository;
@@ -39,6 +41,7 @@ public class InvoiceService {
     private final PaymentRepository paymentRepository;
     private final BookingTicketRepository bookingTicketRepository;
     private final BookingComboRepository bookingComboRepository;
+    private final BookingFoodItemRepository bookingFoodItemRepository;
     private final AccountRepository accountRepository;
     private final ShowtimeRepository showtimeRepository;
 
@@ -46,12 +49,14 @@ public class InvoiceService {
                           PaymentRepository paymentRepository,
                           BookingTicketRepository bookingTicketRepository,
                           BookingComboRepository bookingComboRepository,
+                          BookingFoodItemRepository bookingFoodItemRepository,
                           AccountRepository accountRepository,
                           ShowtimeRepository showtimeRepository) {
         this.bookingRepository = bookingRepository;
         this.paymentRepository = paymentRepository;
         this.bookingTicketRepository = bookingTicketRepository;
         this.bookingComboRepository = bookingComboRepository;
+        this.bookingFoodItemRepository = bookingFoodItemRepository;
         this.accountRepository = accountRepository;
         this.showtimeRepository = showtimeRepository;
     }
@@ -102,6 +107,7 @@ public class InvoiceService {
                 .sorted(Comparator.comparing(BookingTicket::getSeatLabel))
                 .toList();
         List<BookingCombo> combos = bookingComboRepository.findByBookingId(booking.getId());
+        List<BookingFoodItem> foodItems = bookingFoodItemRepository.findByBookingId(booking.getId());
         List<Payment> payments = paymentRepository.findByBookingIdOrderByCreatedAtDesc(booking.getId());
         Payment latestPayment = payments.isEmpty() ? null : payments.get(0);
         return new InvoiceDetails(
@@ -111,6 +117,7 @@ public class InvoiceService {
                 showtime,
                 tickets,
                 combos,
+                foodItems,
                 payments
         );
     }
@@ -172,7 +179,7 @@ public class InvoiceService {
         );
         List<InvoiceRow> rows = filterInvoiceRows(toRows(bookings), normalized.bookingStatus());
         StringBuilder csv = new StringBuilder("\uFEFF");
-        csv.append("Mã hóa đơn,Khách hàng,Số điện thoại,Email,Phim,Phòng,Ngày chiếu,Giờ chiếu,Ghế,Nguồn,Trạng thái hóa đơn,Trạng thái thanh toán,Phương thức,Tiền vé,Tiền combo,Giảm giá,Tổng tiền,Voucher,Ngày tạo,Ngày thanh toán,Ghi chú\n");
+        csv.append("Mã hóa đơn,Khách hàng,Số điện thoại,Email,Phim,Phòng,Ngày chiếu,Giờ chiếu,Ghế,Nguồn,Trạng thái hóa đơn,Trạng thái thanh toán,Phương thức,Tiền vé,Tiền combo,Tiền món lẻ,Giảm giá,Tổng tiền,Voucher,Ngày tạo,Ngày thanh toán,Ghi chú\n");
         for (InvoiceRow row : rows) {
             csv.append(csv(row.invoiceCode())).append(',')
                     .append(csv(row.customerName())).append(',')
@@ -189,6 +196,7 @@ public class InvoiceService {
                     .append(csv(row.paymentMethodText())).append(',')
                     .append(csv(row.ticketSubtotal())).append(',')
                     .append(csv(row.comboSubtotal())).append(',')
+                    .append(csv(row.foodSubtotal())).append(',')
                     .append(csv(row.discountAmount())).append(',')
                     .append(csv(row.totalAmount())).append(',')
                     .append(csv(row.voucherCode())).append(',')
@@ -296,6 +304,11 @@ public class InvoiceService {
                             .map(InvoiceRow::comboSubtotal)
                             .filter(Objects::nonNull)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal foodRevenue = groupRows.stream()
+                            .filter(row -> !row.refunded())
+                            .map(InvoiceRow::foodSubtotal)
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal totalRevenue = groupRows.stream()
                             .filter(row -> !row.refunded())
                             .map(InvoiceRow::totalAmount)
@@ -322,6 +335,7 @@ public class InvoiceService {
                             refundedCount,
                             ticketRevenue,
                             comboRevenue,
+                            foodRevenue,
                             totalRevenue,
                             refundedAmount,
                             groupRows
@@ -358,6 +372,7 @@ public class InvoiceService {
                 seats,
                 booking.getTicketSubtotal(),
                 booking.getComboSubtotal(),
+                booking.getFoodSubtotal(),
                 booking.getDiscountAmount(),
                 booking.getTotalAmount(),
                 booking.getVoucherCode(),
@@ -517,14 +532,14 @@ public class InvoiceService {
     public record ShowtimeInvoiceGroup(String key, String movieTitle, String roomName,
                                        LocalDate showDate, LocalTime showTime,
                                        long invoiceCount, long ticketCount, long refundedCount,
-                                       BigDecimal ticketRevenue, BigDecimal comboRevenue,
+                                       BigDecimal ticketRevenue, BigDecimal comboRevenue, BigDecimal foodRevenue,
                                        BigDecimal totalRevenue, BigDecimal refundedAmount,
                                        List<InvoiceRow> invoices) { }
 
     public record InvoiceRow(Long bookingId, String invoiceCode, Long showtimeId, String customerName,
                              String customerPhone, String customerEmail, String movieTitle,
                              String roomName, LocalDate showDate, LocalTime showTime,
-                             String seats, BigDecimal ticketSubtotal, BigDecimal comboSubtotal,
+                             String seats, BigDecimal ticketSubtotal, BigDecimal comboSubtotal, BigDecimal foodSubtotal,
                              BigDecimal discountAmount, BigDecimal totalAmount, String voucherCode,
                              Booking.Status bookingStatus, Payment.Status paymentStatus,
                              Payment.Method paymentMethod, String source,
@@ -598,5 +613,6 @@ public class InvoiceService {
 
     public record InvoiceDetails(InvoiceRow row, Booking booking, Account account,
                                  Showtime showtime, List<BookingTicket> tickets,
-                                 List<BookingCombo> combos, List<Payment> payments) { }
+                                 List<BookingCombo> combos, List<BookingFoodItem> foodItems,
+                                 List<Payment> payments) { }
 }

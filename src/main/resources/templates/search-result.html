@@ -1,9 +1,8 @@
 <!doctype html>
 <!--
-  Added on 2026-06-04: UC-G03 Search Result screen for Guest movie search.
-  Updated on 2026-06-26: Improved guest Search Film page with prominent
-  search input, multi-select pill filters, result sorting, card badges, and pagination.
-  Created by: HuyPB - HE191335
+  Màn kết quả tìm kiếm phim. Form gửi nhiều giá trị cùng tên cho thể loại, định dạng,
+  ngôn ngữ và độ tuổi; MovieController trả lại selected* để các pill vẫn được chọn.
+  Phân trang và sắp xếp đều giữ nguyên toàn bộ bộ lọc trên query string.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
@@ -487,6 +486,7 @@
         <div class="content-container">
             <h1 class="search-title">Tìm phim</h1>
 
+            <!-- Nút pill không phải input; JavaScript sẽ chuyển pill active thành hidden input khi submit. -->
             <form class="guest-search-form" id="guestSearchForm" th:action="@{/search}" method="get">
                 <div class="search-input-wrap">
                     <input class="main-search-input"
@@ -576,6 +576,7 @@
     <main class="content-container">
         <div class="results-bar">
             <div class="result-count" th:text="${totalMovies} + ' phim được tìm thấy'">0 phim được tìm thấy</div>
+            <!-- Form sắp xếp sao chép bộ lọc hiện tại để onchange không làm mất điều kiện tìm kiếm. -->
             <form th:action="@{/search}" method="get" id="sortForm">
                 <input type="hidden" name="keyword" th:value="${keyword}">
                 <input type="hidden" name="genre" th:each="item : ${selectedGenres}" th:value="${item}">
@@ -666,6 +667,10 @@
     </footer>
 
     <script>
+        /*
+         * Đồng bộ trạng thái trực quan của pill sang input ẩn đúng tên tham số.
+         * Các nhóm cho phép chọn nhiều; riêng status chỉ cho phép một giá trị tại một thời điểm.
+         */
         const searchForm = document.getElementById("guestSearchForm");
         const sortInput = searchForm.querySelector('input[name="sort"]');
 
@@ -693,6 +698,7 @@
             });
         });
 
+        // Lấy sort mới nhất từ select bên ngoài form tìm kiếm trước khi gửi request.
         searchForm.addEventListener("submit", () => {
             syncSelectedPills();
             sortInput.value = document.querySelector(".sort-select")?.value || "featured";

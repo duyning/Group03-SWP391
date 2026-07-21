@@ -45,6 +45,10 @@ public class PaymentController {
     }
 
     @GetMapping
+    /**
+     * Mở màn chọn phương thức thanh toán cho một booking.
+     * Chỉ chủ sở hữu đơn đang ở trạng thái PENDING và chưa hết hạn mới được xem.
+     */
     public String payment(@RequestParam("bookingId") Long bookingId, HttpSession session,
                           Model model, RedirectAttributes redirectAttributes) {
         try {
@@ -60,6 +64,11 @@ public class PaymentController {
     }
 
     @PostMapping("/start")
+    /**
+     * Tạo giao dịch PENDING và chuyển người dùng sang cổng thanh toán phù hợp.
+     * Nếu đơn đã có giao dịch đang chờ, PaymentService tái sử dụng giao dịch đó
+     * để tránh sinh nhiều mã thanh toán cho cùng một booking.
+     */
     public String start(@RequestParam Long bookingId, @RequestParam String method,
                         HttpSession session, HttpServletRequest request,
                         RedirectAttributes redirectAttributes) {
@@ -75,6 +84,7 @@ public class PaymentController {
     }
 
     @GetMapping("/gateway/{orderCode}")
+    /** Hiển thị cổng thanh toán mô phỏng dùng cho demo và kiểm thử nội bộ. */
     public String gateway(@PathVariable String orderCode, HttpSession session, Model model) {
         Account account = account(session);
         Payment payment = paymentService.getPayment(orderCode, account.getAccountID());
@@ -85,6 +95,7 @@ public class PaymentController {
     }
 
     @PostMapping("/gateway/{orderCode}/complete")
+    /** Nhận kết quả từ cổng mô phỏng rồi chuyển trạng thái giao dịch và booking. */
     public String complete(@PathVariable String orderCode, @RequestParam String result,
                            HttpSession session, RedirectAttributes redirectAttributes) {
         try {
@@ -119,6 +130,10 @@ public class PaymentController {
 
     @GetMapping("/vnpay/ipn")
     @ResponseBody
+    /**
+     * IPN là callback server-to-server; phản hồi mã ngắn cho VNPay thay vì render HTML.
+     * Việc xử lý có tính idempotent vì giao dịch không còn PENDING sẽ được trả nguyên trạng.
+     */
     public Map<String, String> vnpayIpn(@RequestParam Map<String, String> params) {
         try {
             handleGatewayCallback(Payment.Method.VNPAY, params, null);
@@ -147,6 +162,7 @@ public class PaymentController {
 
     @PostMapping("/momo/ipn")
     @ResponseBody
+    /** Chuyển payload JSON của MoMo về chuỗi trước khi dùng chung bộ phân tích callback. */
     public Map<String, Object> momoIpn(@RequestBody Map<String, Object> payload) {
         try {
             handleGatewayCallback(Payment.Method.MOMO, stringify(payload), null);
@@ -184,6 +200,7 @@ public class PaymentController {
 
     @PostMapping("/payos/webhook")
     @ResponseBody
+    /** Tách khối {@code data} và chữ ký webhook payOS về cấu trúc callback thống nhất. */
     public Map<String, Object> payosWebhook(@RequestBody Map<String, Object> payload) {
         try {
             handleGatewayCallback(Payment.Method.PAYOS, stringifyPayOsWebhook(payload), null);
@@ -194,6 +211,11 @@ public class PaymentController {
     }
 
     @GetMapping("/result")
+    /**
+     * Hiển thị kết quả thanh toán theo orderCode.
+     * Endpoint này đọc công khai để cổng thanh toán có thể chuyển về ngay cả khi session thay đổi,
+     * nhưng chỉ hiển thị dữ liệu giao dịch/đơn cần thiết trên trang kết quả.
+     */
     public String result(@RequestParam String orderCode, HttpSession session, Model model) {
         Payment payment = paymentService.getPaymentPublic(orderCode);
         model.addAttribute("user", session.getAttribute("loggedInUser"));
@@ -204,6 +226,7 @@ public class PaymentController {
 
     private Payment handleGatewayCallback(Payment.Method method, Map<String, String> params,
                                           RedirectAttributes redirectAttributes) {
+        // Mỗi gateway tự xác thực chữ ký và chuẩn hóa kết quả về cùng một GatewayCallback.
         PaymentGatewayService.GatewayCallback callback = gatewayRouter.gateway(method).parseCallback(params);
         if (!callback.validSignature()) {
             if (redirectAttributes != null) {
@@ -217,6 +240,7 @@ public class PaymentController {
 
     private Payment safelyHandleGatewayCallback(Payment.Method method, Map<String, String> params,
                                                 RedirectAttributes redirectAttributes) {
+        // Luồng return/cancel cần luôn điều hướng được tới trang kết quả nên lỗi callback được đổi thành null.
         try {
             return handleGatewayCallback(method, params, redirectAttributes);
         } catch (IllegalArgumentException ex) {
@@ -235,6 +259,7 @@ public class PaymentController {
 
     @SuppressWarnings("unchecked")
     private Map<String, String> stringifyPayOsWebhook(Map<String, Object> payload) {
+        // payOS đặt dữ liệu giao dịch trong "data", còn chữ ký và trạng thái nằm ở cấp ngoài.
         Map<String, String> result = new HashMap<>();
         Object data = payload.get("data");
         if (data instanceof Map<?, ?> dataMap) {
@@ -255,7 +280,10 @@ public class PaymentController {
         return account;
     }
 
-    // --- HÀM PHỤ TRỢ BẮN THÔNG BÁO ---
+    /**
+     * Gửi thông báo sau thanh toán thành công và dọn wishlist nếu booking bắt đầu từ đó.
+     * Mọi lỗi phụ trợ đều bị cô lập để không biến một giao dịch đã trả tiền thành lỗi giao diện.
+     */
     private void sendPaymentSuccessNotification(HttpSession session, String orderCode) {
         try {
             Account account = (Account) session.getAttribute("loggedInUser");
@@ -267,7 +295,7 @@ public class PaymentController {
                         NotificationType.PAYMENT
                 );
                 
-                // Clear wishlist entry if booking was initiated from the wishlist page
+                // Chỉ xóa phim khỏi wishlist khi session ghi nhận người dùng đi vào booking từ wishlist.
                 Payment payment = paymentService.getPaymentPublic(orderCode);
                 if (payment != null) {
                     paymentService.cleanWishlistIfFromWishlist(session, payment);

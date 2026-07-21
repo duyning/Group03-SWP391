@@ -1,9 +1,8 @@
 <!doctype html>
 <!--
-  Updated on 2026-06-04: Movie list page follows the provided Beta Cinemas UI style.
-  Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
-  Updated on 2026-06-04: Removed English visible text from search result status and image alt text.
-  Created by: HuyPB - HE191335
+  Màn danh sách phim, nhận ba nhóm nowShowingMovies/comingSoonMovies/specialScreeningMovies
+  và recommendedMovies từ MovieController. JavaScript cuối trang chỉ đổi tab hiển thị,
+  không gọi lại server nên dữ liệu ba nhóm phải được nạp sẵn trong model.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
@@ -346,7 +345,7 @@
 </head>
 
 <body>
-    <!-- Header copied in structure from the provided Beta Cinemas UI. -->
+    <!-- Fragment header dùng active='movies' để đánh dấu đúng mục điều hướng hiện tại. -->
     <div th:replace="~{fragments/common_header :: customerHeader('movies', ${keyword})}"></div>
 
     <main class="content-container">
@@ -356,6 +355,7 @@
             <p th:if="${keyword != null && keyword != ''}" th:text="'Kết quả tìm kiếm cho: ' + ${keyword}">Kết quả tìm kiếm</p>
         </div>
 
+        <!-- Mỗi phần tử gợi ý gồm movie, điểm phù hợp và lý do do MovieRecommendationService tính. -->
         <section class="recommend-section" th:if="${recommendedMovies != null && !#lists.isEmpty(recommendedMovies)}">
             <div class="recommend-heading">
                 <h2>Phim đề xuất</h2>
@@ -372,7 +372,7 @@
             </div>
         </section>
 
-        <!-- Search result mode: MovieController passes movies when keyword search is used. -->
+        <!-- Chế độ tương thích tìm kiếm cũ: có thuộc tính movies thì không dựng ba tab trạng thái. -->
         <th:block th:if="${movies != null}">
             <div class="tabs">
                 <span class="active">KẾT QUẢ TÌM KIẾM</span>
@@ -396,11 +396,7 @@
             <div class="empty-state" th:if="${#lists.isEmpty(movies)}">Không tìm thấy phim phù hợp.</div>
         </th:block>
 
-        <!--
-          Default listing mode:
-          - The three buttons below behave like visual tabs.
-          - Each tab shows one movie status group without leaving /movies.
-        -->
+        <!-- Chế độ danh sách mặc định: ba nút đổi panel tại trình duyệt mà không rời /movies. -->
         <th:block th:if="${movies == null}">
             <div class="movie-tabs">
                 <button type="button" class="movie-tab" data-tab="coming-soon">PHIM SẮP CHIẾU</button>
@@ -481,10 +477,8 @@
 
     <script>
         /*
-         * Movie tab flow:
-         * - Tabs only control front-end visibility.
-         * - Data is already loaded by MovieController in three model lists.
-         * - Default active tab is PHIM DANG CHIEU, matching the provided UI image.
+         * Tab chỉ điều khiển hiển thị phía trình duyệt vì MovieController đã nạp sẵn ba danh sách.
+         * Mỗi lần click sẽ gỡ active khỏi toàn bộ nút/panel rồi bật panel có id bằng data-tab.
          */
         document.querySelectorAll(".movie-tab").forEach((tab) => {
             tab.addEventListener("click", function () {

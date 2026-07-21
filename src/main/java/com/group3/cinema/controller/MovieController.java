@@ -45,12 +45,11 @@ public class MovieController {
     private MovieRecommendationService movieRecommendationService;
 
     /**
-     * GET /movies
+     * Hiển thị màn danh sách phim.
      *
-     * Business flow:
-     * - Customer opens the movie listing page.
-     * - Controller asks MovieService for active movies grouped by status.
-     * - Thymeleaf renders each group in its own section.
+     * <p>Phim được chia thành ba nhóm theo trạng thái để template dựng từng tab.
+     * Danh sách gợi ý được cá nhân hóa theo tài khoản; khách chưa đăng nhập vẫn
+     * nhận gợi ý dựa trên độ phổ biến chung.</p>
      */
     @GetMapping("/movies")
     public String showMovies(HttpSession session, Model model) {
@@ -67,13 +66,12 @@ public class MovieController {
     }
 
     /**
-     * GET /movies/{id}
+     * Hiển thị chi tiết phim, đánh giá và các phim được đề xuất liên quan.
      *
-     * Business flow:
-     * - Customer clicks a movie card.
-     * - Controller loads only active movie detail by id.
-     * - If the movie is missing or inactive, redirect to the listing page.
-     * - If found, pass the movie object to movie-detail.html.
+     * <p>Bộ lọc đánh giá được chuẩn hóa trước khi gọi service: số sao chỉ nhận 1–5,
+     * khoảng ngày bị nhập ngược sẽ được đổi chỗ, số trang luôn bắt đầu từ 1 và
+     * được kéo về trang cuối nếu vượt phạm vi. Cờ {@code canReview} cho giao diện
+     * biết người dùng đã xem phim và đủ điều kiện gửi đánh giá hay chưa.</p>
      */
     @GetMapping("/movies/{id}")
     public String showMovieDetail(@PathVariable("id") int id,
@@ -91,6 +89,7 @@ public class MovieController {
         }
 
         Account loggedInUser = addLoggedInUser(session, model);
+        // Chuẩn hóa tham số từ URL để tránh tạo PageRequest âm hoặc bộ lọc sai miền giá trị.
         int normalizedReviewPage = Math.max(reviewPage, 1);
         Integer normalizedReviewRating = reviewRating != null && reviewRating >= 1 && reviewRating <= 5
                 ? reviewRating
@@ -107,6 +106,7 @@ public class MovieController {
                 reviewEndDate,
                 PageRequest.of(normalizedReviewPage - 1, 5)
         );
+        // Nếu người dùng giữ một URL trang cũ sau khi dữ liệu thay đổi, trả về trang cuối còn tồn tại.
         if (reviewPageData.getTotalPages() > 0 && normalizedReviewPage > reviewPageData.getTotalPages()) {
             normalizedReviewPage = reviewPageData.getTotalPages();
             reviewPageData = movieReviewService.getApprovedReviews(
@@ -142,6 +142,11 @@ public class MovieController {
     }
 
     @PostMapping("/movies/{id}/reviews")
+    /**
+     * Nhận đánh giá từ màn chi tiết phim.
+     * Người chưa đăng nhập được ghi nhớ URL hiện tại để quay lại sau đăng nhập;
+     * các điều kiện đã xem phim, số sao và độ dài bình luận do service kiểm tra.
+     */
     public String submitMovieReview(@PathVariable("id") int id,
                                     @RequestParam("ratingScore") int ratingScore,
                                     @RequestParam(value = "comment", required = false) String comment,
@@ -163,6 +168,12 @@ public class MovieController {
     }
 
     @GetMapping("/search")
+    /**
+     * Hiển thị màn kết quả tìm kiếm với nhiều bộ lọc, sắp xếp và phân trang.
+     *
+     * <p>Service trả toàn bộ kết quả đã lọc/sắp xếp; controller cắt trang 12 phim
+     * và gửi lại các giá trị đang chọn để form Thymeleaf giữ nguyên trạng thái.</p>
+     */
     public String searchMovies(@RequestParam(value = "keyword", required = false) String keyword,
                                @RequestParam(value = "genre", required = false) List<String> genres,
                                @RequestParam(value = "format", required = false) List<String> formats,
@@ -176,6 +187,7 @@ public class MovieController {
         Account loggedInUser = addLoggedInUser(session, model);
 
         List<Movie> allMovies = movieService.searchMovies(keyword, genres, formats, languages, ageRatings, status, sort);
+        // Phân trang tại controller vì kết quả đã được lọc linh hoạt trên nhiều thuộc tính dạng chuỗi.
         int pageSize = 12;
         int totalMovies = allMovies.size();
         int totalPages = Math.max(1, (int) Math.ceil((double) totalMovies / pageSize));
@@ -208,6 +220,7 @@ public class MovieController {
     }
 
     private Account addLoggedInUser(HttpSession session, Model model) {
+        // Header và thuật toán gợi ý cùng dùng thông tin tài khoản lấy từ session.
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
         if (loggedInUser != null) {
             model.addAttribute("user", loggedInUser);

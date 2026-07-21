@@ -34,6 +34,11 @@ public class AdminReviewController {
     }
 
     @GetMapping
+    /**
+     * Hiển thị màn quản lý đánh giá với bộ lọc từ khóa, trạng thái và khoảng ngày.
+     * Kết quả được phân trang trong bộ nhớ vì service đã kết hợp tìm kiếm không dấu
+     * trên nhiều trường cùng các bí danh trạng thái VISIBLE/HIDDEN.
+     */
     public String listReviews(@RequestParam(value = "keyword", required = false) String keyword,
                               @RequestParam(value = "status", required = false, defaultValue = "ALL") String status,
                               @RequestParam(value = "startDate", required = false)
@@ -47,7 +52,7 @@ public class AdminReviewController {
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
         List<MovieReview> filteredReviews = movieReviewService.searchReviewsForAdmin(keyword, status, startDate, endDate);
 
-        // Keep paging in-memory because admin filters combine keyword, status, and date range.
+        // Chặn page size trong khoảng 5–50 để URL tùy chỉnh không gây tải quá nhiều card cùng lúc.
         int pageSize = Math.min(Math.max(size, 5), 50);
         int totalReviews = filteredReviews.size();
         int totalPages = Math.max(1, (int) Math.ceil((double) totalReviews / pageSize));
@@ -74,6 +79,10 @@ public class AdminReviewController {
     }
 
     @PostMapping("/{id}/visibility")
+    /**
+     * Ẩn hoặc khôi phục một đánh giá mà không xóa bản ghi.
+     * Service lưu cả quản trị viên và thời điểm thao tác để phục vụ kiểm tra sau này.
+     */
     public String updateVisibility(@PathVariable("id") Long id,
                                    @RequestParam("visible") boolean visible,
                                    HttpSession session,
@@ -84,7 +93,7 @@ public class AdminReviewController {
         }
 
         try {
-            // Visibility is stored as moderation status so reviews can be restored later.
+            // Dùng trạng thái kiểm duyệt để có thể hiển thị lại, thay vì xóa dữ liệu của khách hàng.
             movieReviewService.setReviewVisible(id, loggedInUser.getAccountID(), visible);
             redirectAttributes.addFlashAttribute("successMessage",
                     visible ? "Đã hiển thị lại đánh giá." : "Đã ẩn đánh giá.");
