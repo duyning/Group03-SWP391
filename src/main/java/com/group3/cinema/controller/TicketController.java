@@ -10,7 +10,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +25,8 @@ import java.util.Optional;
 @RequestMapping("/my-tickets")
 public class TicketController {
 
+    private static final int DEFAULT_PAGE_SIZE = 5;
+
     @Autowired
     private TicketService ticketService;
     
@@ -34,14 +38,28 @@ public class TicketController {
      * GET /my-tickets
      */
     @GetMapping
-    public String viewMyTickets(HttpSession session, Model model) {
+    public String viewMyTickets(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            HttpSession session,
+            Model model) {
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
         if (loggedInUser == null) {
             return "redirect:/login";
         }
 
-        List<Ticket> tickets = ticketService.getTicketsByAccount(loggedInUser.getAccountID());
+        List<Ticket> allTickets = ticketService.getTicketsByAccount(loggedInUser.getAccountID());
+        int totalTickets = allTickets.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalTickets / DEFAULT_PAGE_SIZE));
+        int currentPage = Math.max(1, Math.min(page, totalPages));
+        int fromIndex = Math.min((currentPage - 1) * DEFAULT_PAGE_SIZE, totalTickets);
+        int toIndex = Math.min(fromIndex + DEFAULT_PAGE_SIZE, totalTickets);
+        List<Ticket> tickets = totalTickets == 0 ? Collections.emptyList() : allTickets.subList(fromIndex, toIndex);
+
         model.addAttribute("tickets", tickets);
+        model.addAttribute("totalTickets", totalTickets);
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("pageSize", DEFAULT_PAGE_SIZE);
         model.addAttribute("user", loggedInUser);
         return "my-tickets";
     }
@@ -73,14 +91,29 @@ public class TicketController {
      * GET /my-tickets/booking-history
      */
     @GetMapping("/booking-history")
-    public String viewBookingHistory(HttpSession session, Model model) {
+    public String viewBookingHistory(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            HttpSession session,
+            Model model) {
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
         if (loggedInUser == null) {
             return "redirect:/login";
         }
 
-        List<com.group3.cinema.dto.BookingHistoryDto> history = paymentService.getBookingHistory(loggedInUser.getAccountID());
+        List<com.group3.cinema.dto.BookingHistoryDto> allHistory = paymentService.getBookingHistory(loggedInUser.getAccountID());
+        int totalHistory = allHistory.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalHistory / DEFAULT_PAGE_SIZE));
+        int currentPage = Math.max(1, Math.min(page, totalPages));
+        int fromIndex = Math.min((currentPage - 1) * DEFAULT_PAGE_SIZE, totalHistory);
+        int toIndex = Math.min(fromIndex + DEFAULT_PAGE_SIZE, totalHistory);
+        List<com.group3.cinema.dto.BookingHistoryDto> history =
+                totalHistory == 0 ? Collections.emptyList() : allHistory.subList(fromIndex, toIndex);
+
         model.addAttribute("history", history);
+        model.addAttribute("totalHistory", totalHistory);
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("pageSize", DEFAULT_PAGE_SIZE);
         model.addAttribute("user", loggedInUser);
         return "booking-history";
     }

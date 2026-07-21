@@ -248,6 +248,79 @@
             color: var(--ticket-text);
             margin-bottom: 8px;
         }
+
+        .pagination-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 24px;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid var(--ticket-border);
+            border-radius: 18px;
+            box-shadow: 0 14px 34px rgba(15,35,75,0.07);
+            flex-wrap: wrap;
+        }
+
+        .pagination-info {
+            color: var(--ticket-muted);
+            font-size: 0.86rem;
+            font-weight: 600;
+        }
+
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .page-link-custom {
+            min-width: 38px;
+            height: 38px;
+            padding: 0 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            border: 1px solid var(--ticket-border);
+            background: #fff;
+            color: var(--ticket-blue);
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 0.84rem;
+            transition: all 0.25s;
+        }
+
+        .page-link-custom:hover {
+            background: #eaf3ff;
+            border-color: rgba(0,84,166,0.25);
+            color: #003b78;
+            transform: translateY(-1px);
+        }
+
+        .page-link-custom.active {
+            background: linear-gradient(135deg, var(--ticket-blue), var(--ticket-cyan));
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 10px 22px rgba(0,84,166,0.18);
+            pointer-events: none;
+        }
+
+        .page-link-custom.disabled {
+            color: #b8c4d4;
+            background: #f8fbff;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        @media (max-width: 576px) {
+            .pagination-wrap {
+                justify-content: center;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -256,8 +329,8 @@
     <!-- Header -->
     <div class="page-header">
         <div class="page-title"><i class="fas fa-file-invoice-dollar"></i> Lịch sử giao dịch</div>
-        <a th:href="@{/my-tickets}" class="btn-back">
-            <i class="fas fa-ticket-alt"></i> Vé của tôi
+        <a th:href="@{/profile}" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Hồ sơ của tôi
         </a>
     </div>
 
@@ -299,6 +372,31 @@
             </div>
         </div>
         
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-wrap" th:if="${totalPages > 1}">
+        <div class="pagination-info">
+            <span th:text="'Trang ' + ${currentPage} + '/' + ${totalPages}">Trang 1/1</span>
+            <span th:text="' · Hiển thị tối đa ' + ${pageSize} + ' giao dịch mỗi trang'"> · Hiển thị tối đa 5 giao dịch mỗi trang</span>
+        </div>
+        <div class="pagination-nav">
+            <a class="page-link-custom"
+               th:classappend="${currentPage == 1} ? ' disabled'"
+               th:href="@{/my-tickets/booking-history(page=${currentPage - 1})}">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <a th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
+               class="page-link-custom"
+               th:classappend="${pageNumber == currentPage} ? ' active'"
+               th:href="@{/my-tickets/booking-history(page=${pageNumber})}"
+               th:text="${pageNumber}">1</a>
+            <a class="page-link-custom"
+               th:classappend="${currentPage == totalPages} ? ' disabled'"
+               th:href="@{/my-tickets/booking-history(page=${currentPage + 1})}">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
     </div>
 
     <!-- Empty state -->

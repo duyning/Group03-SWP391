@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nhật ký hoạt động - CinemaBook</title>
+    <title>Nhật ký hoạt động - CineFlow</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -11,32 +11,37 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg-start: #0f0c29;
-            --bg-mid:   #302b63;
-            --bg-end:   #24243e;
-            --card-bg:  rgba(255,255,255,0.05);
-            --card-border: rgba(255,255,255,0.10);
-            --text-main: #e0e0f0;
-            --text-muted: rgba(255,255,255,0.45);
-            --accent-green: #10b981;
-            --accent-blue: #60a5fa;
-            --accent-purple: #a78bfa;
-            --accent-yellow: #fbbf24;
-            --accent-red: #f87171;
-            --accent-pink: #f472b6;
-            --accent-cyan: #22d3ee;
+            --page-bg: #f4f8ff;
+            --surface: #ffffff;
+            --surface-soft: #f8fbff;
+            --line: #dbeafe;
+            --line-strong: #bfdbfe;
+            --text-main: #0f2747;
+            --text-body: #334155;
+            --text-muted: #64748b;
+            --brand-blue: #0054a6;
+            --brand-blue-dark: #003f7d;
+            --brand-blue-soft: #eaf3ff;
+            --success: #0f9f6e;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --cyan: #0284c7;
+            --shadow-card: 0 18px 45px rgba(15, 35, 75, 0.10);
+            --shadow-hover: 0 22px 60px rgba(0, 84, 166, 0.16);
         }
 
         body {
-            background: linear-gradient(135deg, var(--bg-start), var(--bg-mid), var(--bg-end));
+            background:
+                radial-gradient(circle at top left, rgba(0, 84, 166, 0.12), transparent 34%),
+                linear-gradient(180deg, #ffffff 0%, var(--page-bg) 100%);
             min-height: 100vh;
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
-            padding: 40px 20px;
+            padding: 42px 20px;
         }
 
         .page-container {
-            max-width: 820px;
+            max-width: 920px;
             margin: 0 auto;
             animation: fadeIn 0.5s ease-out;
         }
@@ -51,21 +56,35 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 32px;
+            margin-bottom: 26px;
             gap: 12px;
             flex-wrap: wrap;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 22px 24px;
+            box-shadow: var(--shadow-card);
         }
 
         .page-title {
             font-size: 1.7rem;
             font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--brand-blue);
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .page-title i {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--brand-blue-soft);
+            color: var(--brand-blue);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 0 1px rgba(0, 84, 166, 0.12);
         }
 
         .btn-back {
@@ -73,20 +92,21 @@
             align-items: center;
             gap: 8px;
             padding: 10px 20px;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
+            background: var(--brand-blue);
+            border: 1px solid var(--brand-blue);
             border-radius: 12px;
-            color: rgba(255,255,255,0.75);
+            color: #ffffff;
             text-decoration: none;
             font-size: 0.85rem;
-            font-weight: 500;
+            font-weight: 700;
             transition: all 0.25s;
-            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 24px rgba(0, 84, 166, 0.20);
         }
 
         .btn-back:hover {
-            background: rgba(255,255,255,0.10);
-            color: white;
+            background: var(--brand-blue-dark);
+            border-color: var(--brand-blue-dark);
+            color: #ffffff;
             transform: translateY(-2px);
         }
 
@@ -103,7 +123,7 @@
             top: 8px;
             bottom: 8px;
             width: 2px;
-            background: linear-gradient(to bottom, var(--accent-green), transparent);
+            background: linear-gradient(to bottom, var(--brand-blue), rgba(0, 84, 166, 0.05));
             border-radius: 2px;
         }
 
@@ -147,20 +167,20 @@
         }
 
         .timeline-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
+            background: var(--surface);
+            border: 1px solid var(--line);
             border-radius: 16px;
             padding: 16px 20px;
-            backdrop-filter: blur(16px);
             display: flex;
             align-items: flex-start;
             gap: 16px;
+            box-shadow: 0 12px 30px rgba(15, 35, 75, 0.07);
             transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
         }
 
         .timeline-card:hover {
-            border-color: rgba(255,255,255,0.2);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border-color: var(--line-strong);
+            box-shadow: var(--shadow-hover);
             transform: translateX(4px);
         }
 
@@ -178,32 +198,32 @@
             flex-shrink: 0;
         }
 
-        .log-icon--login    { background: rgba(16,185,129,0.18);  color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-        .log-icon--logout   { background: rgba(248,113,113,0.18); color: #fca5a5; border: 1px solid rgba(248,113,113,0.3); }
-        .log-icon--profile  { background: rgba(167,139,250,0.18); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.3); }
-        .log-icon--password { background: rgba(251,191,36,0.18);  color: #fde68a; border: 1px solid rgba(251,191,36,0.3); }
-        .log-icon--ticket   { background: rgba(251,191,36,0.18);  color: #fde68a; border: 1px solid rgba(251,191,36,0.3); }
-        .log-icon--payment  { background: rgba(34,211,238,0.18);  color: #67e8f9; border: 1px solid rgba(34,211,238,0.3); }
-        .log-icon--voucher  { background: rgba(244,114,182,0.18); color: #f9a8d4; border: 1px solid rgba(244,114,182,0.3); }
-        .log-icon--movie    { background: rgba(96,165,250,0.18);  color: #93c5fd; border: 1px solid rgba(96,165,250,0.3); }
-        .log-icon--post     { background: rgba(167,139,250,0.18); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.3); }
-        .log-icon--account  { background: rgba(34,211,238,0.18);  color: #67e8f9; border: 1px solid rgba(34,211,238,0.3); }
-        .log-icon--showtime { background: rgba(16,185,129,0.18);  color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
-        .log-icon--other    { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.15); }
+        .log-icon--login    { background: #ecfdf5; color: var(--success); border: 1px solid #bbf7d0; }
+        .log-icon--logout   { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+        .log-icon--profile  { background: var(--brand-blue-soft); color: var(--brand-blue); border: 1px solid var(--line-strong); }
+        .log-icon--password { background: #fffbeb; color: var(--warning); border: 1px solid #fde68a; }
+        .log-icon--ticket   { background: #fffbeb; color: var(--warning); border: 1px solid #fde68a; }
+        .log-icon--payment  { background: #ecfeff; color: var(--cyan); border: 1px solid #bae6fd; }
+        .log-icon--voucher  { background: #eff6ff; color: var(--brand-blue); border: 1px solid var(--line-strong); }
+        .log-icon--movie    { background: #eff6ff; color: var(--brand-blue); border: 1px solid var(--line-strong); }
+        .log-icon--post     { background: #eff6ff; color: var(--brand-blue); border: 1px solid var(--line-strong); }
+        .log-icon--account  { background: #ecfeff; color: var(--cyan); border: 1px solid #bae6fd; }
+        .log-icon--showtime { background: #ecfdf5; color: var(--success); border: 1px solid #bbf7d0; }
+        .log-icon--other    { background: #f8fafc; color: var(--text-muted); border: 1px solid #e2e8f0; }
 
         /* Dot uses same colour as badge */
-        .timeline-dot.log-icon--login    { background: rgba(16,185,129,0.2);  border-color: #34d399; color: #34d399; }
-        .timeline-dot.log-icon--logout   { background: rgba(248,113,113,0.2); border-color: #fca5a5; color: #fca5a5; }
-        .timeline-dot.log-icon--profile  { background: rgba(167,139,250,0.2); border-color: #c4b5fd; color: #c4b5fd; }
-        .timeline-dot.log-icon--password { background: rgba(251,191,36,0.2);  border-color: #fde68a; color: #fde68a; }
-        .timeline-dot.log-icon--ticket   { background: rgba(251,191,36,0.2);  border-color: #fde68a; color: #fde68a; }
-        .timeline-dot.log-icon--payment  { background: rgba(34,211,238,0.2);  border-color: #67e8f9; color: #67e8f9; }
-        .timeline-dot.log-icon--voucher  { background: rgba(244,114,182,0.2); border-color: #f9a8d4; color: #f9a8d4; }
-        .timeline-dot.log-icon--movie    { background: rgba(96,165,250,0.2);  border-color: #93c5fd; color: #93c5fd; }
-        .timeline-dot.log-icon--post     { background: rgba(167,139,250,0.2); border-color: #c4b5fd; color: #c4b5fd; }
-        .timeline-dot.log-icon--account  { background: rgba(34,211,238,0.2);  border-color: #67e8f9; color: #67e8f9; }
-        .timeline-dot.log-icon--showtime { background: rgba(16,185,129,0.2);  border-color: #6ee7b7; color: #6ee7b7; }
-        .timeline-dot.log-icon--other    { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.4); }
+        .timeline-dot.log-icon--login    { background: #ecfdf5; border-color: var(--success); color: var(--success); }
+        .timeline-dot.log-icon--logout   { background: #fef2f2; border-color: var(--danger); color: var(--danger); }
+        .timeline-dot.log-icon--profile  { background: var(--brand-blue-soft); border-color: var(--brand-blue); color: var(--brand-blue); }
+        .timeline-dot.log-icon--password { background: #fffbeb; border-color: var(--warning); color: var(--warning); }
+        .timeline-dot.log-icon--ticket   { background: #fffbeb; border-color: var(--warning); color: var(--warning); }
+        .timeline-dot.log-icon--payment  { background: #ecfeff; border-color: var(--cyan); color: var(--cyan); }
+        .timeline-dot.log-icon--voucher  { background: #eff6ff; border-color: var(--brand-blue); color: var(--brand-blue); }
+        .timeline-dot.log-icon--movie    { background: #eff6ff; border-color: var(--brand-blue); color: var(--brand-blue); }
+        .timeline-dot.log-icon--post     { background: #eff6ff; border-color: var(--brand-blue); color: var(--brand-blue); }
+        .timeline-dot.log-icon--account  { background: #ecfeff; border-color: var(--cyan); color: var(--cyan); }
+        .timeline-dot.log-icon--showtime { background: #ecfdf5; border-color: var(--success); color: var(--success); }
+        .timeline-dot.log-icon--other    { background: #f8fafc; border-color: #cbd5e1; color: var(--text-muted); }
 
         .log-info { flex: 1; min-width: 0; }
 
@@ -216,21 +236,22 @@
 
         .log-description {
             font-size: 0.83rem;
-            color: var(--text-muted);
+            color: var(--text-body);
             word-break: break-word;
         }
 
         .log-time {
             font-size: 0.75rem;
-            color: var(--text-muted);
+            color: var(--brand-blue);
             white-space: nowrap;
             text-align: right;
             flex-shrink: 0;
+            font-weight: 700;
         }
 
         .log-ip {
             font-size: 0.7rem;
-            color: rgba(255,255,255,0.25);
+            color: var(--text-muted);
             margin-top: 2px;
         }
 
@@ -238,21 +259,21 @@
         .empty-state {
             text-align: center;
             padding: 80px 20px;
-            background: var(--card-bg);
-            border: 1px dashed rgba(255,255,255,0.12);
+            background: var(--surface);
+            border: 1px dashed var(--line-strong);
             border-radius: 20px;
-            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-card);
         }
 
         .empty-state i {
             font-size: 3.5rem;
-            color: rgba(255,255,255,0.12);
+            color: #bfdbfe;
             margin-bottom: 20px;
         }
 
         .empty-state h3 {
             font-size: 1.1rem;
-            color: var(--text-muted);
+            color: var(--brand-blue);
         }
 
         /* ── Responsive ── */
@@ -306,7 +327,7 @@
                 <!-- Right: time -->
                 <div class="log-time">
                     <div th:text="${#temporals.format(log.createdAt, 'HH:mm')}">14:30</div>
-                    <div style="color: rgba(255,255,255,0.2); margin-top: 2px;"
+                    <div style="color: #64748b; margin-top: 2px;"
                          th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy')}">01/07/2026</div>
                 </div>
             </div>
@@ -317,7 +338,7 @@
     <div class="empty-state" th:if="${logs.isEmpty()}">
         <i class="fas fa-clipboard-list"></i>
         <h3>Chưa có hoạt động nào được ghi lại</h3>
-        <p style="font-size: 0.85rem; color: rgba(255,255,255,0.25); margin-top: 8px;">
+        <p style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">
             Các hoạt động của bạn sẽ xuất hiện ở đây sau khi bạn thực hiện chúng.
         </p>
     </div>

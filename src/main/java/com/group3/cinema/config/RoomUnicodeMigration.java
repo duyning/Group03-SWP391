@@ -504,14 +504,21 @@ public class RoomUnicodeMigration {
         try {
             // Xóa toàn bộ constraint CHECK trên cột membership_level của bảng account
             String dropAllConstraints = """
-                    DECLARE @constraintName NVARCHAR(256)
-                    SELECT @constraintName = name
+                    DECLARE @sql NVARCHAR(MAX) = N''
+
+                    SELECT @sql = @sql + N'ALTER TABLE '
+                        + QUOTENAME(s.name) + N'.' + QUOTENAME(t.name)
+                        + N' DROP CONSTRAINT ' + QUOTENAME(cc.name) + N';'
                     FROM sys.check_constraints cc
-                    JOIN sys.columns c ON cc.parent_object_id = c.object_id AND cc.parent_column_id = c.column_id
+                    JOIN sys.columns c ON cc.parent_object_id = c.object_id
+                        AND cc.parent_column_id = c.column_id
                     JOIN sys.tables t ON c.object_id = t.object_id
-                    WHERE t.name = 'account' AND c.name = 'membership_level'
-                    IF @constraintName IS NOT NULL
-                        EXEC('ALTER TABLE account DROP CONSTRAINT [' + @constraintName + ']')
+                    JOIN sys.schemas s ON t.schema_id = s.schema_id
+                    WHERE t.name = N'account'
+                        AND c.name = N'membership_level'
+
+                    IF @sql <> N''
+                        EXEC sp_executesql @sql
                     """;
             jdbcTemplate.execute(dropAllConstraints);
             log.info("Đã xóa tất cả CHECK constraint trên cột account.membership_level (nếu có)");
