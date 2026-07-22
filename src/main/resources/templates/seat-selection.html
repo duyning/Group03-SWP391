@@ -63,6 +63,9 @@
                 Sơ đồ ghế vừa thay đổi do người khác thao tác.
                 <a th:href="@{/booking/seats}">Tải lại sơ đồ</a>
             </div>
+            <div class="notice error" id="seatPollingErrorNotice" style="display:none">
+                Không thể cập nhật trạng thái ghế lúc này. Vui lòng kiểm tra kết nối hoặc tải lại sơ đồ.
+            </div>
 
             <div class="screen-wrap"><div class="screen">MÀN HÌNH</div></div>
             <!-- CSS Grid dùng rowIndex/colIndex/capacity để dựng đúng sơ đồ vật lý, kể cả ghế đôi. -->
@@ -153,10 +156,15 @@
     });
     refreshSeatSummary();
     // Polling chỉ phát hiện sơ đồ đã đổi; không tự bỏ lựa chọn để tránh gây bất ngờ cho người dùng.
+    const seatPollingErrorNotice = document.getElementById('seatPollingErrorNotice');
     setInterval(async () => {
         try {
             const response = await fetch('/booking/seats/status', {headers: {'Accept': 'application/json'}});
-            if (!response.ok) return;
+            if (!response.ok) {
+                seatPollingErrorNotice.style.display = 'block';
+                return;
+            }
+            seatPollingErrorNotice.style.display = 'none';
             const seats = await response.json();
             const changed = seats.some(seat => {
                 const current = document.querySelector(`.seat[data-seat-id="${seat.id}"]`);
@@ -164,7 +172,7 @@
             });
             if (changed) document.getElementById('liveSeatNotice').style.display = 'block';
         } catch (ignored) {
-            // Polling là cải thiện trải nghiệm; lỗi mạng không được làm gián đoạn form đang chọn.
+            seatPollingErrorNotice.style.display = 'block';
         }
     }, 12000);
 </script>

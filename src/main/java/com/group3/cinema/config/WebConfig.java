@@ -61,6 +61,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/cinema-rules",
                         "/quy-dinh-tai-rap",
                         "/api/promotions/active",
+                        "/api/wishlist/check",
                         "/search",
                         "/payment/payos/**",
                         "/payment/result",
@@ -121,6 +122,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/admin/dashboard",
                         "/admin/reports",
                         "/admin/reports/**",
+                        "/admin/reviews",
+                        "/admin/reviews/**",
                         "/admin/create-manager",
                         "/admin/accounts",
                         "/admin/accounts/**"

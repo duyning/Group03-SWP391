@@ -94,7 +94,7 @@ public class SeatHoldingService {
     public HoldResult holdSeats(BookingSelection selection, Collection<Long> requestedIds, String currentToken) {
         /*
          * Giới hạn 8 ghế, loại ID trùng và xác thực mọi ghế thuộc đúng phòng.
-         * Hold cũ của cùng token được xóa trước để thao tác chọn lại mang tính thay thế.
+         * Hold cũ của cùng token chỉ được xóa sau khi danh sách mới đã được kiểm tra đầy đủ.
          */
         if (requestedIds == null || requestedIds.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một ghế.");
@@ -108,8 +108,6 @@ public class SeatHoldingService {
         releaseExpired();
         String token = currentToken == null || currentToken.isBlank()
                 ? UUID.randomUUID().toString() : currentToken;
-        ticketRepository.deleteUnbookedByHoldToken(token);
-        ticketRepository.flush();
 
         Showtime showtime = showtimeRepository.findById(selection.showtimeId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
@@ -119,7 +117,12 @@ public class SeatHoldingService {
                 !selection.roomId().equals(seat.getRoomId()) || !isSellableSeat(seat, seatTypes))) {
             throw new IllegalArgumentException("Danh sách ghế không hợp lệ hoặc có ghế không thể bán.");
         }
-        if (!ticketRepository.findByShowtimeIdAndSeatIdIn(selection.showtimeId(), seatIds).isEmpty()) {
+        boolean hasConflictingHold = ticketRepository.findByShowtimeIdAndSeatIdIn(selection.showtimeId(), seatIds)
+                .stream()
+                .anyMatch(ticket -> ticket.getStatus() == BookingTicket.Status.BOOKED
+                        || ticket.getBookingId() != null
+                        || !Objects.equals(ticket.getHoldToken(), token));
+        if (hasConflictingHold) {
             throw new IllegalArgumentException("Một hoặc nhiều ghế vừa được người khác chọn. Vui lòng chọn lại.");
         }
 
@@ -140,6 +143,9 @@ public class SeatHoldingService {
         }
 
         try {
+            // The replacement is atomic: invalid new input never removes the session's valid current hold.
+            ticketRepository.deleteUnbookedByHoldToken(token);
+            ticketRepository.flush();
             // Unique constraint (showtime_id, seat_id) là lớp bảo vệ cuối trước tranh chấp đồng thời.
             ticketRepository.saveAllAndFlush(holds);
         } catch (DataIntegrityViolationException ex) {

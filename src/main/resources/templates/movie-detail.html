@@ -878,7 +878,13 @@
 
             // 1. Check if movie is wishlisted
             fetch(`/api/wishlist/check?movieId=${movieId}`)
-                .then(r => r.json())
+                .then(async response => {
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Không thể kiểm tra trạng thái yêu thích.');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.wishlisted) {
                         btnWishlist.classList.add('active');
@@ -888,7 +894,9 @@
                         }
                     }
                 })
-                .catch(() => {});
+                .catch(error => {
+                    showToast('error', error.message || 'Không thể kiểm tra trạng thái yêu thích.');
+                });
 
             // 2. Add click listener to toggle wishlist
             btnWishlist.addEventListener('click', async function() {

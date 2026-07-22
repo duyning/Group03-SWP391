@@ -274,37 +274,34 @@ public class PaymentService {
          * booking_tickets quản lý khóa/giữ ghế, còn tickets là dữ liệu vé điện tử
          * hiển thị ở "Vé của tôi". Sau khi sao chép thành công, hệ thống cộng điểm thành viên.
          */
-        try {
-            var accountOpt = accountRepository.findById(booking.getAccountId());
-            var showtimeOpt = showtimeRepository.findById(booking.getShowtimeId());
-            if (accountOpt.isPresent() && showtimeOpt.isPresent()) {
-                var account = accountOpt.get();
-                var showtime = showtimeOpt.get();
-                var movie = showtime.getMovie();
-                
-                for (BookingTicket bt : bookingTickets) {
-                    Ticket t = new Ticket();
-                    t.setAccount(account);
-                    t.setMovie(movie);
-                    t.setRoomName(showtime.getRoom());
-                    t.setSeatLabel(bt.getSeatLabel());
-                    t.setSeatType(bt.getSeatType());
-                    t.setShowDate(showtime.getShowDate());
-                    t.setShowTime(showtime.getShowTime());
-                    t.setPrice(bt.getPrice());
-                    t.setBookingTime(booking.getCreatedAt());
-                    t.setStatus("CONFIRMED");
-                    t.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "PAYOS");
-                    t.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
-                    realTicketRepository.save(t);
-                }
-                
-                // Điểm thành viên chỉ được cộng sau khi đã phát hành đủ vé của giao dịch thành công.
-                loyaltyService.addLoyaltyPoints(booking.getAccountId(), booking.getTotalAmount());
-            }
-        } catch (Exception ex) {
-            System.err.println("Warning: Failed to copy tickets to customer account display: " + ex.getMessage());
+        if (bookingTickets == null || bookingTickets.isEmpty()) {
+            throw new IllegalStateException("Cannot complete payment without booking tickets.");
         }
+        var account = accountRepository.findById(booking.getAccountId())
+                .orElseThrow(() -> new IllegalStateException("Cannot find booking account."));
+        var showtime = showtimeRepository.findById(booking.getShowtimeId())
+                .orElseThrow(() -> new IllegalStateException("Cannot find booking showtime."));
+        var movie = showtime.getMovie();
+
+        for (BookingTicket bt : bookingTickets) {
+            Ticket t = new Ticket();
+            t.setAccount(account);
+            t.setMovie(movie);
+            t.setRoomName(showtime.getRoom());
+            t.setSeatLabel(bt.getSeatLabel());
+            t.setSeatType(bt.getSeatType());
+            t.setShowDate(showtime.getShowDate());
+            t.setShowTime(showtime.getShowTime());
+            t.setPrice(bt.getPrice());
+            t.setBookingTime(booking.getCreatedAt());
+            t.setStatus("CONFIRMED");
+            t.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "PAYOS");
+            t.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
+            realTicketRepository.save(t);
+        }
+
+        // Any failure propagates and rolls back payment, booking, seats, voucher, tickets and points together.
+        loyaltyService.addLoyaltyPointsStrict(booking.getAccountId(), booking.getTotalAmount());
     }
 
     public void cleanWishlistIfFromWishlist(jakarta.servlet.http.HttpSession session, Payment payment) {

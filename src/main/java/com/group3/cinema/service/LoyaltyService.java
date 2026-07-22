@@ -40,47 +40,60 @@ public class LoyaltyService {
         }
 
         try {
-            accountRepository.findById(accountId).ifPresent(account -> {
-                int pointsEarned = amount.divide(new BigDecimal("1000"), 0, RoundingMode.DOWN).intValue();
-                if (pointsEarned <= 0) {
-                    return;
-                }
-
-                int oldPoints = account.getLoyaltyPoint();
-                int newPoints = oldPoints + pointsEarned;
-                account.setLoyaltyPoint(newPoints);
-
-                MembershipLevel oldLevel = account.getMembershipLevel();
-                if (oldLevel == null) {
-                    oldLevel = MembershipLevel.BRONZE;
-                }
-
-                MembershipLevel newLevel = oldLevel;
-                if (newPoints >= 5000) {
-                    newLevel = MembershipLevel.GOLD;
-                } else if (newPoints >= 1000) {
-                    newLevel = MembershipLevel.SILVER;
-                } else {
-                    newLevel = MembershipLevel.BRONZE;
-                }
-
-                account.setMembershipLevel(newLevel);
-                accountRepository.save(account);
-
-                // Gửi thông báo tích điểm thành công
-                notificationService.sendNotification(
-                        accountId,
-                        "Tích lũy điểm thành công! 🎟️",
-                        "Bạn đã tích lũy thêm " + pointsEarned + " điểm từ giao dịch trị giá " + amount.intValue() + "đ. Tổng điểm hiện tại: " + newPoints + " điểm.",
-                        NotificationType.VOUCHER
-                );
-
-                // Xử lý sinh voucher thăng hạng tự động
-                handleRankUpRewards(account, oldLevel, newLevel);
-            });
+            accountRepository.findById(accountId)
+                    .ifPresent(account -> applyLoyaltyPoints(account, amount));
         } catch (Exception ex) {
             System.err.println("Warning: Failed to add loyalty points for account " + accountId + ": " + ex.getMessage());
         }
+    }
+
+    /**
+     * Strict payment variant: failures must propagate so the enclosing payment transaction can roll back.
+     */
+    @Transactional
+    public void addLoyaltyPointsStrict(int accountId, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new IllegalStateException("Cannot find account for loyalty points."));
+        applyLoyaltyPoints(account, amount);
+    }
+
+    private void applyLoyaltyPoints(Account account, BigDecimal amount) {
+        int accountId = account.getAccountID();
+        int pointsEarned = amount.divide(new BigDecimal("1000"), 0, RoundingMode.DOWN).intValue();
+        if (pointsEarned <= 0) {
+            return;
+        }
+
+        int oldPoints = account.getLoyaltyPoint();
+        int newPoints = oldPoints + pointsEarned;
+        account.setLoyaltyPoint(newPoints);
+
+        MembershipLevel oldLevel = account.getMembershipLevel();
+        if (oldLevel == null) {
+            oldLevel = MembershipLevel.BRONZE;
+        }
+
+        MembershipLevel newLevel;
+        if (newPoints >= 5000) {
+            newLevel = MembershipLevel.GOLD;
+        } else if (newPoints >= 1000) {
+            newLevel = MembershipLevel.SILVER;
+        } else {
+            newLevel = MembershipLevel.BRONZE;
+        }
+
+        account.setMembershipLevel(newLevel);
+        accountRepository.save(account);
+        notificationService.sendNotification(
+                accountId,
+                "Tích lũy điểm thành công! 🎟️",
+                "Bạn đã tích lũy thêm " + pointsEarned + " điểm từ giao dịch trị giá " + amount.intValue() + "đ. Tổng điểm hiện tại: " + newPoints + " điểm.",
+                NotificationType.VOUCHER
+        );
+        handleRankUpRewards(account, oldLevel, newLevel);
     }
 
     /**

@@ -19,8 +19,11 @@ import com.group3.cinema.service.payment.PaymentGatewayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
@@ -112,12 +115,12 @@ public class PaymentController {
     @PostMapping("/payos/webhook")
     @ResponseBody
     /** Tách khối {@code data} và chữ ký webhook payOS về cấu trúc callback thống nhất. */
-    public Map<String, Object> payosWebhook(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> payosWebhook(@RequestBody Map<String, Object> payload) {
         try {
             handleGatewayCallback(Payment.Method.PAYOS, stringifyPayOsWebhook(payload), null);
-            return Map.of("success", true);
+            return ResponseEntity.ok(Map.of("success", true));
         } catch (IllegalArgumentException ex) {
-            return Map.of("success", false, "message", ex.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", ex.getMessage()));
         }
     }
 
@@ -128,11 +131,15 @@ public class PaymentController {
      * nhưng chỉ hiển thị dữ liệu giao dịch/đơn cần thiết trên trang kết quả.
      */
     public String result(@RequestParam String orderCode, HttpSession session, Model model) {
-        Payment payment = paymentService.getPaymentPublic(orderCode);
-        model.addAttribute("user", session.getAttribute("loggedInUser"));
-        model.addAttribute("payment", payment);
-        model.addAttribute("details", bookingService.getBookingDetails(payment.getBookingId()));
-        return "payment-result";
+        try {
+            Payment payment = paymentService.getPaymentPublic(orderCode);
+            model.addAttribute("user", session.getAttribute("loggedInUser"));
+            model.addAttribute("payment", payment);
+            model.addAttribute("details", bookingService.getBookingDetails(payment.getBookingId()));
+            return "payment-result";
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
     }
 
     private Payment handleGatewayCallback(Payment.Method method, Map<String, String> params,
@@ -143,7 +150,7 @@ public class PaymentController {
             if (redirectAttributes != null) {
                 redirectAttributes.addFlashAttribute("error", "Chữ ký thanh toán không hợp lệ.");
             }
-            throw new IllegalArgumentException("Invalid signature");
+            throw new InvalidPaymentSignatureException("Invalid signature");
         }
         return paymentService.processGatewayResult(callback.orderCode(), callback.success(),
                 callback.responseCode(), callback.transactionId(), callback.message());
@@ -154,11 +161,19 @@ public class PaymentController {
         // Luồng return/cancel cần luôn điều hướng được tới trang kết quả nên lỗi callback được đổi thành null.
         try {
             return handleGatewayCallback(method, params, redirectAttributes);
+        } catch (InvalidPaymentSignatureException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         } catch (IllegalArgumentException ex) {
             if (redirectAttributes != null) {
                 redirectAttributes.addFlashAttribute("error", ex.getMessage());
             }
             return null;
+        }
+    }
+
+    private static final class InvalidPaymentSignatureException extends IllegalArgumentException {
+        private InvalidPaymentSignatureException(String message) {
+            super(message);
         }
     }
 

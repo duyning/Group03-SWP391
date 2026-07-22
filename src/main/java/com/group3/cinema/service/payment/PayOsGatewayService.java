@@ -19,6 +19,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,9 +30,13 @@ import java.util.stream.Collectors;
 @Service
 public class PayOsGatewayService implements PaymentGatewayService {
     private static final Type MAP_TYPE = new TypeToken<Map<String, Object>>() { }.getType();
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private final Gson gson = new Gson();
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(CONNECT_TIMEOUT)
+            .build();
 
     @Value("${payment.payos.enabled:false}")
     private boolean enabled;
@@ -90,6 +96,7 @@ public class PayOsGatewayService implements PaymentGatewayService {
                     .header("Content-Type", "application/json")
                     .header("x-client-id", clientId)
                     .header("x-api-key", apiKey)
+                    .timeout(REQUEST_TIMEOUT)
                     .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(body)))
                     .build();
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -99,6 +106,11 @@ public class PayOsGatewayService implements PaymentGatewayService {
                 return dataMap.get("checkoutUrl").toString();
             }
             throw new IllegalArgumentException("payOS không trả về checkoutUrl: " + response.body());
+        } catch (HttpTimeoutException ex) {
+            throw new IllegalArgumentException("payOS phản hồi quá thời gian cho phép.", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalArgumentException("Yêu cầu tạo link thanh toán payOS bị gián đoạn.", ex);
         } catch (Exception ex) {
             throw new IllegalArgumentException("Không thể tạo link thanh toán payOS: " + ex.getMessage(), ex);
         }
@@ -110,8 +122,11 @@ public class PayOsGatewayService implements PaymentGatewayService {
         String status = params.getOrDefault("status", "");
         String code = params.getOrDefault("code", "");
         boolean cancelled = Boolean.parseBoolean(params.getOrDefault("cancel", "false"));
-        boolean hasSignature = params.containsKey("signature") && params.containsKey("amount");
-        boolean valid = !hasSignature || verifySignature(params);
+        boolean hasRequiredSignatureData = params.containsKey("signature")
+                && !params.getOrDefault("signature", "").isBlank()
+                && params.containsKey("amount")
+                && !params.getOrDefault("amount", "").isBlank();
+        boolean valid = hasRequiredSignatureData && verifySignature(params);
         boolean success = valid && !cancelled && ("PAID".equalsIgnoreCase(status) || "00".equals(code));
         String responseCode = success ? "00" : (cancelled ? "CANCELLED" : params.getOrDefault("code", status.isBlank() ? "PENDING" : status));
         String transactionId = params.getOrDefault("reference", params.getOrDefault("paymentLinkId", orderCode));

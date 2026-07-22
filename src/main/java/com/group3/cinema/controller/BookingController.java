@@ -15,6 +15,7 @@ import com.group3.cinema.service.CustomerBookingService;
 import com.group3.cinema.service.SeatHoldingService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -215,6 +217,23 @@ public class BookingController {
      */
     public String saveCombos(@RequestParam Map<String, String> params, HttpSession session,
                              RedirectAttributes redirectAttributes) {
+        BookingSelection selection = (BookingSelection) session.getAttribute(BOOKING_SELECTION_SESSION_KEY);
+        if (selection == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Vui lòng chọn suất chiếu trước khi chọn combo.");
+        }
+        try {
+            // Validate the server-created selection and its active seat hold before writing any new session data.
+            customerBookingService.calculateSummary(
+                    selection,
+                    (String) session.getAttribute("seatHoldToken"),
+                    Map.of(),
+                    Map.of(),
+                    null
+            );
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
         try {
             LinkedHashMap<Long, Integer> combos = customerBookingService.validateComboQuantities(params);
             LinkedHashMap<Long, Integer> foodItems = customerBookingService.validateFoodItemQuantities(params);
