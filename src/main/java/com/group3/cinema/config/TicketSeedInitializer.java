@@ -1,3 +1,13 @@
+/**
+ * Lớp tạo dữ liệu vé xem phim mẫu cho hệ thống (TicketSeedInitializer).
+ * 
+ * Sử dụng `ApplicationRunner` và `@Order(100)` để đảm bảo khởi chạy SAU khi
+ * Spring Context, CSDL và `AccountSeedInitializer` đã thực thi xong.
+ * 
+ * Phục vụ cho giao diện "Vé của tôi" (`my-tickets.html`) và lịch sử đặt vé của khách hàng.
+ * 
+ * Ngày thực hiện: 26/06/2026
+ */
 package com.group3.cinema.config;
 
 import com.group3.cinema.entity.Account;
@@ -18,14 +28,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
-/**
- * Tạo dữ liệu mẫu cho bảng tickets khi khởi động ứng dụng.
- * Dùng ApplicationRunner + @Order(100) để đảm bảo chạy SAU khi
- * Hibernate đã tạo bảng và AccountSeedInitializer đã chạy xong.
- *
- * Ngày thực hiện: 26/06/2026
- *
- */
 @Component
 @Order(100)
 public class TicketSeedInitializer implements ApplicationRunner {
@@ -34,6 +36,13 @@ public class TicketSeedInitializer implements ApplicationRunner {
     private final AccountRepository accountRepository;
     private final MovieRepository movieRepository;
 
+    /**
+     * Constructor tiêm phụ thuộc các Repositories cần thiết.
+     * 
+     * @param ticketRepository Repository quản lý thông tin vé.
+     * @param accountRepository Repository quản lý thông tin tài khoản.
+     * @param movieRepository Repository quản lý thông tin phim.
+     */
     public TicketSeedInitializer(TicketRepository ticketRepository,
             AccountRepository accountRepository,
             MovieRepository movieRepository) {
@@ -42,6 +51,12 @@ public class TicketSeedInitializer implements ApplicationRunner {
         this.movieRepository = movieRepository;
     }
 
+    /**
+     * Phương thức được Spring Boot tự động gọi khi ứng dụng đã sẵn sàng.
+     * Gọi đến `seedTickets()` trong môi trường giao dịch (`@Transactional`).
+     * 
+     * @param args Tham số dòng lệnh truyền vào ứng dụng.
+     */
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
@@ -53,6 +68,22 @@ public class TicketSeedInitializer implements ApplicationRunner {
         }
     }
 
+    /**
+     * Phương thức thực hiện kiểm tra và tạo 6 vé mẫu với các trạng thái khác nhau.
+     * 
+     * Quy trình:
+     * 1. Gọi `ticketRepository.count()` kiểm tra xem bảng tickets đã có vé chưa. Nếu đã có -> dừng seed.
+     * 2. Truy vấn danh sách Account (`accountRepository.findAll()`) và Movie (`movieRepository.findAll()`).
+     * 3. Tìm tài khoản khách hàng `customer@group03.com` để gán vé.
+     * 4. Tạo lần lượt 6 mẫu vé với các trạng thái:
+     *    - Vé 1: Đã xác nhận (CONFIRMED), suất chiếu tương lai (ghế thường A5).
+     *    - Vé 2: Đã xác nhận (CONFIRMED), ghế VIP (D8).
+     *    - Vé 3: Đã xem (USED), suất chiếu quá khứ.
+     *    - Vé 4: Đã hủy (CANCELLED), ghế Đôi (C1-C2).
+     *    - Vé 5: Đã xác nhận (CONFIRMED), sắp chiếu.
+     *    - Vé 6: Đã xem (USED).
+     * 5. Lưu vé vào CSDL qua `ticketRepository.save()`.
+     */
     private void seedTickets() {
         // Chỉ seed khi bảng tickets trống
         if (ticketRepository.count() > 0) {
@@ -189,3 +220,4 @@ public class TicketSeedInitializer implements ApplicationRunner {
         System.out.println("[TicketSeed] Đã tạo 6 vé mẫu thành công cho: " + customerAccount.getEmail());
     }
 }
+

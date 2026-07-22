@@ -1,10 +1,18 @@
-package com.group3.cinema.service;
-
-/*
- * Added on 2026-06-24: Seat map loading and temporary seat holding for customer booking.
- * Updated on 2026-07-03: Customer booking now renders the same configured seat layout and seat types as management.
- * Created by: HuyPB - HE191335
+/**
+ * Service xử lý Giữ ghế tạm thời (Seat Holding) 5 phút cho Khách hàng chọn vé trên sơ đồ ghế (`SeatHoldingService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `BookingSeatApiController` khi khách hàng xem và chọn giữ ghế xem phim.
+ * - Tương tác với:
+ *   + `SeatRepository`: Tra cứu sơ đồ ghế thuộc phòng chiếu (`findByRoomIdOrderByRowIndexAscColIndexAsc`).
+ *   + `BookingTicketRepository`: Tạo và xóa trạng thái giữ ghế `HOLDING` (`deleteUnbookedByHoldToken`, `saveAllAndFlush`), dọn dẹp các giữ ghế hết hạn 5 phút (`deleteByStatusAndHoldExpiresAtBefore`).
+ *   + `SeatTypeRepository`: Lấy loại ghế (Standard, VIP, Sweetbox Couple) và bảng màu hiển thị (`findByActiveTrueOrderByIdAsc`).
+ *   + `ShowtimeRepository`: Lấy suất chiếu.
+ *   + `TicketService`: Đơn giá vé tương ứng từng loại ghế (`calculatePrice`).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.dto.BookingSeatView;
 import com.group3.cinema.dto.BookingSelection;
@@ -39,6 +47,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class SeatHoldingService {
+    /** Thời gian khóa giữ ghế tạm thời cho giao dịch mua vé (tính bằng phút). */
     public static final int HOLD_MINUTES = 5;
 
     private final SeatRepository seatRepository;
@@ -62,11 +71,19 @@ public class SeatHoldingService {
         this.ticketService = ticketService;
     }
 
+    /** Lấy danh sách các loại ghế đang mở hoạt động. */
     @Transactional(readOnly = true)
     public List<SeatType> getActiveSeatTypes() {
         return seatTypeRepository.findByActiveTrueOrderByIdAsc();
     }
 
+    /**
+     * Tải toàn bộ ma trận sơ đồ ghế phòng chiếu và ánh xạ trạng thái từng vị trí (AVAILABLE, HOLDING, BOOKED, SELECTED).
+     * 
+     * @param selection Đối tượng lựa chọn thông tin phòng và suất chiếu.
+     * @param ownToken Token giữ ghế cá nhân hiện tại của người dùng.
+     * @return Danh sách BookingSeatView định dạng UI.
+     */
     @Transactional
     public List<BookingSeatView> getSeatMap(BookingSelection selection, String ownToken) {
         releaseExpired();
@@ -84,6 +101,14 @@ public class SeatHoldingService {
                 .toList();
     }
 
+    /**
+     * Thực hiện tạm khóa (Giữ ghế) các vị trí khách chọn trong thời hạn 5 phút.
+     * 
+     * @param selection Thông tin suất chiếu và phòng chiếu.
+     * @param requestedIds Danh sách ID các ghế cần giữ (tối đa 8 ghế).
+     * @param currentToken Hold token hiện tại.
+     * @return HoldResult chứa thông tin holdToken và danh sách bản ghi BookingTicket tạm giữ.
+     */
     @Transactional
     public HoldResult holdSeats(BookingSelection selection, Collection<Long> requestedIds, String currentToken) {
         if (requestedIds == null || requestedIds.isEmpty()) {
@@ -138,6 +163,7 @@ public class SeatHoldingService {
         return new HoldResult(token, expiresAt, holds);
     }
 
+    /** Giải phóng giải nén tất cả ghế đang giữ theo token chỉ định. */
     @Transactional
     public void releaseHold(String token) {
         if (token != null && !token.isBlank()) {
@@ -145,11 +171,13 @@ public class SeatHoldingService {
         }
     }
 
+    /** Xóa các trạng thái giữ ghế đã hết hạn 5 phút trong CSDL. */
     @Transactional
     public void releaseExpired() {
         ticketRepository.deleteByStatusAndHoldExpiresAtBefore(BookingTicket.Status.HOLDING, LocalDateTime.now());
     }
 
+    /** Tính giá vé cơ bản của vị trí ghế trong suất chiếu. */
     public BigDecimal priceFor(Showtime showtime, Seat seat) {
         return BigDecimal.valueOf(ticketService.calculatePrice(showtime, seat, "ADULT"))
                 .setScale(0, RoundingMode.HALF_UP);
@@ -242,3 +270,4 @@ public class SeatHoldingService {
 
     public record HoldResult(String token, LocalDateTime expiresAt, List<BookingTicket> tickets) { }
 }
+

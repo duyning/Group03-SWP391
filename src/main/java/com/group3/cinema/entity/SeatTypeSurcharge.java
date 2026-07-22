@@ -1,9 +1,10 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: SeatTypeSurcharge.java
- * Người tạo: TrienLX
- * Ngày tạo: 2026-06-25
- * Chi tiết: Định nghĩa phụ phí theo loại ghế (Thường: 0, VIP: +15.000đ, Couple: +30.000đ).
+/**
+ * Entity cấu hình Phụ phí theo loại ghế (`seat_type_surcharges`).
+ * 
+ * Mã loại ghế (`seatTypeCode`): std (+0đ), vip (+15.000đ), couple (+30.000đ).
+ * Dùng để tính phụ thu loại ghế khi tạo vé xem phim (`Ticket.seatSurcharge`).
+ * 
+ * Khởi tạo bởi: TrienLX (25/06/2026)
  */
 package com.group3.cinema.entity;
 
@@ -18,7 +19,7 @@ public class SeatTypeSurcharge {
     private Long id;
 
     @Column(name = "seat_type_code", nullable = false, unique = true, length = 30, columnDefinition = "NVARCHAR(30)")
-    private String seatTypeCode; // "std", "vip", "couple"
+    private String seatTypeCode;
 
     @Column(name = "surcharge_amount", nullable = false)
     private double surchargeAmount;
@@ -55,3 +56,4 @@ public class SeatTypeSurcharge {
         this.surchargeAmount = surchargeAmount;
     }
 }
+

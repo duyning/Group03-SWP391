@@ -1,3 +1,9 @@
+/**
+ * Interface Repository quản lý các món sản phẩm đồ ăn / bắp nước bán lẻ (`products`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `ProductService` và `ComboService` khi lấy danh sách sản phẩm hiển thị trên Menu bán lẻ hoặc tạo gói Combo.
+ */
 package com.group3.cinema.repository;
 
 import com.group3.cinema.entity.Product;
@@ -11,14 +17,20 @@ import java.util.List;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     /**
-     * Lấy danh sách món ăn/nước uống theo trạng thái kinh doanh
-     * Dùng để đổ dữ liệu Menu (ACTIVE) lên form chọn của Combo
+     * Lấy danh sách món ăn/nước uống theo trạng thái kinh doanh (ví dụ: "ACTIVE" - Đang bán).
+     * Dùng để đổ dữ liệu Menu chọn sản phẩm khi cấu hình gói Combo.
      */
     List<Product> findByStatus(String status);
 
-    // Nếu cậu dùng Enum cho status ở file Product gốc thì đổi String thành Product.ProductStatus nhé!
+    /**
+     * Tìm kiếm danh sách món đồ ăn bán lẻ theo tên và trạng thái kinh doanh dành cho trang quản lý Admin/Manager.
+     * 
+     * @param keyword Từ khóa tên món.
+     * @param status Trạng thái kinh doanh (ACTIVE, INACTIVE hoặc null).
+     * @return Danh sách Product khớp với điều kiện.
+     */
     @Query("SELECT p FROM Product p WHERE " +
             "(:keyword IS NULL OR p.name LIKE %:keyword%) AND " +
             "(:status IS NULL OR p.status = :status)")
     List<Product> searchProducts(@Param("keyword") String keyword, @Param("status") String status);
-}
+}

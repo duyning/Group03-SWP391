@@ -1,3 +1,19 @@
+/**
+ * Service quản lý danh mục Đồ ăn/Đồ uống lẻ (`FoodItem`) và Các gói Bắp nước Combo (`Combo`) (`ComboService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `ComboController` (Admin) và `CustomerBookingService`, `CounterSaleService` (Bán vé online/quầy).
+ * - Tương tác với các Repository:
+ *   + `ComboRepository`: Tìm kiếm combo (`searchCombos`), lấy thông tin kèm items (`findWithItemsById`), kiểm tra trùng tên (`existsByName`).
+ *   + `FoodItemRepository`: Quản lý các món ăn lẻ (`searchFoodItems`, `findByStatusInOrderByNameAsc`).
+ *   + `ComboItemRepository`: Kiểm tra phụ thuộc xóa món ăn (`existsByFoodItemId`).
+ * 
+ * Logic tính giá combo:
+ * - Tự động tính tổng giá bán lẻ (`originalPrice`) và tổng giá vốn (`costPrice`) dựa theo danh sách `ComboItem`.
+ * - Áp dụng phần trăm giảm giá `discountPercent` (tối đa 80%) để tính ra `price` bán gói combo.
+ * 
+ * Khởi tạo bởi: Group 03 - SWP391
+ */
 package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Combo;
@@ -51,56 +67,51 @@ public class ComboService {
         this.comboItemRepository = comboItemRepository;
     }
 
-    // ==========================================
-    // 2 HÀM KIỂM TRA TRÙNG TÊN MỚI THÊM VÀO
-    // ==========================================
-
-    /**
-     * Dùng khi Thêm mới: Check xem tên này đã có ai dùng chưa
-     */
+    /** Kiểm tra tên combo đã tồn tại trong CSDL hay chưa khi tạo mới. */
     public boolean existsByName(String name) {
         return comboRepository.existsByName(name);
     }
 
-    /**
-     * Dùng khi Cập nhật: Check xem tên này có bị trùng với các combo KHÁC không (trừ chính nó ra)
-     */
+    /** Kiểm tra tên combo có bị trùng với các combo khác không khi cập nhật. */
     public boolean existsByNameAndIdNot(String name, Long id) {
         return comboRepository.existsByNameAndIdNot(name, id);
     }
 
-    // ==========================================
-    // CÁC HÀM CŨ GIỮ NGUYÊN LOGIC
-    // ==========================================
-
+    /** Tìm kiếm gói combo theo từ khóa và trạng thái. */
     public List<Combo> searchCombos(String keyword, String status) {
         String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
         return comboRepository.searchCombos(searchKeyword, status);
     }
 
+    /** Tìm kiếm món ăn/nước uống theo từ khóa và trạng thái. */
     public List<FoodItem> searchFoodItems(String keyword, String status) {
         String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
         return foodItemRepository.searchFoodItems(searchKeyword, status);
     }
 
+    /** Lấy danh sách các món ăn/nước uống đang mở bán (`ACTIVE`, `NEW`). */
     public List<FoodItem> getSellableFoodItems() {
         return foodItemRepository.findByStatusInOrderByNameAsc(SELLABLE_ITEM_STATUSES);
     }
 
+    /** Lấy danh sách các danh mục món ăn chuẩn. */
     public List<String> getFoodCategories() {
         return FOOD_CATEGORIES;
     }
 
+    /** Lấy thông tin chi tiết combo kèm danh sách món thành phần (`findWithItemsById`). */
     public Combo getCombo(Long id) {
         return comboRepository.findWithItemsById(id)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay goi combo nay"));
     }
 
+    /** Tìm chi tiết món ăn lẻ theo ID. */
     public FoodItem getFoodItem(Long id) {
         return foodItemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay mon an nay"));
     }
 
+    /** Trích xuất Map chứa ID món ăn và số lượng trong gói Combo. */
     public Map<Long, Integer> getSelectedQuantities(Combo combo) {
         if (combo == null || combo.getItems() == null) {
             return Map.of();
@@ -113,6 +124,7 @@ public class ComboService {
                         LinkedHashMap::new));
     }
 
+    /** Tạo mới một gói Combo kèm danh sách món chọn và ảnh đính kèm. */
     @Transactional
     public void createCombo(Combo combo,
                             MultipartFile file,
@@ -126,6 +138,7 @@ public class ComboService {
         comboRepository.save(combo);
     }
 
+    /** Cập nhật thông tin gói Combo hiện có. */
     @Transactional
     public void updateCombo(Combo combo,
                             MultipartFile file,
@@ -142,17 +155,20 @@ public class ComboService {
         comboRepository.save(existingCombo);
     }
 
+    /** Xóa một gói Combo theo ID. */
     @Transactional
     public void deleteCombo(Long id) {
         comboRepository.deleteById(id);
     }
 
+    /** Tạo mới một món ăn/nước uống lẻ. */
     @Transactional
     public void createFoodItem(FoodItem foodItem) {
         validateFoodItem(foodItem, null);
         foodItemRepository.save(foodItem);
     }
 
+    /** Cập nhật thông tin món ăn/nước uống lẻ. */
     @Transactional
     public void updateFoodItem(FoodItem foodItem) {
         FoodItem existingItem = getFoodItem(foodItem.getId());
@@ -166,6 +182,7 @@ public class ComboService {
         foodItemRepository.save(existingItem);
     }
 
+    /** Xóa món ăn lẻ (nếu món ăn đã nằm trong gói combo thì ngắt bằng cách chuyển `status = INACTIVE`). */
     @Transactional
     public void deleteFoodItem(Long id) {
         FoodItem foodItem = getFoodItem(id);
@@ -377,3 +394,4 @@ public class ComboService {
         combo.setImage("/uploads/" + fileName);
     }
 }
+

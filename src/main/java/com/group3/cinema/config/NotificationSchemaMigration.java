@@ -1,3 +1,11 @@
+/**
+ * Lớp nâng cấp và đồng bộ cấu trúc bảng thông báo (`notification`) trong CSDL SQL Server.
+ * 
+ * Chức năng:
+ * - Tự động bổ sung các cột mới `image_url` và `action_url` nếu chưa có.
+ * - Xóa bỏ ràng buộc CHECK cũ trên cột `type` và tạo lại ràng buộc `CK_notification_type` mới
+ *   chấp nhận các loại thông báo: BOOKING, PAYMENT, PROMOTION, VOUCHER, MOVIE, NEWS, SYSTEM.
+ */
 package com.group3.cinema.config;
 
 import jakarta.annotation.PostConstruct;
@@ -13,10 +21,24 @@ public class NotificationSchemaMigration {
 
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Constructor tiêm phụ thuộc JdbcTemplate.
+     * 
+     * @param jdbcTemplate Công cụ thực thi lệnh SQL trực tiếp.
+     */
     public NotificationSchemaMigration(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Phương thức thực thi câu lệnh SQL DDL điều chỉnh bảng `notification` sau khi Bean khởi tạo.
+     * 
+     * Quy trình:
+     * 1. Kiểm tra bảng `notification` có tồn tại trong CSDL không.
+     * 2. Bổ sung 2 cột `image_url` và `action_url` nếu thiếu.
+     * 3. Tìm và hủy bỏ các ràng buộc CHECK constraint cũ liên quan tới thuộc tính `type`.
+     * 4. Thêm lại ràng buộc CHECK mới `CK_notification_type` bao gồm đầy đủ các enum `NotificationType`.
+     */
     @PostConstruct
     public void allowCurrentNotificationTypes() {
         try {
@@ -63,3 +85,4 @@ public class NotificationSchemaMigration {
         }
     }
 }
+

@@ -1,10 +1,19 @@
-package com.group3.cinema.service;
-
-/*
- * Added on 2026-06-24: Showtime selection logic for customer booking.
- * Updated on 2026-06-26: Cinema display data is loaded from SQL booking_settings.
- * Created by: HuyPB - HE191335
+/**
+ * Service xử lý logic tra cứu suất chiếu và kiểm tra số ghế trống phục vụ Khách hàng đặt vé online (`BookingShowtimeService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `CustomerBookingController` khi khách xem lịch chiếu theo phim, chọn ngày và kiểm tra tình trạng chỗ trống.
+ * - Gọi đến các Repository:
+ *   + `MovieRepository`: Kiểm tra trạng thái phim có thể bán vé (`getBookableMovie`).
+ *   + `ShowtimeRepository`: Tra cứu lịch chiếu khả dụng cho khách hàng (`searchShowtimesForCustomer`).
+ *   + `RoomRepository`: Kiểm tra phòng chiếu có đang hoạt động không (`findActiveRoom`).
+ *   + `SeatRepository`: Lấy ma trận sơ đồ ghế của phòng.
+ *   + `SeatTypeRepository`: Lấy cấu hình sức chứa của các loại ghế.
+ *   + `BookingTicketRepository`: Tính toán tổng số sức chứa đã bị giữ chỗ/đã thanh toán để suy ra ghế còn trống.
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.dto.BookingSelection;
 import com.group3.cinema.dto.BookingShowtimeDateView;
@@ -63,6 +72,12 @@ public class BookingShowtimeService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Lấy thông tin phim hợp lệ có thể mở bán vé (`NOW_SHOWING` hoặc `SPECIAL_SCREENING`).
+     * 
+     * @param movieId ID bộ phim.
+     * @return Đối tượng Movie.
+     */
     public Movie getBookableMovie(int movieId) {
         return movieRepository.findByIdAndActiveTrue(movieId)
                 .filter(movie -> movie.getStatus() == Movie.MovieStatus.NOW_SHOWING
@@ -70,9 +85,12 @@ public class BookingShowtimeService {
                 .orElseThrow(() -> new IllegalArgumentException("Phim không tồn tại hoặc hiện chưa mở bán vé."));
     }
 
+    /**
+     * Lấy danh sách các suất chiếu khả dụng của một bộ phim theo ngày chỉ định.
+     */
     public List<BookingShowtimeView> getAvailableShowtimes(int movieId, LocalDate date) {
         if (date == null || date.isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Vui lòng chọn ngày chiếu hợp lệ.");
+            throw new IllegalArgumentException("Vui lòng điền ngày chiếu hợp lệ.");
         }
         Movie movie = getBookableMovie(movieId);
         LocalDateTime now = LocalDateTime.now();
@@ -84,6 +102,9 @@ public class BookingShowtimeService {
                 .toList();
     }
 
+    /**
+     * Lấy lịch chiếu tổng hợp theo chuỗi các ngày (trong 30 ngày tiếp theo) để hiển thị tab chọn ngày trên UI.
+     */
     public List<BookingShowtimeDateView> getAvailableShowtimeSchedule(int movieId) {
         Movie movie = getBookableMovie(movieId);
         LocalDate today = LocalDate.now();
@@ -102,6 +123,7 @@ public class BookingShowtimeService {
                 .toList();
     }
 
+    /** Lấy tên rạp chiếu phim cấu hình trong CSDL (`booking_settings`). */
     public String getCinemaName() {
         List<String> values = jdbcTemplate.query(
                 "SELECT setting_value FROM booking_settings WHERE setting_key = 'cinema_name'",
@@ -110,6 +132,9 @@ public class BookingShowtimeService {
         return values.isEmpty() ? "" : values.get(0);
     }
 
+    /**
+     * Xác thực suất chiếu khách hàng chọn và khởi tạo đối tượng `BookingSelection` chứa dữ liệu phiên chọn.
+     */
     public BookingSelection validateAndCreateSelection(long showtimeId, int movieId, LocalDate date) {
         if (showtimeId <= 0 || movieId <= 0 || date == null) {
             throw new IllegalArgumentException("Thông tin phim, ngày hoặc suất chiếu chưa đầy đủ.");
@@ -177,6 +202,9 @@ public class BookingShowtimeService {
         };
     }
 
+    /**
+     * Tính toán số sức chứa ghế còn trống cho suất chiếu chỉ định.
+     */
     private int availableSeats(Long showtimeId, Room room) {
         Map<String, SeatType> seatTypes = seatTypeRepository.findAllByOrderByIdAsc().stream()
                 .collect(Collectors.toMap(type -> normalizeType(type.getCode()), Function.identity(), (first, ignored) -> first));
@@ -212,3 +240,4 @@ public class BookingShowtimeService {
         return type == null || type.isBlank() ? "std" : type.trim().toLowerCase();
     }
 }
+

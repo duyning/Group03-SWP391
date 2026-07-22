@@ -1,6 +1,10 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Interface Repository thao tác bảng danh sách vị trí ghế trong phòng chiếu (`seats`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `RoomService`, `CustomerBookingService`, `CatalogInitializer` để hiển thị sơ đồ ma trận ghế và lưu sơ đồ phòng chiếu mới.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
  */
 package com.group3.cinema.repository;
 
@@ -17,18 +21,27 @@ import java.util.List;
 @Repository
 public interface SeatRepository extends JpaRepository<Seat, Long> {
 
-    /** Láº¥y táº¥t cáº£ gháº¿ cá»§a má»™t phÃ²ng, sáº¯p xáº¿p theo hÃ ng rá»“i cá»™t */
+    /**
+     * Lấy tất cả danh sách ghế của một phòng chiếu, sắp xếp tăng dần theo chỉ số hàng và cột (`rowIndex`, `colIndex`).
+     */
     List<Seat> findByRoomIdOrderByRowIndexAscColIndexAsc(Long roomId);
 
-    /** XÃ³a toÃ n bá»™ gháº¿ cá»§a má»™t phÃ²ng (Ä‘á»ƒ lÆ°u sÆ¡ Ä‘á»“ má»›i) */
+    /**
+     * Xóa toàn bộ sơ đồ ghế của phòng chiếu khi Admin lưu sơ đồ cấu hình ghế mới.
+     */
     @Modifying
     @Transactional
     @Query("DELETE FROM Seat s WHERE s.roomId = :roomId")
     void deleteAllByRoomId(@Param("roomId") Long roomId);
 
-    /** Äáº¿m sá»‘ gháº¿ theo loáº¡i cho má»™t phÃ²ng */
+    /**
+     * Đếm số lượng ghế thuộc một loại cụ thể (std, vip, couple) trong phòng.
+     */
     long countByRoomIdAndSeatType(Long roomId, String seatType);
 
-    /** Kiá»ƒm tra phÃ²ng Ä‘Ã£ cÃ³ sÆ¡ Ä‘á»“ gháº¿ chÆ°a */
+    /**
+     * Kiểm tra xem phòng chiếu đã được tạo sơ đồ ghế hay chưa.
+     */
     boolean existsByRoomId(Long roomId);
 }
+

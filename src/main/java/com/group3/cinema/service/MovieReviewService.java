@@ -1,10 +1,16 @@
-package com.group3.cinema.service;
-
-/*
- * Added on 2026-07-10: Business rules for customer movie reviews and admin review moderation.
- * Updated on 2026-07-10: Reviews require a paid booking whose showtime has already passed.
- * Created by: HuyPB - HE191335
+/**
+ * Service quản lý Đánh giá & Bình luận phim của Khách hàng và Kiểm duyệt nội dung từ Quản trị viên (`MovieReviewService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `CustomerMovieReviewController` (Gửi review/xem review) và `AdminMovieReviewController` (Ẩn/Hiện bình luận vi phạm).
+ * - Tương tác với:
+ *   + `MovieReviewRepository`: Truy vấn đánh giá hiển thị công khai (`searchVisibleReviews`), tính điểm trung bình (`averageRating`), lưu review (`save`).
+ *   + `BookingRepository`: Kiểm tra điều kiện xem phim thực tế (`existsWatchedMovie`, `findWatchedBookings`) - khách chỉ được đánh giá phim sau khi đã mua vé và giờ chiếu đã trôi qua.
+ *   + `MovieRepository`, `AccountRepository`: Lấy dữ liệu phim và khách hàng.
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (10/07/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Booking;
@@ -48,14 +54,17 @@ public class MovieReviewService {
         this.bookingRepository = bookingRepository;
     }
 
+    /** Lấy danh sách đánh giá phim đã được phê duyệt (`APPROVED`) xếp mới nhất. */
     public List<MovieReview> getApprovedReviews(int movieId) {
         return movieReviewRepository.findByMovieIdAndModerationStatusOrderByReviewDateDesc(movieId, VISIBLE_STATUS);
     }
 
+    /** Lấy danh sách đánh giá đã duyệt có phân trang. */
     public Page<MovieReview> getApprovedReviews(int movieId, Integer ratingScore, Pageable pageable) {
         return getApprovedReviews(movieId, ratingScore, null, null, pageable);
     }
 
+    /** Lấy danh sách đánh giá đã duyệt có lọc theo mốc điểm sao và khoảng ngày gửi. */
     public Page<MovieReview> getApprovedReviews(int movieId,
                                                 Integer ratingScore,
                                                 LocalDate startDate,
@@ -64,25 +73,28 @@ public class MovieReviewService {
         LocalDateTime startDateTime = startDate == null ? null : startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate == null ? null : endDate.atTime(23, 59, 59);
 
-        // Convert customer-facing date filters into an inclusive LocalDateTime range for reviewDate.
         if (ratingScore != null && ratingScore >= 1 && ratingScore <= 5) {
             return movieReviewRepository.searchVisibleReviews(movieId, VISIBLE_STATUS, ratingScore, startDateTime, endDateTime, pageable);
         }
         return movieReviewRepository.searchVisibleReviews(movieId, VISIBLE_STATUS, null, startDateTime, endDateTime, pageable);
     }
 
+    /** Tính số điểm đánh giá trung bình (Rating Average) từ các bài review đã duyệt. */
     public double getAverageRating(int movieId) {
         return movieReviewRepository.averageRating(movieId, VISIBLE_STATUS);
     }
 
+    /** Đếm tổng số đánh giá đã được hiển thị công khai của bộ phim. */
     public long getApprovedReviewCount(int movieId) {
         return movieReviewRepository.reviewCount(movieId, VISIBLE_STATUS);
     }
 
+    /** Lấy toàn bộ đánh giá phục vụ quản trị Admin kiểm duyệt. */
     public List<MovieReview> getAllReviewsForAdmin() {
         return movieReviewRepository.findAllByOrderByReviewDateDesc();
     }
 
+    /** Tìm kiếm và lọc danh sách đánh giá trong trang Admin theo từ khóa, trạng thái ẩn/hiện, khoảng thời gian. */
     public List<MovieReview> searchReviewsForAdmin(String keyword,
                                                    String status,
                                                    LocalDate startDate,
@@ -90,7 +102,6 @@ public class MovieReviewService {
         String normalizedKeyword = normalize(keyword);
         String normalizedStatus = status == null ? "ALL" : status.trim().toUpperCase(Locale.ROOT);
 
-        // Admin search is intentionally tolerant: accents are stripped and status aliases are accepted.
         return movieReviewRepository.findAllByOrderByReviewDateDesc().stream()
                 .filter(review -> matchesStatus(review, normalizedStatus))
                 .filter(review -> matchesDateRange(review, startDate, endDate))
@@ -98,14 +109,17 @@ public class MovieReviewService {
                 .toList();
     }
 
+    /** Đếm tổng số đánh giá trong toàn bộ hệ thống. */
     public long getTotalReviewCount() {
         return movieReviewRepository.count();
     }
 
+    /** Đếm số đánh giá đang được hiển thị công khai. */
     public long getVisibleReviewCount() {
         return movieReviewRepository.countByModerationStatus(VISIBLE_STATUS);
     }
 
+    /** Lấy bản ghi đánh giá cá nhân của khách hàng cho bộ phim. */
     public Optional<MovieReview> getUserReview(int movieId, Integer accountId) {
         if (accountId == null) {
             return Optional.empty();
@@ -113,8 +127,10 @@ public class MovieReviewService {
         return movieReviewRepository.findByMovieIdAndAccountAccountID(movieId, accountId);
     }
 
+    /**
+     * Kiểm tra xem khách hàng có đủ điều kiện viết đánh giá phim hay không (bắt buộc phải có vé đã thanh toán và thời gian suất chiếu đã kết thúc).
+     */
     public boolean canReviewMovie(Integer accountId, int movieId) {
-        // Customers may review only after a paid showtime for this movie has already happened.
         return accountId != null && bookingRepository.existsWatchedMovie(
                 accountId,
                 movieId,
@@ -124,6 +140,14 @@ public class MovieReviewService {
         );
     }
 
+    /**
+     * Gửi hoặc Cập nhật nhận xét, số sao đánh giá cho bộ phim.
+     * 
+     * @param movieId ID bộ phim.
+     * @param accountId ID khách hàng.
+     * @param ratingScore Điểm sao từ 1 đến 5.
+     * @param comment Nội dung bình luận.
+     */
     @Transactional
     public void submitReview(int movieId, int accountId, int ratingScore, String comment) {
         if (ratingScore < 1 || ratingScore > 5) {
@@ -146,7 +170,6 @@ public class MovieReviewService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Ban chi co the danh gia sau khi da xem phim."));
 
-        // Reuse the same row when a customer edits their previous review for the same movie.
         MovieReview review = movieReviewRepository.findByMovieIdAndAccountAccountID(movieId, accountId)
                 .orElseGet(MovieReview::new);
         review.setMovie(movie);
@@ -161,6 +184,13 @@ public class MovieReviewService {
         movieReviewRepository.save(review);
     }
 
+    /**
+     * Thay đổi trạng thái hiển thị công khai hoặc ẩn đi của bài đánh giá bởi Admin.
+     * 
+     * @param reviewId ID bài đánh giá.
+     * @param adminAccountId ID Admin thực hiện.
+     * @param visible Cờ hiển thị (true = APPROVED, false = REJECTED).
+     */
     @Transactional
     public void setReviewVisible(Long reviewId, int adminAccountId, boolean visible) {
         MovieReview review = movieReviewRepository.findById(reviewId)
@@ -228,3 +258,4 @@ public class MovieReviewService {
                 .toLowerCase(Locale.ROOT);
     }
 }
+

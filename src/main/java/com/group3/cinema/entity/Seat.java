@@ -7,9 +7,19 @@ package com.group3.cinema.entity;
 import jakarta.persistence.*;
 
 /**
- * Entity Ä‘áº¡i diá»‡n cho má»™t Ã´ gháº¿ trong sÆ¡ Ä‘á»“ phÃ²ng chiáº¿u.
- * Má»—i gháº¿ thuá»™c vá» má»™t Room vÃ  Ä‘Æ°á»£c xÃ¡c Ä‘á»‹nh bá»Ÿi (rowIndex, colIndex).
- * type: "std" | "vip" | "couple" | "broken" | "empty" | "skip"
+ * Entity đại diện cho một ô ghế (`seats`) trong sơ đồ lưới của phòng chiếu.
+ * 
+ * Mỗi ghế gắn liền với một Room (`roomId`) và vị trí tọa độ (`rowIndex`, `colIndex`).
+ * Phân loại ghế (`seatType`):
+ * - "std"    : Ghế thường
+ * - "vip"    : Ghế VIP
+ * - "couple" : Ghế đôi (chiếm 2 cột liền kề)
+ * - "broken" : Ghế hỏng / bảo trì
+ * - "empty"  : Lối đi / Ô trống
+ * - "skip"   : Ô bị chiếm bởi phần bên phải của ghế đôi (bỏ qua không render riêng)
+ * 
+ * Ngày cập nhật: 04/06/2026
+ * Khởi tạo bởi: NinhDD - HE186113
  */
 @Entity
 @Table(name = "seats",
@@ -20,33 +30,27 @@ public class Seat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** PhÃ²ng chiáº¿u sá»Ÿ há»¯u gháº¿ nÃ y */
+    /** ID Phòng chiếu sở hữu ghế này */
     @Column(name = "room_id", nullable = false)
     private Long roomId;
 
-    /** Chá»‰ sá»‘ hÃ ng (0-based), 0 = hÃ ng A */
+    /** Chỉ số hàng (0-based), 0 = hàng A, 1 = hàng B... */
     @Column(name = "row_index", nullable = false)
     private int rowIndex;
 
-    /** Chá»‰ sá»‘ cá»™t (0-based) */
+    /** Chỉ số cột (0-based) */
     @Column(name = "col_index", nullable = false)
     private int colIndex;
 
     /**
-     * NhÃ£n gháº¿ hiá»ƒn thá»‹, vÃ­ dá»¥ "A1", "B12", "C3-C4" (couple).
-     * ÄÆ°á»£c tÃ­nh tá»± Ä‘á»™ng, khÃ´ng pháº£i ngÆ°á»i dÃ¹ng nháº­p.
+     * Nhãn ghế hiển thị, ví dụ "A1", "B12", "C3-C4" (ghế đôi).
+     * Được hệ thống tính tự động dựa trên vị trí tọa độ.
      */
     @Column(name = "seat_label", columnDefinition = "NVARCHAR(20)")
     private String seatLabel;
 
     /**
-     * Loáº¡i gháº¿:
-     * - "std"    : Gháº¿ thÆ°á»ng
-     * - "vip"    : Gháº¿ VIP
-     * - "couple" : Gháº¿ Ä‘Ã´i (chiáº¿m 2 cá»™t liá»n ká», cá»™t káº¿ tiáº¿p sáº½ lÃ  "skip")
-     * - "broken" : Gháº¿ há»ng / báº£o trÃ¬
-     * - "empty"  : Lá»‘i Ä‘i / Ã´ trá»‘ng
-     * - "skip"   : Ã” bá»‹ chiáº¿m bá»Ÿi couple bÃªn trÃ¡i (khÃ´ng render)
+     * Loại ghế: std, vip, couple, broken, empty, skip.
      */
     @Column(name = "seat_type", nullable = false, columnDefinition = "NVARCHAR(30)")
     private String seatType = "std";
@@ -67,6 +71,9 @@ public class Seat {
         return new Builder();
     }
 
+    /**
+     * Lớp Builder giúp xây dựng đối tượng Seat.
+     */
     public static class Builder {
         private final Seat seat = new Seat();
 

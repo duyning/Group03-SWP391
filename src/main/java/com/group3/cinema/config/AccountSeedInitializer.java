@@ -1,3 +1,10 @@
+/**
+ * Lớp khởi tạo dữ liệu mặc định cho tài khoản người dùng (AccountSeedInitializer).
+ * 
+ * Tự động chạy khi ứng dụng khởi động (`@PostConstruct`):
+ * - Kiểm tra và cập nhật cấu trúc bảng `account` (thêm cột `dob`, xóa cột `age` cũ).
+ * - Khởi tạo các tài khoản mặc định (Admin, Manager, Customer) nếu chưa tồn tại trong CSDL.
+ */
 package com.group3.cinema.config;
 
 import com.group3.cinema.entity.Account;
@@ -13,11 +20,28 @@ public class AccountSeedInitializer {
     private final AccountRepository accountRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
+    /**
+     * Constructor tiêm phụ thuộc AccountRepository và JdbcTemplate.
+     * 
+     * @param accountRepository Repository truy vấn thông tin tài khoản.
+     * @param jdbcTemplate Công cụ thực thi SQL trực tiếp lên SQL Server.
+     */
     public AccountSeedInitializer(AccountRepository accountRepository, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
         this.accountRepository = accountRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Phương thức chính thực thi sau khi Spring Beans được khởi tạo thành công (`@PostConstruct`).
+     * 
+     * Quy trình:
+     * 1. Gọi `ensureAccountSchema()` để đảm bảo cột `dob` tồn tại trong DB.
+     * 2. Thực thi SQL xóa cột `age` cũ nếu còn ràng buộc constraint trên SQL Server.
+     * 3. Gọi `createAccountIfMissing()` để seed 3 tài khoản mẫu:
+     *    - Admin: `admin@group03.com`
+     *    - Manager: `manager@group03.com`
+     *    - Customer: `customer@group03.com`
+     */
     @PostConstruct
     public void seedAccounts() {
         ensureAccountSchema();
@@ -58,6 +82,20 @@ public class AccountSeedInitializer {
         );
     }
 
+    /**
+     * Tạo tài khoản mới nếu chưa tồn tại theo Email, hoặc cập nhật thông tin chuẩn hóa nếu tài khoản đã tồn tại.
+     * 
+     * Gọi các hàm:
+     * - `accountRepository.findByEmail(email)`: Tìm tài khoản theo email.
+     * - `accountRepository.findFirstByPhoneNum(phoneNum)`: Kiểm tra trùng số điện thoại.
+     * - `accountRepository.save(account)`: Lưu thông tin tài khoản xuống DB.
+     * 
+     * @param name Tên người dùng.
+     * @param email Địa chỉ Email.
+     * @param password Mật khẩu gốc.
+     * @param phoneNum Số điện thoại.
+     * @param role Vai trò (ADMIN, MANAGER, CUSTOMER).
+     */
     private void createAccountIfMissing(String name, String email, String password, String phoneNum, Role role) {
         Account account = accountRepository.findByEmail(email);
         if (account != null) {
@@ -114,6 +152,10 @@ public class AccountSeedInitializer {
         accountRepository.save(account);
     }
 
+    /**
+     * Tự động kiểm tra và thêm cột `dob` (ngày sinh) cho bảng `account` nếu CSDL chưa có.
+     * Gọi hàm `tableExists()` và `columnExists()` để truy vấn `INFORMATION_SCHEMA`.
+     */
     private void ensureAccountSchema() {
         try {
             if (!tableExists("account") || columnExists("account", "dob")) {
@@ -126,6 +168,12 @@ public class AccountSeedInitializer {
         }
     }
 
+    /**
+     * Kiểm tra xem một bảng có tồn tại trong CSDL SQL Server hay không.
+     * 
+     * @param tableName Tên bảng cần kiểm tra.
+     * @return true nếu tồn tại, false nếu chưa.
+     */
     private boolean tableExists(String tableName) {
         Integer count = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
@@ -135,6 +183,13 @@ public class AccountSeedInitializer {
         return count != null && count > 0;
     }
 
+    /**
+     * Kiểm tra xem một cột có tồn tại trong một bảng cụ thể của CSDL hay không.
+     * 
+     * @param tableName Tên bảng.
+     * @param columnName Tên cột.
+     * @return true nếu cột tồn tại, false nếu chưa.
+     */
     private boolean columnExists(String tableName, String columnName) {
         Integer count = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
@@ -144,3 +199,4 @@ public class AccountSeedInitializer {
         return count != null && count > 0;
     }
 }
+

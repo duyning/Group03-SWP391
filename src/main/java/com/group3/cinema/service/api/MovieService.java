@@ -1,12 +1,15 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: MovieService.java (API)
- * Người sửa: TrienLX
- * Ngày sửa: 2026-06-23
- * Chi tiết thay đổi:
- * - Đồng bộ hóa trạng thái phim: Đặt status = STOPPED khi ẩn phim (active = false)
- *   và khôi phục trạng thái phù hợp (COMING_SOON / NOW_SHOWING) khi kích hoạt lại.
- * - Đồng bộ hóa cập nhật thông tin: Nếu cập nhật status sang STOPPED thì tự động ẩn phim.
+/**
+ * Service xử lý logic nghiệp vụ quản lý Phim chiếu rạp (`MovieService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `MovieApiController` để xử lý các request CRUD danh mục phim, thay đổi trạng thái ẩn/hiện, tìm kiếm phân loại và tự động cập nhật trạng thái.
+ * - Gọi đến các Repository:
+ *   + `MovieRepository`: Truy vấn và thao tác lưu/xóa bản ghi phim (`searchMovies`, `save`, `findSoftDeletedByTitle`, `autoUpdateUpcomingToNowShowing`, `autoDeactivateExpiredMovies`).
+ *   + `MoviePersonSuggestionRepository`: Lưu danh sách gợi ý Đạo diễn, Diễn viên, Nhà sản xuất (`savePersonSuggestions`).
+ *   + `TicketRepository`: Kiểm tra xem phim đã phát sinh vé được đặt bán thành công hay chưa (`hasBookedTicketsForMovie`) để chặn chỉnh sửa/xóa.
+ *   + `BookingRepository`: Kiểm tra đơn đặt vé active cho phim (`hasActiveBookingsForMovie`).
+ * 
+ * Khởi tạo bởi: TrienLX (23/06/2026)
  */
 package com.group3.cinema.service.api;
 
@@ -39,23 +42,48 @@ public class MovieService {
     @Autowired
     private BookingRepository bookingRepository;
 
+    @Autowired
+    private com.group3.cinema.repository.BookingTicketRepository bookingTicketRepository;
+
     public MovieService(MovieRepository movieRepository, MoviePersonSuggestionRepository suggestionRepository) {
         this.movieRepository = movieRepository;
         this.suggestionRepository = suggestionRepository;
     }
 
+    /**
+     * Lấy toàn bộ danh sách bộ phim trong hệ thống (tự động kích hoạt cập nhật trạng thái phim `autoUpdateMovieStatuses`).
+     * 
+     * @return Danh sách Movie chưa bị xóa mềm.
+     */
     @Transactional
     public List<Movie> getAllMovies() {
         autoUpdateMovieStatuses();
         return movieRepository.findAll();
     }
 
+    /**
+     * Tìm chi tiết phim theo ID.
+     * 
+     * @param id ID của phim.
+     * @return Optional chứa Movie nếu tìm thấy.
+     */
     @Transactional
     public Optional<Movie> getMovieById(Integer id) {
         autoUpdateMovieStatuses();
         return movieRepository.findById(id);
     }
 
+    /**
+     * Tìm kiếm và lọc danh sách phim đa chỉ tiêu dành cho giao diện quản trị Admin.
+     * 
+     * @param title Tiêu đề phim.
+     * @param genre Thể loại phim.
+     * @param director Đạo diễn.
+     * @param duration Thời lượng phim (phút).
+     * @param status Trạng thái phim (Đang chiếu, Sắp chiếu, Ngừng chiếu...).
+     * @param releaseDate Ngày khởi chiếu.
+     * @return Danh sách các bộ phim khớp điều kiện.
+     */
     @Transactional
     public List<Movie> searchMovies(String title,
                                     String genre,
@@ -77,13 +105,33 @@ public class MovieService {
         return movieRepository.searchMovies(title, genre, director, duration, movieStatus, releaseDate, active);
     }
 
+    /**
+     * Kiểm tra tính hợp lệ dữ liệu nhập của phim (chặn tên rỗng, kiểm tra trùng lặp tiêu đề, poster, trailer).
+     * 
+     * @param movie Đối tượng phim cần kiểm tra.
+     * @param id ID của phim (0 nếu tạo mới, khác 0 nếu cập nhật).
+     * @throws IllegalArgumentException nếu dữ liệu vi phạm ràng buộc.
+     */
+    private String normalizeMovieTitle(String title) {
+        if (title == null) return "";
+        return title.toLowerCase().replaceAll("[^\\p{L}\\p{Nd}]", "");
+    }
+
     public void validateMovie(Movie movie, int id) {
         if (movie.getTitle() == null || movie.getTitle().isBlank()) {
             throw new IllegalArgumentException("Tên phim không được để trống.");
         }
-        if (movieRepository.existsDuplicateTitle(movie.getTitle().trim(), id)) {
-            throw new IllegalArgumentException("Tên phim đã tồn tại trong hệ thống.");
+
+        String inputNormalized = normalizeMovieTitle(movie.getTitle());
+        List<Movie> existingMovies = movieRepository.findAll();
+        for (Movie m : existingMovies) {
+            if (m.getId() != id && !m.isDeleted()) {
+                if (normalizeMovieTitle(m.getTitle()).equals(inputNormalized)) {
+                    throw new IllegalArgumentException("Tên phim đã tồn tại trong hệ thống.");
+                }
+            }
         }
+
         if (movie.getPosterUrl() != null && !movie.getPosterUrl().isBlank()) {
             if (movieRepository.existsDuplicatePoster(movie.getPosterUrl().trim(), id)) {
                 throw new IllegalArgumentException("Ảnh poster phim đã tồn tại trong hệ thống.");
@@ -96,6 +144,9 @@ public class MovieService {
         }
     }
 
+    /**
+     * Tự động trích xuất và lưu danh sách gợi ý Đạo diễn, Nhà sản xuất, Diễn viên vào bảng `movie_person_suggestions`.
+     */
     private void saveSuggestions(Movie movie) {
         if (movie.getDirector() != null) {
             savePersonSuggestions(movie.getDirector(), "DIRECTOR");
@@ -108,6 +159,9 @@ public class MovieService {
         }
     }
 
+    /**
+     * Tách danh sách tên bằng dấu phẩy và lưu vào bảng gợi ý nhân sự phim nếu chưa tồn tại.
+     */
     private void savePersonSuggestions(String rawNames, String type) {
         String[] names = rawNames.split(",");
         for (String name : names) {
@@ -120,50 +174,27 @@ public class MovieService {
         }
     }
 
+    /**
+     * Tạo mới hoặc Khôi phục một bộ phim đã bị xóa mềm trước đó.
+     * 
+     * @param movie Đối tượng chứa thông tin phim mới.
+     * @return Bản ghi Movie đã được lưu vào CSDL.
+     */
     @Transactional
     public Movie saveMovie(Movie movie) {
-        Optional<Movie> softDeletedOpt = movieRepository.findSoftDeletedByTitle(movie.getTitle().trim());
-        if (softDeletedOpt.isPresent()) {
-            Movie existing = softDeletedOpt.get();
-            existing.setTrailerUrl(movie.getTrailerUrl());
-            existing.setSummary(movie.getSummary());
-            existing.setGenre(movie.getGenre());
-            existing.setDuration(movie.getDuration());
-            existing.setDirector(movie.getDirector());
-            existing.setLanguage(movie.getLanguage());
-            existing.setActors(movie.getActors());
-            existing.setPosterUrl(movie.getPosterUrl());
-            existing.setReleaseDate(movie.getReleaseDate());
-            existing.setBannerUrl(movie.getBannerUrl());
-            existing.setAgeRating(movie.getAgeRating());
-            existing.setReleaseYear(movie.getReleaseYear());
-            existing.setProducer(movie.getProducer());
-            existing.setFormat(movie.getFormat());
-
-            // Khôi phục trạng thái hoạt động
-            existing.setActive(true);
-            existing.setDeleted(false);
-
-            // Tính trạng thái phim theo ngày hiện tại
-            LocalDate today = LocalDate.now();
-            if (movie.getReleaseDate() != null && movie.getReleaseDate().isAfter(today)) {
-                existing.setStatus(Movie.MovieStatus.COMING_SOON);
-            } else {
-                existing.setStatus(Movie.MovieStatus.NOW_SHOWING);
-            }
-
-            validateMovie(existing, existing.getId()); // validate sử dụng chính ID của nó để loại trừ trùng lặp tự thân
-            Movie savedMovie = movieRepository.save(existing);
-            saveSuggestions(savedMovie);
-            return savedMovie;
-        } else {
-            validateMovie(movie, 0);
-            Movie savedMovie = movieRepository.save(movie);
-            saveSuggestions(savedMovie);
-            return savedMovie;
-        }
+        validateMovie(movie, 0);
+        Movie savedMovie = movieRepository.save(movie);
+        saveSuggestions(savedMovie);
+        return savedMovie;
     }
 
+    /**
+     * Cập nhật thông tin chi tiết của bộ phim chỉ định (chặn sửa nếu đã phát sinh vé được đặt `ticketRepository.hasBookedTicketsForMovie`).
+     * 
+     * @param id ID của phim.
+     * @param updatedMovie Đối tượng chứa thông tin cập nhật mới.
+     * @return Movie sau khi chỉnh sửa thành công.
+     */
     @Transactional
     public Movie updateMovie(Integer id, Movie updatedMovie) {
         if (ticketRepository.hasBookedTicketsForMovie(id)) {
@@ -187,8 +218,6 @@ public class MovieService {
             movie.setReleaseYear(updatedMovie.getReleaseYear());
             movie.setProducer(updatedMovie.getProducer());
             movie.setFormat(updatedMovie.getFormat());
-            // [SỬA - TrienLX - 2026-06-23]: Tự động đồng bộ cờ hiển thị active dựa trên trạng thái phim
-            // Nếu lưu trạng thái là STOPPED (Ngừng chiếu) thì tự động ẩn phim, ngược lại kích hoạt lại hiển thị.
             if (updatedMovie.getStatus() == Movie.MovieStatus.STOPPED) {
                 movie.setActive(false);
             } else {
@@ -200,14 +229,21 @@ public class MovieService {
         }).orElseThrow(() -> new RuntimeException("Movie not found with id " + id));
     }
 
+    /**
+     * Xóa mềm bộ phim (đặt `deleted = true`, `active = false`, `status = STOPPED`).
+     * Chặn xóa nếu phim đã được bán vé hoặc đang có khách hàng thanh toán giữ chỗ.
+     * 
+     * @param id ID phim cần xóa.
+     */
     @Transactional
     public void deleteMovie(Integer id) {
         movieRepository.findById(id).ifPresent(movie -> {
             if (ticketRepository.hasBookedTicketsForMovie(id)) {
                 throw new IllegalArgumentException("Không thể xóa phim này vì đã có vé được đặt.");
             }
-            if (bookingRepository.hasActiveBookingsForMovie(id, LocalDateTime.now())) {
-                throw new IllegalArgumentException("Không thể xóa phim này vì đang có khách hàng thực hiện mua vé.");
+            LocalDateTime now = LocalDateTime.now();
+            if (bookingRepository.hasActiveBookingsForMovie(id, now) || bookingTicketRepository.hasActiveHoldingsOrBookingsForMovie(id, now)) {
+                throw new IllegalArgumentException("Không thể xóa phim này vì đang có khách hàng giữ ghế/thực hiện mua vé.");
             }
             movie.setDeleted(true);
             movie.setActive(false);
@@ -218,19 +254,24 @@ public class MovieService {
 
     /**
      * Đảo ngược trạng thái hiển thị của phim (active ↔ inactive).
-     * Nếu phim đang hiển thị (active = true) thì tạm ẩn (active = false) và ngược lại.
+     * 
+     * @param id ID của phim.
+     * @return Đối tượng Movie sau khi đổi cờ active.
      */
     @Transactional
     public Movie toggleActive(Integer id) {
         return movieRepository.findById(id).map(movie -> {
             boolean newActive = !movie.isActive();
-            if (!newActive && ticketRepository.hasBookedTicketsForMovie(id)) {
-                throw new IllegalArgumentException("Không thể tạm ẩn phim này vì đã có vé được đặt.");
+            if (!newActive) {
+                if (ticketRepository.hasBookedTicketsForMovie(id)) {
+                    throw new IllegalArgumentException("Không thể tạm ẩn phim này vì đã có vé được đặt.");
+                }
+                LocalDateTime now = LocalDateTime.now();
+                if (bookingRepository.hasActiveBookingsForMovie(id, now) || bookingTicketRepository.hasActiveHoldingsOrBookingsForMovie(id, now)) {
+                    throw new IllegalArgumentException("Không thể tạm ẩn phim này vì đang có khách hàng giữ ghế/thực hiện mua vé.");
+                }
             }
             movie.setActive(newActive);
-            // [SỬA - TrienLX - 2026-06-23]:
-            // - Nếu ẩn phim: chuyển trạng thái phim sang STOPPED (Ngừng chiếu)
-            // - Nếu mở lại: tính toán khôi phục trạng thái phù hợp dựa trên ngày khởi chiếu so với hôm nay
             if (!newActive) {
                 movie.setStatus(Movie.MovieStatus.STOPPED);
             } else {
@@ -245,6 +286,11 @@ public class MovieService {
         }).orElseThrow(() -> new RuntimeException("Không tìm thấy phim với ID: " + id));
     }
 
+    /**
+     * Thống kê tổng số lượng phim phân theo các trạng thái trình chiếu (tổng số, đang chiếu, sắp chiếu, chiếu đặc biệt, tạm ẩn).
+     * 
+     * @return Map chứa các số liệu thống kê.
+     */
     @Transactional
     public Map<String, Long> getMovieStats() {
         autoUpdateMovieStatuses();
@@ -257,17 +303,19 @@ public class MovieService {
         return stats;
     }
 
+    /**
+     * Tự động cập nhật trạng thái các bộ phim dựa trên ngày khởi chiếu và tình trạng suất chiếu.
+     */
     @Transactional
     public void autoUpdateMovieStatuses() {
         LocalDate today = LocalDate.now();
-        // Cập nhật các phim từ Sắp chiếu sang Đang chiếu nếu ngày chiếu đã đến (chỉ áp dụng với phim active = true)
         movieRepository.autoUpdateUpcomingToNowShowing(
                 today,
                 Movie.MovieStatus.NOW_SHOWING,
                 Movie.MovieStatus.COMING_SOON
         );
-        // [SỬA - TrienLX - 2026-06-23]: Truyền thêm tham số MovieStatus.STOPPED để cập nhật trạng thái trong SQL an toàn
-        movieRepository.autoDeactivateExpiredMovies(today, today.minusDays(7), Movie.MovieStatus.STOPPED);
+        movieRepository.autoDeactivateExpiredMovies(today, Movie.MovieStatus.STOPPED);
         movieRepository.deactivateStoppedMovies(Movie.MovieStatus.STOPPED);
     }
 }
+

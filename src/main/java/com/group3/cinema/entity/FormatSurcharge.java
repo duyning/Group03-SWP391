@@ -1,7 +1,10 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: FormatSurcharge.java
- * Người tạo: TrienLX
+/**
+ * Entity cấu hình Phụ thu định dạng phim / phòng chiếu (`format_surcharges`).
+ * 
+ * Mã định dạng (`formatCode`): 2D (+0đ), 3D (+20.000đ), IMAX (+50.000đ), Gold (+30.000đ).
+ * Dùng để tính tổng tiền vé (`Ticket.formatSurcharge`).
+ * 
+ * Khởi tạo bởi: TrienLX
  */
 package com.group3.cinema.entity;
 
@@ -16,7 +19,7 @@ public class FormatSurcharge {
     private Long id;
 
     @Column(name = "format_code", nullable = false, unique = true, length = 20, columnDefinition = "NVARCHAR(20)")
-    private String formatCode;  // "2D" | "3D" | "IMAX" | "Gold"
+    private String formatCode;
 
     @Column(name = "surcharge_amount", nullable = false)
     private double surchargeAmount;
@@ -37,3 +40,4 @@ public class FormatSurcharge {
     public double getSurchargeAmount() { return surchargeAmount; }
     public void setSurchargeAmount(double surchargeAmount) { this.surchargeAmount = surchargeAmount; }
 }
+

@@ -1,10 +1,13 @@
-package com.group3.cinema.service.payment;
-
-/*
- * Added on 2026-06-25: VNPAY sandbox gateway integration kept for compatibility.
- * Updated on 2026-06-26: Disabled by configuration in the customer payment flow.
- * Created by: HuyPB - HE191335
+/**
+ * Service tích hợp Cổng thanh toán trực tuyến VNPAY Sandbox cho đơn đặt vé (`PaymentGatewayService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được điều phối qua `PaymentGatewayRouter` để sinh URL chuyển hướng thanh toán VNPAY (`createPaymentUrl`).
+ * - Phân tích chữ ký HMAC-SHA512 (`parseCallback`) gửi từ VNPAY để xác thực tính toàn vẹn của kết quả thanh toán.
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (25/06/2026)
  */
+package com.group3.cinema.service.payment;
 
 import com.group3.cinema.entity.Booking;
 import com.group3.cinema.entity.Payment;
@@ -39,16 +42,25 @@ public class VnPayGatewayService implements PaymentGatewayService {
     @Value("${payment.vnpay.return-url:}")
     private String returnUrl;
 
+    /**
+     * Trả về phương thức thanh toán VNPAY.
+     */
     @Override
     public Payment.Method method() {
         return Payment.Method.VNPAY;
     }
 
+    /**
+     * Kiểm tra cấu hình VNPAY đã sẵn sàng hay chưa.
+     */
     @Override
     public boolean isConfigured() {
         return enabled && !payUrl.isBlank() && !tmnCode.isBlank() && !hashSecret.isBlank() && !returnUrl.isBlank();
     }
 
+    /**
+     * Tạo đường dẫn URL chuyển hướng khách hàng sang cổng VNPAY kèm chữ ký bảo mật HMAC-SHA512.
+     */
     @Override
     public String createPaymentUrl(Payment payment, Booking booking, HttpServletRequest request) {
         Map<String, String> params = new LinkedHashMap<>();
@@ -71,6 +83,9 @@ public class VnPayGatewayService implements PaymentGatewayService {
         return payUrl + "?" + hashData + "&vnp_SecureHash=" + secureHash;
     }
 
+    /**
+     * Giải mã và kiểm tra chữ ký HashSecret của dữ liệu phản hồi trả về từ VNPAY.
+     */
     @Override
     public GatewayCallback parseCallback(Map<String, String> params) {
         Map<String, String> signedParams = new TreeMap<>(params);
@@ -86,3 +101,4 @@ public class VnPayGatewayService implements PaymentGatewayService {
                 params.get("vnp_TransactionNo"), params.getOrDefault("vnp_OrderInfo", ""));
     }
 }
+

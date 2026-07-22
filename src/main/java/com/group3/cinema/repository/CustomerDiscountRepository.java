@@ -1,9 +1,10 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: CustomerDiscountRepository.java
- * Người tạo: TrienLX
- * Ngày tạo: 2026-06-25
- * Chi tiết: Khai báo repository cho CustomerDiscount.
+/**
+ * Interface Repository thao tác dữ liệu cấu hình giảm giá theo loại khách hàng (`customer_discounts`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `PricingService` và `CustomerBookingService` để tính tỷ lệ chiết khấu cho vé xem phim.
+ * 
+ * Khởi tạo bởi: TrienLX (25/06/2026)
  */
 package com.group3.cinema.repository;
 
@@ -15,5 +16,10 @@ import java.util.Optional;
 
 @Repository
 public interface CustomerDiscountRepository extends JpaRepository<CustomerDiscount, Long> {
+
+    /**
+     * Tìm cấu hình giảm giá theo mã loại đối tượng khách hàng (STUDENT, CHILD, ELDERLY, ADULT).
+     */
     Optional<CustomerDiscount> findByCustomerType(String customerType);
 }
+

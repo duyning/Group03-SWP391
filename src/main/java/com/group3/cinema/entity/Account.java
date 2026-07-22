@@ -1,3 +1,12 @@
+/**
+ * Entity đại diện cho bảng tài khoản người dùng (`account`) trong CSDL.
+ * 
+ * Quản lý thông tin đăng nhập, hồ sơ cá nhân, cấp độ thành viên (MembershipLevel),
+ * điểm tích lũy (LoyaltyPoint), vai trò (Role: ADMIN, MANAGER, CUSTOMER) và ví voucher cá nhân (`savedVouchers`).
+ * 
+ * Khởi tạo bởi: DuongND_HE186619
+ * Cập nhật bởi: NinhDD - HE186113, TuanPM
+ */
 package com.group3.cinema.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -25,11 +34,6 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Entity đại diện cho bảng tài khoản (Account) trong hệ thống.
- * Created by: DuongND_HE186619
- * Updated by: NinhDD - HE186113, TuanPM
- */
 @Entity
 @Table(name = "account")
 public class Account {
@@ -140,6 +144,14 @@ public class Account {
         this.address = address;
     }
 
+    /**
+     * Phương thức kiểm tra độ tuổi hợp lệ của người dùng (từ 13 đến 100 tuổi).
+     * 
+     * Gọi `Period.between(dob, LocalDate.now()).getYears()` để tính số tuổi từ ngày sinh.
+     * Được gọi bởi `AccountService` hoặc `RegisterController` khi validate form đăng ký.
+     * 
+     * @return true nếu tuổi nằm trong khoảng 13 - 100, ngược lại trả về false.
+     */
     @JsonIgnore
     @Transient
     public boolean isValidAge() {
@@ -232,3 +244,4 @@ public class Account {
                 '}';
     }
 }
+

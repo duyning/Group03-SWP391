@@ -1,10 +1,15 @@
-package com.group3.cinema.entity;
-
-/*
- * Added on 2026-07-10: Stores customer ratings and comments for movie detail pages.
- * One account can keep one review per movie; admins can hide or restore reviews.
- * Created by: HuyPB - HE191335
+/**
+ * Entity lưu bình luận & đánh giá phim từ phía khách hàng (`movie_reviews`).
+ * 
+ * Quy tắc nghiệp vụ:
+ * - Đặt UniqueConstraint trên cặp `(movie_id, account_id)` -> Mỗi tài khoản chỉ được viết 1 đánh giá cho mỗi phim.
+ * - `ratingScore`: Điểm đánh giá số sao (từ 1 đến 5 hoặc 1 đến 10).
+ * - `bookingId`: Lưu ID đơn đặt vé đã thanh toán để làm bằng chứng người dùng đã trải nghiệm xem phim.
+ * - `moderationStatus`: Trạng thái duyệt của quản trị viên (PENDING - Chờ duyệt, APPROVED - Hiển thị công khai, REJECTED - Ẩn/Từ chối).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (10/07/2026)
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,9 +33,11 @@ import java.time.LocalDateTime;
 )
 public class MovieReview {
 
-    /*
-     * APPROVED means visible to customers; REJECTED is hidden by admin.
-     * PENDING is reserved for future moderation workflows.
+    /**
+     * Enum trạng thái kiểm duyệt đánh giá:
+     * - PENDING: Đang chờ duyệt.
+     * - APPROVED: Đã duyệt, hiển thị cho khách hàng xem.
+     * - REJECTED: Ẩn hoặc từ chối hiển thị bởi Admin.
      */
     public enum ModerationStatus {
         PENDING,
@@ -53,7 +60,7 @@ public class MovieReview {
     @Column(nullable = false)
     private int ratingScore;
 
-    /** Paid booking used as proof that the customer already watched the movie. */
+    /** Đơn hàng vé xem phim đã thanh toán chứng minh người dùng đã mua vé xem phim */
     private Long bookingId;
 
     @Column(columnDefinition = "NVARCHAR(1000)")
@@ -148,3 +155,4 @@ public class MovieReview {
         this.moderatedAt = moderatedAt;
     }
 }
+

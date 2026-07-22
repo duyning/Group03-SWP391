@@ -354,8 +354,49 @@
         <section class="panel" style="margin-bottom: 30px;">
             <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <span>Lịch sử đặt vé gần đây</span>
-                <span style="font-size:12px; font-weight:normal; color:#64748b;" th:text="${bookings.size()} + ' giao dịch'">0 giao dịch</span>
+                <span id="bookingCountBadge" style="font-size:12px; font-weight:normal; color:#64748b;" th:text="${bookings.size()} + ' giao dịch'">0 giao dịch</span>
             </div>
+
+            <!-- Card Bộ Lọc Tức Thời Bắt Mắt Cho Lịch Sử Đặt Vé -->
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.2rem; margin: 1.2rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #cbd5e1;">
+                    <div style="font-weight: 700; font-size: 0.9rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;"><i class="fa-solid fa-filter"></i></span>
+                        Bộ Lọc Tra Cứu Nhanh
+                    </div>
+                    <button type="button" onclick="resetBookingFilter()" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b';">
+                        <i class="fa-solid fa-rotate-left" style="margin-right: 4px;"></i> Xóa bộ lọc
+                    </button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; align-items: end;">
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; color: #334155;">
+                            <i class="fa-solid fa-magnifying-glass" style="color: #3b82f6;"></i> TÌM TÊN KHÁCH / PHIM
+                        </label>
+                        <input type="text" id="filterBookingSearch" class="form-control" placeholder="Nhập tên khách hàng hoặc tên phim..." oninput="filterBookingHistory()" style="font-size: 0.85rem; padding: 0.5rem 0.85rem; height: 40px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.15)'" onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'">
+                    </div>
+
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; color: #334155;">
+                            <i class="fa-solid fa-circle-check" style="color: #10b981;"></i> TRẠNG THÁI
+                        </label>
+                        <select id="filterBookingStatus" class="form-control" onchange="filterBookingHistory()" style="font-size: 0.85rem; padding: 0.5rem 0.85rem; height: 40px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.15)'" onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="Đã thanh toán">Đã thanh toán</option>
+                            <option value="Đã hủy">Đã hủy</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; color: #334155;">
+                            <i class="fa-solid fa-calendar-days" style="color: #f59e0b;"></i> THỜI GIAN ĐẶT
+                        </label>
+                        <input type="date" id="filterBookingDate" class="form-control" onchange="filterBookingHistory()" style="font-size: 0.85rem; padding: 0.5rem 0.85rem; height: 40px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.15)'" onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'">
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -368,7 +409,7 @@
                             <th>Trạng thái</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="bookingTableBody">
                         <tr th:each="b : ${bookings}">
                             <td th:text="${b.customerName}">Nguyễn Văn A</td>
                             <td style="font-weight:600;" th:text="${b.movieTitle}">Bầy xác sống</td>
@@ -381,10 +422,16 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(bookings)}">
-                            <td colspan="6" style="text-align:center; color:#64748b; padding: 30px;">Chưa có giao dịch đã thanh toán nào được ghi nhận.</td>
+                            <td colspan="6" style="text-align:center; color:#64748b; padding: 30px;">Chưa có giao dịch nào được ghi nhận.</td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Thanh phân trang cho Lịch sử đặt vé -->
+            <div id="bookingPaginationArea" style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-top: 1px solid var(--border-color, #e2e8f0); background: #fafafa;">
+                <div id="bookingPaginationInfo" style="font-size: 0.82rem; color: #64748b; font-weight: 500;">Hiển thị 0 giao dịch</div>
+                <div id="bookingPaginationControls" style="display: flex; gap: 0.4rem;"></div>
             </div>
         </section>
 
@@ -404,11 +451,129 @@
                 <a class="quick-link" th:if="${user != null && user.role.name() == 'ADMIN'}" th:href="@{/admin/accounts}"><i class="fas fa-users-cog"></i> Quản lý tài khoản</a>
             </div>
         </section>
+
     <script th:inline="javascript">
         /*<![CDATA[*/
         const topMoviesData = /*[[${topMovies}]]*/ [];
         const paymentStatsData = /*[[${paymentStats}]]*/ [];
+        const rawBookings = /*[[${bookings}]]*/ [];
         /*]]>*/
+        
+        let filteredBookings = [...rawBookings];
+        let currentBookingPage = 1;
+        const BOOKING_PAGE_SIZE = 5;
+
+        function filterBookingHistory() {
+            const searchVal = (document.getElementById('filterBookingSearch')?.value || '').trim().toLowerCase();
+            const statusVal = (document.getElementById('filterBookingStatus')?.value || '').trim();
+            const dateVal = (document.getElementById('filterBookingDate')?.value || '').trim();
+
+            let formattedFilterDate = '';
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                if (parts.length === 3) {
+                    formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+            }
+
+            filteredBookings = rawBookings.filter(b => {
+                const custName = (b.customerName || '').toLowerCase();
+                const movieTitle = (b.movieTitle || '').toLowerCase();
+                const matchSearch = !searchVal || custName.includes(searchVal) || movieTitle.includes(searchVal);
+
+                const status = (b.status || '');
+                const matchStatus = !statusVal || status === statusVal;
+
+                const bookingTime = (b.bookingTime || '');
+                const matchTime = !formattedFilterDate || bookingTime.startsWith(formattedFilterDate) || bookingTime.includes(formattedFilterDate);
+
+                return matchSearch && matchStatus && matchTime;
+            });
+
+            currentBookingPage = 1;
+            renderBookingTablePage();
+        }
+
+        function resetBookingFilter() {
+            if (document.getElementById('filterBookingSearch')) document.getElementById('filterBookingSearch').value = '';
+            if (document.getElementById('filterBookingStatus')) document.getElementById('filterBookingStatus').value = '';
+            if (document.getElementById('filterBookingDate')) document.getElementById('filterBookingDate').value = '';
+            filterBookingHistory();
+        }
+
+        function renderBookingTablePage() {
+            const tbody = document.getElementById('bookingTableBody');
+            const badge = document.getElementById('bookingCountBadge');
+            const info = document.getElementById('bookingPaginationInfo');
+            const controls = document.getElementById('bookingPaginationControls');
+
+            if (badge) badge.textContent = filteredBookings.length + ' giao dịch';
+            if (!tbody) return;
+
+            if (filteredBookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding: 30px;">Không tìm thấy giao dịch nào phù hợp.</td></tr>`;
+                if (info) info.textContent = 'Hiển thị 0 giao dịch';
+                if (controls) controls.innerHTML = '';
+                return;
+            }
+
+            const totalPages = Math.ceil(filteredBookings.length / BOOKING_PAGE_SIZE);
+            if (currentBookingPage > totalPages) currentBookingPage = totalPages;
+
+            const start = (currentBookingPage - 1) * BOOKING_PAGE_SIZE;
+            const end = Math.min(start + BOOKING_PAGE_SIZE, filteredBookings.length);
+            const pageItems = filteredBookings.slice(start, end);
+
+            if (info) info.textContent = `Hiển thị ${start + 1} - ${end} trên ${filteredBookings.length} giao dịch`;
+
+            let html = '';
+            pageItems.forEach(b => {
+                const priceStr = b.totalPrice != null ? Number(b.totalPrice).toLocaleString('vi-VN') + ' đ' : '0 đ';
+                let badgeClass = 'badge-secondary';
+                if (b.status === 'Đã thanh toán') badgeClass = 'badge-success';
+                else if (b.status === 'Chờ thanh toán') badgeClass = 'badge-warning';
+                else if (b.status === 'Đã hủy') badgeClass = 'badge-danger';
+
+                html += `
+                    <tr>
+                        <td>${escHtml(b.customerName || 'Khách vãng lai')}</td>
+                        <td style="font-weight:600;">${escHtml(b.movieTitle || 'N/A')}</td>
+                        <td>${b.ticketQuantity || 0}</td>
+                        <td style="font-weight:700;">${priceStr}</td>
+                        <td>${escHtml(b.bookingTime || '')}</td>
+                        <td><span class="badge ${badgeClass}">${escHtml(b.status || '')}</span></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+
+            // Render pagination controls
+            let ctrlHtml = '';
+            ctrlHtml += `<button class="btn btn-sm" ${currentBookingPage === 1 ? 'disabled' : ''} onclick="changeBookingPage(${currentBookingPage - 1})" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">&laquo; Trước</button>`;
+            
+            for (let p = 1; p <= totalPages; p++) {
+                const activeStyle = p === currentBookingPage ? 'background:var(--primary-color, #3b82f6); color:#fff; font-weight:bold;' : 'background:#ffffff; color:#334155;';
+                ctrlHtml += `<button class="btn btn-sm" onclick="changeBookingPage(${p})" style="padding:0.3rem 0.7rem; font-size:0.8rem; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer; ${activeStyle}">${p}</button>`;
+            }
+            
+            ctrlHtml += `<button class="btn btn-sm" ${currentBookingPage === totalPages ? 'disabled' : ''} onclick="changeBookingPage(${currentBookingPage + 1})" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">Sau &raquo;</button>`;
+
+            if (controls) controls.innerHTML = ctrlHtml;
+        }
+
+        function changeBookingPage(page) {
+            currentBookingPage = page;
+            renderBookingTablePage();
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBookingTablePage();
+        });
         
         // 1. Render Top Movies Chart
         const movieLabels = topMoviesData.map(m => m.title);

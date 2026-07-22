@@ -1,10 +1,15 @@
-package com.group3.cinema.service;
-
-/*
- * Added on 2026-07-10: Customer movie recommendation scoring for list, search, and detail pages.
- * The score combines watched genres, global booking popularity, and movie availability status.
- * Created by: HuyPB - HE191335
+/**
+ * Service tính toán và gợi ý Phim chiếu rạp cá nhân hóa dành cho Khách hàng (`MovieRecommendationService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `CustomerMovieController` và `PublicController` khi hiển thị danh sách phim xem nhiều, phim gợi ý trên trang chủ hoặc trang chi tiết phim.
+ * - Tương tác với:
+ *   + `BookingRepository`: Trích xuất danh sách phim khách đã mua vé (`findPaidMovieIdsByAccount`), thể loại đã xem (`findPaidMovieGenresByAccount`) và thống kê lượt đặt vé toàn hệ thống (`countPaidBookingsByMovie`).
+ *   + `MovieRepository`: Tra cứu phim đang hoạt động (`findByActiveTrue`).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (10/07/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.dto.MovieRecommendation;
 import com.group3.cinema.entity.Booking;
@@ -35,8 +40,15 @@ public class MovieRecommendationService {
         this.bookingRepository = bookingRepository;
     }
 
+    /**
+     * Tạo danh sách phim gợi ý phù hợp với sở thích khách hàng dựa trên lịch sử đặt vé và độ hot thị hiếu.
+     * 
+     * @param accountId ID tài khoản khách hàng (null nếu là khách vãng xuất chưa đăng nhập).
+     * @param currentMovieId ID phim đang xem chi tiết (loại trừ khỏi danh sách gợi ý).
+     * @param limit Số lượng phim gợi ý tối đa cần trả về.
+     * @return Danh sách MovieRecommendation đã xếp hạng điểm cao xuống thấp.
+     */
     public List<MovieRecommendation> recommendMovies(Integer accountId, Integer currentMovieId, int limit) {
-        // Personal signals come from paid bookings; guests fall back to popularity/status signals.
         Set<Integer> watchedMovieIds = accountId == null
                 ? Set.of()
                 : new HashSet<>(bookingRepository.findPaidMovieIdsByAccount(accountId, Booking.Status.PAID));
@@ -47,7 +59,6 @@ public class MovieRecommendationService {
 
         List<MovieRecommendation> recommendations = new ArrayList<>();
         for (Movie movie : movieRepository.findByActiveTrue()) {
-            // Do not recommend the current detail movie or movies the user has already watched.
             if (currentMovieId != null && movie.getId() == currentMovieId) {
                 continue;
             }
@@ -76,8 +87,10 @@ public class MovieRecommendationService {
                 .toList();
     }
 
+    /**
+     * Tính toán tổng điểm gợi ý (thang điểm 0-100) theo trùng thể loại thích (+50đ), lượt mua vé toàn rạp (tối đa +40đ), trạng thái phim đang chiếu (+10đ).
+     */
     private int calculateScore(Movie movie, boolean genreMatch, long popularCount) {
-        // Keep the score bounded to 0-100 for simple display in Thymeleaf templates.
         int score = 20;
         if (genreMatch) {
             score += 50;
@@ -92,6 +105,7 @@ public class MovieRecommendationService {
         return Math.min(score, 100);
     }
 
+    /** Tạo văn bản giải thích lý do gợi ý phim tới khách hàng. */
     private String buildReason(boolean genreMatch, long popularCount) {
         if (genreMatch && popularCount > 0) {
             return "Phù hợp thể loại bạn đã xem và đang được nhiều khách đặt vé";
@@ -143,3 +157,4 @@ public class MovieRecommendationService {
                 .toLowerCase(Locale.ROOT);
     }
 }
+

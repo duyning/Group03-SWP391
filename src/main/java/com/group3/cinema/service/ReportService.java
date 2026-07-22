@@ -1,3 +1,14 @@
+/**
+ * Service tổng hợp dữ liệu Báo cáo Thống kê Doanh thu và Phân tích hiệu quả kinh doanh của rạp chiếu phim (`ReportService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `ReportController` (Dashboard/Thống kê Admin).
+ * - Tương tác với:
+ *   + `BookingRepository`: Lấy đơn hàng đã thanh toán thành công trong mốc thời gian (`findByStatusAndPaidWindow`).
+ *   + `BookingTicketRepository`: Thống kê số vé bán ra và doanh thu theo loại ghế (`findByBookingId`).
+ *   + `BookingComboRepository`: Thống kê số lượng và tổng tiền bán gói combo bắp nước.
+ *   + `ShowtimeRepository`: Tra cứu phòng chiếu và suất chiếu.
+ */
 package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Booking;
@@ -39,6 +50,13 @@ public class ReportService {
         this.showtimeRepository = showtimeRepository;
     }
 
+    /**
+     * Tổng hợp và phân tích biểu đồ doanh thu theo ngày, số lượng bán vé, doanh thu combo, loại ghế và phòng chiếu.
+     * 
+     * @param startDate Ngày bắt đầu thống kê.
+     * @param endDate Ngày kết thúc thống kê.
+     * @return Map dữ liệu báo cáo gồm `totalRevenue`, `paidBookingCount`, `totalTickets`, `dailyRevenue`, `comboStats`, `seatTypeStats`, `roomStats`.
+     */
     public Map<String, Object> getRevenueAnalysis(LocalDate startDate, LocalDate endDate) {
         LocalDateTime start = (startDate != null ? startDate : LocalDate.now().minusDays(30)).atStartOfDay();
         LocalDateTime end = (endDate != null ? endDate : LocalDate.now()).atTime(LocalTime.MAX);
@@ -132,3 +150,4 @@ public class ReportService {
         }
     }
 }
+

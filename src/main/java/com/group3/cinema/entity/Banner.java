@@ -1,9 +1,14 @@
-package com.group3.cinema.entity;
-
-/*
- * Created on 2026-06-09: Banner entity for homepage and customer news hero management.
- * Created by: NinhDD - HE186113
+/**
+ * Entity đại diện cho Quảng cáo Banner (`banners`) hiển thị trên giao diện người dùng.
+ * 
+ * Chức năng:
+ * - Quản lý tiêu đề banner (`title`), mô tả phụ (`subtitle`), đường dẫn hình ảnh (`imageUrl`), đường dẫn liên kết (`linkUrl`).
+ * - Phân loại trang hiển thị (`BannerPage`: HOME - Trang chủ, NEWS - Trang tin tức).
+ * - Quản lý thứ tự ưu tiên hiển thị (`displayOrder`) và cờ trạng thái (`active`).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (09/06/2026)
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -142,6 +147,9 @@ public class Banner {
         return updatedAt;
     }
 
+    /**
+     * Enum định nghĩa trang vị trí hiển thị banner.
+     */
     public enum BannerPage {
         HOME("Trang chủ"),
         NEWS("Trang tin tức");
@@ -157,3 +165,4 @@ public class Banner {
         }
     }
 }
+

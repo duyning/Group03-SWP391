@@ -1,6 +1,13 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Interface Repository quản lý danh mục Phòng chiếu phim trong rạp (`rooms`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `RoomService`, `ShowtimeService`, `CatalogInitializer`.
+ * - Hỗ trợ các chức năng: Lọc danh sách phòng theo điều kiện (`filterRooms`), kiểm tra trùng tên phòng trong rạp (`existsByRoomNameIgnoreCaseAndCinemaIdAndIdNot`),
+ *   tìm kiếm phòng theo tên (`findFirstByRoomNameIgnoreCaseAndCinemaId`).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
+ * Cập nhật bởi: TrienLX (25/06/2026)
  */
 package com.group3.cinema.repository;
 
@@ -16,27 +23,30 @@ import java.util.Optional;
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
-    /** TÃ¬m táº¥t cáº£ phÃ²ng theo cinemaId */
+    /** Tìm tất cả phòng theo ID rạp chiếu (`cinemaId`). */
     List<Room> findByCinemaId(Long cinemaId);
 
+    /** Tìm bản ghi phòng chiếu đầu tiên khớp với tên phòng (không phân biệt hoa thường). */
     Optional<Room> findFirstByRoomNameIgnoreCase(String roomName);
 
-    /** Kiá»ƒm tra tÃªn phÃ²ng Ä‘Ã£ tá»“n táº¡i trong ráº¡p chÆ°a */
+    /** Kiểm tra tên phòng đã tồn tại trong rạp chiếu hay chưa. */
     boolean existsByRoomNameAndCinemaId(String roomName, Long cinemaId);
 
+    /** Kiểm tra tên phòng đã tồn tại trong rạp chiếu hay chưa (không phân biệt chữ hoa/thường). */
     boolean existsByRoomNameIgnoreCaseAndCinemaId(String roomName, Long cinemaId);
 
+    /** Kiểm tra tên phòng có trùng với phòng khác trong cùng rạp (bỏ qua ID hiện tại `id`) khi cập nhật. */
     boolean existsByRoomNameIgnoreCaseAndCinemaIdAndIdNot(String roomName, Long cinemaId, Long id);
 
-    // [THÊM - TrienLX - 2026-06-25] Tìm kiếm phòng theo tên không phân biệt hoa thường để lấy RoomId
-    java.util.Optional<Room> findFirstByRoomNameIgnoreCaseAndCinemaId(String roomName, Long cinemaId);
+    /** Tìm phòng chiếu đầu tiên theo tên phòng và ID rạp chiếu (phục vụ lấy RoomId khi map dữ liệu). */
+    Optional<Room> findFirstByRoomNameIgnoreCaseAndCinemaId(String roomName, Long cinemaId);
 
-    /** Äáº¿m sá»‘ phÃ²ng Ä‘ang hoáº¡t Ä‘á»™ng */
+    /** Đếm số phòng chiếu đang hoạt động theo trạng thái trong rạp. */
     long countByCinemaIdAndStatus(Long cinemaId, String status);
 
     /**
-     * Lá»c phÃ²ng theo nhiá»u tiÃªu chÃ­ (JPQL).
-     * CÃ¡c tham sá»‘ lÃ  optional â€“ náº¿u null thÃ¬ bá» qua Ä‘iá»u kiá»‡n Ä‘Ã³.
+     * Lọc danh sách phòng chiếu đa tiêu chí dành cho quản lý phòng chiếu phía Admin.
+     * Các tham số là tùy chọn - nếu null sẽ tự động bỏ qua điều kiện tương ứng.
      */
     @Query("""
         SELECT r FROM Room r

@@ -1,10 +1,18 @@
+/**
+ * Service quản lý Mã giảm giá (Voucher), Thêm mã vào ví cá nhân và Kiểm duyệt luật áp dụng (`VoucherService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `VoucherController` (Admin quản lý voucher), `CustomerBookingService`, `PublicController` (Khách lưu mã vào ví).
+ * - Tương tác với:
+ *   + `VoucherRepository`: Tra cứu danh sách voucher khả dụng (`findByIsDeletedFalseAndEndDateAfterOrderByIdDesc`), tìm kiếm lọc (`searchVouchersForAdmin`), lưu/cập nhật voucher (`save`).
+ *   + `AccountRepository`: Thêm mã giảm giá vào danh sách `savedVouchers` của tài khoản khách hàng.
+ */
 package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Voucher;
 import com.group3.cinema.repository.AccountRepository;
 import com.group3.cinema.repository.VoucherRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,23 +34,20 @@ public class VoucherService {
         this.accountRepository = accountRepository;
     }
 
-    // ==========================================
-    // 1. DÀNH CHO ADMIN (Quản lý)
-    // ==========================================
-
+    /** Lấy danh sách các voucher active còn hiệu lực thời gian. */
     @Transactional(readOnly = true)
     public List<Voucher> getAllVouchers() {
-        // Tự động ẩn voucher xóa mềm, tự động ẩn voucher quá hạn và xếp mới nhất lên
-        // đầu
         return voucherRepository.findByIsDeletedFalseAndEndDateAfterOrderByIdDesc(java.time.LocalDateTime.now());
     }
 
+    /** Lấy chi tiết thông tin voucher theo ID. */
     @Transactional(readOnly = true)
     public Voucher getVoucherById(Long id) {
         return voucherRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mã Voucher có ID: " + id));
     }
 
+    /** Tạo mới một mã Voucher và kiểm tra mã code không bị trùng lặp. */
     @Transactional
     public void saveVoucher(Voucher voucher) {
         if (voucher.getCode() != null)
@@ -54,6 +59,7 @@ public class VoucherService {
         voucherRepository.save(voucher);
     }
 
+    /** Cập nhật nội dung mã Voucher hiện tại. */
     @Transactional
     public void updateVoucher(Long id, Voucher updatedVoucher) {
         Voucher existingVoucher = voucherRepository.findById(id)
@@ -66,14 +72,13 @@ public class VoucherService {
             throw new IllegalArgumentException("Mã Voucher đã được sử dụng cho chương trình khác!");
         }
 
-        // 1. GÁN DỮ LIỆU MỚI VÀO EXISTING VOUCHER TRƯỚC
         existingVoucher.setCode(updatedVoucher.getCode());
         existingVoucher.setTitle(updatedVoucher.getTitle());
         existingVoucher.setDiscountType(updatedVoucher.getDiscountType());
         existingVoucher.setDiscountValue(updatedVoucher.getDiscountValue());
         existingVoucher.setMaxDiscountAmount(updatedVoucher.getMaxDiscountAmount());
         existingVoucher.setStartDate(updatedVoucher.getStartDate());
-        existingVoucher.setEndDate(updatedVoucher.getEndDate()); // Gán ngày đóng mới
+        existingVoucher.setEndDate(updatedVoucher.getEndDate());
         existingVoucher.setMinOrderValue(updatedVoucher.getMinOrderValue());
         existingVoucher.setTotalQuantity(updatedVoucher.getTotalQuantity());
         existingVoucher.setServiceScope(updatedVoucher.getServiceScope());
@@ -82,21 +87,14 @@ public class VoucherService {
         existingVoucher.setIsHolidayApplicable(updatedVoucher.getIsHolidayApplicable());
         existingVoucher.setLimitPerUser(updatedVoucher.getLimitPerUser());
 
-        // 2. BÂY GIỜ MỚI CHẠY VALIDATE TRÊN ĐỐI TƯỢNG SẮP LƯU NÀY
         validateVoucherLogic(existingVoucher);
-
-        // 3. LƯU XUỐNG DB
         voucherRepository.save(existingVoucher);
     }
 
-    // ==========================================
-    // 2. TÌM KIẾM & XỬ LÝ CHO KHÁCH HÀNG
-    // ==========================================
+    /** Tìm kiếm và lọc danh sách voucher theo từ khóa, loại chiết khấu, phạm vi dịch vụ áp dụng. */
     @Transactional(readOnly = true)
     public List<Voucher> searchVouchers(String keyword, String discountTypeStr, String serviceScopeStr) {
 
-        // 1. Chuyển đổi kiểu dữ liệu String từ ô Select sang đúng Enum Object, nếu để
-        // trống thì gán null
         Voucher.DiscountType discountType = null;
         if (discountTypeStr != null && !discountTypeStr.trim().isEmpty()) {
             discountType = Voucher.DiscountType.valueOf(discountTypeStr.trim());
@@ -107,16 +105,12 @@ public class VoucherService {
             serviceScope = Voucher.ServiceScope.valueOf(serviceScopeStr.trim());
         }
 
-        // Làm sạch từ khóa tìm kiếm
         String cleanKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
 
-        // 2. Gọi hàm Repository đã được gắn cứng điều kiện loại bỏ IsDeleted = true
         return voucherRepository.searchVouchersForAdmin(cleanKeyword, discountType, serviceScope);
     }
 
-    /**
-     * Logic Lưu Voucher (Collect)
-     */
+    /** Khách hàng lưu (Lưu về ví) một mã Voucher vào bộ sưu tập cá nhân. */
     @Transactional
     public void collectVoucher(int accountId, Long voucherId) {
         Account account = accountRepository.findById(accountId)
@@ -128,7 +122,6 @@ public class VoucherService {
             throw new IllegalArgumentException("Voucher này đã hết hạn!");
         }
 
-        // Thêm vào Set savedVouchers (Set tự động xử lý trùng lặp)
         if (account.getSavedVouchers().add(voucher)) {
             accountRepository.save(account);
         } else {
@@ -136,23 +129,16 @@ public class VoucherService {
         }
     }
 
-    // ==========================================
-    // 3. HÀM BỔ TRỢ (Validation)
-    // ==========================================
-
+    /** Kiểm tra tính hợp lệ quy tắc logic cấu hình của voucher. */
     private void validateVoucherLogic(Voucher voucher) {
-        // 1. Kiểm tra ngày bắt đầu và ngày kết thúc
         if (voucher.getStartDate().isAfter(voucher.getEndDate())) {
             throw new IllegalArgumentException("Ngày bắt đầu không được sau ngày kết thúc!");
         }
 
-        // 2. THÊM LẠI LOGIC CŨ: Ngày đóng (endDate) không được bé hơn thời gian hiện
-        // tại (ngày hôm nay)
         if (voucher.getEndDate().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Ngày đóng chương trình Voucher không được là một ngày trong quá khứ!");
         }
 
-        // 3. Kiểm tra mức giảm giá phần trăm
         if ("PERCENTAGE".equalsIgnoreCase(String.valueOf(voucher.getDiscountType()))) {
             if (voucher.getDiscountValue().compareTo(new BigDecimal("100")) > 0) {
                 throw new IllegalArgumentException("Giảm giá phần trăm không được quá 100%!");
@@ -164,17 +150,13 @@ public class VoucherService {
         }
     }
 
-    // Trong file com.group3.cinema.service.VoucherService.java (hoặc
-    // VoucherServiceImpl.java)
+    /** Thực hiện xóa mềm một mã Voucher (`isDeleted = true`). */
     @Transactional
     public void deleteVoucher(Long id) {
         Voucher voucher = voucherRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mã voucher này!"));
 
-        // Thực hiện xóa mềm bằng cách đổi trạng thái
-        // Đổi từ setDeleted sang setIsDeleted
         voucher.setIsDeleted(true);
         voucherRepository.save(voucher);
     }
-
-}
+}

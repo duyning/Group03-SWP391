@@ -1,9 +1,14 @@
-package com.group3.cinema.service.payment;
-
-/*
- * Added on 2026-06-26: payOS/VietQR payment gateway integration for customer bookings.
- * Created by: HuyPB - HE191335
+/**
+ * Service tích hợp Cổng thanh toán quét mã QR trực tuyến PayOS / VietQR cho đơn đặt vé xem phim (`PaymentGatewayService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được điều phối bởi `PaymentGatewayRouter` và `CustomerBookingService`.
+ * - Tự động gọi API payOS để tạo liên kết thanh toán (`createPaymentUrl`) kèm chữ ký SHA-256 bảo mật.
+ * - Kiểm tra chữ ký Callback (`parseCallback`, `verifySignature`) gửi từ payOS để xác nhận trạng thái thanh toán thành công.
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (26/06/2026)
  */
+package com.group3.cinema.service.payment;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -53,17 +58,31 @@ public class PayOsGatewayService implements PaymentGatewayService {
     @Value("${payment.payos.cancel-url:}")
     private String cancelUrl;
 
+    /**
+     * Xác định phương thức thanh toán là PAYOS.
+     */
     @Override
     public Payment.Method method() {
         return Payment.Method.PAYOS;
     }
 
+    /**
+     * Kiểm tra trạng thái kích hoạt và cấu hình đầy đủ của payOS trong `application.properties`.
+     */
     @Override
     public boolean isConfigured() {
         return enabled && !endpoint.isBlank() && !clientId.isBlank() && !apiKey.isBlank()
                 && !checksumKey.isBlank() && !returnUrl.isBlank() && !cancelUrl.isBlank();
     }
 
+    /**
+     * Tạo liên kết trang thanh toán VietQR payOS cho đơn đặt vé xem phim.
+     * 
+     * @param payment Giao dịch thanh toán.
+     * @param booking Đơn đặt vé.
+     * @param request HttpServletRequest.
+     * @return Đường dẫn checkoutUrl từ payOS.
+     */
     @Override
     public String createPaymentUrl(Payment payment, Booking booking, HttpServletRequest request) {
         String amount = payment.getAmount().setScale(0, RoundingMode.DOWN).toPlainString();
@@ -104,6 +123,9 @@ public class PayOsGatewayService implements PaymentGatewayService {
         }
     }
 
+    /**
+     * Giải mã tham số callback và kiểm tra tính hợp lệ của giao dịch payOS.
+     */
     @Override
     public GatewayCallback parseCallback(Map<String, String> params) {
         String orderCode = params.get("orderCode");
@@ -119,6 +141,9 @@ public class PayOsGatewayService implements PaymentGatewayService {
         return new GatewayCallback(valid, orderCode, success, responseCode, transactionId, message);
     }
 
+    /**
+     * Kiểm tra đối chiếu chữ ký bảo mật SHA-256 phản hồi từ payOS.
+     */
     private boolean verifySignature(Map<String, String> params) {
         String receivedSignature = params.get("signature");
         Map<String, String> data = new TreeMap<>(params);
@@ -136,3 +161,4 @@ public class PayOsGatewayService implements PaymentGatewayService {
         return receivedSignature != null && receivedSignature.equalsIgnoreCase(expectedSignature);
     }
 }
+

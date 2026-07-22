@@ -1,10 +1,15 @@
-package com.group3.cinema.service;
-
-/*
- * Created on 2026-06-25: Business validation and workflow for customer contacts.
- * Updated on 2026-06-25: Added email reply workflow and AI-style reply draft generation.
- * Created by: NinhDD - HE186113
+/**
+ * Service xử lý tiếp nhận ý kiến, yêu cầu hỗ trợ từ Khách hàng và gửi Email phản hồi tự động/thủ công (`CustomerContactService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `CustomerContactController` (Customer/Public) và `AdminCustomerContactController` (Quản trị).
+ * - Tương tác với:
+ *   + `CustomerContactRepository`: Lưu phiếu liên hệ (`save`), tìm kiếm theo trạng thái (`findAllByOrderByCreatedAtDesc`).
+ *   + `JavaMailSender`: Gửi email xác nhận nhận thư và gửi email phản hồi trả lời yêu cầu hỗ trợ của khách hàng (`sendEmail`).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (25/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.CustomerContact;
 import com.group3.cinema.repository.CustomerContactRepository;
@@ -41,6 +46,12 @@ public class CustomerContactService {
         this.mailSender = mailSender;
     }
 
+    /**
+     * Tiếp nhận phiếu yêu cầu hỗ trợ mới từ khách hàng, lưu CSDL và gửi email tự động xác nhận đã nhận thông tin.
+     * 
+     * @param contact Thông tin phiếu liên hệ.
+     * @return Bản ghi CustomerContact đã lưu.
+     */
     public CustomerContact createContact(CustomerContact contact) {
         CustomerContact normalized = normalizeAndValidate(contact);
         normalized.setStatus(CustomerContact.ContactStatus.IN_PROGRESS);
@@ -49,6 +60,9 @@ public class CustomerContactService {
         return savedContact;
     }
 
+    /**
+     * Lấy danh sách phiếu liên hệ lọc theo trạng thái (`IN_PROGRESS`, `RESOLVED` hoặc tất cả).
+     */
     public List<CustomerContact> getContacts(CustomerContact.ContactStatus status) {
         List<CustomerContact> contacts = customerContactRepository.findAllByOrderByCreatedAtDesc();
         if (status == null) {
@@ -64,6 +78,9 @@ public class CustomerContactService {
                 .toList();
     }
 
+    /**
+     * Cập nhật trạng thái xử lý của phiếu liên hệ.
+     */
     public CustomerContact updateStatus(Long id, CustomerContact.ContactStatus status) {
         CustomerContact contact = getContact(id);
         if (status != null
@@ -75,12 +92,18 @@ public class CustomerContactService {
         return customerContactRepository.save(contact);
     }
 
+    /**
+     * Tự động tạo bản thảo trả lời bằng trí tuệ AI và gửi trực tiếp qua Email cho khách hàng.
+     */
     public CustomerContact sendAiReply(Long id) {
         CustomerContact contact = getContact(id);
         ReplyDraft draft = generateReplyDraft(contact);
         return sendReply(id, draft.getSubject(), draft.getBody());
     }
 
+    /**
+     * Gửi thư phản hồi tới email của khách hàng và cập nhật phiếu liên hệ sang trạng thái `RESOLVED`.
+     */
     public CustomerContact sendReply(Long id, String subject, String replyMessage) {
         CustomerContact contact = getContact(id);
         String normalizedSubject = trim(subject);
@@ -110,6 +133,9 @@ public class CustomerContactService {
         return customerContactRepository.save(contact);
     }
 
+    /**
+     * Tự động phân tích từ khóa yêu cầu để khởi tạo bản thảo thư trả lời thông minh (`ReplyDraft`).
+     */
     public ReplyDraft generateReplyDraft(CustomerContact contact) {
         String customerMessage = trim(contact.getMessage());
         String content = customerMessage.toLowerCase(Locale.ROOT);
@@ -149,10 +175,12 @@ public class CustomerContactService {
         return new ReplyDraft(buildReplySubject(topic), body);
     }
 
+    /** Xóa một bản ghi liên hệ. */
     public void deleteContact(Long id) {
         customerContactRepository.delete(getContact(id));
     }
 
+    /** Lấy chi tiết liên hệ theo ID. */
     public CustomerContact getContact(Long id) {
         if (id == null || id < 1) {
             throw new IllegalArgumentException("Mã liên hệ khách hàng không hợp lệ.");
@@ -161,6 +189,7 @@ public class CustomerContactService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy liên hệ khách hàng."));
     }
 
+    /** Đếm tổng số phiếu liên hệ theo trạng thái. */
     public long countByStatus(CustomerContact.ContactStatus status) {
         if (status == CustomerContact.ContactStatus.IN_PROGRESS || status == CustomerContact.ContactStatus.NEW) {
             return customerContactRepository.countByStatus(CustomerContact.ContactStatus.IN_PROGRESS)
@@ -464,3 +493,4 @@ public class CustomerContactService {
         }
     }
 }
+

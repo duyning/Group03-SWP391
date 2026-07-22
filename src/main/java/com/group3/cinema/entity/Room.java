@@ -1,14 +1,20 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Entity đại diện cho Phòng chiếu (`rooms`) trong hệ thống rạp xem phim.
+ * 
+ * Chức năng:
+ * - Lưu tên phòng (`roomName`: Phòng 01, IMAX Cinema 01).
+ * - Loại phòng/Định dạng hỗ trợ (`roomType`: 2D, 3D, IMAX).
+ * - Công nghệ âm thanh (`audioTech`: Dolby 7.1, Dolby Atmos, DTS:X).
+ * - Kích thước lưới sơ đồ ghế (`rows`, `cols`) và tổng số ghế (`totalSeats`).
+ * - Trạng thái hoạt động phòng ("Hoạt động", "Bảo trì", "Tạm ngưng").
+ * 
+ * Ngày cập nhật: 04/06/2026
+ * Khởi tạo bởi: NinhDD - HE186113
  */
 package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
 
-/**
- * Entity Ä‘áº¡i diá»‡n cho má»™t PhÃ²ng chiáº¿u (Room) trong ráº¡p chiáº¿u phim.
- */
 @Entity
 @Table(name = "rooms")
 public class Room {
@@ -17,7 +23,7 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** TÃªn phÃ²ng chiáº¿u, vÃ­ dá»¥: "PhÃ²ng 01", "Cinema 01" */
+    /** Tên phòng chiếu, ví dụ: "Phòng 01", "Cinema 01" */
     @Column(name = "room_name", nullable = false, columnDefinition = "NVARCHAR(100)")
     private String roomName;
 
@@ -25,19 +31,19 @@ public class Room {
     @Column(name = "room_type", columnDefinition = "NVARCHAR(255)")
     private String roomType = "2D";
 
-    /** CÃ´ng nghá»‡ Ã¢m thanh: "Dolby 7.1", "Dolby Atmos", "DTS:X" */
+    /** Công nghệ âm thanh: "Dolby 7.1", "Dolby Atmos", "DTS:X" */
     @Column(name = "audio_tech", columnDefinition = "NVARCHAR(50)")
     private String audioTech = "Dolby 7.1";
 
-    /** Sá»‘ hÃ ng gháº¿ (A, B, C...) */
+    /** Số hàng ghế (A, B, C...) */
     @Column(name = "rows", nullable = false)
     private int rows = 8;
 
-    /** Sá»‘ gháº¿ má»—i hÃ ng */
+    /** Số ghế mỗi hàng */
     @Column(name = "cols", nullable = false)
     private int cols = 15;
 
-    /** Tá»•ng sá»©c chá»©a, Ä‘Æ°á»£c cáº­p nháº­t sau khi lÆ°u sÆ¡ Ä‘á»“ gháº¿ */
+    /** Tổng sức chứa, được cập nhật sau khi lưu sơ đồ ghế */
     @Column(name = "total_seats")
     private int totalSeats = 0;
 
@@ -45,7 +51,7 @@ public class Room {
     @Column(name = "status", columnDefinition = "NVARCHAR(20)")
     private String status = "Hoạt động";
 
-    /** ID ráº¡p chiáº¿u phim (foreign key, dÃ¹ng Ä‘Æ¡n giáº£n lÃ  Long) */
+    /** ID rạp chiếu phim (foreign key) */
     @Column(name = "cinema_id")
     private Long cinemaId = 1L;
 
@@ -69,6 +75,9 @@ public class Room {
         return new Builder();
     }
 
+    /**
+     * Lớp Builder thiết kế mẫu Pattern để xây dựng đối tượng Room một cách linh hoạt.
+     */
     public static class Builder {
         private final Room room = new Room();
 
@@ -194,3 +203,4 @@ public class Room {
         this.cinemaId = cinemaId;
     }
 }
+

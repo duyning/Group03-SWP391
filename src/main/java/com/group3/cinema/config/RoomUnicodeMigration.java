@@ -1,14 +1,15 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
- * Updated on 2026-06-23 by: TrienLX
- * Chi tiết thay đổi:
- * - [SỬA - TrienLX - 2026-06-23] Thêm bước fixMovieStatusConstraint() để xóa constraint cũ
- *   CK__movie__status__534D60F1 (chỉ cho phép NOW_SHOWING, COMING_SOON, SPECIAL_SCREENING)
- *   và tạo lại constraint mới bao gồm cả giá trị STOPPED.
- *   Lý do: Hibernate tự sinh constraint khi khởi tạo schema từ enum cũ (chỉ 3 giá trị).
- *   Khi thêm STOPPED vào enum Java mà không cập nhật constraint DB sẽ gây lỗi
- *   DataIntegrityViolationException mỗi khi scheduler tự động ẩn phim hết hạn.
+/**
+ * Lớp nâng cấp và chuyển đổi CSDL chính cho dự án (RoomUnicodeMigration).
+ * 
+ * Thực thi tự động khi ứng dụng khởi chạy (`@PostConstruct`), tự động điều chỉnh các thuộc tính CSDL SQL Server:
+ * 1. Chuyển đổi các cột văn bản từ VARCHAR sang NVARCHAR hỗ trợ đầy đủ tiếng Việt có dấu.
+ * 2. Tự động tạo bổ sung các bảng còn thiếu: `banners`, `account_vouchers`, `food_items`, `combo_items`.
+ * 3. Bổ sung các thuộc tính tính giá vé: `base_price`, `is_override`, `surcharge`, `customer_discounts`.
+ * 4. Xóa bỏ các CHECK constraint cũ do Hibernate tự sinh bị giới hạn enum (ví dụ: `movie.status` thiết lập thêm `STOPPED`, `membership_level` có `BRONZE`).
+ * 5. Nạp ma trận giá vé mẫu (giá giờ vàng/thường, phụ thu ghế VIP/Couple, phụ thu 3D/IMAX) qua `seedPricingConfigs()`.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113
+ * Cập nhật bởi: TrienLX (23/06/2026 - Fix movie status constraint & seed pricing configs)
  */
 package com.group3.cinema.config;
 
@@ -25,10 +26,20 @@ public class RoomUnicodeMigration {
 
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Constructor tiêm phụ thuộc JdbcTemplate.
+     * 
+     * @param jdbcTemplate Công cụ thực thi câu lệnh SQL trực tiếp.
+     */
     public RoomUnicodeMigration(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Phương thức tổng hợp điều phối 18 bước migration dữ liệu sau khi Spring Bean khởi tạo (`@PostConstruct`).
+     * 
+     * Mọi bước xử lý được bọc qua `runMigrationStep()` để đảm bảo không làm gián đoạn việc khởi động server khi gặp lỗi nhỏ.
+     */
     @PostConstruct
     public void migrateRoomUnicodeColumns() {
         runMigrationStep("create banner table", this::createBannerTableIfMissing);
@@ -51,6 +62,12 @@ public class RoomUnicodeMigration {
         runMigrationStep("seed pricing configs", this::seedPricingConfigs);
     }
 
+    /**
+     * Phương thức bọc thực thi từng bước migration an toàn.
+     * 
+     * @param stepName Tên bước migration.
+     * @param step Phương thức lambda thực thi.
+     */
     private void runMigrationStep(String stepName, Runnable step) {
         try {
             step.run();
@@ -58,6 +75,7 @@ public class RoomUnicodeMigration {
             log.warn("Không thể chạy migration '{}': {}", stepName, e.getMessage());
         }
     }
+
 
     /**
      * [SỬA - TrienLX - 2026-06-25]

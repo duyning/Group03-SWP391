@@ -1,9 +1,15 @@
-package com.group3.cinema.service;
-
-/*
- * Added on 2026-06-26: Periodically expires unpaid bookings and releases held seats.
- * Created by: HuyPB - HE191335
+/**
+ * Tiến trình chạy tự động định kỳ (Background Job) giải phóng ghế giữ chỗ cho các đơn hàng quá hạn thanh toán (`BookingExpirationJob`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được Spring Scheduled kích hoạt mỗi 60 giây (`@Scheduled(fixedDelay = 60000)`).
+ * - Gọi đến:
+ *   + `BookingRepository`: Tìm kiếm các đơn hàng ở trạng thái `PENDING` có `expiresAt` nhỏ hơn thời điểm hiện tại và chuyển sang `EXPIRED`.
+ *   + `BookingTicketRepository`: Xóa bỏ các vé tam giữ ghế (`deleteByBookingId`) để trả ghế trống lại hệ thống cho người khác đặt.
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (26/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Booking;
 import com.group3.cinema.repository.BookingRepository;
@@ -25,6 +31,9 @@ public class BookingExpirationJob {
         this.ticketRepository = ticketRepository;
     }
 
+    /**
+     * Tự động quét và giải phóng đơn giữ chỗ hết hạn thanh toán mỗi phút một lần.
+     */
     @Scheduled(fixedDelay = 60_000)
     @Transactional
     public void releaseExpiredBookings() {
@@ -36,3 +45,4 @@ public class BookingExpirationJob {
                 });
     }
 }
+

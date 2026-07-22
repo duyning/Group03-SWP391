@@ -1,3 +1,18 @@
+/**
+ * Service quản lý Điểm thưởng tích lũy, Hạng thành viên (BRONZE, SILVER, GOLD) và Thưởng tự động Voucher thăng hạng (`LoyaltyService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `PaymentService`, `CustomerBookingService`, `InvoiceService` sau khi khách hàng hoàn tất giao dịch bán vé/bắp nước thành công.
+ * - Tương tác với:
+ *   + `AccountRepository`: Cập nhật `loyaltyPoint` và `membershipLevel` của tài khoản.
+ *   + `VoucherRepository`: Tạo và cấp trực tiếp voucher thăng hạng/voucher hàng tháng vào ví khách hàng (`save`, `addToWallet`).
+ *   + `NotificationService`: Gửi thông báo cộng điểm và nhận voucher tới khách hàng.
+ * 
+ * Quy tắc cộng điểm & Hạng thành viên:
+ * - 1.000 VNĐ chi tiêu = 1 điểm thưởng (`pointsEarned`).
+ * - Từ 1.000 điểm: Hạng Bạc (`SILVER`) -> Thưởng 1 Voucher giảm 15% tối đa 40k.
+ * - Từ 5.000 điểm: Hạng Vàng (`GOLD`) -> Thưởng 1 Voucher giảm 25% tối đa 60k và tự động cấp lại mỗi tháng (`checkAndGrantGoldMonthlyVoucher`).
+ */
 package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Account;
@@ -31,7 +46,10 @@ public class LoyaltyService {
     }
 
     /**
-     * Tích lũy điểm và thăng hạng dựa trên số tiền chi tiêu.
+     * Tích lũy điểm thưởng dựa trên số tiền chi tiêu hợp lệ và nâng hạng thành viên tự động.
+     * 
+     * @param accountId ID tài khoản nhận điểm.
+     * @param amount Số tiền giao dịch đã thanh toán thành công.
      */
     @Transactional
     public void addLoyaltyPoints(int accountId, BigDecimal amount) {
@@ -67,7 +85,6 @@ public class LoyaltyService {
                 account.setMembershipLevel(newLevel);
                 accountRepository.save(account);
 
-                // Gửi thông báo tích điểm thành công
                 notificationService.sendNotification(
                         accountId,
                         "Tích lũy điểm thành công! 🎟️",
@@ -75,7 +92,6 @@ public class LoyaltyService {
                         NotificationType.VOUCHER
                 );
 
-                // Xử lý sinh voucher thăng hạng tự động
                 handleRankUpRewards(account, oldLevel, newLevel);
             });
         } catch (Exception ex) {
@@ -84,14 +100,12 @@ public class LoyaltyService {
     }
 
     /**
-     * Kiểm tra thăng hạng và tự động phát voucher tương ứng.
+     * Kiểm tra thăng hạng thành viên và phát voucher tri ân tương ứng vào ví tài khoản.
      */
     private void handleRankUpRewards(Account account, MembershipLevel oldLevel, MembershipLevel newLevel) {
         int accountId = account.getAccountID();
 
-        // 1. Nhảy từ Bronze lên Silver (hoặc nhảy vọt thẳng lên Gold)
         if (oldLevel == MembershipLevel.BRONZE && (newLevel == MembershipLevel.SILVER || newLevel == MembershipLevel.GOLD)) {
-            // Phát voucher thăng hạng Bạc: 15% tối đa 40.000đ, tối thiểu 150.000đ, hạn 15 ngày
             Voucher silverVoucher = createCustomerVoucher(
                     account, "SV", "Voucher Thăng Hạng Bạc", 15, 40000, 150000, 15
             );
@@ -103,9 +117,7 @@ public class LoyaltyService {
             );
         }
 
-        // 2. Nhảy lên Gold (từ Bronze hoặc Silver)
         if ((oldLevel == MembershipLevel.BRONZE || oldLevel == MembershipLevel.SILVER) && newLevel == MembershipLevel.GOLD) {
-            // Phát voucher thăng hạng Vàng: 25% tối đa 60.000đ, tối thiểu 250.000đ, hạn 15 ngày
             Voucher goldVoucher = createCustomerVoucher(
                     account, "GV", "Voucher Thăng Hạng Vàng", 25, 60000, 250000, 15
             );
@@ -119,7 +131,7 @@ public class LoyaltyService {
     }
 
     /**
-     * Tự động kiểm tra và cấp voucher Vàng định kỳ hàng tháng cho thành viên hạng Vàng khi truy cập profile.
+     * Kiểm tra và tự động cấp Voucher Vàng định kỳ 30 ngày một lần cho Khách hàng đạt hạng Vàng.
      */
     @Transactional
     public void checkAndGrantGoldMonthlyVoucher(Account account) {
@@ -128,7 +140,6 @@ public class LoyaltyService {
         }
 
         try {
-            // Lấy danh sách ví voucher để kiểm tra xem đã nhận voucher Vàng trong vòng 30 ngày qua chưa
             List<Voucher> wallet = voucherRepository.findWalletVouchers(account.getAccountID());
             boolean receivedRecently = wallet.stream()
                     .anyMatch(v -> v.getCode().startsWith("GV-" + account.getAccountID())
@@ -152,7 +163,7 @@ public class LoyaltyService {
     }
 
     /**
-     * Tạo voucher riêng dành cho khách hàng.
+     * Tạo đối tượng Voucher dành riêng cho khách hàng và liên kết trực tiếp vào ví `customer_vouchers`.
      */
     private Voucher createCustomerVoucher(Account account, String prefix, String title, double discountPercent,
                                           double maxDiscount, double minOrder, int expiryDays) {
@@ -180,7 +191,6 @@ public class LoyaltyService {
     }
 
     private Voucher savedVouchersFix(Voucher v) {
-        // Bảo đảm các trường null được khởi tạo an toàn
         if (v.getUsedQuantity() == null) v.setUsedQuantity(0);
         if (v.getLimitPerUser() == null) v.setLimitPerUser(1);
         if (v.getIsHolidayApplicable() == null) v.setIsHolidayApplicable(true);
@@ -188,3 +198,4 @@ public class LoyaltyService {
         return v;
     }
 }
+

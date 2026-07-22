@@ -115,6 +115,14 @@
         input.addEventListener('input', refreshComboTotals);
     });
     refreshComboTotals();
+    // Gửi beacon nhả ghế khi người dùng đóng tab/trình duyệt hoặc rời trang không qua nút submit.
+    let _comboSubmitting = false;
+    document.querySelectorAll('form, a').forEach(el => el.addEventListener('click', () => { _comboSubmitting = true; }));
+    window.addEventListener('beforeunload', () => {
+        if (!_comboSubmitting && navigator.sendBeacon) {
+            navigator.sendBeacon('/booking/release-hold');
+        }
+    });
 </script>
 </body>
 </html>

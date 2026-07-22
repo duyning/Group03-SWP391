@@ -1,10 +1,17 @@
-package com.group3.cinema.service;
-
-/*
- * Added on 2026-06-24: Customer booking summary, combo, voucher, and booking creation logic.
- * Updated on 2026-06-26: Voucher data is loaded from SQL table booking_vouchers.
- * Created by: HuyPB - HE191335
+/**
+ * Service tính toán Tổng đơn đặt vé cho Khách hàng Online, Áp dụng Voucher ví cá nhân và Khởi tạo Booking PENDING (`CustomerBookingService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `CustomerBookingController` (Giao diện đặt vé 3 bước chọn ghế -> chọn bắp nước -> áp voucher -> thanh toán).
+ * - Tương tác với:
+ *   + `ComboRepository`: Tra cứu combo nước ép, bắp rang bơ (`getActiveCombos`).
+ *   + `BookingTicketRepository`: Đổi trạng thái giữ ghế `HOLDING` gắn với `bookingId`.
+ *   + `BookingRepository`, `BookingComboRepository`: Tạo bản ghi phiếu đặt vé PENDING chờ thanh toán Online (VNPay / payOS / Momo).
+ *   + `VoucherRepository`: Tra cứu danh sách voucher trong Ví người dùng (`findWalletVouchers`), kiểm tra điều kiện áp dụng voucher cho tổng hóa đơn (`evaluateWalletVoucher`).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.dto.BookingSelection;
 import com.group3.cinema.entity.Booking;
@@ -65,10 +72,12 @@ public class CustomerBookingService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /** Lấy danh sách các sản phẩm Combo bắp nước đang hoạt động. */
     public List<Combo> getActiveCombos() {
         return comboRepository.findByStatusInOrderByNameAsc(List.copyOf(ACTIVE_COMBO_STATUSES));
     }
 
+    /** Kiểm tra số lượng mua từng loại combo hợp lệ (từ 0 đến 10 combo). */
     public LinkedHashMap<Long, Integer> validateComboQuantities(Map<String, String> params) {
         LinkedHashMap<Long, Integer> selected = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : params.entrySet()) {
@@ -92,6 +101,7 @@ public class CustomerBookingService {
         return selected;
     }
 
+    /** Tính tổng cộng thanh toán xem trước với mã voucher trực tiếp. */
     @Transactional(readOnly = true)
     public BookingSummary calculateSummary(BookingSelection selection, String holdToken,
                                            Map<Long, Integer> selectedCombos, String voucherCode) {
@@ -105,6 +115,7 @@ public class CustomerBookingService {
         return base.toSummary(discount, normalizedVoucher);
     }
 
+    /** Tính tổng cộng thanh toán xem trước khi áp dụng mã voucher lưu sẵn trong Ví cá nhân khách hàng. */
     @Transactional(readOnly = true)
     public BookingSummary calculateSummaryWithWalletVoucher(Integer accountId, BookingSelection selection,
                                                             String holdToken,
@@ -119,6 +130,7 @@ public class CustomerBookingService {
         return base.toSummary(discount, voucherCode);
     }
 
+    /** Lấy danh sách danh mục các Voucher trong Ví tài khoản kèm theo trạng thái đủ điều kiện hay không. */
     @Transactional(readOnly = true)
     public List<WalletVoucherOption> getWalletVoucherOptions(Integer accountId, BookingSelection selection,
                                                              String holdToken,
@@ -132,6 +144,7 @@ public class CustomerBookingService {
                 .toList();
     }
 
+    /** Tạo đơn hàng Booking ở trạng thái `PENDING` (chờ chuyển trang cổng thanh toán Online). */
     @Transactional
     public Booking createPendingBooking(Integer accountId, BookingSelection selection, String holdToken,
                                         Map<Long, Integer> selectedCombos, String voucherCode) {
@@ -139,6 +152,7 @@ public class CustomerBookingService {
         return savePendingBooking(accountId, selection, summary);
     }
 
+    /** Tạo đơn hàng Booking ở trạng thái `PENDING` áp dụng mã voucher trong ví cá nhân. */
     @Transactional
     public Booking createPendingBookingWithWalletVoucher(Integer accountId, BookingSelection selection, String holdToken,
                                                          Map<Long, Integer> selectedCombos, Long voucherId) {
@@ -179,6 +193,7 @@ public class CustomerBookingService {
         return booking;
     }
 
+    /** Tra cứu toàn bộ chi tiết suất chiếu, danh sách vé và combo của một BookingId. */
     @Transactional(readOnly = true)
     public BookingDetails getBookingDetails(Long bookingId, Integer accountId) {
         Booking booking = bookingRepository.findByIdAndAccountId(bookingId, accountId)
@@ -186,6 +201,7 @@ public class CustomerBookingService {
         return getBookingDetails(booking);
     }
 
+    /** Tra cứu chi tiết đơn hàng Booking không phân biệt tài khoản. */
     @Transactional(readOnly = true)
     public BookingDetails getBookingDetails(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -442,3 +458,4 @@ public class CustomerBookingService {
     }
     private record VoucherRule(BigDecimal discountPercent, BigDecimal maxDiscount) { }
 }
+

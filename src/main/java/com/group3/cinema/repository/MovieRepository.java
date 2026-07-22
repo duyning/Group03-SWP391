@@ -1,15 +1,17 @@
-package com.group3.cinema.repository;
-
-/*
- * Added on 2026-06-04: Repository queries for active movies and movie status.
- * Updated on 2026-06-04: Added UC-G03 active movie search by title keyword,
- * genre, and status only.
- * Created by: HuyPB - HE191335
- * Updated on 2026-06-23 by: TrienLX
- * Chi tiết thay đổi:
- * - Hạn chế tự động cập nhật UPCOMING -> NOW_SHOWING đối với phim active = true.
- * - Cập nhật autoDeactivateExpiredMovies để đặt trạng thái là STOPPED khi ẩn suất chiếu hết hạn.
+/**
+ * Interface Repository thao tác dữ liệu phim chiếu rạp (`movie`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `MovieService`, `PublicContentInitializer`, `CustomerBookingService`, `CatalogInitializer`.
+ * - Hỗ trợ các chức năng: Tìm kiếm phim hiển thị khách hàng (`searchActiveMovies`), tìm kiếm đa điều kiện trang Admin (`searchMovies`),
+ *   tự động cập nhật phim sắp chiếu thành đang chiếu khi đến ngày phát hành (`autoUpdateUpcomingToNowShowing`),
+ *   tự động dừng chiếu các phim hết suất chiếu (`autoDeactivateExpiredMovies`),
+ *   kiểm tra trùng lặp tiêu đề, poster, trailer phim (`existsDuplicateTitle`, `existsDuplicatePoster`, `existsDuplicateTrailer`).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (04/06/2026)
+ * Cập nhật bởi: TrienLX (23/06/2026)
  */
+package com.group3.cinema.repository;
 
 import com.group3.cinema.entity.Movie;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,43 +28,36 @@ import java.util.Optional;
 @Repository
 public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
+    /**
+     * Lấy tất cả danh sách phim chưa bị xóa mềm (`deleted = false`).
+     */
     @Override
     @Query("SELECT m FROM Movie m WHERE m.deleted = false")
     List<Movie> findAll();
 
     /**
-     * Load all movies that are allowed to appear on public customer screens.
-     * This is the base query for banner, list, and search flows.
+     * Lấy danh sách tất cả phim đang hiển thị công khai cho khách hàng (`active = true`).
      */
     List<Movie> findByActiveTrue();
 
     /**
-     * Load public movies by business status.
-     * Used to split movies into "now showing", "coming soon", and
-     * "special screening" sections.
+     * Lấy danh sách phim công khai theo trạng thái chiếu (NOW_SHOWING, COMING_SOON, SPECIAL_SCREENING).
      */
     List<Movie> findByStatusAndActiveTrue(Movie.MovieStatus status);
 
     /**
-     * Load the latest 5 public movies by id.
-     * Kept for homepage/latest movie sections if the UI needs newest records.
+     * Lấy top 5 phim mới nhất đang hoạt động hiển thị trên Trang chủ.
      */
     List<Movie> findTop5ByActiveTrueOrderByIdDesc();
 
     /**
-     * Load one public movie for the detail page.
-     * Hidden/inactive movies are not returned, so customers cannot view them
-     * directly by typing the id in the URL.
+     * Tìm chi tiết một bộ phim đang hoạt động phục vụ trang chi tiết phim (`movie-detail.html`).
      */
     Optional<Movie> findByIdAndActiveTrue(int id);
 
     /**
-     * UC-G03 Search Movies:
-     * - Search public/active movies only.
-     * - keyword matches movie title partially.
-     * - genre matches movie genre partially.
-     * - status matches the movie status exactly.
-     * - title and genre matching are case-insensitive.
+     * Tìm kiếm danh sách phim đang hiển thị cho phía khách hàng (UC-G03):
+     * Hỗ trợ tìm theo từ khóa tên phim (`keyword`), thể loại (`genre`), và trạng thái (`status`).
      */
     @Query("""
             SELECT m
@@ -77,6 +72,9 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
                                    @Param("genre") String genre,
                                    @Param("status") Movie.MovieStatus status);
 
+    /**
+     * Tìm kiếm danh sách phim đa chỉ tiêu phục vụ trang quản lý danh mục phim của Admin/Manager.
+     */
     @Query("""
              SELECT m
              FROM Movie m
@@ -97,16 +95,22 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
                              @Param("releaseDate") LocalDate releaseDate,
                              @Param("active") Boolean active);
 
+    /** Đếm tổng số phim chưa bị xóa mềm. */
     @Override
     @Query("SELECT COUNT(m) FROM Movie m WHERE m.deleted = false")
     long count();
 
+    /** Đếm số lượng phim theo trạng thái trình chiếu. */
     @Query("SELECT COUNT(m) FROM Movie m WHERE m.status = :status AND m.deleted = false")
     long countByStatus(@Param("status") Movie.MovieStatus status);
 
+    /** Đếm số lượng phim bị ẩn (`active = false`). */
     @Query("SELECT COUNT(m) FROM Movie m WHERE m.active = false AND m.deleted = false")
     long countByActiveFalse();
 
+    /**
+     * Tự động chuyển trạng thái phim từ COMING_SOON thành NOW_SHOWING khi ngày phát hành nhỏ hơn hoặc bằng ngày hiện tại.
+     */
     @Modifying
     @Transactional
     @Query("UPDATE Movie m SET m.status = :nowShowing WHERE m.active = true AND m.status = :comingSoon AND m.releaseDate <= :today")
@@ -114,16 +118,25 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
                                        @Param("nowShowing") Movie.MovieStatus nowShowing,
                                        @Param("comingSoon") Movie.MovieStatus comingSoon);
 
+    /**
+     * Tự động đặt trạng thái phim thành STOPPED và ẩn (`active = false`) khi tất cả các suất chiếu của phim đã kết thúc (không còn suất chiếu từ ngày hôm nay trở đi).
+     */
     @Modifying
     @Transactional
-    @Query("UPDATE Movie m SET m.status = :stoppedStatus, m.active = false WHERE m.active = true AND m.status <> :stoppedStatus AND m.releaseDate < :today AND m.id IN (SELECT s.movie.id FROM Showtime s GROUP BY s.movie.id HAVING MAX(s.showDate) < :today AND MAX(s.showDate) >= :thresholdDate)")
-    int autoDeactivateExpiredMovies(@Param("today") LocalDate today, @Param("thresholdDate") LocalDate thresholdDate, @Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
+    @Query("UPDATE Movie m SET m.status = :stoppedStatus, m.active = false WHERE m.active = true AND m.status <> :stoppedStatus AND m.releaseDate <= :today AND NOT EXISTS (SELECT 1 FROM Showtime s WHERE s.movie.id = m.id AND s.showDate >= :today)")
+    int autoDeactivateExpiredMovies(@Param("today") LocalDate today, @Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
 
+    /**
+     * Ẩn tất cả các phim đang ở trạng thái STOPPED.
+     */
     @Modifying
     @Transactional
     @Query("UPDATE Movie m SET m.active = false WHERE m.status = :stoppedStatus AND m.active = true")
     int deactivateStoppedMovies(@Param("stoppedStatus") Movie.MovieStatus stoppedStatus);
 
+    /**
+     * Trả về danh sách tên các thể loại phim riêng biệt đang hoạt động để đổ vào dropdown bộ lọc.
+     */
     @Query("""
             SELECT DISTINCT m.genre
             FROM Movie m
@@ -134,15 +147,20 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
             """)
     List<String> findDistinctActiveGenres();
 
+    /** Kiểm tra trùng tên phim giữa các bộ phim chưa bị xóa mềm (bao gồm cả phim đang ẩn active = false). */
     @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE LOWER(m.title) = LOWER(:title) AND m.id <> :id AND m.deleted = false")
     boolean existsDuplicateTitle(@Param("title") String title, @Param("id") int id);
 
+    /** Kiểm tra trùng URL Poster phim (bao gồm cả phim đang ẩn active = false, không tính phim bị xóa mềm). */
     @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE m.posterUrl = :posterUrl AND m.posterUrl IS NOT NULL AND m.posterUrl <> '' AND m.id <> :id AND m.deleted = false")
     boolean existsDuplicatePoster(@Param("posterUrl") String posterUrl, @Param("id") int id);
 
+    /** Kiểm tra trùng URL Trailer phim (bao gồm cả phim đang ẩn active = false, không tính phim bị xóa mềm). */
     @Query("SELECT COUNT(m) > 0 FROM Movie m WHERE m.trailerUrl = :trailerUrl AND m.trailerUrl IS NOT NULL AND m.trailerUrl <> '' AND m.id <> :id AND m.deleted = false")
     boolean existsDuplicateTrailer(@Param("trailerUrl") String trailerUrl, @Param("id") int id);
 
+    /** Tìm phim đã bị xóa mềm theo tiêu đề (dùng cho khôi phục). */
     @Query("SELECT m FROM Movie m WHERE LOWER(m.title) = LOWER(:title) AND m.deleted = true")
     Optional<Movie> findSoftDeletedByTitle(@Param("title") String title);
 }
+

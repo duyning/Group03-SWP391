@@ -1,10 +1,15 @@
-package com.group3.cinema.entity;
-
-/*
- * Created on 2026-06-25: Customer contact request entity for cinema information pages.
- * Updated on 2026-06-25: Added email reply tracking fields for admin support workflow.
- * Created by: NinhDD - HE186113
+/**
+ * Entity lưu trữ Yêu cầu Liên hệ / Hỗ trợ từ khách hàng (`customer_contacts`).
+ * 
+ * Luồng xử lý:
+ * - Khách hàng gửi nội dung thắc mắc/góp ý từ form liên hệ (`name`, `email`, `phone`, `message`).
+ * - Trạng thái ban đầu: `IN_PROGRESS` (Đang xử lý).
+ * - Quản trị viên/Nhân viên phản hồi qua email -> lưu tiêu đề thư (`replySubject`), nội dung thư (`replyMessage`),
+ *   ngày phản hồi (`repliedAt`) và cập nhật trạng thái thành `RESOLVED` (Đã phản hồi).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (25/06/2026)
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -155,6 +160,9 @@ public class CustomerContact {
         return updatedAt;
     }
 
+    /**
+     * Enum các trạng thái của phiếu hỗ trợ liên hệ khách hàng.
+     */
     public enum ContactStatus {
         NEW("Đang xử lý", "bg-warning-subtle text-warning border border-warning-subtle"),
         IN_PROGRESS("Đang xử lý", "bg-warning-subtle text-warning border border-warning-subtle"),
@@ -177,3 +185,4 @@ public class CustomerContact {
         }
     }
 }
+

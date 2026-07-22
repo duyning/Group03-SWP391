@@ -1,9 +1,14 @@
-package com.group3.cinema.service;
-
-/*
- * Created on 2026-06-25: Service layer for cinema promotion campaigns.
- * Created by: NinhDD - HE186113
+/**
+ * Service quản lý các Chiến dịch Khuyến mãi, Ưu đãi khách hàng và Kiểm tra xung đột thời gian chạy ưu đãi (`PromotionService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `PromotionController` (Khách hàng xem ưu đãi) và `AdminPromotionController` (Tạo/Sửa/Kích hoạt chiến dịch).
+ * - Tương tác với `PromotionRepository` để tìm kiếm ưu đãi (`searchPromotions`), kiểm tra trùng tiêu đề (`existsDuplicateTitle`), đếm chiến dịch trùng lặp (`countOverlappingActiveCampaigns`).
+ * - Lưu tập tin ảnh Banner quảng cáo vào thư mục `uploads/promotions/`.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (25/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Promotion;
 import com.group3.cinema.repository.PromotionRepository;
@@ -35,6 +40,7 @@ public class PromotionService {
         this.promotionRepository = promotionRepository;
     }
 
+    /** Tìm kiếm chiến dịch khuyến mãi theo nhiều tiêu chí (Từ khóa, Loại chiến dịch, Nhóm đối tượng, Trạng thái). */
     public List<Promotion> searchPromotions(String keyword,
                                             Promotion.CampaignType type,
                                             Promotion.TargetGroup targetGroup,
@@ -43,6 +49,7 @@ public class PromotionService {
         return promotionRepository.searchPromotions(searchKeyword, type, targetGroup, status);
     }
 
+    /** Lấy danh sách khuyến mãi đang active và còn hiệu lực hiển thị cho Khách hàng trên giao diện Web public. */
     public List<Promotion> getPublicPromotions(String filter) {
         List<Promotion> promotions = promotionRepository
                 .findByStatusAndEndDateGreaterThanEqualOrderByStartDateAscIdDesc(
@@ -55,17 +62,20 @@ public class PromotionService {
                 .toList();
     }
 
+    /** Lấy thông tin chi tiết khuyến mãi theo ID. */
     public Promotion getPromotion(Long id) {
         return promotionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chiến dịch khuyến mãi."));
     }
 
+    /** Lấy thông tin chi tiết khuyến mãi hiển thị công khai (bắt buộc phải `status = ACTIVE` và chưa hết hạn). */
     public Promotion getPublicPromotion(Long id) {
         return promotionRepository
                 .findByIdAndStatusAndEndDateGreaterThanEqual(id, Promotion.PromotionStatus.ACTIVE, LocalDate.now())
                 .orElseThrow(() -> new IllegalArgumentException("Chiến dịch không tồn tại hoặc đã ngừng hiển thị."));
     }
 
+    /** Tạo mới một chiến dịch khuyến mãi kèm banner hình ảnh và kiểm tra tính hợp lệ dữ liệu. */
     @Transactional
     public Promotion createPromotion(Promotion promotion, MultipartFile bannerFile) throws IOException {
         normalize(promotion);
@@ -74,6 +84,7 @@ public class PromotionService {
         return promotionRepository.save(promotion);
     }
 
+    /** Cập nhật thông tin chiến dịch khuyến mãi hiện tại. */
     @Transactional
     public Promotion updatePromotion(Long id, Promotion form, MultipartFile bannerFile) throws IOException {
         Promotion existing = getPromotion(id);
@@ -98,6 +109,7 @@ public class PromotionService {
         return promotionRepository.save(existing);
     }
 
+    /** Ẩn chiến dịch khuyến mãi (chuyển `status` về `INACTIVE`). */
     @Transactional
     public void hidePromotion(Long id) {
         Promotion promotion = getPromotion(id);
@@ -105,12 +117,14 @@ public class PromotionService {
         promotionRepository.save(promotion);
     }
 
+    /** Xóa hẳn một chiến dịch khuyến mãi theo ID. */
     @Transactional
     public void deletePromotion(Long id) {
         Promotion promotion = getPromotion(id);
         promotionRepository.delete(promotion);
     }
 
+    /** Kích hoạt chiến dịch khuyến mãi (`status = ACTIVE`) sau khi kiểm tra không bị trùng lắp khoảng thời gian chạy. */
     @Transactional
     public void activatePromotion(Long id) {
         Promotion promotion = getPromotion(id);
@@ -286,3 +300,4 @@ public class PromotionService {
         return trimmed == null || trimmed.isBlank() ? null : trimmed;
     }
 }
+

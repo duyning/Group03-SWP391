@@ -1,3 +1,15 @@
+/**
+ * Entity đại diện cho Mã giảm giá / Voucher (`vouchers`).
+ * 
+ * Chức năng:
+ * - Quản lý thông tin mã voucher (`code`), tiêu đề chương trình (`title`), mức giảm (`discountValue`), giảm tối đa (`maxDiscountAmount`).
+ * - Loại giảm giá (`DiscountType`: PERCENTAGE hoặc FIXED).
+ * - Phạm vi áp dụng (`ServiceScope`: ALL, TICKET, WATER).
+ * - Ngày áp dụng (`ApplicableDay`: ALL, WEEKDAY, WEEKEND) và cờ áp dụng ngày lễ Tết (`isHolidayApplicable`).
+ * - Quản lý số lượng phát hành (`totalQuantity`), đã dùng (`usedQuantity`), giới hạn dùng mỗi tài khoản (`limitPerUser`).
+ * - Hỗ trợ xóa mềm (`isDeleted`).
+ * - Liên kết nhiều-nhiều với `Account` qua bảng trung gian `account_vouchers`.
+ */
 package com.group3.cinema.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -190,12 +202,9 @@ public class Voucher {
     @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
-    // ==========================================
-    // CẤU HÌNH THUỘC TÍNH XÓA MỀM (SOFT DELETE)
-    // ==========================================
     @NotNull(message = "Trạng thái ẩn/hiện không được để trống")
     @Column(name = "is_deleted", nullable = false)
-    @Builder.Default // Giúp Lombok Builder không ghi đè mất giá trị mặc định false
+    @Builder.Default
     private Boolean isDeleted = false;
 
     @NotNull(message = "Vui lòng chọn loại giảm giá")
@@ -264,12 +273,14 @@ public class Voucher {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Trong Voucher.java
     @ManyToMany(mappedBy = "savedVouchers")
-    @JsonIgnore // Tránh vòng lặp vô tận khi dùng JSON
+    @JsonIgnore
     @Builder.Default
     private Set<Account> accounts = new HashSet<>();
 
+    /**
+     * Tự động khởi tạo thời gian tạo, cập nhật và viết hoa mã voucher trước khi insert vào DB (`@PrePersist`).
+     */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -284,6 +295,9 @@ public class Voucher {
             this.code = this.code.trim().toUpperCase();
     }
 
+    /**
+     * Tự động cập nhật thời gian sửa và viết hoa mã voucher trước khi update vào DB (`@PreUpdate`).
+     */
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
@@ -291,10 +305,9 @@ public class Voucher {
             this.code = this.code.trim().toUpperCase();
     }
 
-    // ==========================================
-    // ĐỊNH NGHĨA CÁC PUBLIC ENUM NẰM TRONG CLASS
-    // ==========================================
-
+    /**
+     * Enum loại giảm giá: PERCENTAGE (Phần trăm %), FIXED (Số tiền cố định).
+     */
     public enum DiscountType {
         PERCENTAGE("Phần trăm (%)"),
         FIXED("Số tiền cố định (đ)");
@@ -310,6 +323,9 @@ public class Voucher {
         }
     }
 
+    /**
+     * Enum phạm vi dịch vụ áp dụng: ALL (Tất cả), TICKET (Vé phim), WATER (Bắp nước).
+     */
     public enum ServiceScope {
         ALL("Tất cả dịch vụ"),
         TICKET("Chỉ áp dụng vé xem phim"),
@@ -326,6 +342,9 @@ public class Voucher {
         }
     }
 
+    /**
+     * Enum ngày áp dụng: ALL (Tất cả ngày), WEEKDAY (Thứ 2 - Thứ 6), WEEKEND (Thứ 7 - CN).
+     */
     public enum ApplicableDay {
         ALL("Tất cả các ngày trong tuần"),
         WEEKDAY("Ngày thường (Thứ 2 - Thứ 6)"),
@@ -341,4 +360,4 @@ public class Voucher {
             return displayName;
         }
     }
-}
+}

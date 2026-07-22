@@ -1068,25 +1068,24 @@ async function resolvePosterUrl() {
 // --- Xóa phim ---
 // --- Xóa phim (soft delete: chỉ đổi trạng thái active = false, không xóa dữ liệu khỏi DB) ---
 async function deleteMovie(id) {
-    // [SỬA - TrienLX - 2026-06-11]: Thay confirm() bằng showConfirm() — hộp thoại xác nhận tùy chỉnh
     const confirmed = await showConfirm(
-        'Xác nhận xóa phim',                          // Tiêu đề hộp thoại
-        'Bạn có chắc chắn muốn xóa phim này không?\nPhim sẽ bị ẩn khỏi hệ thống (không bị xóa hoàn toàn khỏi dữ liệu).', // Nội dung
-        'Xóa phim'                                    // Nhãn nút đồng ý
+        'Xác nhận xóa phim',
+        'Bạn có chắc chắn muốn xóa phim này không?\nPhim sẽ bị ẩn khỏi hệ thống (không bị xóa hoàn toàn khỏi dữ liệu).',
+        'Xóa phim'
     );
-    if (!confirmed) return; // Người dùng nhấn Hủy — không làm gì
+    if (!confirmed) return;
 
     try {
-        // Gửi yêu cầu xóa (soft delete) lên API
         const r = await fetch(`${API_MOVIES}/${id}`, { method: 'DELETE' });
-        if (!r.ok) throw new Error();
-        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast() — thông báo thành công
+        const resData = await r.json().catch(() => ({}));
+        if (!r.ok) {
+            throw new Error(resData.message || 'Không thể xóa phim.');
+        }
         showToast('success', 'Xóa phim thành công!', 'Phim đã được ẩn khỏi hệ thống.');
         loadMovieStats();    // Cập nhật lại thống kê
         applyMovieFilter();  // Cập nhật lại danh sách phim
     } catch(e) {
-        // [SỬA - TrienLX - 2026-06-11]: Thay alert() bằng showToast()
-        showToast('error', 'Lỗi khi xóa phim', 'Không thể xóa phim. Vui lòng thử lại.');
+        showToast('error', 'Lỗi khi xóa phim', e.message || 'Không thể xóa phim. Vui lòng thử lại.');
     }
 }
 
@@ -2388,8 +2387,10 @@ function renderSeatGrid(seats, soldTickets) {
             else if (isCouple) stateClass = 'seat-empty-couple';
 
             if (ticket) {
-                if (ticket.status === 'BOOKED')  stateClass = 'seat-state-booked';
-                else if (ticket.status === 'PENDING') stateClass = 'seat-state-pending';
+                const s = ticket.status;
+                const isBookedStatus = s === 'BOOKED' || s === 'CONFIRMED' || s === 'PAID';
+                if (isBookedStatus)  stateClass = 'seat-state-booked';
+                else if (s === 'PENDING' || s === 'HOLDING') stateClass = 'seat-state-pending';
             }
 
             const btn = document.createElement('div');
@@ -2400,7 +2401,8 @@ function renderSeatGrid(seats, soldTickets) {
 
             let tooltip = 'Ghế ' + seat.seatLabel + ' - ' + (isVIP ? 'VIP' : (isCouple ? 'Đôi' : 'Thường'));
             if (ticket) {
-                tooltip += ' [' + (ticket.status === 'BOOKED' ? 'Đã bán' : 'Đang giữ chỗ') + ']';
+                const isBookedStatus = ticket.status === 'BOOKED' || ticket.status === 'CONFIRMED' || ticket.status === 'PAID';
+                tooltip += ' [' + (isBookedStatus ? 'Đã bán' : 'Đang giữ chỗ') + ']';
             } else {
                 tooltip += ' [Còn trống]';
             }
@@ -2411,7 +2413,8 @@ function renderSeatGrid(seats, soldTickets) {
                 btn.style.outline       = '3px solid var(--primary-color)';
                 btn.style.outlineOffset = '2px';
                 if (ticket) {
-                    if (ticket.status === 'BOOKED') selectBookedSeat(ticket);
+                    const isBookedStatus = ticket.status === 'BOOKED' || ticket.status === 'CONFIRMED' || ticket.status === 'PAID';
+                    if (isBookedStatus) selectBookedSeat(ticket);
                     else selectPendingSeat(seat, ticket);
                 } else {
                     selectEmptySeat(seat);
@@ -3604,7 +3607,8 @@ function renderMapSeatGrid(seats, soldTickets) {
 
             let tooltip = `Ghế ${seat.seatLabel} - ${isVIP ? 'VIP' : (isCouple ? 'Đôi' : 'Thường')}`;
             if (ticket) {
-                tooltip += ` [${ticket.status === 'BOOKED' ? 'Đã bán' : 'Đang giữ chỗ'}]`;
+                const isBookedStatus = ticket.status === 'BOOKED' || ticket.status === 'CONFIRMED' || ticket.status === 'PAID';
+                tooltip += ` [${isBookedStatus ? 'Đã bán' : 'Đang giữ chỗ'}]`;
             } else {
                 tooltip += ` - Giá vé: ${formatVND(seatPrice)}`;
             }
@@ -3688,7 +3692,7 @@ function selectMapSeat(seat, ticket) {
         bookedPanel.style.display = 'block';
         priceBreakdown.style.display = 'none';
 
-        const isBooked = ticket.status === 'BOOKED';
+        const isBooked = ticket.status === 'BOOKED' || ticket.status === 'CONFIRMED' || ticket.status === 'PAID';
         const header = document.getElementById('bookedSeatInfoHeader');
         const icon = document.getElementById('bookedSeatInfoIcon');
         const title = document.getElementById('bookedSeatInfoTitle');
@@ -3710,10 +3714,10 @@ function selectMapSeat(seat, ticket) {
 
         const statusEl = document.getElementById('bookedStatus');
         if (isBooked) {
-            statusEl.textContent = '✅ Đã bán (BOOKED)';
+            statusEl.textContent = `✅ Đã bán (${ticket.status || 'BOOKED'})`;
             statusEl.style.color = '#ef4444';
         } else {
-            statusEl.textContent = '⏳ Đang giữ chỗ (PENDING)';
+            statusEl.textContent = `⏳ Đang giữ chỗ (${ticket.status || 'PENDING'})`;
             statusEl.style.color = '#ca8a04';
         }
 

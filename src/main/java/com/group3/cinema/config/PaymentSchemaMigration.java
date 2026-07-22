@@ -1,9 +1,16 @@
-package com.group3.cinema.config;
-
-/*
- * Added on 2026-06-26: Booking/payment schema migration for customer booking flow.
- * Created by: HuyPB - HE191335
+/**
+ * Lớp tự động đồng bộ và khởi tạo cấu trúc CSDL phục vụ thanh toán & đặt vé trực tuyến (PaymentSchemaMigration).
+ * 
+ * Thực thi khi khởi chạy ứng dụng (`@PostConstruct`):
+ * 1. Cập nhật ràng buộc `CK_payments_payment_method` cho bảng `payments` bổ sung cổng thanh toán PayOS.
+ * 2. Tự động tạo bảng `booking_seat_prices` (giá ghế chuẩn: std, vip, couple) nếu chưa có.
+ * 3. Tự động tạo bảng `booking_vouchers` (voucher mặc định `CINEFLOW10`) nếu chưa có.
+ * 4. Tự động tạo bảng `booking_settings` lưu các cấu hình rạp phim.
+ * 
+ * Ngày khởi tạo: 26/06/2026
+ * Tạo bởi: HuyPB - HE191335
  */
+package com.group3.cinema.config;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -13,10 +20,25 @@ import org.springframework.stereotype.Component;
 public class PaymentSchemaMigration {
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Constructor tiêm phụ thuộc JdbcTemplate.
+     * 
+     * @param jdbcTemplate Công cụ thực thi câu lệnh SQL trực tiếp.
+     */
     public PaymentSchemaMigration(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Phương thức chính thực thi các script SQL DDL và DML bổ sung cấu hình thanh toán.
+     * 
+     * Các bước xử lý:
+     * 1. Hủy bỏ CHECK constraint cũ trên cột `payment_method` và thêm mới `CK_payments_payment_method`
+     *    cho phép các phương thức: 'VNPAY', 'MOMO', 'PAYOS', 'CASH', 'CARD', 'BANK_TRANSFER'.
+     * 2. Tạo bảng `booking_seat_prices` và chèn dữ liệu mẫu cho 3 loại ghế: std (90k), vip (120k), couple (180k).
+     * 3. Tạo bảng `booking_vouchers` và chèn mã voucher mẫu 'CINEFLOW10' (giảm 10%, tối đa 50k).
+     * 4. Tạo bảng `booking_settings` và cấu hình tên rạp mặc định 'Rạp CineFlow Mỹ Đình'.
+     */
     @PostConstruct
     public void allowPayOsPaymentMethod() {
         try {
@@ -87,7 +109,8 @@ public class PaymentSchemaMigration {
                         VALUES ('cinema_name', N'Rạp CineFlow Mỹ Đình');
                     """);
         } catch (Exception ignored) {
-            // The app can still start; Hibernate may create the table on a fresh database.
+            // Trường hợp DB chưa có bảng do Hibernate tạo sau, ứng dụng vẫn khởi động bình thường.
         }
     }
 }
+

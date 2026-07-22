@@ -1,10 +1,14 @@
-package com.group3.cinema.entity;
-
-/*
- * Entity representing a movie wishlist item for a customer.
- * Created by: Antigravity AI
- * Date: 2026-07-13
+/**
+ * Entity đại diện cho Phim yêu thích / Danh sách yêu thích (`wishlist`) của khách hàng.
+ * 
+ * Quy tắc:
+ * - UniqueConstraint trên cặp `(account_id, movie_id)` để đảm bảo mỗi tài khoản chỉ yêu thích 1 bộ phim 1 lần.
+ * - Liên kết tới Tài khoản (`Account`) và Phim (`Movie`).
+ * - Lưu thời gian lưu vào danh sách yêu thích (`createdAt`).
+ * 
+ * Khởi tạo: 13/07/2026
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -69,3 +73,4 @@ public class WishlistItem {
         this.createdAt = createdAt;
     }
 }
+

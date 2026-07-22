@@ -1,10 +1,20 @@
-package com.group3.cinema.service;
-
-/*
- * Added on 2026-06-24: Payment lifecycle for customer ticket booking.
- * Updated on 2026-06-26: Successful payments trigger booking confirmation email.
- * Created by: HuyPB - HE191335
+/**
+ * Service quản lý Vòng đời Giao dịch Thanh toán, Xử lý kết quả IPN/ReturnURL, Gửi Email vé và Lịch sử đơn đặt (`PaymentService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `PaymentController` (Chuyển trang thanh toán, Nhận callback từ VNPay/payOS), `BookingHistoryController` (Lịch sử giao dịch tài khoản).
+ * - Tương tác với:
+ *   + `PaymentRepository`: Tạo bản ghi thanh toán PENDING (`createPayment`), cập nhật SUCCESS/FAILED (`processGatewayResult`).
+ *   + `BookingRepository`, `BookingTicketRepository`: Chuyển trạng thái booking từ PENDING sang PAID, mở khóa hoặc xác nhận giữ ghế.
+ *   + `BookingEmailService`: Gửi email kèm mã QR vé xem phim (`sendTicketEmail`).
+ *   + `TicketRepository`: Sao chép vé từ `BookingTicket` sang `Ticket` chính để quản lý vé đã xuất.
+ *   + `VoucherRepository`: Trừ lượt sử dụng voucher (`incrementUsedQuantityIfAvailable`).
+ *   + `WishlistRepository`: Tự động xóa phim khỏi danh sách yêu thích sau khi thanh toán mua vé thành công.
+ *   + `LoyaltyService`: Tích điểm thăng hạng hội viên cho tài khoản.
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Booking;
 import com.group3.cinema.entity.BookingTicket;
@@ -65,7 +75,7 @@ public class PaymentService {
         this.loyaltyService = loyaltyService;
     }
 
-
+    /** Tạo một phiên thanh toán mới ở trạng thái `PENDING` và sinh mã đơn hàng (orderCode). */
     @Transactional
     public Payment createPayment(Long bookingId, Integer accountId, String method) {
         Booking booking = requirePayableBooking(bookingId, accountId);
@@ -94,6 +104,7 @@ public class PaymentService {
         return paymentRepository.save(payment);
     }
 
+    /** Xử lý kết quả trả về từ trang kết quả thanh toán. */
     @Transactional
     public Payment processResult(String orderCode, Integer accountId, String result) {
         Payment payment = paymentRepository.findByOrderCode(orderCode)
@@ -148,6 +159,7 @@ public class PaymentService {
         return savedPayment;
     }
 
+    /** Xử lý kết quả tự động phản hồi webhook IPN từ cổng thanh toán (PayOS / VNPay / Momo). */
     @Transactional
     public Payment processGatewayResult(String orderCode, boolean success, String responseCode,
                                         String transactionId, String message) {
@@ -204,6 +216,7 @@ public class PaymentService {
         return savedPayment;
     }
 
+    /** Tra cứu thông tin thanh toán theo mã giao dịch cá nhân. */
     @Transactional
     public Payment getPayment(String orderCode, Integer accountId) {
         Payment payment = paymentRepository.findByOrderCode(orderCode)
@@ -222,6 +235,7 @@ public class PaymentService {
         return payment;
     }
 
+    /** Tra cứu thông tin thanh toán công khai. */
     @Transactional
     public Payment getPaymentPublic(String orderCode) {
         Payment payment = paymentRepository.findByOrderCode(orderCode)
@@ -240,6 +254,7 @@ public class PaymentService {
         return payment;
     }
 
+    /** Kiểm tra phiếu đặt vé có đủ điều kiện để thực hiện bước tiếp theo thanh toán hay không. */
     @Transactional
     public Booking requirePayableBooking(Long id, Integer accountId) {
         Booking booking = bookingRepository.findByIdAndAccountId(id, accountId)
@@ -344,7 +359,6 @@ public class PaymentService {
                     realTicketRepository.save(t);
                 }
                 
-                // Award loyalty points to the customer
                 loyaltyService.addLoyaltyPoints(booking.getAccountId(), booking.getTotalAmount());
             }
         } catch (Exception ex) {
@@ -352,6 +366,7 @@ public class PaymentService {
         }
     }
 
+    /** Tự động xóa bộ phim khỏi Wishlist nếu khách hàng đã thực hiện thanh toán mua vé cho bộ phim này. */
     public void cleanWishlistIfFromWishlist(jakarta.servlet.http.HttpSession session, Payment payment) {
         if (session == null || payment == null) {
             return;
@@ -378,6 +393,8 @@ public class PaymentService {
             System.err.println("Warning: Failed to clean wishlist for checkout: " + ex.getMessage());
         }
     }
+
+    /** Lấy danh sách lịch sử đặt vé hiển thị trên trang thông tin cá nhân khách hàng. */
     public List<BookingHistoryDto> getBookingHistory(Integer accountId) {
         List<Booking> bookings = bookingRepository.findByAccountIdOrderByCreatedAtDesc(accountId);
         List<BookingHistoryDto> dtos = new ArrayList<>();
@@ -447,3 +464,4 @@ public class PaymentService {
         return dtos;
     }
 }
+

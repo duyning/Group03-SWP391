@@ -1,9 +1,15 @@
-package com.group3.cinema.entity;
-
-/*
- * Added on 2026-06-24: Stores customer booking header data for ticket purchase flow.
- * Created by: HuyPB - HE191335
+/**
+ * Entity lưu trữ đơn hàng tổng hợp khi khách hàng đặt vé trực tuyến (Booking / `customer_bookings`).
+ * 
+ * Chức năng:
+ * - Lưu giữ tổng tiền vé (`ticketSubtotal`), tổng tiền combo bắp nước (`comboSubtotal`),
+ *   số tiền chiết khấu voucher (`discountAmount`) và tổng tiền thực tế phải thanh toán (`totalAmount`).
+ * - Theo dõi thời gian hết hạn đơn hàng (`expiresAt`) để tự động giải phóng giữ ghế nếu chưa thanh toán (Scheduler job).
+ * - Quản lý các trạng thái đơn hàng (Status: PENDING - Chờ thanh toán, PAID - Đã thanh toán, CANCELLED - Hủy, EXPIRED - Hết hạn).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -12,6 +18,14 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "customer_bookings")
 public class Booking {
+    
+    /**
+     * Enum các trạng thái đơn đặt vé:
+     * - PENDING: Mới tạo, chờ người dùng thanh toán qua cổng thanh toán.
+     * - PAID: Đã giao dịch thanh toán thành công.
+     * - CANCELLED: Đã bị hủy bởi người dùng hoặc hệ thống.
+     * - EXPIRED: Quá thời gian chờ thanh toán (expiresAt).
+     */
     public enum Status { PENDING, PAID, CANCELLED, EXPIRED }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,3 +66,4 @@ public class Booking {
     public LocalDateTime getPaidAt() { return paidAt; }
     public void setPaidAt(LocalDateTime paidAt) { this.paidAt = paidAt; }
 }
+

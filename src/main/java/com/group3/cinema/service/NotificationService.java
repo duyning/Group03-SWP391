@@ -1,3 +1,12 @@
+/**
+ * Service quản lý gửi và xử lý Hộp thư thông báo riêng cho từng Khách hàng (`NotificationService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `NotificationController`, `CustomerBookingService`, `CustomerNotificationBroadcastService`, `PaymentService`.
+ * - Tương tác với:
+ *   + `NotificationRepository`: Lưu thông báo (`save`), đếm thông báo chưa đọc (`countByAccount_AccountIDAndIsReadFalse`), đánh dấu đã đọc (`markAsRead`, `markAllAsRead`).
+ *   + `AccountRepository`: Lấy tài khoản người nhận (`findById`).
+ */
 package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Account;
@@ -15,22 +24,34 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
-    private final AccountRepository accountRepository; // Giả sử cậu có AccountRepository
+    private final AccountRepository accountRepository;
 
     public NotificationService(NotificationRepository notificationRepository, AccountRepository accountRepository) {
         this.notificationRepository = notificationRepository;
         this.accountRepository = accountRepository;
     }
 
-    // 1. Hàm dùng để HỆ THỐNG GỬI THÔNG BÁO cho user (Ví dụ: gọi sau khi đặt vé thành công)
+    /**
+     * Gửi thông báo hệ thống cho tài khoản chỉ định.
+     */
     @Transactional
     public void sendNotification(int accountId, String title, String content, NotificationType type) {
         sendNotification(accountId, title, content, type, null, null);
     }
 
+    /**
+     * Gửi thông báo đính kèm hình ảnh và URL điều hướng khi nhấn vào thông báo.
+     * 
+     * @param accountId ID tài khoản nhận.
+     * @param title Tiêu đề.
+     * @param content Nội dung thông báo.
+     * @param type Phân loại thông báo (`BOOKING`, `PROMOTION`, `SYSTEM`).
+     * @param imageUrl Đường dẫn ảnh đại diện.
+     * @param actionUrl Đường dẫn chuyển hướng nội bộ.
+     */
     @Transactional
     public void sendNotification(int accountId, String title, String content, NotificationType type,
-                                 String imageUrl, String actionUrl) {
+                                  String imageUrl, String actionUrl) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản"));
 
@@ -41,34 +62,42 @@ public class NotificationService {
         notification.setType(type);
         notification.setImageUrl(normalizeOptionalUrl(imageUrl));
         notification.setActionUrl(normalizeInternalUrl(actionUrl));
-        // isRead và createdAt đã được tự động set trong @PrePersist ở Entity
 
         notificationRepository.save(notification);
     }
 
-    // 2. Lấy danh sách thông báo có phân trang (dùng cho trang xem tất cả thông báo)
+    /**
+     * Lấy danh sách các thông báo cá nhân có phân trang (sắp xếp mới nhất lên đầu).
+     */
     public Page<Notification> getUserNotifications(int accountId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return notificationRepository.findByAccount_AccountIDOrderByCreatedAtDesc(accountId, pageable);
     }
 
-    // 3. Đếm số thông báo chưa đọc (để hiển thị số đỏ trên icon chuông)
+    /**
+     * Đếm tổng số lượng thông báo chưa đọc của tài khoản (hiển thị Badge đỏ góc màn hình).
+     */
     public int getUnreadCount(int accountId) {
         return notificationRepository.countByAccount_AccountIDAndIsReadFalse(accountId);
     }
 
-    // 4. Đánh dấu 1 thông báo là đã đọc
+    /**
+     * Đánh dấu 1 thông báo cụ thể là đã đọc (`isRead = true`).
+     */
     @Transactional
     public void markAsRead(Long notificationId) {
         notificationRepository.markAsRead(notificationId);
     }
 
-    // 5. Đánh dấu TẤT CẢ thông báo là đã đọc
+    /**
+     * Đánh dấu tất cả thông báo của tài khoản là đã đọc.
+     */
     @Transactional
     public void markAllAsRead(int accountId) {
         notificationRepository.markAllAsRead(accountId);
     }
 
+    /** Lấy URL điều hướng khi người dùng nhấp vào dòng thông báo. */
     public String getActionUrl(Long notificationId, int accountId) {
         return notificationRepository.findById(notificationId)
                 .filter(notification -> notification.getAccount() != null
@@ -90,3 +119,4 @@ public class NotificationService {
         return normalized.startsWith("/") && !normalized.startsWith("//") ? normalized : null;
     }
 }
+

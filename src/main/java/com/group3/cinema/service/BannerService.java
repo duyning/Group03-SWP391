@@ -1,9 +1,14 @@
-package com.group3.cinema.service;
-
-/*
- * Created on 2026-06-09: Service for managing homepage and news banners.
- * Created by: NinhDD - HE186113
+/**
+ * Service quản lý các Banner quảng cáo trên Trang chủ (`HOME`) và Trang tin tức (`NEWS`) (`BannerService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `BannerController`, `PublicController` và `PublicContentInitializer`.
+ * - Tương tác với `BannerRepository` để truy vấn danh sách (`findByPageAndActiveTrueOrderByIdDesc`), kiểm tra trùng tên banner (`existsDuplicateTitleInPage`).
+ * - Lưu tập tin hình ảnh tải lên vào thư mục `uploads/banners/` của máy chủ.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (09/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Banner;
 import com.group3.cinema.repository.BannerRepository;
@@ -33,6 +38,9 @@ public class BannerService {
         this.bannerRepository = bannerRepository;
     }
 
+    /**
+     * Lấy danh sách banner theo vị trí trang hiển thị (HOME, NEWS hoặc tất cả nếu null).
+     */
     public List<Banner> getBanners(Banner.BannerPage page) {
         if (page == null) {
             return bannerRepository.findAll(Sort.by(
@@ -43,20 +51,35 @@ public class BannerService {
         return bannerRepository.findByPageOrderByIdDesc(page);
     }
 
+    /**
+     * Lấy danh sách banner đang hoạt động (`active = true`) cho vị trí trang hiển thị công khai.
+     */
     public List<Banner> getActiveBanners(Banner.BannerPage page) {
         return bannerRepository.findByPageAndActiveTrueOrderByIdDesc(page);
     }
 
+    /**
+     * Lấy banner bài viết tin tức active mới nhất cho vị trí trang tin tức (`NEWS`).
+     */
     public Banner getActiveNewsBanner() {
         return bannerRepository.findFirstByPageAndActiveTrueOrderByIdDesc(Banner.BannerPage.NEWS)
                 .orElse(null);
     }
 
+    /**
+     * Tìm thông tin chi tiết một banner theo ID.
+     */
     public Banner getBanner(Long id) {
         return bannerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy banner"));
     }
 
+    /**
+     * Lưu thông tin tạo mới/cập nhật banner kèm file ảnh tải lên.
+     * 
+     * @param banner Đối tượng thông tin Banner.
+     * @param imageFile Tập tin ảnh tải lên từ MultipartForm.
+     */
     @Transactional
     public void saveBanner(Banner banner, MultipartFile imageFile) throws IOException {
         normalizeBanner(banner);
@@ -65,11 +88,17 @@ public class BannerService {
         bannerRepository.save(banner);
     }
 
+    /**
+     * Xóa một banner theo ID.
+     */
     @Transactional
     public void deleteBanner(Long id) {
         bannerRepository.deleteById(id);
     }
 
+    /**
+     * Xử lý lưu file ảnh tải lên vào ổ đĩa thư mục `uploads/banners/`.
+     */
     private void updateImageIfPresent(Banner banner, MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             return;
@@ -90,12 +119,18 @@ public class BannerService {
         banner.setImageUrl("/uploads/banners/" + fileName);
     }
 
+    /**
+     * Kiểm tra đuôi tập tin xem có phải định dạng ảnh được hỗ trợ (.jpg, .png, .webp).
+     */
     private boolean isImage(String fileName) {
         String lower = stripQuery(fileName).toLowerCase(Locale.ROOT);
         return lower.endsWith(".jpg") || lower.endsWith(".jpeg")
                 || lower.endsWith(".png") || lower.endsWith(".webp");
     }
 
+    /**
+     * Chuẩn hóa khoảng trắng dư thừa trong chuỗi thông tin banner.
+     */
     private void normalizeBanner(Banner banner) {
         banner.setTitle(normalizeText(banner.getTitle()));
         banner.setSubtitle(emptyToNull(trim(banner.getSubtitle())));
@@ -106,6 +141,9 @@ public class BannerService {
         }
     }
 
+    /**
+     * Kiểm tra hợp lệ dữ liệu Banner (tên, vị trí, ảnh, đường dẫn liên kết phim `/movies/{id}`).
+     */
     private void validateBanner(Banner banner) {
         if (banner.getTitle() == null || banner.getTitle().length() < 5 || banner.getTitle().length() > 150) {
             throw new IllegalArgumentException("Tên banner nội bộ phải từ 5 đến 150 ký tự.");
@@ -128,6 +166,9 @@ public class BannerService {
         }
     }
 
+    /**
+     * Kiểm tra tính hợp lệ của định dạng đường dẫn URL ảnh.
+     */
     private void validateImageReference(String value) {
         if (value.length() > 500) {
             throw new IllegalArgumentException("URL ảnh banner không được vượt quá 500 ký tự.");
@@ -163,3 +204,4 @@ public class BannerService {
         return value == null || value.isBlank() ? null : value;
     }
 }
+

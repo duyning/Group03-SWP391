@@ -1,10 +1,13 @@
-package com.group3.cinema.service.payment;
-
-/*
- * Added on 2026-06-25: MoMo sandbox gateway integration kept for compatibility.
- * Updated on 2026-06-26: Disabled by configuration in the customer payment flow.
- * Created by: HuyPB - HE191335
+/**
+ * Service tích hợp Ví điện tử MoMo Sandbox cho đơn đặt vé xem phim (`PaymentGatewayService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được điều phối qua `PaymentGatewayRouter` để tạo URL ví MoMo (`createPaymentUrl`).
+ * - Phân tích chữ ký HMAC-SHA256 (`parseCallback`) gửi từ MoMo IPN/Callback.
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (25/06/2026)
  */
+package com.group3.cinema.service.payment;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -52,17 +55,20 @@ public class MomoGatewayService implements PaymentGatewayService {
     @Value("${payment.momo.ipn-url:}")
     private String ipnUrl;
 
+    /** Trả về phương thức thanh toán MOMO. */
     @Override
     public Payment.Method method() {
         return Payment.Method.MOMO;
     }
 
+    /** Kiểm tra cấu hình MoMo đã sẵn sàng trong `application.properties` chưa. */
     @Override
     public boolean isConfigured() {
         return enabled && !endpoint.isBlank() && !partnerCode.isBlank() && !accessKey.isBlank()
                 && !secretKey.isBlank() && !returnUrl.isBlank() && !ipnUrl.isBlank();
     }
 
+    /** Tạo URL thanh toán qua ví MoMo bằng cách gửi Request HTTP POST kèm chữ ký HMAC-SHA256 sang cổng MoMo. */
     @Override
     public String createPaymentUrl(Payment payment, Booking booking, HttpServletRequest request) {
         String requestId = payment.getOrderCode() + "-" + UUID.randomUUID().toString().substring(0, 8);
@@ -116,6 +122,7 @@ public class MomoGatewayService implements PaymentGatewayService {
         }
     }
 
+    /** Giải mã và đối chiếu chữ ký dữ liệu phản hồi trả về từ ví MoMo. */
     @Override
     public GatewayCallback parseCallback(Map<String, String> params) {
         String rawSignature = "accessKey=" + accessKey
@@ -140,3 +147,4 @@ public class MomoGatewayService implements PaymentGatewayService {
                 params.getOrDefault("message", ""));
     }
 }
+

@@ -1,9 +1,13 @@
-package com.group3.cinema.service;
-
-/*
- * Service logic for movie banners, status lists, detail, and search.
- * Created/updated by: HuyPB - HE191335, TrienLX
+/**
+ * Service xử lý tìm kiếm, lọc phim công khai và Banner ngẫu nhiên cho Khách hàng (`MovieService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `PublicController`, `CustomerMovieController`.
+ * - Tương tác với `MovieRepository` để tra cứu danh sách phim theo trạng thái (`findByStatusAndActiveTrue`), tìm kiếm lọc đa tiêu chí (`searchActiveMovies`).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335, TrienLX
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.repository.MovieRepository;
@@ -25,6 +29,7 @@ public class MovieService {
     @Autowired
     private MovieRepository movieRepository;
 
+    /** Lấy ngẫu nhiên 5 bộ phim đang mở chiếu để hiển thị Slide Banner trên trang chủ. */
     @Transactional
     public List<Movie> getRandomBannerMovies() {
         autoUpdateMovieStatuses();
@@ -36,30 +41,36 @@ public class MovieService {
                 .collect(Collectors.toList());
     }
 
+    /** Lấy danh sách các bộ phim Đang chiếu (`NOW_SHOWING`). */
     public List<Movie> getNowShowingMovies() {
         return getMoviesByStatus(Movie.MovieStatus.NOW_SHOWING);
     }
 
+    /** Lấy danh sách các bộ phim Sắp chiếu (`COMING_SOON`). */
     public List<Movie> getComingSoonMovies() {
         return getMoviesByStatus(Movie.MovieStatus.COMING_SOON);
     }
 
+    /** Lấy danh sách các bộ phim Suất chiếu đặc biệt (`SPECIAL_SCREENING`). */
     public List<Movie> getSpecialScreeningMovies() {
         return getMoviesByStatus(Movie.MovieStatus.SPECIAL_SCREENING);
     }
 
+    /** Lấy thông tin chi tiết của bộ phim đang hoạt động theo ID. */
     @Transactional
     public Movie getMovieDetail(int id) {
         autoUpdateMovieStatuses();
         return movieRepository.findByIdAndActiveTrue(id).orElse(null);
     }
 
+    /** Lấy danh sách các bộ phim active theo trạng thái chỉ định. */
     @Transactional
     public List<Movie> getMoviesByStatus(Movie.MovieStatus status) {
         autoUpdateMovieStatuses();
         return movieRepository.findByStatusAndActiveTrue(status);
     }
 
+    /** Tìm kiếm phim theo từ khóa, thể loại và trạng thái đơn giản. */
     @Transactional
     public List<Movie> searchMovies(String keyword, String genre, String status) {
         autoUpdateMovieStatuses();
@@ -75,6 +86,7 @@ public class MovieService {
         );
     }
 
+    /** Lọc danh sách phim nâng cao theo nhiều thuộc tính (Thể loại, Định dạng, Ngôn ngữ, Độ tuổi) và sắp xếp kết quả. */
     public List<Movie> searchMovies(String keyword,
                                     List<String> genres,
                                     List<String> formats,
@@ -102,6 +114,7 @@ public class MovieService {
         return movies;
     }
 
+    /** Lấy danh sách danh mục thể loại phim chuẩn. */
     public List<String> getActiveGenres() {
         return List.of(
                 "Hành động",
@@ -119,10 +132,12 @@ public class MovieService {
         );
     }
 
+    /** Lấy danh sách định dạng phim chuẩn (2D, 3D, IMAX...). */
     public List<String> getActiveFormats() {
         return List.of("2D", "3D", "IMAX 2D", "IMAX 3D", "4DX", "ScreenX");
     }
 
+    /** Lấy danh sách ngôn ngữ chuẩn. */
     public List<String> getActiveLanguages() {
         return List.of(
                 "Tiếng Việt",
@@ -138,14 +153,17 @@ public class MovieService {
         );
     }
 
+    /** Lấy danh sách độ tuổi phân loại chuẩn (P, K, T13, T16, T18, C). */
     public List<String> getActiveAgeRatings() {
         return List.of("P", "K", "T13", "T16", "T18", "C");
     }
 
+    /** Lấy danh sách tất cả giá trị Enum MovieStatus. */
     public Movie.MovieStatus[] getMovieStatuses() {
         return Movie.MovieStatus.values();
     }
 
+    /** Tự động đồng bộ chuyển trạng thái phim quá hạn sang Ngừng chiếu (`STOPPED`). */
     @Transactional
     public void autoUpdateMovieStatuses() {
         java.time.LocalDate today = java.time.LocalDate.now();
@@ -154,7 +172,7 @@ public class MovieService {
                 Movie.MovieStatus.NOW_SHOWING,
                 Movie.MovieStatus.COMING_SOON
         );
-        movieRepository.autoDeactivateExpiredMovies(today, today.minusDays(7), Movie.MovieStatus.STOPPED);
+        movieRepository.autoDeactivateExpiredMovies(today, Movie.MovieStatus.STOPPED);
         movieRepository.deactivateStoppedMovies(Movie.MovieStatus.STOPPED);
     }
 
@@ -304,3 +322,4 @@ public class MovieService {
         return 3;
     }
 }
+

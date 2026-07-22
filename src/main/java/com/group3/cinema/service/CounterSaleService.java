@@ -1,3 +1,16 @@
+/**
+ * Service bán vé và dịch vụ bắp nước trực tiếp tại quầy vé POS cho nhân viên rạp (`CounterSaleService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `CounterSaleController` (POS Terminal bán vé tại rạp).
+ * - Tương tác với:
+ *   + `ShowtimeRepository`: Tra cứu suất chiếu bán vé hợp lệ (`getSellableShowtimes`).
+ *   + `AccountRepository`: Tra cứu khách hàng thành viên theo SĐT/Email hoặc tự động tạo tài khoản vãng lai `WALK_IN_EMAIL`.
+ *   + `ComboRepository`: Bán sản phẩm bắp nước đính kèm.
+ *   + `VoucherRepository`: Áp dụng mã giảm giá và tính toán chiết khấu.
+ *   + `BookingRepository`, `BookingTicketRepository`, `BookingComboRepository`, `PaymentRepository`: Lưu phiếu đặt vé, giữ ghế, giao dịch thanh toán Tiền mặt / VietQR payOS.
+ *   + `SeatHoldingService`, `TicketService`, `PaymentGatewayRouter`, `LoyaltyService`: Giữ vị trí ghế tạm thời, tính đơn giá vé, sinh QR code, cộng điểm thưởng thăng hạng thành viên.
+ */
 package com.group3.cinema.service;
 
 import com.group3.cinema.dto.BookingSeatView;
@@ -107,6 +120,7 @@ public class CounterSaleService {
         this.loyaltyService = loyaltyService;
     }
 
+    /** Lấy danh sách các suất chiếu còn khả dụng để bán vé tại quầy POS. */
     @Transactional(readOnly = true)
     public List<ShowtimeOption> getSellableShowtimes(LocalDate date, Integer movieId) {
         LocalDate targetDate = date == null ? LocalDate.now() : date;
@@ -120,6 +134,7 @@ public class CounterSaleService {
                 .toList();
     }
 
+    /** Tìm kiếm tài khoản khách hàng thành viên tại quầy theo số điện thoại hoặc email. */
     @Transactional(readOnly = true)
     public List<CustomerOption> searchCustomers(String keyword) {
         String normalized = keyword == null ? "" : keyword.trim();
@@ -135,6 +150,7 @@ public class CounterSaleService {
                 .toList();
     }
 
+    /** Lấy danh sách các combo bắp nước đang mở bán tại quầy. */
     @Transactional(readOnly = true)
     public List<ComboOption> getActiveCombos() {
         return comboRepository.findByStatusInOrderByNameAsc(List.copyOf(ACTIVE_COMBO_STATUSES)).stream()
@@ -149,6 +165,7 @@ public class CounterSaleService {
                 .toList();
     }
 
+    /** Lấy danh sách các mã Voucher giảm giá active có thể dùng trực tiếp tại quầy. */
     @Transactional(readOnly = true)
     public List<VoucherOption> getActiveVouchers() {
         LocalDateTime now = LocalDateTime.now();
@@ -168,6 +185,7 @@ public class CounterSaleService {
                 .toList();
     }
 
+    /** Tải sơ đồ ma trận vị trí ghế tại quầy. */
     @Transactional
     public SeatMapResponse getSeatMap(Long showtimeId, String holdToken) {
         BookingSelection selection = selectionFor(showtimeId);
@@ -180,6 +198,7 @@ public class CounterSaleService {
         return new SeatMapResponse(selection, seats, rows, cols);
     }
 
+    /** Giữ vị trí ghế trực tiếp tại quầy POS trong 5 phút. */
     @Transactional
     public HoldResponse holdSeats(HoldRequest request) {
         if (request == null) {
@@ -197,16 +216,21 @@ public class CounterSaleService {
                 .toList());
     }
 
+    /** Giải phóng token giữ ghế tại quầy. */
     @Transactional
     public void releaseHold(String holdToken) {
         seatHoldingService.releaseHold(holdToken);
     }
 
+    /** Xem trước tổng chi phí đơn hàng tại quầy (bao gồm vé, combo bắp nước và voucher giảm giá). */
     @Transactional(readOnly = true)
     public CounterSaleSummary previewSale(CounterSaleRequest request) {
         return buildDraft(request, false).toSummary();
     }
 
+    /**
+     * Hoàn tất đơn bán vé trực tiếp bằng Tiền mặt (CASH) tại quầy và xuất vé.
+     */
     @Transactional
     public CounterSaleResult completeSale(CounterSaleRequest request) {
         SaleDraft draft = buildDraft(request, true);
@@ -272,7 +296,6 @@ public class CounterSaleService {
 
         createDisplayTickets(customer, draft, heldTickets, booking, payment, request);
 
-        // Award loyalty points to non-walk-in customer
         if (customer != null && !WALK_IN_EMAIL.equals(customer.getEmail())) {
             loyaltyService.addLoyaltyPoints(customer.getAccountID(), booking.getTotalAmount());
         }
@@ -289,6 +312,9 @@ public class CounterSaleService {
         );
     }
 
+    /**
+     * Tạo mã chuyển khoản VietQR/payOS hiển thị trên màn hình phụ tại quầy bán vé.
+     */
     @Transactional
     public CounterPaymentResult createCounterPayment(CounterSaleRequest request, HttpServletRequest httpRequest) {
         SaleDraft draft = buildDraft(request, true);

@@ -1,3 +1,12 @@
+/**
+ * Entity quản lý Bài viết / Tin tức điện ảnh (`posts`).
+ * 
+ * Chức năng:
+ * - Quản lý tiêu đề bài viết (`title`), danh mục (`category`), tác giả (`author`), tóm tắt sapo (`summary`),
+ *   nội dung chi tiết (`content`), đường dẫn ảnh đại diện (`thumbnail`), từ khóa tìm kiếm (`tags`).
+ * - Trạng thái bài viết (`status`): DRAFT (Bài nháp), PUBLISHED (Xuất bản), SCHEDULED (Lên lịch xuất bản).
+ * - Tự động cập nhật `publishedAt` khi chuyển trạng thái sang PUBLISHED và xóa `publishedAt` khi hạ bài xuống DRAFT.
+ */
 package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
@@ -11,36 +20,36 @@ public class Post {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // TiÃªu Ä‘á» bÃ i viáº¿t
+    /** Tiêu đề bài viết */
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
-    // Danh má»¥c
+    /** Danh mục bài viết */
     @Column(nullable = false, columnDefinition = "NVARCHAR(100)")
     private String category;
 
-    // TÃ¡c giáº£
+    /** Tác giả bài viết */
     @Column(nullable = false, columnDefinition = "NVARCHAR(100)")
     private String author;
 
-    // Sapo / mÃ´ táº£ ngáº¯n
+    /** Sapo / Mô tả ngắn bài viết */
     @Column(nullable = false, columnDefinition = "NVARCHAR(1000)")
     private String summary;
 
-    // Ná»™i dung bÃ i viáº¿t
+    /** Nội dung chi tiết định dạng HTML/Text */
     @Lob
     @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
-    // ÄÆ°á»ng dáº«n áº£nh Ä‘áº¡i diá»‡n
+    /** Đường dẫn ảnh đại diện (thumbnail) */
     @Column(columnDefinition = "NVARCHAR(500)")
     private String thumbnail;
 
-    // Tags, phÃ¢n tÃ¡ch báº±ng dáº¥u pháº©y
+    /** Các từ khóa thẻ tag, phân tách bằng dấu phẩy */
     @Column(columnDefinition = "NVARCHAR(500)")
     private String tags;
 
-    // DRAFT | PUBLISHED | SCHEDULED
+    /** Trạng thái bài viết: DRAFT | PUBLISHED | SCHEDULED */
     @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
     private String status;
 
@@ -53,6 +62,9 @@ public class Post {
     public Post() {
     }
 
+    /**
+     * Khởi tạo ngày tạo/sửa và tự động gắn ngày xuất bản nếu bài đăng ngay ở trạng thái PUBLISHED (`@PrePersist`).
+     */
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -63,6 +75,9 @@ public class Post {
 
     }
 
+    /**
+     * Tự động cập nhật ngày sửa và đồng bộ ngày xuất bản khi thay đổi trạng thái bài viết (`@PreUpdate`).
+     */
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
@@ -72,11 +87,9 @@ public class Post {
                 this.publishedAt = LocalDateTime.now();
             }
         } else if ("DRAFT".equalsIgnoreCase(this.status)) {
-            this.publishedAt = null; // Hạ bài viết xuống thì xóa ngày xuất bản để ẩn khỏi trang chủ
+            this.publishedAt = null; // Hạ bài viết xuống thì xóa ngày xuất bản để ẩn khỏi trang tin tức
         }
     }
-
-    // ===== Getter & Setter =====
 
     public Long getId() {
         return id;
@@ -166,3 +179,4 @@ public class Post {
         return updatedAt;
     }
 }
+
