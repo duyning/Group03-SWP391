@@ -56,15 +56,14 @@ public class ComboController {
 
     @PostMapping("/save")
     public String saveCombo(
-            @ModelAttribute("combo") Combo combo, // Thêm tên định danh "combo" cho chuẩn với HTML
+            @ModelAttribute("combo") Combo combo,
             BindingResult bindingResult,
             @RequestParam(value = "imageFile", required = false) MultipartFile file,
             @RequestParam(value = "foodItemIds", required = false) List<Long> foodItemIds,
             @RequestParam(value = "discountPercent", required = false) BigDecimal discountPercent,
             @RequestParam Map<String, String> requestParams,
-            Model model) throws IOException { // THÊM tham số Model vào đây
+            Model model) throws IOException {
 
-        // Nếu có lỗi, trả về form create (lúc này object combo lỗi vẫn được giữ lại tự động)
         if (bindingResult.hasErrors()) {
             prepareComboForm(model, selectedQuantities(foodItemIds, requestParams));
             return "combo-create";
@@ -76,6 +75,20 @@ public class ComboController {
             bindingResult.reject("combo.business", e.getMessage());
             prepareComboForm(model, selectedQuantities(foodItemIds, requestParams));
             return "combo-create";
+        }
+        return "redirect:/admin/combos";
+    }
+
+    /* =========================================================================
+       HÀM XỬ LÝ CHUYỂN ĐỔI TRẠNG THÁI ACTIVE / INACTIVE ĐƯỢC THÊM MỚI TẠI ĐÂY
+       ========================================================================= */
+    @GetMapping("/publish/{id}")
+    public String publishCombo(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
+        try {
+            comboService.toggleComboStatus(id); // Gọi hàm xử lý logic đổi trạng thái ở Service
+            redirectAttributes.addFlashAttribute("itemSuccess", "Đã cập nhật trạng thái hoạt động của Combo thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("itemError", "Không thể chuyển đổi trạng thái: " + e.getMessage());
         }
         return "redirect:/admin/combos";
     }
@@ -96,18 +109,17 @@ public class ComboController {
 
     @PostMapping("/update")
     public String updateCombo(
-            @ModelAttribute("combo") Combo combo, // Thêm tên định danh "combo"
+            @ModelAttribute("combo") Combo combo,
             BindingResult bindingResult,
             @RequestParam(value = "imageFile", required = false) MultipartFile file,
             @RequestParam(value = "foodItemIds", required = false) List<Long> foodItemIds,
             @RequestParam(value = "discountPercent", required = false) BigDecimal discountPercent,
             @RequestParam Map<String, String> requestParams,
-            Model model) throws IOException { // THÊM tham số Model vào đây
+            Model model) throws IOException {
 
-        // Nếu có lỗi trùng tên, phải nạp lại dữ liệu cũ (như đường dẫn ảnh) để giao diện edit không bị trống ảnh
         if (bindingResult.hasErrors()) {
             Combo oldCombo = comboService.getCombo(combo.getId());
-            combo.setImage(oldCombo.getImage()); // Giữ lại ảnh cũ của combo hiển thị lên màn hình edit
+            combo.setImage(oldCombo.getImage());
             prepareComboForm(model, selectedQuantities(foodItemIds, requestParams));
             return "combo-edit";
         }

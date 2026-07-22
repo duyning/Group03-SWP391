@@ -40,7 +40,7 @@ public class Combo {
 
     // ACTIVE (Äang bÃ¡n) | INACTIVE (Ngá»«ng bÃ¡n)
     @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
-    private String status = "ACTIVE";
+    private String status = "INACTIVE";
 
     @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ComboItem> items = new ArrayList<>();
