@@ -20,11 +20,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import java.util.List;
 
 /**
- * Controller xá»­ lÃ½ hiá»ƒn thá»‹ trang chá»§ (Home Page).
- * ÄÄƒng nháº­p thÃ nh cÃ´ng sáº½ hiá»ƒn thá»‹ giao diá»‡n trang chá»§ vá»›i thÃ´ng tin ngÆ°á»i dÃ¹ng.
+ * Điều phối màn hình trang chủ.
  *
- * NgÃ y thá»±c hiá»‡n: 04/06/2026
- * Táº¡o bá»Ÿi: DuongND_HE186619
+ * <p>Controller chỉ làm nhiệm vụ tập hợp dữ liệu cho giao diện: thông tin tài khoản
+ * đang đăng nhập, banner đang hoạt động, danh sách phim nổi bật và bài viết mới.
+ * Các quy tắc lọc/truy vấn dữ liệu được giao cho service tương ứng để controller
+ * không chứa logic nghiệp vụ.</p>
  */
 @Controller
 public class HomeController {
@@ -39,15 +40,15 @@ public class HomeController {
     private BannerService bannerService;
 
     /**
-     * Show home page.
+     * Hiển thị trang chủ tại cả URL gốc và {@code /home}.
      *
-     * Business flow:
-     * - Load logged-in user from session when available, so the header can show
-     *   account actions and user information.
-     * - Load about 5 active movies as hotMovies for homepage presentation.
-     * - Load homepage banners from banner management.
-     * - Customers who want the full movie catalog are sent to GET /movies.
-     * - Return home.html for Thymeleaf rendering.
+     * <p>Dữ liệu được đưa vào model theo đúng tên mà {@code home.html} sử dụng:</p>
+     * <ul>
+     *   <li>{@code user}: chỉ có khi session đã đăng nhập, dùng cho header chung.</li>
+     *   <li>{@code homeBanners}: banner đúng vị trí HOME và còn hiệu lực.</li>
+     *   <li>{@code hotMovies}: tối đa 5 phim hoạt động, dùng cho khu vực phim nổi bật.</li>
+     *   <li>{@code latestPosts}: các bài viết đã xuất bản gần nhất.</li>
+     * </ul>
      */
     @GetMapping({"/", "/home"})
     public String showHome(HttpSession session, Model model) {

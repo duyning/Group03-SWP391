@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class SeatHoldingService {
+    // Thời gian này phải đồng nhất với bộ đếm trên giao diện booking.
     public static final int HOLD_MINUTES = 5;
 
     private final SeatRepository seatRepository;
@@ -69,6 +70,11 @@ public class SeatHoldingService {
 
     @Transactional
     public List<BookingSeatView> getSeatMap(BookingSelection selection, String ownToken) {
+        /*
+         * Xóa hold hết hạn trước, sau đó ghép cấu hình vật lý của ghế với trạng thái
+         * booking của đúng suất chiếu. ownToken giúp đánh dấu ghế của phiên hiện tại
+         * là SELECTED thay vì HOLDING như ghế do khách khác giữ.
+         */
         releaseExpired();
         Room room = roomRepository.findById(selection.roomId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng chiếu."));
@@ -86,6 +92,10 @@ public class SeatHoldingService {
 
     @Transactional
     public HoldResult holdSeats(BookingSelection selection, Collection<Long> requestedIds, String currentToken) {
+        /*
+         * Giới hạn 8 ghế, loại ID trùng và xác thực mọi ghế thuộc đúng phòng.
+         * Hold cũ của cùng token được xóa trước để thao tác chọn lại mang tính thay thế.
+         */
         if (requestedIds == null || requestedIds.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một ghế.");
         }
@@ -130,6 +140,7 @@ public class SeatHoldingService {
         }
 
         try {
+            // Unique constraint (showtime_id, seat_id) là lớp bảo vệ cuối trước tranh chấp đồng thời.
             ticketRepository.saveAllAndFlush(holds);
         } catch (DataIntegrityViolationException ex) {
             throw new IllegalArgumentException("Ghế vừa được người khác giữ. Vui lòng tải lại sơ đồ ghế.");
@@ -163,6 +174,7 @@ public class SeatHoldingService {
         String type = normalizeType(seat.getSeatType());
         SeatType meta = seatTypes.get(type);
         boolean sellable = isSellableSeat(seat, seatTypes);
+        // Chuẩn hóa trạng thái backend thành các mã đơn giản mà CSS/JavaScript hiểu được.
         String status;
         if (!sellable) {
             status = "UNAVAILABLE";

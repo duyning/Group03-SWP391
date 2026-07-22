@@ -488,60 +488,35 @@ public class RoomUnicodeMigration {
             return;
         }
         try {
-            // Kiểm tra xem constraint cũ CK__account__members__4BAC3F29 có tồn tại không trước khi xóa
-            Integer oldConstraintCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM sys.check_constraints WHERE name = 'CK__account__members__4BAC3F29'",
-                    Integer.class
-            );
-            if (oldConstraintCount != null && oldConstraintCount > 0) {
-                jdbcTemplate.execute("ALTER TABLE account DROP CONSTRAINT CK__account__members__4BAC3F29");
-                log.info("Đã xóa constraint cũ CK__account__members__4BAC3F29 khỏi bảng account");
-            }
-        } catch (Exception e) {
-            log.warn("Không thể xóa constraint cũ CK__account__members__4BAC3F29: {}", e.getMessage());
-        }
+            // Một database có thể đồng thời chứa nhiều constraint (tên tự sinh và tên chuẩn).
+            // Vòng lặp cũ chỉ xóa một constraint nên constraint cũ vẫn chặn giá trị BRONZE.
+            jdbcTemplate.execute("""
+                    DECLARE @dropSql NVARCHAR(MAX) = N''
 
-        try {
-            // Xóa toàn bộ constraint CHECK trên cột membership_level của bảng account
-            String dropAllConstraints = """
-                    DECLARE @sql NVARCHAR(MAX) = N''
-
-                    SELECT @sql = @sql + N'ALTER TABLE '
-                        + QUOTENAME(s.name) + N'.' + QUOTENAME(t.name)
+                    SELECT @dropSql = @dropSql
+                        + N'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(t.schema_id))
+                        + N'.' + QUOTENAME(t.name)
                         + N' DROP CONSTRAINT ' + QUOTENAME(cc.name) + N';'
                     FROM sys.check_constraints cc
-                    JOIN sys.columns c ON cc.parent_object_id = c.object_id
-                        AND cc.parent_column_id = c.column_id
-                    JOIN sys.tables t ON c.object_id = t.object_id
-                    JOIN sys.schemas s ON t.schema_id = s.schema_id
-                    WHERE t.name = N'account'
-                        AND c.name = N'membership_level'
+                    JOIN sys.tables t ON t.object_id = cc.parent_object_id
+                    WHERE cc.parent_object_id = OBJECT_ID(N'dbo.account')
+                      AND (
+                          cc.parent_column_id = COLUMNPROPERTY(
+                              OBJECT_ID(N'dbo.account'), N'membership_level', 'ColumnId'
+                          )
+                          OR cc.definition LIKE N'%membership_level%'
+                      )
 
-                    IF @sql <> N''
-                        EXEC sp_executesql @sql
-                    """;
-            jdbcTemplate.execute(dropAllConstraints);
-            log.info("Đã xóa tất cả CHECK constraint trên cột account.membership_level (nếu có)");
-        } catch (Exception e) {
-            log.warn("Không thể xóa CHECK constraint trên cột account.membership_level: {}", e.getMessage());
-        }
+                    IF LEN(@dropSql) > 0
+                        EXEC sp_executesql @dropSql
 
-        try {
-            // Kiểm tra xem constraint mới đã tồn tại chưa
-            Integer newConstraintCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM sys.check_constraints WHERE name = 'CK_account_membership_level_allowed'",
-                    Integer.class
-            );
-            if (newConstraintCount == null || newConstraintCount == 0) {
-                // Tạo constraint mới với đầy đủ 4 giá trị bao gồm BRONZE
-                jdbcTemplate.execute(
-                        "ALTER TABLE account ADD CONSTRAINT CK_account_membership_level_allowed "
-                        + "CHECK (membership_level IN ('BRONZE', 'SILVER', 'GOLD', 'PLAT'))"
-                );
-                log.info("Đã tạo constraint mới CK_account_membership_level_allowed cho bảng account");
-            }
+                    ALTER TABLE dbo.account WITH CHECK
+                    ADD CONSTRAINT CK_account_membership_level_allowed
+                    CHECK (membership_level IN ('BRONZE', 'SILVER', 'GOLD', 'PLAT'))
+                    """);
+            log.info("Đã đồng bộ CHECK constraint account.membership_level với MembershipLevel enum");
         } catch (Exception e) {
-            log.warn("Không thể tạo constraint mới CK_account_membership_level_allowed: {}", e.getMessage());
+            log.warn("Không thể đồng bộ CHECK constraint account.membership_level: {}", e.getMessage());
         }
     }
 

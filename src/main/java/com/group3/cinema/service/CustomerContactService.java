@@ -225,7 +225,7 @@ public class CustomerContactService {
     }
 
     private String detectPrimaryTopic(String content) {
-        if (containsAny(content, "thanh toán", "trừ tiền", "chuyển khoản", "ngân hàng", "bank", "ví", "momo", "vnpay", "thẻ")) {
+        if (containsAny(content, "thanh toán", "trừ tiền", "chuyển khoản", "ngân hàng", "bank", "ví", "payos", "thẻ")) {
             return "payment";
         }
         if (containsAny(content, "giá vé", "bao nhiêu tiền", "vé bao nhiêu", "bảng giá")) {
@@ -281,7 +281,7 @@ public class CustomerContactService {
     private List<String> buildContextualAnswers(String content) {
         List<String> answers = new ArrayList<>();
 
-        if (containsAny(content, "thanh toán", "trừ tiền", "chuyển khoản", "ngân hàng", "bank", "ví", "momo", "vnpay", "thẻ")) {
+        if (containsAny(content, "thanh toán", "trừ tiền", "chuyển khoản", "ngân hàng", "bank", "ví", "payos", "thẻ")) {
             answers.add("Về thanh toán: nếu tài khoản của bạn đã bị trừ tiền nhưng website chưa hiển thị vé, giao dịch cần được đối soát với cổng thanh toán. Trong thời gian đối soát, bạn không nên thanh toán lại cùng một đơn nếu hệ thống vẫn còn ghi nhận giao dịch đang xử lý.");
         }
         if (containsAny(content, "giá vé", "bao nhiêu tiền", "vé bao nhiêu", "bảng giá")) {
@@ -332,7 +332,7 @@ public class CustomerContactService {
 
     private List<String> buildRequiredDetails(String content) {
         List<String> details = new ArrayList<>();
-        if (containsAny(content, "thanh toán", "trừ tiền", "ngân hàng", "momo", "vnpay", "thẻ")) {
+        if (containsAny(content, "thanh toán", "trừ tiền", "ngân hàng", "payos", "thẻ")) {
             details.add("mã giao dịch hoặc ảnh chụp giao dịch thanh toán");
         }
         if (containsAny(content, "vé", "đổi vé", "hủy vé", "hoàn vé", "mã vé")) {

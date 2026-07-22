@@ -1,10 +1,8 @@
 <!doctype html>
 <!--
-  Updated on 2026-06-04: Home page follows the provided Beta Cinemas UI style.
-  Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
-  Updated on 2026-06-04: Removed English visible text from movie status and image alt text.
-  Updated on 2026-06-04: Added logged-in user profile actions from DuongND.
-  Created by: HuyPB - HE191335
+  Màn trang chủ, nhận model từ HomeController.
+  homeBanners dựng slider quảng bá; hotMovies dựng tối đa 5 phim nổi bật;
+  latestPosts dựng khu tin tức và user được fragment header dùng khi đã đăng nhập.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
@@ -367,15 +365,12 @@
     </div>
 
     <main class="content-container">
-        <!-- Movie tabs follow the visual style of the provided UI page. -->
+        <!-- Khu phim nổi bật chỉ là bản rút gọn; nút cuối khu vực dẫn tới toàn bộ danh sách phim. -->
         <div class="tabs">
             <span class="active">PHIM ĐANG HOT</span>
         </div>
 
-        <!--
-          Home page only shows about 5 hot movies.
-          Full now-showing, coming-soon, and special-screening lists are on /movies.
-        -->
+        <!-- Phim sắp chiếu chỉ có nút chi tiết; các trạng thái còn lại được phép đi thẳng tới chọn suất. -->
         <section class="movies" th:if="${hotMovies != null && !#lists.isEmpty(hotMovies)}">
             <article class="movie-card" th:each="movie : ${hotMovies}">
                 <a th:href="@{/movies/{id}(id=${movie.id})}">
@@ -402,6 +397,7 @@
             <a class="outline-btn" th:href="@{/movies}">Xem tất cả phim</a>
         </div>
 
+        <!-- Bài viết chỉ render khi service trả dữ liệu đã xuất bản, tránh tạo tiêu đề khu vực rỗng. -->
         <div class="tabs" th:if="${latestPosts != null && !#lists.isEmpty(latestPosts)}">
             <span class="active">TIN TỨC MỚI</span>
         </div>
@@ -441,6 +437,7 @@
     </footer>
 
     <script>
+        // Slider dịch theo bội số 100% và tự chuyển banner sau mỗi 5 giây.
         let slideIndex = 0;
         let slideInterval = setInterval(nextSlide, 5000);
 
@@ -467,6 +464,7 @@
         }
 
         function currentSlide(n) {
+            // Khi người dùng chọn thủ công, khởi động lại bộ đếm để banner không đổi ngay lập tức.
             slideIndex = n;
             showSlides(slideIndex);
             clearInterval(slideInterval);

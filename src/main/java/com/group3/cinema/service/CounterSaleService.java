@@ -297,7 +297,7 @@ public class CounterSaleService {
             throw new IllegalArgumentException("Tiền mặt không cần tạo mã QR thanh toán.");
         }
         if (paymentMethod != Payment.Method.PAYOS) {
-            throw new IllegalArgumentException("Mã QR thanh toán tại quầy hiện dùng cổng payOS/VietQR trong application-vnpay-local.yaml.");
+            throw new IllegalArgumentException("Mã QR thanh toán tại quầy chỉ hỗ trợ cổng payOS/VietQR.");
         }
 
         Account customer = resolveCustomerAccount(request);

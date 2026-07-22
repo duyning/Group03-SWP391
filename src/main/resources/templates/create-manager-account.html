@@ -20,8 +20,9 @@
         .admin-main.create-manager-main {
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             padding: 32px;
         }
         .admin-main.create-manager-main .register-wrapper {
@@ -222,6 +223,7 @@
 <div class="admin-layout">
     <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('create-manager')}"></aside>
     <main class="admin-main create-manager-main">
+<header th:replace="~{fragments/admin_sidebar :: adminTopbar}"></header>
 <div class="register-wrapper">
     <!-- Decorative background elements -->
     <div class="bg-shape bg-shape-1"></div>

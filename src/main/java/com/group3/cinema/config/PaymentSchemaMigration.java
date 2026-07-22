@@ -21,27 +21,29 @@ public class PaymentSchemaMigration {
     public void allowPayOsPaymentMethod() {
         try {
             jdbcTemplate.execute("""
-                    DECLARE @constraintName nvarchar(128);
-                    SELECT @constraintName = cc.name
-                    FROM sys.check_constraints cc
-                    JOIN sys.columns c ON cc.parent_object_id = c.object_id
-                    WHERE cc.parent_object_id = OBJECT_ID('payments')
-                      AND c.name = 'payment_method'
-                      AND cc.definition LIKE '%VNPAY%'
-                      AND cc.definition LIKE '%MOMO%';
-                    IF @constraintName IS NOT NULL
+                    IF OBJECT_ID('payments', 'U') IS NOT NULL
                     BEGIN
-                        EXEC('ALTER TABLE payments DROP CONSTRAINT [' + @constraintName + ']');
-                    END
-                    IF NOT EXISTS (
-                        SELECT 1
-                        FROM sys.check_constraints
-                        WHERE parent_object_id = OBJECT_ID('payments')
-                          AND name = 'CK_payments_payment_method'
-                    )
-                    BEGIN
+                        DECLARE @constraintName nvarchar(128);
+                        WHILE EXISTS (
+                            SELECT 1
+                            FROM sys.check_constraints
+                            WHERE parent_object_id = OBJECT_ID('payments')
+                              AND definition LIKE '%payment_method%'
+                        )
+                        BEGIN
+                            SELECT TOP 1 @constraintName = name
+                            FROM sys.check_constraints
+                            WHERE parent_object_id = OBJECT_ID('payments')
+                              AND definition LIKE '%payment_method%';
+                            EXEC('ALTER TABLE payments DROP CONSTRAINT [' + @constraintName + ']');
+                        END;
+
+                        UPDATE payments
+                        SET payment_method = 'PAYOS'
+                        WHERE payment_method NOT IN ('PAYOS', 'CASH', 'CARD', 'BANK_TRANSFER');
+
                         ALTER TABLE payments ADD CONSTRAINT CK_payments_payment_method
-                        CHECK (payment_method IN ('VNPAY', 'MOMO', 'PAYOS', 'CASH', 'CARD', 'BANK_TRANSFER'));
+                        CHECK (payment_method IN ('PAYOS', 'CASH', 'CARD', 'BANK_TRANSFER'));
                     END
                     """);
             jdbcTemplate.execute("""

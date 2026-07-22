@@ -187,12 +187,19 @@
                             <td class="text-end">0</td>
                             <td class="money">0 đ</td>
                         </tr>
+                        <tr th:each="food : ${details.foodItems}">
+                            <td>Món lẻ</td>
+                            <td th:text="${food.foodItemName}">Món lẻ</td>
+                            <td class="text-end" th:text="${food.quantity}">1</td>
+                            <td class="money" th:text="${#numbers.formatDecimal(food.subtotal,0,'COMMA',0,'POINT')} + ' đ'">0 đ</td>
+                        </tr>
                         </tbody>
                     </table>
 
                     <div class="summary">
                         <div class="summary-row"><span>Tiền vé</span><strong th:text="${#numbers.formatDecimal(details.booking.ticketSubtotal,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>
                         <div class="summary-row"><span>Combo</span><strong th:text="${#numbers.formatDecimal(details.booking.comboSubtotal,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>
+                        <div class="summary-row"><span>Món lẻ</span><strong th:text="${#numbers.formatDecimal(details.booking.foodSubtotal,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>
                         <div class="summary-row" th:if="${details.booking.voucherCode != null}"><span>Voucher</span><strong th:text="${details.booking.voucherCode}">CODE</strong></div>
                         <div class="summary-row"><span>Giảm giá</span><strong th:text="'-' + ${#numbers.formatDecimal(details.booking.discountAmount,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>
                         <div class="summary-row total"><span>Tổng thanh toán</span><strong th:text="${#numbers.formatDecimal(details.booking.totalAmount,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong></div>

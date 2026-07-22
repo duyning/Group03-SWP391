@@ -7,6 +7,7 @@ package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.BookingCombo;
+import com.group3.cinema.entity.BookingFoodItem;
 import com.group3.cinema.entity.BookingTicket;
 import com.group3.cinema.repository.AccountRepository;
 import org.slf4j.Logger;
@@ -80,6 +81,11 @@ public class BookingEmailService {
                 : details.combos().stream()
                 .map(this::comboLine)
                 .collect(Collectors.joining("\n"));
+        String foodItems = details.foodItems().isEmpty()
+                ? "Khong chon mon le"
+                : details.foodItems().stream()
+                .map(this::foodItemLine)
+                .collect(Collectors.joining("\n"));
 
         return """
                 Xin chao %s,
@@ -92,6 +98,9 @@ public class BookingEmailService {
                 Ghe: %s
 
                 Combo:
+                %s
+
+                Mon le:
                 %s
 
                 Tong thanh toan: %s
@@ -107,12 +116,17 @@ public class BookingEmailService {
                 details.showtime().getRoom(),
                 seats,
                 combos,
+                foodItems,
                 money(details.booking().getTotalAmount())
         );
     }
 
     private String comboLine(BookingCombo combo) {
         return "- " + combo.getComboName() + " x" + combo.getQuantity() + ": " + money(combo.getSubtotal());
+    }
+
+    private String foodItemLine(BookingFoodItem item) {
+        return "- " + item.getFoodItemName() + " x" + item.getQuantity() + ": " + money(item.getSubtotal());
     }
 
     private String money(Number value) {

@@ -3,7 +3,9 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 *.class
 *.log
-src/main/resources/application-vnpay-local.yaml
+/docs/
+.codex-system-test/
+src/main/resources/application-payos-local.yaml
 !**/src/main/**/target/
 !**/src/test/**/target/
 

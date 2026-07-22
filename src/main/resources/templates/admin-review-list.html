@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-  Added on 2026-07-10: Admin screen for filtering and moderating customer movie reviews.
-  Supports keyword/status/date filters, manual paging, and hide/show review actions.
-  Created by: HuyPB - HE191335
+  Màn quản lý đánh giá phim. Model chứa danh sách đã lọc/phân trang và ba số liệu tổng.
+  Nút Ẩn/Hiển thị gửi POST thay đổi moderationStatus, không xóa review để có thể khôi phục
+  và giữ lịch sử người quản trị đã thực hiện thao tác.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
@@ -328,6 +328,7 @@
             </div>
         </div>
 
+        <!-- Ba số tổng toàn hệ thống và một số tổng theo bộ lọc giúp quản trị viên đối chiếu nhanh. -->
         <section class="stats-grid">
             <div class="stat-card">
                 <strong th:text="${allReviewCount}">0</strong>
@@ -347,6 +348,7 @@
             </div>
         </section>
 
+        <!-- Bộ lọc GET để giữ được trạng thái trong URL và dùng lại cho các link phân trang. -->
         <form class="filter-card filter-form" th:action="@{/admin/reviews}" method="get">
             <label>
                 Tìm kiếm
@@ -417,6 +419,7 @@
                     lúc <span th:text="${#temporals.format(review.moderatedAt, 'dd/MM/yyyy HH:mm')}">10/07/2026</span>
                 </div>
 
+                <!-- Hai form gửi visible đối nghịch; backend ghi trạng thái cùng người/thời điểm kiểm duyệt. -->
                 <form th:if="${review.moderationStatus.name() == 'APPROVED'}"
                       th:action="@{/admin/reviews/{id}/visibility(id=${review.id})}"
                       method="post">

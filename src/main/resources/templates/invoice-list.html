@@ -205,6 +205,10 @@
                                 <strong th:text="${#numbers.formatDecimal(group.comboRevenue,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong>
                             </div>
                             <div class="metric revenue">
+                                <span>Món lẻ</span>
+                                <strong th:text="${#numbers.formatDecimal(group.foodRevenue,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong>
+                            </div>
+                            <div class="metric revenue">
                                 <span>Tổng thu</span>
                                 <strong th:text="${#numbers.formatDecimal(group.totalRevenue,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong>
                             </div>

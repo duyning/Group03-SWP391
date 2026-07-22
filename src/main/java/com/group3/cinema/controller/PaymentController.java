@@ -45,6 +45,10 @@ public class PaymentController {
     }
 
     @GetMapping
+    /**
+     * Mở màn chọn phương thức thanh toán cho một booking.
+     * Chỉ chủ sở hữu đơn đang ở trạng thái PENDING và chưa hết hạn mới được xem.
+     */
     public String payment(@RequestParam("bookingId") Long bookingId, HttpSession session,
                           Model model, RedirectAttributes redirectAttributes) {
         try {
@@ -60,6 +64,11 @@ public class PaymentController {
     }
 
     @PostMapping("/start")
+    /**
+     * Tạo giao dịch PENDING và chuyển người dùng sang cổng thanh toán phù hợp.
+     * Nếu đơn đã có giao dịch đang chờ, PaymentService tái sử dụng giao dịch đó
+     * để tránh sinh nhiều mã thanh toán cho cùng một booking.
+     */
     public String start(@RequestParam Long bookingId, @RequestParam String method,
                         HttpSession session, HttpServletRequest request,
                         RedirectAttributes redirectAttributes) {
@@ -71,88 +80,6 @@ public class PaymentController {
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/payment?bookingId=" + bookingId;
-        }
-    }
-
-    @GetMapping("/gateway/{orderCode}")
-    public String gateway(@PathVariable String orderCode, HttpSession session, Model model) {
-        Account account = account(session);
-        Payment payment = paymentService.getPayment(orderCode, account.getAccountID());
-        model.addAttribute("user", account);
-        model.addAttribute("payment", payment);
-        model.addAttribute("details", bookingService.getBookingDetails(payment.getBookingId(), account.getAccountID()));
-        return "payment-gateway";
-    }
-
-    @PostMapping("/gateway/{orderCode}/complete")
-    public String complete(@PathVariable String orderCode, @RequestParam String result,
-                           HttpSession session, RedirectAttributes redirectAttributes) {
-        try {
-            Payment payment = paymentService.processResult(orderCode, account(session).getAccountID(), result);
-            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
-                // Bắn thông báo thanh toán thành công
-                sendPaymentSuccessNotification(session, payment.getOrderCode());
-                return "redirect:/my-tickets";
-            }
-        } catch (IllegalArgumentException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-        }
-        return "redirect:/payment/result?orderCode=" + orderCode;
-    }
-
-    @GetMapping("/vnpay/return")
-    public String vnpayReturn(@RequestParam Map<String, String> params,
-                              HttpSession session, // Bổ sung Session
-                              RedirectAttributes redirectAttributes) {
-        try {
-            Payment payment = handleGatewayCallback(Payment.Method.VNPAY, params, redirectAttributes);
-            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
-                // Bắn thông báo VNPay
-                sendPaymentSuccessNotification(session, payment.getOrderCode());
-                return "redirect:/my-tickets";
-            }
-            return "redirect:/payment/result?orderCode=" + (payment != null ? payment.getOrderCode() : params.getOrDefault("vnp_TxnRef", ""));
-        } catch (Exception ex) {
-            return "redirect:/payment/result?orderCode=" + params.getOrDefault("vnp_TxnRef", "");
-        }
-    }
-
-    @GetMapping("/vnpay/ipn")
-    @ResponseBody
-    public Map<String, String> vnpayIpn(@RequestParam Map<String, String> params) {
-        try {
-            handleGatewayCallback(Payment.Method.VNPAY, params, null);
-            return Map.of("RspCode", "00", "Message", "Confirm Success");
-        } catch (IllegalArgumentException ex) {
-            return Map.of("RspCode", "97", "Message", ex.getMessage());
-        }
-    }
-
-    @GetMapping("/momo/return")
-    public String momoReturn(@RequestParam Map<String, String> params,
-                             HttpSession session, // Bổ sung Session
-                             RedirectAttributes redirectAttributes) {
-        try {
-            Payment payment = handleGatewayCallback(Payment.Method.MOMO, params, redirectAttributes);
-            if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
-                // Bắn thông báo MoMo
-                sendPaymentSuccessNotification(session, payment.getOrderCode());
-                return "redirect:/my-tickets";
-            }
-            return "redirect:/payment/result?orderCode=" + (payment != null ? payment.getOrderCode() : params.getOrDefault("orderId", ""));
-        } catch (Exception ex) {
-            return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderId", "");
-        }
-    }
-
-    @PostMapping("/momo/ipn")
-    @ResponseBody
-    public Map<String, Object> momoIpn(@RequestBody Map<String, Object> payload) {
-        try {
-            handleGatewayCallback(Payment.Method.MOMO, stringify(payload), null);
-            return Map.of("resultCode", 0, "message", "Success");
-        } catch (IllegalArgumentException ex) {
-            return Map.of("resultCode", 1, "message", ex.getMessage());
         }
     }
 
@@ -184,6 +111,7 @@ public class PaymentController {
 
     @PostMapping("/payos/webhook")
     @ResponseBody
+    /** Tách khối {@code data} và chữ ký webhook payOS về cấu trúc callback thống nhất. */
     public Map<String, Object> payosWebhook(@RequestBody Map<String, Object> payload) {
         try {
             handleGatewayCallback(Payment.Method.PAYOS, stringifyPayOsWebhook(payload), null);
@@ -194,6 +122,11 @@ public class PaymentController {
     }
 
     @GetMapping("/result")
+    /**
+     * Hiển thị kết quả thanh toán theo orderCode.
+     * Endpoint này đọc công khai để cổng thanh toán có thể chuyển về ngay cả khi session thay đổi,
+     * nhưng chỉ hiển thị dữ liệu giao dịch/đơn cần thiết trên trang kết quả.
+     */
     public String result(@RequestParam String orderCode, HttpSession session, Model model) {
         Payment payment = paymentService.getPaymentPublic(orderCode);
         model.addAttribute("user", session.getAttribute("loggedInUser"));
@@ -204,6 +137,7 @@ public class PaymentController {
 
     private Payment handleGatewayCallback(Payment.Method method, Map<String, String> params,
                                           RedirectAttributes redirectAttributes) {
+        // Mỗi gateway tự xác thực chữ ký và chuẩn hóa kết quả về cùng một GatewayCallback.
         PaymentGatewayService.GatewayCallback callback = gatewayRouter.gateway(method).parseCallback(params);
         if (!callback.validSignature()) {
             if (redirectAttributes != null) {
@@ -217,6 +151,7 @@ public class PaymentController {
 
     private Payment safelyHandleGatewayCallback(Payment.Method method, Map<String, String> params,
                                                 RedirectAttributes redirectAttributes) {
+        // Luồng return/cancel cần luôn điều hướng được tới trang kết quả nên lỗi callback được đổi thành null.
         try {
             return handleGatewayCallback(method, params, redirectAttributes);
         } catch (IllegalArgumentException ex) {
@@ -227,14 +162,9 @@ public class PaymentController {
         }
     }
 
-    private Map<String, String> stringify(Map<String, Object> payload) {
-        Map<String, String> result = new HashMap<>();
-        payload.forEach((key, value) -> result.put(key, value == null ? "" : String.valueOf(value)));
-        return result;
-    }
-
     @SuppressWarnings("unchecked")
     private Map<String, String> stringifyPayOsWebhook(Map<String, Object> payload) {
+        // payOS đặt dữ liệu giao dịch trong "data", còn chữ ký và trạng thái nằm ở cấp ngoài.
         Map<String, String> result = new HashMap<>();
         Object data = payload.get("data");
         if (data instanceof Map<?, ?> dataMap) {
@@ -255,7 +185,10 @@ public class PaymentController {
         return account;
     }
 
-    // --- HÀM PHỤ TRỢ BẮN THÔNG BÁO ---
+    /**
+     * Gửi thông báo sau thanh toán thành công và dọn wishlist nếu booking bắt đầu từ đó.
+     * Mọi lỗi phụ trợ đều bị cô lập để không biến một giao dịch đã trả tiền thành lỗi giao diện.
+     */
     private void sendPaymentSuccessNotification(HttpSession session, String orderCode) {
         try {
             Account account = (Account) session.getAttribute("loggedInUser");
@@ -267,7 +200,7 @@ public class PaymentController {
                         NotificationType.PAYMENT
                 );
                 
-                // Clear wishlist entry if booking was initiated from the wishlist page
+                // Chỉ xóa phim khỏi wishlist khi session ghi nhận người dùng đi vào booking từ wishlist.
                 Payment payment = paymentService.getPaymentPublic(orderCode);
                 if (payment != null) {
                     paymentService.cleanWishlistIfFromWishlist(session, payment);

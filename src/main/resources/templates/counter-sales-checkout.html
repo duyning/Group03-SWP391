@@ -142,7 +142,7 @@
                                     <option value="CASH">Tiền mặt</option>
                                     <option value="PAYOS">payOS / VietQR</option>
                                 </select>
-                                <div class="payment-code-hint" id="paymentCodeHint">Phương thức này sẽ tạo mã QR bằng cấu hình payOS trong application-vnpay-local.yaml.</div>
+                                <div class="payment-code-hint" id="paymentCodeHint">Phương thức này sẽ tạo mã QR bằng cấu hình payOS.</div>
                             </div>
                         </div>
                         <div class="summary-box">
@@ -523,7 +523,7 @@
             : '<i class="fa-solid fa-qrcode me-2"></i>Tạo QR payOS và chuyển thanh toán';
     }
     function paymentMethodLabel(method) {
-        return ({CASH:'Tiền mặt',CARD:'Thẻ ngân hàng',BANK_TRANSFER:'Chuyển khoản',MOMO:'Ví MoMo',PAYOS:'PayOS / VietQR',VNPAY:'VNPay'})[method] || method || 'Thanh toán';
+        return ({CASH:'Tiền mặt',CARD:'Thẻ ngân hàng',BANK_TRANSFER:'Chuyển khoản',PAYOS:'PayOS / VietQR'})[method] || method || 'Thanh toán';
     }
     function toast(message, type = '') {
         const el = document.createElement('div');

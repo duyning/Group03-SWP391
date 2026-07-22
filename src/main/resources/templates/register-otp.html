@@ -16,6 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/register.css}">
     <link rel="stylesheet" th:href="@{/css/customer-account.css}">
+    <link rel="stylesheet" th:href="@{/css/common-header.css}">
     <style>
         .back-link {
             display: inline-block;
@@ -102,7 +103,9 @@
         }
     </style>
 </head>
-<body>
+<body class="customer-header-page">
+
+<div th:replace="~{fragments/common_header :: customerHeader('', '')}"></div>
 
 <div class="register-wrapper">
     <!-- Decorative background elements -->

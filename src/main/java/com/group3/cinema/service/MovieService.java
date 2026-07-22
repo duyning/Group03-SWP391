@@ -1,8 +1,8 @@
 package com.group3.cinema.service;
 
 /*
- * Service logic for movie banners, status lists, detail, and search.
- * Created/updated by: HuyPB - HE191335, TrienLX
+ * Nghiệp vụ dùng chung cho trang chủ, danh sách phim, chi tiết phim và tìm kiếm.
+ * Service chủ động đồng bộ trạng thái phim theo ngày trước khi trả dữ liệu cho khách hàng.
  */
 
 import com.group3.cinema.entity.Movie;
@@ -27,6 +27,7 @@ public class MovieService {
 
     @Transactional
     public List<Movie> getRandomBannerMovies() {
+        // Xáo trộn danh sách phim hoạt động để trang chủ không luôn hiển thị cùng một nhóm banner.
         autoUpdateMovieStatuses();
         List<Movie> movies = movieRepository.findByActiveTrue();
         Collections.shuffle(movies);
@@ -50,6 +51,7 @@ public class MovieService {
 
     @Transactional
     public Movie getMovieDetail(int id) {
+        // Chỉ trả phim active; controller sẽ chuyển về danh sách nếu ID không tồn tại hoặc đã ẩn.
         autoUpdateMovieStatuses();
         return movieRepository.findByIdAndActiveTrue(id).orElse(null);
     }
@@ -88,6 +90,11 @@ public class MovieService {
             return Collections.emptyList();
         }
 
+        /*
+         * Tìm kiếm nhiều lựa chọn được xử lý trên tập phim active vì các cột thể loại,
+         * định dạng và ngôn ngữ có thể chứa nhiều giá trị trong cùng một chuỗi.
+         * Hàm normalize giúp so khớp không phân biệt hoa/thường và dấu tiếng Việt.
+         */
         List<Movie> movies = movieRepository.findByActiveTrue().stream()
                 .filter(movie -> movie.getStatus() != Movie.MovieStatus.STOPPED || movieStatus == Movie.MovieStatus.STOPPED)
                 .filter(movie -> matchesKeyword(movie, keyword))
@@ -148,6 +155,10 @@ public class MovieService {
 
     @Transactional
     public void autoUpdateMovieStatuses() {
+        /*
+         * Phim đến ngày khởi chiếu được chuyển sang NOW_SHOWING; phim đã qua hạn
+         * một khoảng an toàn được dừng và tắt active để không xuất hiện ở màn khách hàng.
+         */
         java.time.LocalDate today = java.time.LocalDate.now();
         movieRepository.autoUpdateUpcomingToNowShowing(
                 today,
@@ -190,6 +201,7 @@ public class MovieService {
     }
 
     private boolean matchesAny(String movieValue, List<String> selectedValues) {
+        // Không chọn bộ lọc nào nghĩa là chấp nhận mọi phim ở tiêu chí đó.
         List<String> selected = normalizeList(selectedValues);
         if (selected.isEmpty()) {
             return true;
@@ -271,6 +283,7 @@ public class MovieService {
     }
 
     private void sortMovies(List<Movie> movies, String sort) {
+        // Mọi giá trị sort không nhận diện được đều quay về thứ tự nổi bật mặc định.
         String normalizedSort = trimToNull(sort);
         if ("releaseDate".equals(normalizedSort)) {
             movies.sort(Comparator.comparing(Movie::getReleaseDate, Comparator.nullsLast(Comparator.naturalOrder())));

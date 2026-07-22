@@ -88,5 +88,27 @@
     </ul>
     <script th:src="@{/js/admin-sidebar.js}"></script>
 </aside>
+
+<header class="admin-topbar" th:fragment="adminTopbar">
+    <div class="admin-topbar-title">
+        <span class="admin-topbar-status" aria-hidden="true"></span>
+        <span>Khu vực quản trị</span>
+    </div>
+    <nav class="admin-topbar-actions" aria-label="Điều hướng tài khoản quản trị">
+        <a th:href="@{/}" class="admin-topbar-link">
+            <i class="fas fa-globe"></i>
+            <span>Xem trang khách hàng</span>
+        </a>
+        <a th:href="@{/profile}" class="admin-topbar-link admin-topbar-user"
+           th:if="${session.loggedInUser != null}">
+            <i class="fas fa-user-shield"></i>
+            <span th:text="${session.loggedInUser.name}">Quản trị viên</span>
+        </a>
+        <a th:href="@{/logout}" class="admin-topbar-link admin-topbar-logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Đăng xuất</span>
+        </a>
+    </nav>
+</header>
 </body>
 </html>
