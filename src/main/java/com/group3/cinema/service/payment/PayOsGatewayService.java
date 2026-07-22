@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -134,15 +135,117 @@ public class PayOsGatewayService implements PaymentGatewayService {
         return new GatewayCallback(valid, orderCode, success, responseCode, transactionId, message);
     }
 
+    @Override
+    public GatewayPaymentStatus queryPayment(String orderCode) {
+        if (!isConfigured()) {
+            throw new IllegalArgumentException("payOS chưa được cấu hình để đối soát giao dịch.");
+        }
+        try {
+            String queryUrl = endpoint.replaceAll("/+$", "") + "/" + PaymentGatewayUtils.urlEncode(orderCode);
+            HttpRequest request = HttpRequest.newBuilder(URI.create(queryUrl))
+                    .header("Accept", "application/json")
+                    .header("x-client-id", clientId)
+                    .header("x-api-key", apiKey)
+                    .timeout(REQUEST_TIMEOUT)
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            return parsePaymentStatusResponse(orderCode, response.statusCode(), response.body());
+        } catch (HttpTimeoutException ex) {
+            throw new IllegalArgumentException("Không thể đối soát payOS vì yêu cầu quá thời gian.", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalArgumentException("Yêu cầu đối soát payOS bị gián đoạn.", ex);
+        } catch (IllegalArgumentException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Không thể đối soát trạng thái với payOS: " + ex.getMessage(), ex);
+        }
+    }
+
+    GatewayPaymentStatus parsePaymentStatusResponse(String requestedOrderCode, int httpStatus, String responseBody) {
+        if (httpStatus < 200 || httpStatus >= 300) {
+            throw new IllegalArgumentException("payOS trả về lỗi HTTP " + httpStatus + " khi đối soát giao dịch.");
+        }
+        Map<String, Object> result = gson.fromJson(responseBody, MAP_TYPE);
+        if (result == null || !"00".equals(stringValue(result.get("code")))) {
+            throw new IllegalArgumentException("payOS không trả về trạng thái giao dịch hợp lệ.");
+        }
+        Object rawData = result.get("data");
+        if (!(rawData instanceof Map<?, ?> data)) {
+            throw new IllegalArgumentException("Phản hồi đối soát payOS bị thiếu dữ liệu.");
+        }
+
+        String returnedOrderCode = stringValue(data.get("orderCode"));
+        if (!requestedOrderCode.equals(returnedOrderCode)) {
+            throw new IllegalArgumentException("Mã giao dịch payOS đối soát không khớp.");
+        }
+        BigDecimal amount = decimalValue(data.get("amount"));
+        String status = stringValue(data.get("status")).toUpperCase();
+        boolean success = "PAID".equals(status);
+        String responseCode = success ? "00" : switch (status) {
+            case "CANCELLED" -> "CANCELLED";
+            case "PENDING", "PROCESSING" -> "PENDING";
+            default -> status.isBlank() ? "PENDING" : status;
+        };
+        String transactionId = transactionReference(data.get("transactions"));
+        if (transactionId.isBlank()) {
+            transactionId = stringValue(data.get("id"));
+        }
+        String message = switch (status) {
+            case "CANCELLED" -> "Khách hàng hủy thanh toán trên payOS.";
+            case "PENDING", "PROCESSING" -> "";
+            default -> stringValue(result.get("desc"));
+        };
+        return new GatewayPaymentStatus(returnedOrderCode, amount, success, responseCode, transactionId, message);
+    }
+
+    private String transactionReference(Object transactions) {
+        if (transactions instanceof Iterable<?> iterable) {
+            for (Object item : iterable) {
+                if (item instanceof Map<?, ?> transaction) {
+                    String reference = stringValue(transaction.get("reference"));
+                    if (!reference.isBlank()) return reference;
+                }
+            }
+        } else if (transactions instanceof Map<?, ?> transactionMap) {
+            String directReference = stringValue(transactionMap.get("reference"));
+            if (!directReference.isBlank()) return directReference;
+            for (Object item : transactionMap.values()) {
+                if (item instanceof Map<?, ?> transaction) {
+                    String reference = stringValue(transaction.get("reference"));
+                    if (!reference.isBlank()) return reference;
+                }
+            }
+        }
+        return "";
+    }
+
+    private BigDecimal decimalValue(Object value) {
+        if (value == null || stringValue(value).isBlank()) return null;
+        try {
+            return new BigDecimal(String.valueOf(value)).stripTrailingZeros();
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Số tiền đối soát payOS không hợp lệ.", ex);
+        }
+    }
+
+    private String stringValue(Object value) {
+        if (value == null) return "";
+        if (value instanceof Number) {
+            try {
+                return new BigDecimal(String.valueOf(value)).stripTrailingZeros().toPlainString();
+            } catch (NumberFormatException ignored) {
+                return String.valueOf(value);
+            }
+        }
+        return String.valueOf(value);
+    }
+
     private boolean verifySignature(Map<String, String> params) {
         String receivedSignature = params.get("signature");
         Map<String, String> data = new TreeMap<>(params);
         data.remove("signature");
-        data.remove("code");
-        data.remove("desc");
-        data.remove("success");
-        data.remove("status");
-        data.remove("cancel");
         String rawSignature = data.entrySet().stream()
                 .filter(entry -> entry.getValue() != null)
                 .map(entry -> entry.getKey() + "=" + entry.getValue())

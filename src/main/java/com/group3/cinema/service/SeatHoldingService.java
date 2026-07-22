@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 public class SeatHoldingService {
     // Thời gian này phải đồng nhất với bộ đếm trên giao diện booking.
     public static final int HOLD_MINUTES = 5;
+    public static final int MAX_SEAT_CAPACITY_PER_BOOKING = 8;
 
     private final SeatRepository seatRepository;
     private final RoomRepository roomRepository;
@@ -101,7 +102,7 @@ public class SeatHoldingService {
         }
 
         LinkedHashSet<Long> seatIds = new LinkedHashSet<>(requestedIds);
-        if (seatIds.size() > 8) {
+        if (seatIds.size() > MAX_SEAT_CAPACITY_PER_BOOKING) {
             throw new IllegalArgumentException("Mỗi lần đặt tối đa 8 ghế.");
         }
 
@@ -116,6 +117,12 @@ public class SeatHoldingService {
         if (seats.size() != seatIds.size() || seats.stream().anyMatch(seat ->
                 !selection.roomId().equals(seat.getRoomId()) || !isSellableSeat(seat, seatTypes))) {
             throw new IllegalArgumentException("Danh sách ghế không hợp lệ hoặc có ghế không thể bán.");
+        }
+        int selectedCapacity = seats.stream()
+                .mapToInt(seat -> seatCapacity(seat, seatTypes))
+                .sum();
+        if (selectedCapacity > MAX_SEAT_CAPACITY_PER_BOOKING) {
+            throw new IllegalArgumentException("Mỗi lần đặt tối đa 8 ghế; một ghế đôi được tính là 2 ghế.");
         }
         boolean hasConflictingHold = ticketRepository.findByShowtimeIdAndSeatIdIn(selection.showtimeId(), seatIds)
                 .stream()
@@ -231,7 +238,17 @@ public class SeatHoldingService {
         if ("skip".equals(type)) {
             return 0;
         }
-        return meta != null && meta.getCapacity() > 1 ? meta.getCapacity() : 1;
+        int configuredCapacity = meta != null ? meta.getCapacity() : 0;
+        // A couple seat always represents two places, including with stale legacy configuration.
+        if ("couple".equals(type)) {
+            return Math.max(2, configuredCapacity);
+        }
+        return Math.max(1, configuredCapacity);
+    }
+
+    private int seatCapacity(Seat seat, Map<String, SeatType> seatTypes) {
+        String type = normalizeType(seat.getSeatType());
+        return visualCapacity(type, seatTypes.get(type));
     }
 
     private String displayName(String type, SeatType meta) {

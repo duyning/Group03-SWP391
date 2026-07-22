@@ -19,11 +19,9 @@ import com.group3.cinema.service.payment.PaymentGatewayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
@@ -90,26 +88,14 @@ public class PaymentController {
     public String payosReturn(@RequestParam Map<String, String> params,
                               HttpSession session, // Bổ sung Session
                               RedirectAttributes redirectAttributes) {
-        Payment payment = safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
-        if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
-            // Bắn thông báo PayOS
-            sendPaymentSuccessNotification(session, payment.getOrderCode());
-            return "redirect:/my-tickets";
-        }
-        return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderCode", "");
+        return handlePayOsBrowserReturn(params, session, redirectAttributes, false);
     }
 
     @GetMapping("/payos/cancel")
     public String payosCancel(@RequestParam Map<String, String> params,
                               HttpSession session, // Bổ sung Session
                               RedirectAttributes redirectAttributes) {
-        Payment payment = safelyHandleGatewayCallback(Payment.Method.PAYOS, params, redirectAttributes);
-        if (payment != null && payment.getStatus() == Payment.Status.SUCCESS) {
-            // Trường hợp user ấn cancel nhưng giao dịch trước đó lại thành công
-            sendPaymentSuccessNotification(session, payment.getOrderCode());
-            return "redirect:/my-tickets";
-        }
-        return "redirect:/payment/result?orderCode=" + params.getOrDefault("orderCode", "");
+        return handlePayOsBrowserReturn(params, session, redirectAttributes, true);
     }
 
     @PostMapping("/payos/webhook")
@@ -130,16 +116,61 @@ public class PaymentController {
      * Endpoint này đọc công khai để cổng thanh toán có thể chuyển về ngay cả khi session thay đổi,
      * nhưng chỉ hiển thị dữ liệu giao dịch/đơn cần thiết trên trang kết quả.
      */
-    public String result(@RequestParam String orderCode, HttpSession session, Model model) {
+    public String result(@RequestParam(required = false) String orderCode,
+                         @RequestParam(defaultValue = "false") boolean cancelled,
+                         HttpSession session, Model model) {
         try {
-            Payment payment = paymentService.getPaymentPublic(orderCode);
+            if (!isValidOrderCode(orderCode)) {
+                throw new IllegalArgumentException("Mã giao dịch thanh toán không hợp lệ.");
+            }
+            Payment payment;
+            try {
+                // Đối soát với payOS trước khi áp dụng hết hạn cục bộ để không bỏ sót giao dịch đã PAID.
+                payment = paymentService.reconcilePayOsPayment(orderCode);
+            } catch (IllegalArgumentException ex) {
+                payment = paymentService.getPaymentPublic(orderCode);
+                model.addAttribute("error", "Chưa thể đồng bộ trạng thái mới nhất từ payOS. " + ex.getMessage());
+            }
             model.addAttribute("user", session.getAttribute("loggedInUser"));
             model.addAttribute("payment", payment);
             model.addAttribute("details", bookingService.getBookingDetails(payment.getBookingId()));
+            model.addAttribute("displayPaymentStatus",
+                    cancelled && payment.getStatus() == Payment.Status.PENDING
+                            ? Payment.Status.CANCELLED.name()
+                            : payment.getStatus().name());
             return "payment-result";
         } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+            model.addAttribute("user", session.getAttribute("loggedInUser"));
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "payment-error";
         }
+    }
+
+    /**
+     * returnUrl/cancelUrl của payOS chỉ dùng để đưa trình duyệt về website và không có chữ ký.
+     * Vì vậy không tin trực tiếp query string; hệ thống gọi API payOS có client-id/api-key để đối soát.
+     */
+    private String handlePayOsBrowserReturn(Map<String, String> params, HttpSession session,
+                                            RedirectAttributes redirectAttributes, boolean cancelled) {
+        String orderCode = params.getOrDefault("orderCode", "").trim();
+        if (!isValidOrderCode(orderCode)) {
+            redirectAttributes.addFlashAttribute("error", "Mã giao dịch payOS không hợp lệ hoặc bị thiếu.");
+            return "redirect:/payment/result";
+        }
+        try {
+            Payment payment = paymentService.reconcilePayOsPayment(orderCode);
+            if (payment.getStatus() == Payment.Status.SUCCESS) {
+                sendPaymentSuccessNotification(session, payment.getOrderCode());
+                return "redirect:/my-tickets";
+            }
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/payment/result?orderCode=" + orderCode + (cancelled ? "&cancelled=true" : "");
+    }
+
+    private boolean isValidOrderCode(String orderCode) {
+        return orderCode != null && orderCode.matches("\\d{1,50}");
     }
 
     private Payment handleGatewayCallback(Payment.Method method, Map<String, String> params,
@@ -156,21 +187,6 @@ public class PaymentController {
                 callback.responseCode(), callback.transactionId(), callback.message());
     }
 
-    private Payment safelyHandleGatewayCallback(Payment.Method method, Map<String, String> params,
-                                                RedirectAttributes redirectAttributes) {
-        // Luồng return/cancel cần luôn điều hướng được tới trang kết quả nên lỗi callback được đổi thành null.
-        try {
-            return handleGatewayCallback(method, params, redirectAttributes);
-        } catch (InvalidPaymentSignatureException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
-        } catch (IllegalArgumentException ex) {
-            if (redirectAttributes != null) {
-                redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            }
-            return null;
-        }
-    }
-
     private static final class InvalidPaymentSignatureException extends IllegalArgumentException {
         private InvalidPaymentSignatureException(String message) {
             super(message);
@@ -185,10 +201,8 @@ public class PaymentController {
         if (data instanceof Map<?, ?> dataMap) {
             dataMap.forEach((key, value) -> result.put(String.valueOf(key), value == null ? "" : String.valueOf(value)));
         }
+        // Chữ ký payOS được tạo từ đúng object "data"; không trộn code/desc/success ở cấp ngoài vào.
         result.put("signature", payload.get("signature") == null ? "" : String.valueOf(payload.get("signature")));
-        result.put("code", payload.get("code") == null ? "" : String.valueOf(payload.get("code")));
-        result.put("desc", payload.get("desc") == null ? "" : String.valueOf(payload.get("desc")));
-        result.put("success", payload.get("success") == null ? "" : String.valueOf(payload.get("success")));
         return result;
     }
 

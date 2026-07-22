@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Không thể hiển thị giao dịch | CineFlow</title>
+    <link rel="stylesheet" th:href="@{/css/booking-flow.css}">
+</head>
+<body>
+<header th:replace="~{fragments/common_header :: flowHeader('Kết quả thanh toán')}"></header>
+<main class="gateway result">
+    <div class="result-icon">!</div>
+    <h1>Không thể hiển thị giao dịch</h1>
+    <p th:text="${errorMessage ?: error ?: 'Thông tin trả về từ cổng thanh toán không hợp lệ.'}">
+        Thông tin trả về từ cổng thanh toán không hợp lệ.
+    </p>
+    <p>Giao dịch không được cập nhật từ dữ liệu này. Vui lòng kiểm tra lại lịch sử đặt vé hoặc thử lại.</p>
+    <div class="flow-actions">
+        <a class="btn secondary" th:href="@{/movies}">Về danh sách phim</a>
+        <a class="btn" th:href="@{/my-tickets/booking-history}">Xem lịch sử đặt vé</a>
+    </div>
+</main>
+</body>
+</html>

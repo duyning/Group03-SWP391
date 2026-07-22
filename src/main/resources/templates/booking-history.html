@@ -299,6 +299,9 @@
             <div class="history-footer">
                 <i class="fas fa-info-circle"></i>
                 <span th:text="${item.summary}">Thanh toán 2 vé xem phim "Lật Mặt 7" (Ghế K9, K10)</span>
+                <a class="btn btn-sm btn-outline-primary ms-auto flex-shrink-0"
+                   th:if="${item.statusClass == 'status-pending' && item.paymentMethod == 'PAYOS'}"
+                   th:href="@{/payment/result(orderCode=${item.bookingCode})}">Kiểm tra trạng thái</a>
             </div>
         </div>
         
