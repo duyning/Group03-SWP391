@@ -1,8 +1,8 @@
 <!doctype html>
 <!--
-  Added on 2026-06-24: Booking summary before payment.
-  Updated on 2026-06-26: Voucher accordion, change-seat CTA, and final confirmation modal.
-  Created by: HuyPB - HE191335
+  Bước 4 của booking. summary chứa snapshot tạm tính vé/combo/món lẻ và voucher;
+  voucherOptions chứa cả voucher dùng được lẫn không dùng được kèm lý do.
+  Modal cuối chỉ xác nhận ý định; POST /booking/confirm mới thực sự tạo booking PENDING.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -54,7 +54,7 @@
 
 <main class="flow-page">
     <div class="steps">
-        <b>1 Suất chiếu</b><b>2 Ghế</b><b>3 Combo</b><b class="active">4 Xác nhận</b><b>5 Thanh toán</b>
+        <b>1 Suất chiếu</b><b>2 Ghế</b><b>3 Đồ ăn</b><b class="active">4 Xác nhận</b><b>5 Thanh toán</b>
     </div>
 
     <div class="summary-layout">
@@ -77,8 +77,14 @@
                     <span th:if="${#lists.isEmpty(summary.combos)}">Không chọn combo</span>
                     <div th:each="combo : ${summary.combos}" th:text="${combo.name} + ' × ' + ${combo.quantity}">Combo × 1</div>
                 </dd>
+                <dt>Món lẻ</dt>
+                <dd>
+                    <span th:if="${#lists.isEmpty(summary.foodItems)}">Không chọn món lẻ</span>
+                    <div th:each="food : ${summary.foodItems}" th:text="${food.name} + ' × ' + ${food.quantity}">Món lẻ × 1</div>
+                </dd>
             </dl>
 
+            <!-- option.eligible quyết định radio có được chọn; option.reason giải thích trạng thái bị khóa. -->
             <section class="voucher-box">
                 <div class="voucher-head">
                     <div>
@@ -150,7 +156,7 @@
 
             <div class="flow-actions">
                 <a class="btn secondary" th:href="@{/booking/seats/change}">Đổi ghế</a>
-                <a class="btn secondary" th:href="@{/booking/combos}">Sửa combo</a>
+                <a class="btn secondary" th:href="@{/booking/combos}">Sửa đồ ăn</a>
                 <button class="btn" type="button" id="openConfirm">Xác nhận & thanh toán</button>
             </div>
         </section>
@@ -159,6 +165,7 @@
             <h2>Tổng tiền</h2>
             <p><span>Tiền vé</span><b th:text="${#numbers.formatDecimal(summary.ticketSubtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></p>
             <p><span>Combo</span><b th:text="${#numbers.formatDecimal(summary.comboSubtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></p>
+            <p><span>Món lẻ</span><b th:text="${#numbers.formatDecimal(summary.foodSubtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></p>
             <p th:if="${summary.voucherCode != null}"><span>Voucher</span><b th:text="${summary.voucherCode}">Voucher</b></p>
             <p><span>Giảm giá</span><b th:text="'-' + ${#numbers.formatDecimal(summary.discount,0,'COMMA',0,'POINT')} + 'đ'">-0đ</b></p>
             <p class="grand"><span>Cần thanh toán</span><b th:text="${#numbers.formatDecimal(summary.total,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></p>
@@ -166,6 +173,7 @@
     </div>
 </main>
 
+<!-- Modal không tự tạo booking; chỉ form POST bên trong mới chốt đơn PENDING ở backend. -->
 <div class="modal-backdrop" id="confirmModal">
     <div class="confirm-modal">
         <h2>Kiểm tra lại đơn hàng</h2>
@@ -184,6 +192,7 @@
 
 <script th:src="@{/js/booking-timer.js}"></script>
 <script>
+    // Cho phép đóng modal bằng nút hoặc click vùng nền, nhưng không đóng khi click nội dung modal.
     const modal = document.getElementById('confirmModal');
     document.getElementById('openConfirm').addEventListener('click', () => modal.classList.add('open'));
     document.getElementById('closeConfirm').addEventListener('click', () => modal.classList.remove('open'));

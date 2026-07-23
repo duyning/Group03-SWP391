@@ -39,7 +39,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class SeatHoldingService {
+    // Thời gian này phải đồng nhất với bộ đếm trên giao diện booking.
     public static final int HOLD_MINUTES = 5;
+    public static final int MAX_SEAT_CAPACITY_PER_BOOKING = 8;
 
     private final SeatRepository seatRepository;
     private final RoomRepository roomRepository;
@@ -69,6 +71,11 @@ public class SeatHoldingService {
 
     @Transactional
     public List<BookingSeatView> getSeatMap(BookingSelection selection, String ownToken) {
+        /*
+         * Xóa hold hết hạn trước, sau đó ghép cấu hình vật lý của ghế với trạng thái
+         * booking của đúng suất chiếu. ownToken giúp đánh dấu ghế của phiên hiện tại
+         * là SELECTED thay vì HOLDING như ghế do khách khác giữ.
+         */
         releaseExpired();
         Room room = roomRepository.findById(selection.roomId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng chiếu."));
@@ -86,20 +93,22 @@ public class SeatHoldingService {
 
     @Transactional
     public HoldResult holdSeats(BookingSelection selection, Collection<Long> requestedIds, String currentToken) {
+        /*
+         * Giới hạn 8 ghế, loại ID trùng và xác thực mọi ghế thuộc đúng phòng.
+         * Hold cũ của cùng token chỉ được xóa sau khi danh sách mới đã được kiểm tra đầy đủ.
+         */
         if (requestedIds == null || requestedIds.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một ghế.");
         }
 
         LinkedHashSet<Long> seatIds = new LinkedHashSet<>(requestedIds);
-        if (seatIds.size() > 8) {
+        if (seatIds.size() > MAX_SEAT_CAPACITY_PER_BOOKING) {
             throw new IllegalArgumentException("Mỗi lần đặt tối đa 8 ghế.");
         }
 
         releaseExpired();
         String token = currentToken == null || currentToken.isBlank()
                 ? UUID.randomUUID().toString() : currentToken;
-        ticketRepository.deleteUnbookedByHoldToken(token);
-        ticketRepository.flush();
 
         Showtime showtime = showtimeRepository.findById(selection.showtimeId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
@@ -109,7 +118,18 @@ public class SeatHoldingService {
                 !selection.roomId().equals(seat.getRoomId()) || !isSellableSeat(seat, seatTypes))) {
             throw new IllegalArgumentException("Danh sách ghế không hợp lệ hoặc có ghế không thể bán.");
         }
-        if (!ticketRepository.findByShowtimeIdAndSeatIdIn(selection.showtimeId(), seatIds).isEmpty()) {
+        int selectedCapacity = seats.stream()
+                .mapToInt(seat -> seatCapacity(seat, seatTypes))
+                .sum();
+        if (selectedCapacity > MAX_SEAT_CAPACITY_PER_BOOKING) {
+            throw new IllegalArgumentException("Mỗi lần đặt tối đa 8 ghế; một ghế đôi được tính là 2 ghế.");
+        }
+        boolean hasConflictingHold = ticketRepository.findByShowtimeIdAndSeatIdIn(selection.showtimeId(), seatIds)
+                .stream()
+                .anyMatch(ticket -> ticket.getStatus() == BookingTicket.Status.BOOKED
+                        || ticket.getBookingId() != null
+                        || !Objects.equals(ticket.getHoldToken(), token));
+        if (hasConflictingHold) {
             throw new IllegalArgumentException("Một hoặc nhiều ghế vừa được người khác chọn. Vui lòng chọn lại.");
         }
 
@@ -130,6 +150,10 @@ public class SeatHoldingService {
         }
 
         try {
+            // The replacement is atomic: invalid new input never removes the session's valid current hold.
+            ticketRepository.deleteUnbookedByHoldToken(token);
+            ticketRepository.flush();
+            // Unique constraint (showtime_id, seat_id) là lớp bảo vệ cuối trước tranh chấp đồng thời.
             ticketRepository.saveAllAndFlush(holds);
         } catch (DataIntegrityViolationException ex) {
             throw new IllegalArgumentException("Ghế vừa được người khác giữ. Vui lòng tải lại sơ đồ ghế.");
@@ -163,6 +187,7 @@ public class SeatHoldingService {
         String type = normalizeType(seat.getSeatType());
         SeatType meta = seatTypes.get(type);
         boolean sellable = isSellableSeat(seat, seatTypes);
+        // Chuẩn hóa trạng thái backend thành các mã đơn giản mà CSS/JavaScript hiểu được.
         String status;
         if (!sellable) {
             status = "UNAVAILABLE";
@@ -213,7 +238,17 @@ public class SeatHoldingService {
         if ("skip".equals(type)) {
             return 0;
         }
-        return meta != null && meta.getCapacity() > 1 ? meta.getCapacity() : 1;
+        int configuredCapacity = meta != null ? meta.getCapacity() : 0;
+        // A couple seat always represents two places, including with stale legacy configuration.
+        if ("couple".equals(type)) {
+            return Math.max(2, configuredCapacity);
+        }
+        return Math.max(1, configuredCapacity);
+    }
+
+    private int seatCapacity(Seat seat, Map<String, SeatType> seatTypes) {
+        String type = normalizeType(seat.getSeatType());
+        return visualCapacity(type, seatTypes.get(type));
     }
 
     private String displayName(String type, SeatType meta) {

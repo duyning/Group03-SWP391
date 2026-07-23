@@ -64,6 +64,7 @@ public class BookingShowtimeService {
     }
 
     public Movie getBookableMovie(int movieId) {
+        // Chỉ phim đang chiếu hoặc suất đặc biệt mới được phép đi vào luồng mua vé.
         return movieRepository.findByIdAndActiveTrue(movieId)
                 .filter(movie -> movie.getStatus() == Movie.MovieStatus.NOW_SHOWING
                         || movie.getStatus() == Movie.MovieStatus.SPECIAL_SCREENING)
@@ -71,6 +72,7 @@ public class BookingShowtimeService {
     }
 
     public List<BookingShowtimeView> getAvailableShowtimes(int movieId, LocalDate date) {
+        // Loại suất đã bắt đầu và suất không còn ghế trước khi gửi dữ liệu ra giao diện.
         if (date == null || date.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Vui lòng chọn ngày chiếu hợp lệ.");
         }
@@ -85,6 +87,10 @@ public class BookingShowtimeService {
     }
 
     public List<BookingShowtimeDateView> getAvailableShowtimeSchedule(int movieId) {
+        /*
+         * Lịch được gom theo ngày bằng LinkedHashMap để giữ thứ tự tăng dần từ repository.
+         * Chỉ mở tối đa 30 ngày nhằm giới hạn lượng dữ liệu trên màn chọn suất.
+         */
         Movie movie = getBookableMovie(movieId);
         LocalDate today = LocalDate.now();
         LocalDate maxDate = today.plusDays(30);
@@ -111,6 +117,11 @@ public class BookingShowtimeService {
     }
 
     public BookingSelection validateAndCreateSelection(long showtimeId, int movieId, LocalDate date) {
+        /*
+         * Kiểm tra lại toàn bộ quan hệ phim–ngày–suất ở server, không dựa vào hidden input.
+         * BookingSelection chỉ chứa dữ liệu cần cho các bước sau nên có thể lưu session
+         * mà không giữ một JPA entity đang detached.
+         */
         if (showtimeId <= 0 || movieId <= 0 || date == null) {
             throw new IllegalArgumentException("Thông tin phim, ngày hoặc suất chiếu chưa đầy đủ.");
         }
@@ -178,6 +189,10 @@ public class BookingShowtimeService {
     }
 
     private int availableSeats(Long showtimeId, Room room) {
+        /*
+         * Sức chứa được tính theo capacity của loại ghế (ghế đôi có thể chiếm 2 chỗ).
+         * Ghế BOOKED và ghế HOLDING chưa hết hạn đều được coi là đã chiếm chỗ.
+         */
         Map<String, SeatType> seatTypes = seatTypeRepository.findAllByOrderByIdAsc().stream()
                 .collect(Collectors.toMap(type -> normalizeType(type.getCode()), Function.identity(), (first, ignored) -> first));
         List<Seat> seats = seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(room.getId());

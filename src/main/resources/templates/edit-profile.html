@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css">
     <link rel="stylesheet" th:href="@{/css/register.css}">
     <link rel="stylesheet" th:href="@{/css/customer-account.css}">
+    <link rel="stylesheet" th:href="@{/css/common-header.css}">
     <style>
         .ui-datepicker {
             z-index: 9999 !important;
@@ -65,7 +66,9 @@
         }
     </style>
 </head>
-<body>
+<body class="customer-header-page">
+
+<div th:replace="~{fragments/common_header :: customerHeader('', '')}"></div>
 
 <div class="register-wrapper">
     <!-- Decorative background elements -->

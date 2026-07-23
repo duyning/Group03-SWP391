@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  Bước 2 của booking. seats kết hợp tọa độ ghế, loại ghế, giá và trạng thái AVAILABLE/
+  SELECTED/HOLDING/BOOKED. Checkbox chỉ được tạo cho ghế mà phiên hiện tại có quyền chọn;
+  trình duyệt tính tổng để phản hồi nhanh nhưng server vẫn tính lại giá khi giữ ghế.
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -40,7 +45,7 @@
 <header th:replace="~{fragments/common_header :: flowHeader('Xin chào, ' + ${user.name})}"></header>
 <main class="flow-page">
     <div class="steps">
-        <b>1 Suất chiếu</b><b class="active">2 Ghế</b><b>3 Combo</b><b>4 Xác nhận</b><b>5 Thanh toán</b>
+        <b>1 Suất chiếu</b><b class="active">2 Ghế</b><b>3 Đồ ăn</b><b>4 Xác nhận</b><b>5 Thanh toán</b>
     </div>
 
     <form method="post" th:action="@{/booking/seats}" id="seatForm" class="seat-page">
@@ -58,8 +63,12 @@
                 Sơ đồ ghế vừa thay đổi do người khác thao tác.
                 <a th:href="@{/booking/seats}">Tải lại sơ đồ</a>
             </div>
+            <div class="notice error" id="seatPollingErrorNotice" style="display:none">
+                Không thể cập nhật trạng thái ghế lúc này. Vui lòng kiểm tra kết nối hoặc tải lại sơ đồ.
+            </div>
 
             <div class="screen-wrap"><div class="screen">MÀN HÌNH</div></div>
+            <!-- CSS Grid dùng rowIndex/colIndex/capacity để dựng đúng sơ đồ vật lý, kể cả ghế đôi. -->
             <div class="seat-map-shell">
                 <div class="seat-map" th:style="'--cols:' + ${roomCols}">
                     <label th:each="seat:${seats}"
@@ -87,7 +96,7 @@
                 <span class="legend-item"><i class="legend-swatch busy"></i> Đã bán/đang giữ</span>
                 <span class="legend-item"><i class="legend-swatch off"></i> Không bán</span>
             </div>
-            <p class="seat-help">Bạn có thể chọn tối đa 8 ghế mỗi lần đặt. Ghế được giữ trong 5 phút sau khi bấm tiếp tục.</p>
+            <p class="seat-help">Bạn có thể chọn tối đa 8 chỗ ngồi mỗi lần đặt; một ghế đôi được tính là 2 ghế. Ghế được giữ trong 5 phút sau khi bấm tiếp tục.</p>
             <div class="mobile-seat-bar">
                 <b><span id="mobileSeatCount">0 ghế</span> — <span id="mobileSeatTotal">0đ</span></b>
                 <button class="btn" type="submit">Tiếp tục</button>
@@ -109,11 +118,13 @@
     </form>
 </main>
 <script>
+    // Cập nhật danh sách và tổng tiền phía client mỗi khi checkbox ghế thay đổi.
     const money = new Intl.NumberFormat('vi-VN').format;
     const list = document.getElementById('selectedSeatList');
     const total = document.getElementById('seatTotal');
     const mobileCount = document.getElementById('mobileSeatCount');
     const mobileTotal = document.getElementById('mobileSeatTotal');
+    const seatCapacity = seat => Math.max(1, Number(seat.dataset.capacity || 1));
     function refreshSeatSummary() {
         const selected = [...document.querySelectorAll('.seat input:checked')].map(input => input.closest('.seat'));
         document.querySelectorAll('.seat input').forEach(input => input.closest('.seat').classList.toggle('selected', input.checked));
@@ -125,30 +136,42 @@
             return;
         }
         let sum = 0;
+        let selectedCount = 0;
         list.innerHTML = selected.map(seat => {
             const price = Number(seat.dataset.price || 0);
+            const capacity = seatCapacity(seat);
             sum += price;
-            return `<div class="summary-chip"><span>${seat.dataset.label}</span><b>${money(price)}đ</b></div>`;
+            selectedCount += capacity;
+            const capacityLabel = capacity > 1 ? ` (${capacity} ghế)` : '';
+            return `<div class="summary-chip"><span>${seat.dataset.label}${capacityLabel}</span><b>${money(price)}đ</b></div>`;
         }).join('');
         total.textContent = money(sum) + 'đ';
-        mobileCount.textContent = selected.length + ' ghế';
+        mobileCount.textContent = selectedCount + ' ghế';
         mobileTotal.textContent = money(sum) + 'đ';
     }
     document.querySelectorAll('.seat input').forEach(input => {
         input.addEventListener('change', () => {
-            const selectedCount = document.querySelectorAll('.seat input:checked').length;
+            const selectedCount = [...document.querySelectorAll('.seat input:checked')]
+                .map(checked => checked.closest('.seat'))
+                .reduce((count, seat) => count + seatCapacity(seat), 0);
             if (selectedCount > 8) {
                 input.checked = false;
-                alert('Mỗi lần đặt tối đa 8 ghế.');
+                alert('Mỗi lần đặt tối đa 8 ghế; một ghế đôi được tính là 2 ghế.');
             }
             refreshSeatSummary();
         });
     });
     refreshSeatSummary();
+    // Polling chỉ phát hiện sơ đồ đã đổi; không tự bỏ lựa chọn để tránh gây bất ngờ cho người dùng.
+    const seatPollingErrorNotice = document.getElementById('seatPollingErrorNotice');
     setInterval(async () => {
         try {
             const response = await fetch('/booking/seats/status', {headers: {'Accept': 'application/json'}});
-            if (!response.ok) return;
+            if (!response.ok) {
+                seatPollingErrorNotice.style.display = 'block';
+                return;
+            }
+            seatPollingErrorNotice.style.display = 'none';
             const seats = await response.json();
             const changed = seats.some(seat => {
                 const current = document.querySelector(`.seat[data-seat-id="${seat.id}"]`);
@@ -156,7 +179,7 @@
             });
             if (changed) document.getElementById('liveSeatNotice').style.display = 'block';
         } catch (ignored) {
-            // Polling is a soft UX improvement; do not interrupt booking when it fails.
+            seatPollingErrorNotice.style.display = 'block';
         }
     }, 12000);
 </script>

@@ -1,8 +1,8 @@
 <!doctype html>
 <!--
-  Added on 2026-06-24: Customer select-showtime screen.
-  Updated on 2026-06-26: Cleaner schedule UI; cinema name and showtime data are rendered from SQL-backed model data.
-  Created by: HuyPB - HE191335
+  Bước 1 của booking. schedule đã được service loại suất quá giờ/hết ghế và gom theo ngày.
+  Mỗi giờ chiếu là một form POST riêng để server xác thực lại movieId, date và showtimeId
+  trước khi tạo BookingSelection trong session.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -78,7 +78,7 @@
 
 <main class="page">
     <div class="steps">
-        <b class="active">1 Suất chiếu</b><b>2 Ghế</b><b>3 Combo</b><b>4 Xác nhận</b><b>5 Thanh toán</b>
+        <b class="active">1 Suất chiếu</b><b>2 Ghế</b><b>3 Đồ ăn</b><b>4 Xác nhận</b><b>5 Thanh toán</b>
     </div>
 
     <div class="booking-shell">
@@ -109,6 +109,7 @@
                 </div>
             </div>
 
+            <!-- Mỗi tab ngày và panel lịch dùng cùng data-date để JavaScript đồng bộ trạng thái active. -->
             <div class="date-tabs" th:if="${!#lists.isEmpty(schedule)}">
                 <button type="button"
                         class="date-tab"
@@ -164,6 +165,7 @@
 </main>
 
 <script>
+    // Đổi ngày hoàn toàn phía client và cập nhật URL để reload/chia sẻ vẫn giữ đúng ngày đang xem.
     document.querySelectorAll('.date-tab').forEach((tab) => {
         tab.addEventListener('click', () => {
             const date = tab.dataset.date;

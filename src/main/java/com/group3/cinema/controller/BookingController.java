@@ -15,6 +15,7 @@ import com.group3.cinema.service.CustomerBookingService;
 import com.group3.cinema.service.SeatHoldingService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -47,6 +49,10 @@ public class BookingController {
     }
 
     @GetMapping("/showtimes")
+    /**
+     * Màn chọn suất chiếu: tải lịch còn bán trong 30 ngày và chọn ngày đầu tiên hợp lệ.
+     * Cờ {@code from=wishlist} được lưu theo từng phim để sau thanh toán có thể tự dọn wishlist.
+     */
     public String selectShowtime(@RequestParam("movieId") int movieId,
                                  @RequestParam(value = "date", required = false)
                                  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -79,6 +85,10 @@ public class BookingController {
     }
 
     @PostMapping("/showtimes/select")
+    /**
+     * Xác nhận suất chiếu và tạo {@link BookingSelection} an toàn để lưu trong session.
+     * Khi đổi suất, mọi ghế giữ và dữ liệu ở các bước sau phải được xóa để tránh dùng chéo đơn.
+     */
     public String confirmShowtime(@RequestParam("showtimeId") long showtimeId,
                                   @RequestParam("movieId") int movieId,
                                   @RequestParam("date")
@@ -98,6 +108,10 @@ public class BookingController {
     }
 
     @GetMapping("/seats")
+    /**
+     * Màn chọn ghế: dựng sơ đồ ghế theo cấu hình phòng và trạng thái giữ/đặt hiện tại.
+     * {@code seatHoldToken} giúp service phân biệt ghế do chính session này đang giữ.
+     */
     public String seatSelection(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
         BookingSelection selection = (BookingSelection) session.getAttribute(BOOKING_SELECTION_SESSION_KEY);
         if (selection == null) {
@@ -123,6 +137,7 @@ public class BookingController {
 
     @GetMapping("/seats/status")
     @ResponseBody
+    /** Endpoint polling để trình duyệt cập nhật trạng thái ghế mà không tải lại toàn trang. */
     public List<BookingSeatView> seatStatus(HttpSession session) {
         BookingSelection selection = (BookingSelection) session.getAttribute(BOOKING_SELECTION_SESSION_KEY);
         if (selection == null) {
@@ -132,6 +147,10 @@ public class BookingController {
     }
 
     @PostMapping("/seats")
+    /**
+     * Giữ tạm các ghế được chọn trong 5 phút rồi chuyển sang bước đồ ăn.
+     * Việc chọn lại ghế làm mất combo, món lẻ và voucher cũ vì tổng tiền đã thay đổi.
+     */
     public String holdSeats(@RequestParam(value = "seatIds", required = false) List<Long> seatIds,
                             HttpSession session, RedirectAttributes redirectAttributes) {
         BookingSelection selection = requireSelection(session, redirectAttributes);
@@ -142,6 +161,7 @@ public class BookingController {
             session.setAttribute("seatHoldToken", result.token());
             session.setAttribute("seatHoldExpiresAt", result.expiresAt());
             session.removeAttribute("selectedCombos");
+            session.removeAttribute("selectedFoodItems");
             clearSelectedVoucher(session);
             return "redirect:/booking/combos";
         } catch (IllegalArgumentException ex) {
@@ -158,22 +178,30 @@ public class BookingController {
         session.removeAttribute("seatHoldToken");
         session.removeAttribute("seatHoldExpiresAt");
         session.removeAttribute("selectedCombos");
+        session.removeAttribute("selectedFoodItems");
         clearSelectedVoucher(session);
         redirectAttributes.addFlashAttribute("success", "Đã thả ghế cũ. Vui lòng chọn lại ghế.");
         return "redirect:/booking/seats";
     }
 
     @GetMapping("/combos")
+    /**
+     * Màn chọn combo và món lẻ. Summary tại bước này chủ yếu cung cấp tiền vé,
+     * danh sách ghế và hạn giữ ghế; giá đồ ăn được JavaScript cập nhật tức thời.
+     */
     public String selectCombos(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
         BookingSelection selection = requireSelection(session, redirectAttributes);
         if (selection == null) return "redirect:/movies";
         try {
             CustomerBookingService.BookingSummary summary = customerBookingService.calculateSummary(
-                    selection, (String) session.getAttribute("seatHoldToken"), selectedCombos(session), null);
+                    selection, (String) session.getAttribute("seatHoldToken"), selectedCombos(session),
+                    selectedFoodItems(session), null);
             model.addAttribute("user", session.getAttribute("loggedInUser"));
             model.addAttribute("selection", selection);
             model.addAttribute("combos", customerBookingService.getActiveCombos());
+            model.addAttribute("foodItems", customerBookingService.getActiveFoodItems());
             model.addAttribute("selectedCombos", selectedCombos(session));
+            model.addAttribute("selectedFoodItems", selectedFoodItems(session));
             model.addAttribute("summary", summary);
             return "booking-combo";
         } catch (IllegalArgumentException ex) {
@@ -183,10 +211,34 @@ public class BookingController {
     }
 
     @PostMapping("/combos")
+    /**
+     * Kiểm tra lại ID, trạng thái bán và số lượng của combo/món lẻ ở phía server.
+     * Không tin trực tiếp dữ liệu giá từ form; giá thật luôn được đọc lại từ cơ sở dữ liệu.
+     */
     public String saveCombos(@RequestParam Map<String, String> params, HttpSession session,
                              RedirectAttributes redirectAttributes) {
+        BookingSelection selection = (BookingSelection) session.getAttribute(BOOKING_SELECTION_SESSION_KEY);
+        if (selection == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Vui lòng chọn suất chiếu trước khi chọn combo.");
+        }
         try {
-            session.setAttribute("selectedCombos", customerBookingService.validateComboQuantities(params));
+            // Validate the server-created selection and its active seat hold before writing any new session data.
+            customerBookingService.calculateSummary(
+                    selection,
+                    (String) session.getAttribute("seatHoldToken"),
+                    Map.of(),
+                    Map.of(),
+                    null
+            );
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+        try {
+            LinkedHashMap<Long, Integer> combos = customerBookingService.validateComboQuantities(params);
+            LinkedHashMap<Long, Integer> foodItems = customerBookingService.validateFoodItemQuantities(params);
+            session.setAttribute("selectedCombos", combos);
+            session.setAttribute("selectedFoodItems", foodItems);
             clearSelectedVoucher(session);
             return "redirect:/booking/summary";
         } catch (IllegalArgumentException ex) {
@@ -196,6 +248,11 @@ public class BookingController {
     }
 
     @GetMapping("/summary")
+    /**
+     * Màn xác nhận booking: tính lại toàn bộ tiền vé, combo, món lẻ và voucher.
+     * Nếu voucher đang chọn vừa hết hiệu lực, controller bỏ voucher rồi tải lại summary
+     * thay vì làm người dùng mất ghế đang giữ.
+     */
     public String summary(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
         BookingSelection selection = requireSelection(session, redirectAttributes);
         if (selection == null) return "redirect:/movies";
@@ -206,12 +263,13 @@ public class BookingController {
             CustomerBookingService.BookingSummary summary = customerBookingService.calculateSummaryWithWalletVoucher(
                     account.getAccountID(), selection,
                     (String) session.getAttribute("seatHoldToken"), selectedCombos(session),
+                    selectedFoodItems(session),
                     selectedVoucherId);
             model.addAttribute("user", account);
             model.addAttribute("summary", summary);
             model.addAttribute("voucherOptions", customerBookingService.getWalletVoucherOptions(
                     account.getAccountID(), selection, (String) session.getAttribute("seatHoldToken"),
-                    selectedCombos(session)));
+                    selectedCombos(session), selectedFoodItems(session)));
             model.addAttribute("selectedVoucherId", selectedVoucherId);
             return "booking-summary";
         } catch (IllegalArgumentException ex) {
@@ -226,6 +284,7 @@ public class BookingController {
     }
 
     @PostMapping("/voucher")
+    /** Áp dụng hoặc gỡ voucher trong ví, sau đó buộc summary tính lại từ dữ liệu hiện hành. */
     public String applyVoucher(@RequestParam(value = "voucherId", required = false) String voucherIdValue,
                                HttpSession session, RedirectAttributes redirectAttributes) {
         BookingSelection selection = requireSelection(session, redirectAttributes);
@@ -243,7 +302,7 @@ public class BookingController {
             }
             CustomerBookingService.BookingSummary summary = customerBookingService.calculateSummaryWithWalletVoucher(
                     account.getAccountID(), selection, (String) session.getAttribute("seatHoldToken"),
-                    selectedCombos(session), voucherId);
+                    selectedCombos(session), selectedFoodItems(session), voucherId);
             session.setAttribute(SELECTED_VOUCHER_ID_SESSION_KEY, voucherId);
             session.setAttribute("voucherCode", summary.voucherCode());
             redirectAttributes.addFlashAttribute("success", "Áp dụng voucher thành công.");
@@ -255,6 +314,11 @@ public class BookingController {
     }
 
     @PostMapping("/confirm")
+    /**
+     * Chốt snapshot đơn PENDING trước khi sang thanh toán.
+     * Service sao chép tên/đơn giá từng vé, combo và món lẻ vào các bảng booking để
+     * thay đổi catalog về sau không làm sai hóa đơn đã tạo.
+     */
     public String confirmBooking(HttpSession session, RedirectAttributes redirectAttributes) {
         BookingSelection selection = requireSelection(session, redirectAttributes);
         if (selection == null) return "redirect:/movies";
@@ -266,6 +330,7 @@ public class BookingController {
         try {
             var booking = customerBookingService.createPendingBookingWithWalletVoucher(account.getAccountID(), selection,
                     (String) session.getAttribute("seatHoldToken"), selectedCombos(session),
+                    selectedFoodItems(session),
                     selectedVoucherId(session));
             session.setAttribute("bookingId", booking.getId());
             return "redirect:/payment?bookingId=" + booking.getId();
@@ -291,8 +356,17 @@ public class BookingController {
 
     @SuppressWarnings("unchecked")
     private LinkedHashMap<Long, Integer> selectedCombos(HttpSession session) {
+        // LinkedHashMap giữ thứ tự người dùng chọn để summary hiển thị ổn định.
         Object value = session.getAttribute("selectedCombos");
         return value instanceof LinkedHashMap<?, ?> ? (LinkedHashMap<Long, Integer>) value : new LinkedHashMap<>();
+    }
+
+    @SuppressWarnings("unchecked")
+    private LinkedHashMap<Long, Integer> selectedFoodItems(HttpSession session) {
+        // Session cũ chưa có thuộc tính món lẻ sẽ được xem như một lựa chọn rỗng.
+        Object value = session.getAttribute("selectedFoodItems");
+        return value instanceof LinkedHashMap<?, ?>
+                ? (LinkedHashMap<Long, Integer>) value : new LinkedHashMap<>();
     }
 
     private Long selectedVoucherId(HttpSession session) {
@@ -324,9 +398,11 @@ public class BookingController {
     }
 
     private void clearBookingSteps(HttpSession session) {
+        // Gọi khi bắt đầu một suất chiếu mới để không tái sử dụng dữ liệu của booking trước.
         session.removeAttribute("seatHoldToken");
         session.removeAttribute("seatHoldExpiresAt");
         session.removeAttribute("selectedCombos");
+        session.removeAttribute("selectedFoodItems");
         clearSelectedVoucher(session);
         session.removeAttribute("bookingId");
     }

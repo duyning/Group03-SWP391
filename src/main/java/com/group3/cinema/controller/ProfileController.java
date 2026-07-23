@@ -3,11 +3,11 @@ package com.group3.cinema.controller;
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.ActivityLog;
 import com.group3.cinema.entity.ActivityLog.ActionType;
+import com.group3.cinema.entity.MembershipLevel;
 import com.group3.cinema.service.AccountService;
 import com.group3.cinema.service.ActivityLogService;
 import com.group3.cinema.service.LoyaltyService;
 import com.group3.cinema.repository.VoucherRepository;
-import com.group3.cinema.repository.AccountRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -40,9 +40,6 @@ public class ProfileController {
     @Autowired
     private LoyaltyService loyaltyService;
 
-    @Autowired
-    private AccountRepository accountRepository;
-
     @GetMapping
     public String viewProfile(HttpSession session, Model model) {
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
@@ -56,18 +53,11 @@ public class ProfileController {
             return "redirect:/login";
         }
 
-        // Tự động kiểm tra và sửa đổi hạng thành viên nếu không đúng với số điểm hiện có (Self-healing)
+        // Hạng hiển thị luôn được suy ra từ điểm hiện tại. Không ghi DB trong một GET request:
+        // schema cũ có thể còn CHECK constraint không chứa BRONZE và làm /profile lỗi 500.
         int points = account.getLoyaltyPoint();
-        com.group3.cinema.entity.MembershipLevel correctLevel = com.group3.cinema.entity.MembershipLevel.BRONZE;
-        if (points >= 5000) {
-            correctLevel = com.group3.cinema.entity.MembershipLevel.GOLD;
-        } else if (points >= 1000) {
-            correctLevel = com.group3.cinema.entity.MembershipLevel.SILVER;
-        }
-        if (account.getMembershipLevel() != correctLevel) {
-            account.setMembershipLevel(correctLevel);
-            accountRepository.save(account);
-        }
+        MembershipLevel effectiveLevel = resolveMembershipLevel(points);
+        account.setMembershipLevel(effectiveLevel);
 
         // Tự động kiểm tra và cấp voucher định kỳ hàng tháng cho hạng Vàng
         loyaltyService.checkAndGrantGoldMonthlyVoucher(account);
@@ -75,8 +65,8 @@ public class ProfileController {
         // Nạp lại thông tin mới nhất
         account = accountService.findById(loggedInUser.getAccountID());
         points = account.getLoyaltyPoint();
-        com.group3.cinema.entity.MembershipLevel level = account.getMembershipLevel() != null
-                ? account.getMembershipLevel() : com.group3.cinema.entity.MembershipLevel.BRONZE;
+        MembershipLevel level = resolveMembershipLevel(points);
+        account.setMembershipLevel(level);
 
         String tierName = "Đồng";
         String nextTierName = "Bạc";
@@ -84,19 +74,19 @@ public class ProfileController {
         int progressPercent = 0;
         int threshold = 0;
 
-        if (level == com.group3.cinema.entity.MembershipLevel.BRONZE) {
+        if (level == MembershipLevel.BRONZE) {
             tierName = "Đồng";
             nextTierName = "Bạc";
             threshold = 1000;
             pointsNeeded = Math.max(0, 1000 - points);
             progressPercent = Math.min(100, (points * 100) / 1000);
-        } else if (level == com.group3.cinema.entity.MembershipLevel.SILVER) {
+        } else if (level == MembershipLevel.SILVER) {
             tierName = "Bạc";
             nextTierName = "Vàng";
             threshold = 5000;
             pointsNeeded = Math.max(0, 5000 - points);
             progressPercent = Math.min(100, ((points - 1000) * 100) / 4000);
-        } else if (level == com.group3.cinema.entity.MembershipLevel.GOLD || level == com.group3.cinema.entity.MembershipLevel.PLAT) {
+        } else if (level == MembershipLevel.GOLD || level == MembershipLevel.PLAT) {
             tierName = "Vàng";
             nextTierName = "Đã đạt cấp tối đa";
             threshold = 5000;
@@ -147,6 +137,16 @@ public class ProfileController {
         model.addAttribute("formattedVouchers", formattedVouchers);
         model.addAttribute("active", "profile");
         return "profile";
+    }
+
+    private MembershipLevel resolveMembershipLevel(int points) {
+        if (points >= 5000) {
+            return MembershipLevel.GOLD;
+        }
+        if (points >= 1000) {
+            return MembershipLevel.SILVER;
+        }
+        return MembershipLevel.BRONZE;
     }
 
     /**

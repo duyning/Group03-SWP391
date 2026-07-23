@@ -19,12 +19,19 @@ public class PaymentGatewayRouter {
     private final Map<Payment.Method, PaymentGatewayService> gateways = new EnumMap<>(Payment.Method.class);
 
     public PaymentGatewayRouter(List<PaymentGatewayService> gatewayServices) {
+        // Spring tự truyền mọi implementation; map enum giúp chọn gateway mà không dùng if/else dài.
         gatewayServices.forEach(gateway -> gateways.put(gateway.method(), gateway));
     }
 
     public String createRedirectUrl(Payment payment, Booking booking, HttpServletRequest request) {
-        // Luôn chuyển hướng sang cổng mô phỏng thanh toán nội bộ để demo/test nhanh
-        return request.getContextPath() + "/payment/gateway/" + payment.getOrderCode();
+        PaymentGatewayService gateway = gateway(payment.getPaymentMethod());
+        if (!gateway.isConfigured()) {
+            throw new IllegalArgumentException(
+                    "payOS chưa được cấu hình. Vui lòng kiểm tra PAYOS_ENABLED, PAYOS_CLIENT_ID, "
+                            + "PAYOS_API_KEY, PAYOS_CHECKSUM_KEY, PAYOS_RETURN_URL và PAYOS_CANCEL_URL."
+            );
+        }
+        return gateway.createPaymentUrl(payment, booking, request);
     }
 
     public PaymentGatewayService gateway(Payment.Method method) {

@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  Màn kết quả thanh toán dùng chung cho SUCCESS/CANCELLED/PENDING/FAILED.
+  Nội dung, biểu tượng và CTA được quyết định từ payment.status; trạng thái PENDING
+  cho phép quay lại thanh toán trong khi lỗi/hủy dẫn người dùng về đặt lại suất.
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -9,12 +14,14 @@
 <body>
 <header th:replace="~{fragments/common_header :: flowHeader('Kết quả thanh toán')}"></header>
 <main class="gateway result">
+    <div class="notice error" th:if="${error}" th:text="${error}"></div>
+    <!-- Biểu thức ba nhánh ánh xạ trạng thái backend sang biểu tượng và thông điệp dễ hiểu. -->
     <div class="result-icon"
-         th:text="${payment.status.name() == 'SUCCESS' ? '✓' : (payment.status.name() == 'CANCELLED' ? '!' : (payment.status.name() == 'PENDING' ? '…' : '×'))}">✓</div>
-    <h1 th:text="${payment.status.name() == 'SUCCESS' ? 'Thanh toán thành công' : (payment.status.name() == 'CANCELLED' ? 'Bạn đã hủy thanh toán' : (payment.status.name() == 'PENDING' ? 'Đang chờ thanh toán' : 'Thanh toán thất bại'))}">Kết quả</h1>
-    <p th:if="${payment.status.name() == 'SUCCESS'}">Vé của bạn đã được xác nhận.</p>
-    <p th:if="${payment.status.name() == 'CANCELLED'}">Đơn chưa được thanh toán. Bạn có thể đặt lại vé từ danh sách phim.</p>
-    <p th:if="${payment.status.name() == 'PENDING'}">Giao dịch chưa hoàn tất. Nếu bạn đã chuyển khoản, vui lòng đợi webhook từ payOS cập nhật trạng thái.</p>
+         th:text="${displayPaymentStatus == 'SUCCESS' ? '✓' : (displayPaymentStatus == 'CANCELLED' ? '!' : (displayPaymentStatus == 'PENDING' ? '…' : '×'))}">✓</div>
+    <h1 th:text="${displayPaymentStatus == 'SUCCESS' ? 'Thanh toán thành công' : (displayPaymentStatus == 'CANCELLED' ? 'Bạn đã hủy thanh toán' : (displayPaymentStatus == 'PENDING' ? 'Đang chờ thanh toán' : 'Thanh toán thất bại'))}">Kết quả</h1>
+    <p th:if="${displayPaymentStatus == 'SUCCESS'}">Vé của bạn đã được xác nhận.</p>
+    <p th:if="${displayPaymentStatus == 'CANCELLED'}">Đơn chưa được thanh toán. Bạn có thể đặt lại vé từ danh sách phim.</p>
+    <p th:if="${displayPaymentStatus == 'PENDING'}">Giao dịch chưa hoàn tất. Nếu bạn đã chuyển khoản, vui lòng đợi webhook từ payOS cập nhật trạng thái.</p>
     <p th:if="${payment.errorMessage}" th:text="${payment.errorMessage}"></p>
     <dl>
         <dt>Mã đơn</dt><dd th:text="${'#CF' + details.booking.id}"></dd>
@@ -24,9 +31,9 @@
     </dl>
     <div class="flow-actions">
         <a class="btn secondary" th:href="@{/movies}">Về danh sách phim</a>
-        <a class="btn" th:if="${payment.status.name() == 'SUCCESS'}" th:href="@{/my-tickets}">Xem vé của tôi</a>
-        <a class="btn" th:if="${payment.status.name() == 'PENDING'}" th:href="@{/payment(bookingId=${details.booking.id})}">Thanh toán lại</a>
-        <a class="btn" th:if="${payment.status.name() == 'CANCELLED' || payment.status.name() == 'FAILED'}"
+        <a class="btn" th:if="${displayPaymentStatus == 'SUCCESS'}" th:href="@{/my-tickets}">Xem vé của tôi</a>
+        <a class="btn" th:if="${displayPaymentStatus == 'PENDING'}" th:href="@{/payment(bookingId=${details.booking.id})}">Thanh toán lại</a>
+        <a class="btn" th:if="${displayPaymentStatus == 'CANCELLED' || displayPaymentStatus == 'FAILED'}"
            th:href="@{/booking/showtimes(movieId=${details.showtime.movie.id},date=${details.showtime.showDate})}">Đặt lại vé này</a>
     </div>
 </main>

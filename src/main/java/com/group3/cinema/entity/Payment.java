@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "payments", uniqueConstraints = @UniqueConstraint(columnNames = "orderCode"))
 public class Payment {
     public enum Status { PENDING, SUCCESS, FAILED, CANCELLED }
-    public enum Method { VNPAY, MOMO, PAYOS, CASH, CARD, BANK_TRANSFER }
+    public enum Method { PAYOS, CASH, CARD, BANK_TRANSFER }
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @Column(nullable = false) private Long bookingId;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private Method paymentMethod;

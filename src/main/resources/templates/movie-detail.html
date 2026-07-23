@@ -1,10 +1,8 @@
 <!doctype html>
 <!--
-  Updated on 2026-06-04: Movie detail page follows the provided Beta Cinemas UI style.
-  Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
-  Updated on 2026-06-04: Removed English visible text from status, fallback labels, and image alt text.
-  Updated on 2026-06-21: Movie detail banner now renders as a clean image without overlay text.
-  Created by: HuyPB - HE191335
+  Màn chi tiết phim, nhận movie, dữ liệu đánh giá/phân trang, quyền canReview
+  và recommendedMovies từ MovieController. Form review POST về /movies/{id}/reviews;
+  bộ lọc review dùng GET để URL có thể chia sẻ và giữ trạng thái sau khi tải lại.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
@@ -716,6 +714,10 @@
             </section>
         </section>
 
+        <!--
+          Form chỉ xuất hiện khi canReview=true (đã đăng nhập và đã xem phim bằng booking PAID).
+          userReview khác null biến form tạo mới thành form cập nhật đánh giá hiện có.
+        -->
         <section class="review-section" id="reviews">
             <div class="section-heading">
                 <h3>Đánh giá phim</h3>
@@ -758,6 +760,7 @@
                 Tài khoản hiện tại chưa thể gửi đánh giá.
             </div>
 
+            <!-- Bộ lọc dùng GET; anchor #reviews đưa trình duyệt quay đúng khu đánh giá sau tải trang. -->
             <div class="review-tools">
                 <form class="review-filter" th:action="@{/movies/{id}(id=${movie.id})}" method="get">
                     <label for="reviewRating">Lọc đánh giá</label>
@@ -800,6 +803,7 @@
                 </article>
             </div>
             <div class="empty-state" th:if="${reviews == null || #lists.isEmpty(reviews)}">Chưa có đánh giá nào cho phim này.</div>
+            <!-- Mọi link trang giữ nguyên số sao và khoảng ngày đang lọc. -->
             <nav class="review-pagination" th:if="${reviewTotalPages > 1}" aria-label="Phân trang đánh giá">
                 <a th:if="${reviewCurrentPage > 1}"
                    th:href="@{/movies/{id}(id=${movie.id}, reviewRating=${reviewRating}, reviewStartDate=${reviewStartDate}, reviewEndDate=${reviewEndDate}, reviewPage=${reviewCurrentPage - 1})} + '#reviews'">&lt;</a>
@@ -819,6 +823,7 @@
                 <span class="disabled" th:if="${reviewCurrentPage >= reviewTotalPages}">&gt;</span>
             </nav>
         </section>
+        <!-- Không gồm phim hiện tại hoặc phim người dùng đã xem; item mang sẵn lý do và điểm phù hợp. -->
         <section class="recommend-section" th:if="${recommendedMovies != null && !#lists.isEmpty(recommendedMovies)}">
             <div class="section-heading">
                 <h3>Phim đề xuất</h3>
@@ -873,7 +878,13 @@
 
             // 1. Check if movie is wishlisted
             fetch(`/api/wishlist/check?movieId=${movieId}`)
-                .then(r => r.json())
+                .then(async response => {
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Không thể kiểm tra trạng thái yêu thích.');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.wishlisted) {
                         btnWishlist.classList.add('active');
@@ -883,7 +894,9 @@
                         }
                     }
                 })
-                .catch(() => {});
+                .catch(error => {
+                    showToast('error', error.message || 'Không thể kiểm tra trạng thái yêu thích.');
+                });
 
             // 2. Add click listener to toggle wishlist
             btnWishlist.addEventListener('click', async function() {

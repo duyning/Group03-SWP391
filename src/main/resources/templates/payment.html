@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  Bước 5 của booking. details là snapshot booking đã PENDING, gồm suất chiếu, vé,
+  combo và món lẻ. Form chỉ gửi bookingId/phương thức; PaymentService lấy totalAmount
+  từ booking để người dùng không thể sửa số tiền bằng DevTools.
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -22,7 +27,7 @@
 <header th:replace="~{fragments/common_header :: flowHeaderTimer('Thời gian thanh toán còn lại:', ${details.booking.expiresAt}, @{/movies})}"></header>
 <main class="flow-page">
     <div class="steps">
-        <b>1 Suất chiếu</b><b>2 Ghế</b><b>3 Combo</b><b>4 Xác nhận</b><b class="active">5 Thanh toán</b>
+        <b>1 Suất chiếu</b><b>2 Ghế</b><b>3 Đồ ăn</b><b>4 Xác nhận</b><b class="active">5 Thanh toán</b>
     </div>
 
     <div class="payment-layout">
@@ -35,6 +40,7 @@
                 <b th:text="${#numbers.formatDecimal(details.booking.totalAmount,0,'COMMA',0,'POINT')} + 'đ'">0đ</b>
             </p>
 
+            <!-- POST /payment/start tạo hoặc tái sử dụng giao dịch PENDING rồi chuyển tới gateway. -->
             <form method="post" th:action="@{/payment/start}">
                 <input type="hidden" name="bookingId" th:value="${details.booking.id}">
                 <label class="pay-method">
@@ -45,6 +51,7 @@
             </form>
         </section>
 
+        <!-- Cột phải đối chiếu toàn bộ cấu phần tiền trước khi người dùng rời sang cổng thanh toán. -->
         <aside class="panel order-detail">
             <h2>Chi tiết đơn thanh toán</h2>
             <dl>
@@ -57,6 +64,7 @@
             <div class="price-lines">
                 <p><span>Tiền vé</span><b th:text="${#numbers.formatDecimal(details.booking.ticketSubtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></p>
                 <p><span>Combo</span><b th:text="${#numbers.formatDecimal(details.booking.comboSubtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></p>
+                <p><span>Món lẻ</span><b th:text="${#numbers.formatDecimal(details.booking.foodSubtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></p>
                 <p th:if="${details.booking.voucherCode != null}"><span>Voucher</span><b th:text="${details.booking.voucherCode}">Voucher</b></p>
                 <p><span>Giảm giá</span><b th:text="'-' + ${#numbers.formatDecimal(details.booking.discountAmount,0,'COMMA',0,'POINT')} + 'đ'">-0đ</b></p>
                 <p class="grand"><span>Cần thanh toán</span><b th:text="${#numbers.formatDecimal(details.booking.totalAmount,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></p>
@@ -67,6 +75,13 @@
                 <p th:each="combo : ${details.combos}">
                     <span th:text="${combo.comboName} + ' x' + ${combo.quantity}">Combo x1</span>
                     <b th:text="${#numbers.formatDecimal(combo.subtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b>
+                </p>
+            </div>
+            <div class="combo-lines" th:if="${!#lists.isEmpty(details.foodItems)}">
+                <h3>Món lẻ đã chọn</h3>
+                <p th:each="food : ${details.foodItems}">
+                    <span th:text="${food.foodItemName} + ' x' + ${food.quantity}">Món lẻ x1</span>
+                    <b th:text="${#numbers.formatDecimal(food.subtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b>
                 </p>
             </div>
             <p class="payment-note">Sau khi thanh toán thành công, ghế đang giữ sẽ chuyển thành đã đặt và hệ thống phát hành vé điện tử.</p>

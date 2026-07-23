@@ -9,14 +9,18 @@ package com.group3.cinema.service;
 import com.group3.cinema.dto.BookingSelection;
 import com.group3.cinema.entity.Booking;
 import com.group3.cinema.entity.BookingCombo;
+import com.group3.cinema.entity.BookingFoodItem;
 import com.group3.cinema.entity.BookingTicket;
 import com.group3.cinema.entity.Combo;
+import com.group3.cinema.entity.FoodItem;
 import com.group3.cinema.entity.Showtime;
 import com.group3.cinema.entity.Voucher;
 import com.group3.cinema.repository.BookingComboRepository;
+import com.group3.cinema.repository.BookingFoodItemRepository;
 import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.ComboRepository;
+import com.group3.cinema.repository.FoodItemRepository;
 import com.group3.cinema.repository.VoucherRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -39,27 +43,35 @@ import java.util.Set;
 
 @Service
 public class CustomerBookingService {
+    // Trạng thái NEW vẫn được coi là đang bán để tương thích dữ liệu combo/món vừa tạo.
     private static final Set<String> ACTIVE_COMBO_STATUSES = Set.of("ACTIVE", "NEW");
+    private static final Set<String> ACTIVE_FOOD_STATUSES = Set.of("ACTIVE", "NEW");
 
     private final ComboRepository comboRepository;
+    private final FoodItemRepository foodItemRepository;
     private final BookingTicketRepository ticketRepository;
     private final BookingRepository bookingRepository;
     private final BookingComboRepository bookingComboRepository;
+    private final BookingFoodItemRepository bookingFoodItemRepository;
     private final ShowtimeRepository showtimeRepository;
     private final VoucherRepository voucherRepository;
     private final JdbcTemplate jdbcTemplate;
 
     public CustomerBookingService(ComboRepository comboRepository,
+                                  FoodItemRepository foodItemRepository,
                                   BookingTicketRepository ticketRepository,
                                   BookingRepository bookingRepository,
                                   BookingComboRepository bookingComboRepository,
+                                  BookingFoodItemRepository bookingFoodItemRepository,
                                   ShowtimeRepository showtimeRepository,
                                   VoucherRepository voucherRepository,
                                   JdbcTemplate jdbcTemplate) {
         this.comboRepository = comboRepository;
+        this.foodItemRepository = foodItemRepository;
         this.ticketRepository = ticketRepository;
         this.bookingRepository = bookingRepository;
         this.bookingComboRepository = bookingComboRepository;
+        this.bookingFoodItemRepository = bookingFoodItemRepository;
         this.showtimeRepository = showtimeRepository;
         this.voucherRepository = voucherRepository;
         this.jdbcTemplate = jdbcTemplate;
@@ -69,7 +81,15 @@ public class CustomerBookingService {
         return comboRepository.findByStatusInOrderByNameAsc(List.copyOf(ACTIVE_COMBO_STATUSES));
     }
 
+    public List<FoodItem> getActiveFoodItems() {
+        return foodItemRepository.findByStatusInOrderByNameAsc(List.copyOf(ACTIVE_FOOD_STATUSES));
+    }
+
     public LinkedHashMap<Long, Integer> validateComboQuantities(Map<String, String> params) {
+        /*
+         * Form gửi input theo mẫu combo_{id}. Chỉ nhận số lượng 0–10, sau đó
+         * đọc lại toàn bộ ID từ database để chặn việc sửa request chọn combo đã ngừng bán.
+         */
         LinkedHashMap<Long, Integer> selected = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : params.entrySet()) {
             if (!entry.getKey().startsWith("combo_")) continue;
@@ -92,10 +112,41 @@ public class CustomerBookingService {
         return selected;
     }
 
+    public LinkedHashMap<Long, Integer> validateFoodItemQuantities(Map<String, String> params) {
+        // Món lẻ dùng tiền tố food_ nhưng có cùng nguyên tắc kiểm tra an toàn như combo.
+        LinkedHashMap<Long, Integer> selected = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (!entry.getKey().startsWith("food_")) continue;
+            try {
+                long foodItemId = Long.parseLong(entry.getKey().substring(5));
+                int quantity = Integer.parseInt(entry.getValue());
+                if (quantity < 0 || quantity > 10) {
+                    throw new IllegalArgumentException("Số lượng món lẻ phải từ 0 đến 10.");
+                }
+                if (quantity > 0) selected.put(foodItemId, quantity);
+            } catch (NumberFormatException ex) {
+                throw new IllegalArgumentException("Số lượng món lẻ không hợp lệ.");
+            }
+        }
+        List<FoodItem> foodItems = foodItemRepository.findAllById(selected.keySet());
+        if (foodItems.size() != selected.size()
+                || foodItems.stream().anyMatch(item -> !ACTIVE_FOOD_STATUSES.contains(item.getStatus()))) {
+            throw new IllegalArgumentException("Một món lẻ đã ngừng bán. Vui lòng chọn lại.");
+        }
+        return selected;
+    }
+
     @Transactional(readOnly = true)
     public BookingSummary calculateSummary(BookingSelection selection, String holdToken,
                                            Map<Long, Integer> selectedCombos, String voucherCode) {
-        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos);
+        return calculateSummary(selection, holdToken, selectedCombos, Map.of(), voucherCode);
+    }
+
+    @Transactional(readOnly = true)
+    public BookingSummary calculateSummary(BookingSelection selection, String holdToken,
+                                           Map<Long, Integer> selectedCombos,
+                                           Map<Long, Integer> selectedFoodItems, String voucherCode) {
+        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos, selectedFoodItems);
         String normalizedVoucher = normalizeVoucher(voucherCode);
         VoucherRule voucherRule = normalizedVoucher == null ? null : voucherRule(normalizedVoucher);
         BigDecimal discount = voucherRule == null ? BigDecimal.ZERO
@@ -110,7 +161,16 @@ public class CustomerBookingService {
                                                             String holdToken,
                                                             Map<Long, Integer> selectedCombos,
                                                             Long voucherId) {
-        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos);
+        return calculateSummaryWithWalletVoucher(accountId, selection, holdToken, selectedCombos, Map.of(), voucherId);
+    }
+
+    @Transactional(readOnly = true)
+    public BookingSummary calculateSummaryWithWalletVoucher(Integer accountId, BookingSelection selection,
+                                                            String holdToken,
+                                                            Map<Long, Integer> selectedCombos,
+                                                            Map<Long, Integer> selectedFoodItems,
+                                                            Long voucherId) {
+        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos, selectedFoodItems);
         WalletVoucherOption voucherOption = voucherId == null
                 ? null
                 : evaluateWalletVoucher(accountId, voucherId, base, true);
@@ -123,7 +183,15 @@ public class CustomerBookingService {
     public List<WalletVoucherOption> getWalletVoucherOptions(Integer accountId, BookingSelection selection,
                                                              String holdToken,
                                                              Map<Long, Integer> selectedCombos) {
-        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos);
+        return getWalletVoucherOptions(accountId, selection, holdToken, selectedCombos, Map.of());
+    }
+
+    @Transactional(readOnly = true)
+    public List<WalletVoucherOption> getWalletVoucherOptions(Integer accountId, BookingSelection selection,
+                                                             String holdToken,
+                                                             Map<Long, Integer> selectedCombos,
+                                                             Map<Long, Integer> selectedFoodItems) {
+        SummaryBase base = buildSummaryBase(selection, holdToken, selectedCombos, selectedFoodItems);
         LocalDateTime now = LocalDateTime.now();
         return voucherRepository.findWalletVouchers(requireAccountId(accountId)).stream()
                 .filter(voucher -> !Boolean.TRUE.equals(voucher.getIsDeleted()))
@@ -142,11 +210,24 @@ public class CustomerBookingService {
     @Transactional
     public Booking createPendingBookingWithWalletVoucher(Integer accountId, BookingSelection selection, String holdToken,
                                                          Map<Long, Integer> selectedCombos, Long voucherId) {
-        BookingSummary summary = calculateSummaryWithWalletVoucher(accountId, selection, holdToken, selectedCombos, voucherId);
+        return createPendingBookingWithWalletVoucher(accountId, selection, holdToken, selectedCombos, Map.of(), voucherId);
+    }
+
+    @Transactional
+    public Booking createPendingBookingWithWalletVoucher(Integer accountId, BookingSelection selection, String holdToken,
+                                                         Map<Long, Integer> selectedCombos,
+                                                         Map<Long, Integer> selectedFoodItems, Long voucherId) {
+        BookingSummary summary = calculateSummaryWithWalletVoucher(
+                accountId, selection, holdToken, selectedCombos, selectedFoodItems, voucherId);
         return savePendingBooking(accountId, selection, summary);
     }
 
     private Booking savePendingBooking(Integer accountId, BookingSelection selection, BookingSummary summary) {
+        /*
+         * Booking PENDING là snapshot giá tại thời điểm xác nhận. Header giữ các tổng tiền,
+         * còn vé/combo/món lẻ được lưu thành dòng chi tiết. Nhờ vậy thay đổi giá catalog
+         * sau đó không làm biến đổi hóa đơn hay số tiền cổng thanh toán đã nhận.
+         */
         LocalDateTime paymentExpiry = LocalDateTime.now().plusMinutes(5);
         Booking booking = new Booking();
         booking.setAccountId(accountId);
@@ -154,6 +235,7 @@ public class CustomerBookingService {
         booking.setStatus(Booking.Status.PENDING);
         booking.setTicketSubtotal(summary.ticketSubtotal());
         booking.setComboSubtotal(summary.comboSubtotal());
+        booking.setFoodSubtotal(summary.foodSubtotal());
         booking.setDiscountAmount(summary.discount());
         booking.setTotalAmount(summary.total());
         booking.setVoucherCode(summary.voucherCode());
@@ -176,6 +258,16 @@ public class CustomerBookingService {
             item.setSubtotal(line.subtotal());
             bookingComboRepository.save(item);
         }
+        for (FoodItemLine line : summary.foodItems()) {
+            BookingFoodItem item = new BookingFoodItem();
+            item.setBookingId(booking.getId());
+            item.setFoodItemId(line.id());
+            item.setFoodItemName(line.name());
+            item.setQuantity(line.quantity());
+            item.setUnitPrice(line.unitPrice());
+            item.setSubtotal(line.subtotal());
+            bookingFoodItemRepository.save(item);
+        }
         return booking;
     }
 
@@ -197,16 +289,24 @@ public class CustomerBookingService {
         Showtime showtime = showtimeRepository.findById(booking.getShowtimeId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu của đơn vé."));
         return new BookingDetails(booking, showtime, ticketRepository.findByBookingId(booking.getId()),
-                bookingComboRepository.findByBookingId(booking.getId()));
+                bookingComboRepository.findByBookingId(booking.getId()),
+                bookingFoodItemRepository.findByBookingId(booking.getId()));
     }
 
     private SummaryBase buildSummaryBase(BookingSelection selection, String holdToken,
-                                         Map<Long, Integer> selectedCombos) {
+                                         Map<Long, Integer> selectedCombos,
+                                         Map<Long, Integer> selectedFoodItems) {
+        /*
+         * Tính tổng luôn bắt đầu từ các ghế HOLDING còn hạn. Mọi giá combo/món lẻ
+         * đều được truy vấn lại bằng ID thay vì nhận giá từ trình duyệt.
+         */
         List<BookingTicket> tickets = requireValidHolds(selection, holdToken);
         BigDecimal ticketSubtotal = tickets.stream().map(BookingTicket::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         List<ComboLine> comboLines = new ArrayList<>();
         BigDecimal comboSubtotal = BigDecimal.ZERO;
+        List<FoodItemLine> foodItemLines = new ArrayList<>();
+        BigDecimal foodSubtotal = BigDecimal.ZERO;
 
         if (selectedCombos != null && !selectedCombos.isEmpty()) {
             Map<Long, Combo> comboMap = new HashMap<>();
@@ -222,12 +322,28 @@ public class CustomerBookingService {
             }
         }
 
+        if (selectedFoodItems != null && !selectedFoodItems.isEmpty()) {
+            Map<Long, FoodItem> foodItemMap = new HashMap<>();
+            foodItemRepository.findAllById(selectedFoodItems.keySet())
+                    .forEach(item -> foodItemMap.put(item.getId(), item));
+            for (Map.Entry<Long, Integer> entry : selectedFoodItems.entrySet()) {
+                FoodItem foodItem = foodItemMap.get(entry.getKey());
+                if (foodItem == null || !ACTIVE_FOOD_STATUSES.contains(foodItem.getStatus()) || entry.getValue() < 1) {
+                    throw new IllegalArgumentException("Món lẻ đã chọn không còn khả dụng.");
+                }
+                BigDecimal subtotal = foodItem.getUnitPrice().multiply(BigDecimal.valueOf(entry.getValue()));
+                foodItemLines.add(new FoodItemLine(foodItem.getId(), foodItem.getName(), foodItem.getCategory(),
+                        entry.getValue(), foodItem.getUnitPrice(), subtotal));
+                foodSubtotal = foodSubtotal.add(subtotal);
+            }
+        }
+
         LocalDateTime expiresAt = tickets.stream()
                 .map(BookingTicket::getHoldExpiresAt)
                 .min(LocalDateTime::compareTo)
                 .orElseThrow();
-        return new SummaryBase(selection, tickets, comboLines, ticketSubtotal, comboSubtotal,
-                ticketSubtotal.add(comboSubtotal), expiresAt);
+        return new SummaryBase(selection, tickets, comboLines, foodItemLines, ticketSubtotal, comboSubtotal,
+                foodSubtotal, ticketSubtotal.add(comboSubtotal).add(foodSubtotal), expiresAt);
     }
 
     private WalletVoucherOption evaluateWalletVoucher(Integer accountId, Long voucherId,
@@ -239,6 +355,7 @@ public class CustomerBookingService {
 
     private WalletVoucherOption evaluateWalletVoucher(Integer accountId, Voucher voucher,
                                                       SummaryBase base, boolean strict) {
+        // strict=true dùng lúc áp voucher; strict=false dùng để liệt kê cả voucher chưa đủ điều kiện.
         String reason = voucherIneligibilityReason(accountId, voucher, base);
         BigDecimal eligibleAmount = eligibleVoucherAmount(voucher, base);
         BigDecimal discount = reason == null ? calculateVoucherDiscount(voucher, eligibleAmount) : BigDecimal.ZERO;
@@ -252,6 +369,10 @@ public class CustomerBookingService {
     }
 
     private String voucherIneligibilityReason(Integer accountId, Voucher voucher, SummaryBase base) {
+        /*
+         * Thứ tự kiểm tra ưu tiên lỗi trạng thái/thời gian/số lượng trước điều kiện đơn hàng.
+         * Hàm trả chuỗi lý do để màn summary giải thích vì sao từng voucher bị vô hiệu hóa.
+         */
         requireAccountId(accountId);
         LocalDateTime now = LocalDateTime.now();
         if (Boolean.TRUE.equals(voucher.getIsDeleted())) {
@@ -319,15 +440,16 @@ public class CustomerBookingService {
     }
 
     private BigDecimal eligibleVoucherAmount(Voucher voucher, SummaryBase base) {
+        // Voucher WATER áp dụng cho cả combo và món lẻ; TICKET chỉ áp dụng tiền ghế phù hợp.
         Voucher.ServiceScope scope = voucher.getServiceScope();
         if (scope == Voucher.ServiceScope.WATER) {
-            return base.comboSubtotal();
+            return base.comboSubtotal().add(base.foodSubtotal());
         }
         BigDecimal ticketAmount = eligibleTicketAmount(voucher, base);
         if (scope == Voucher.ServiceScope.TICKET) {
             return ticketAmount;
         }
-        return ticketAmount.add(base.comboSubtotal());
+        return ticketAmount.add(base.comboSubtotal()).add(base.foodSubtotal());
     }
 
     private BigDecimal eligibleTicketAmount(Voucher voucher, SummaryBase base) {
@@ -390,6 +512,7 @@ public class CustomerBookingService {
     }
 
     private List<BookingTicket> requireValidHolds(BookingSelection selection, String holdToken) {
+        // Không cho tạo summary/booking từ token hết hạn hoặc ghế thuộc suất chiếu khác.
         if (holdToken == null || holdToken.isBlank()) {
             throw new IllegalArgumentException("Phiên giữ ghế không tồn tại.");
         }
@@ -423,20 +546,26 @@ public class CustomerBookingService {
         return rules.get(0);
     }
 
+    // Các record dưới đây là view-model bất biến truyền giữa service, controller và Thymeleaf.
     public record ComboLine(Long id, String name, int quantity, BigDecimal unitPrice, BigDecimal subtotal) { }
+    public record FoodItemLine(Long id, String name, String category, int quantity,
+                               BigDecimal unitPrice, BigDecimal subtotal) { }
     public record WalletVoucherOption(Voucher voucher, BigDecimal discount, BigDecimal eligibleAmount,
                                       boolean eligible, String reason) { }
     public record BookingSummary(BookingSelection selection, List<BookingTicket> tickets, List<ComboLine> combos,
-                                 BigDecimal ticketSubtotal, BigDecimal comboSubtotal, BigDecimal discount,
+                                 List<FoodItemLine> foodItems, BigDecimal ticketSubtotal,
+                                 BigDecimal comboSubtotal, BigDecimal foodSubtotal, BigDecimal discount,
                                  BigDecimal total, String voucherCode, LocalDateTime expiresAt) { }
     public record BookingDetails(Booking booking, Showtime showtime,
-                                 List<BookingTicket> tickets, List<BookingCombo> combos) { }
+                                 List<BookingTicket> tickets, List<BookingCombo> combos,
+                                 List<BookingFoodItem> foodItems) { }
     private record SummaryBase(BookingSelection selection, List<BookingTicket> tickets, List<ComboLine> combos,
-                               BigDecimal ticketSubtotal, BigDecimal comboSubtotal, BigDecimal beforeDiscount,
+                               List<FoodItemLine> foodItems, BigDecimal ticketSubtotal,
+                               BigDecimal comboSubtotal, BigDecimal foodSubtotal, BigDecimal beforeDiscount,
                                LocalDateTime expiresAt) {
         BookingSummary toSummary(BigDecimal discount, String voucherCode) {
             BigDecimal safeDiscount = discount == null ? BigDecimal.ZERO : discount;
-            return new BookingSummary(selection, tickets, combos, ticketSubtotal, comboSubtotal,
+            return new BookingSummary(selection, tickets, combos, foodItems, ticketSubtotal, comboSubtotal, foodSubtotal,
                     safeDiscount, beforeDiscount.subtract(safeDiscount), voucherCode, expiresAt);
         }
     }
