@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+// Controller xử lý hiển thị và tương tác Voucher phía Khách hàng (Public Side)
 @Controller
 public class VoucherPublicController {
 
@@ -50,9 +51,11 @@ public class VoucherPublicController {
     @Transactional(readOnly = true)
     @GetMapping("/vouchers")
     public String showVouchers(Model model, HttpSession session) {
+        // Lấy thông tin tài khoản đăng nhập từ Session
         Account sessionAccount = (Account) session.getAttribute("loggedInUser");
 
         if (sessionAccount != null) {
+            // Lấy thông tin account mới nhất từ CSDL
             Account currentAccount = accountService.findById(sessionAccount.getAccountID());
             model.addAttribute("user", currentAccount);
 
@@ -66,6 +69,7 @@ public class VoucherPublicController {
             }
             model.addAttribute("savedVoucherIds", savedVoucherIds);
         } else {
+            // Trường hợp khách chưa đăng nhập
             model.addAttribute("user", null);
             model.addAttribute("savedVoucherIds", new HashSet<Long>());
         }
@@ -82,6 +86,7 @@ public class VoucherPublicController {
     @PostMapping("/vouchers/collect/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, String>> collectVoucher(@PathVariable Long id, HttpSession session) {
+        // Kiểm tra xác thực người dùng trước khi lưu mã
         Account account = (Account) session.getAttribute("loggedInUser");
         if (account == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -102,9 +107,11 @@ public class VoucherPublicController {
 
             return ResponseEntity.ok(Map.of("status", "success", "message", "Lưu voucher thành công!"));
         } catch (IllegalArgumentException e) {
+            // Xử lý ngoại lệ vi phạm điều kiện lưu voucher
             return ResponseEntity.badRequest()
                     .body(Map.of("status", "error", "message", e.getMessage()));
         } catch (Exception e) {
+            // Ghi nhật ký lỗi hệ thống
             log.error("Không thể lưu voucher {} cho account {}", id, account.getAccountID(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("status", "error", "message", "Không thể lưu voucher lúc này. Vui lòng thử lại sau."));
@@ -118,6 +125,7 @@ public class VoucherPublicController {
     @Transactional(readOnly = true)
     @GetMapping("/vouchers/my-wallet")
     public String showMyWallet(Model model, HttpSession session) {
+        // Kiểm tra quyền đăng nhập
         Account sessionAccount = (Account) session.getAttribute("loggedInUser");
         if (sessionAccount == null) {
             return "redirect:/login";

@@ -1,13 +1,3 @@
-/**
- * Interface Repository quản lý thông tin Mã giảm giá / Voucher khuyến mãi (`vouchers`) và Ví Voucher khách hàng (`account_vouchers`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `VoucherService`, `CustomerBookingService`, `PaymentSchemaMigration`.
- * - Hỗ trợ các chức năng: Tìm kiếm và lọc mã giảm giá phía Admin (`searchVouchersForAdmin`),
- *   lấy danh sách voucher áp dụng cho phía khách hàng (`findActiveVouchers`),
- *   lưu/kiểm tra voucher trong ví tài khoản (`addToWallet`, `existsInWallet`, `findWalletVouchers`),
- *   và tăng số lượt sử dụng voucher nguyên tử khi thanh toán thành công (`incrementUsedQuantityIfAvailable`).
- */
 package com.group3.cinema.repository;
 
 import com.group3.cinema.entity.Voucher;
@@ -22,22 +12,41 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository quản lý dữ liệu cho Entity Voucher (Mã giảm giá / Ưu đãi).
+ * Thực hiện các thao tác CRUD, tìm kiếm/lọc đa điều kiện (JPQL) và quản lý Ví Voucher tài khoản (Native Query).
+ *
+ * @author Group 3 - Cinema Management System
+ */
 @Repository
 public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 
-    /** Kiểm tra xem mã voucher đã tồn tại chưa khi tạo mới. */
+    /**
+     * Kiểm tra sự tồn tại của mã Voucher theo mã Code.
+     * Phục vụ kiểm tra trùng mã khi THÊM MỚI Voucher.
+     */
     boolean existsByCode(String code);
 
-    /** Kiểm tra xem mã voucher có trùng với bản ghi khác (ngoại trừ ID `id`) khi cập nhật. */
+    /**
+     * Kiểm tra xem mã Code đã được sử dụng bởi một Voucher KHÁC hay chưa.
+     * Phục vụ kiểm tra trùng mã khi CẬP NHẬT (Chỉnh sửa) Voucher.
+     */
     boolean existsByCodeAndIdNot(String code, Long id);
 
-    /** Tìm voucher theo mã code (không phân biệt chữ hoa/thường). */
+    /**
+     * Tìm kiếm Voucher theo mã Code (Không phân biệt chữ hoa/chữ thường).
+     */
     Optional<Voucher> findByCodeIgnoreCase(String code);
 
-    /** Lấy toàn bộ danh sách voucher sắp xếp ID giảm dần (mới nhất lên đầu). */
+    /**
+     * Lấy toàn bộ danh sách Voucher, sắp xếp theo ID giảm dần (Bản ghi mới nhất lên đầu).
+     */
     List<Voucher> findAllByOrderByIdDesc();
 
-    /** Lọc danh sách voucher theo từ khóa, loại chiết khấu và phạm vi dịch vụ áp dụng. */
+    /**
+     * Truy vấn lọc động Voucher (JPQL) hỗ trợ xử lý linh hoạt khi các trường tham số bị NULL.
+     * Lọc theo Từ khóa (mã hoặc tiêu đề), Loại giảm giá và Phạm vi dịch vụ.
+     */
     @Query("SELECT v FROM Voucher v WHERE " +
             "(:keyword IS NULL OR LOWER(v.code) LIKE LOWER(:keyword) OR LOWER(v.title) LIKE LOWER(:keyword)) AND " +
             "(:discountType IS NULL OR v.discountType = :discountType) AND " +
@@ -48,21 +57,34 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             @Param("discountType") Voucher.DiscountType discountType,
             @Param("serviceScope") Voucher.ServiceScope serviceScope);
 
-    /** Lấy danh sách các voucher đang hoạt động và còn số lượng lượt sử dụng. */
+    /**
+     * Lấy danh sách Voucher còn hạn sử dụng (Thời gian kết thúc > Hiện tại) và chưa hết lượt dùng.
+     * Sắp xếp ưu tiên các Voucher sắp hết hạn lên trước.
+     */
     @Query("SELECT v FROM Voucher v WHERE v.endDate > CURRENT_TIMESTAMP AND v.usedQuantity < v.totalQuantity ORDER BY v.endDate ASC")
     List<Voucher> findActiveVouchers();
 
-    /** Lấy danh sách voucher công khai chưa bị xóa mềm và còn hạn dùng so với mốc thời gian `now`. */
+    /**
+     * Lấy danh sách Voucher hiển thị cho KHÁCH HÀNG: Chưa bị xóa mềm (isDeleted = false)
+     * VÀ thời gian kết thúc phải lớn hơn thời điểm truyền vào (:now).
+     */
     @Query("SELECT v FROM Voucher v WHERE v.isDeleted = false AND v.endDate > :now")
     List<Voucher> findActiveVouchers(@Param("now") LocalDateTime now);
 
-    /** Lấy danh sách tất cả voucher chưa bị xóa mềm cho trang quản trị Admin. */
+    /**
+     * Lấy danh sách Voucher chưa bị xóa mềm cho Quản trị viên (Admin viewing).
+     */
     List<Voucher> findByIsDeletedFalse();
 
-    /** Lấy danh sách voucher chưa xóa mềm, còn hạn dùng và sắp xếp ID giảm dần. */
+    /**
+     * Lấy danh sách Voucher chưa bị xóa mềm, còn hạn dùng và sắp xếp ID giảm dần (Giao diện hiển thị).
+     */
     List<Voucher> findByIsDeletedFalseAndEndDateAfterOrderByIdDesc(java.time.LocalDateTime now);
 
-    /** Tìm kiếm nâng cao danh sách voucher cho Admin (tự động bỏ qua các bản ghi xóa mềm). */
+    /**
+     * Truy vấn tìm kiếm nâng cao dành riêng cho Admin Dashboard.
+     * Luôn lọc bỏ các mã đã xóa mềm (isDeleted = false) và hỗ trợ tìm kiếm theo Từ khóa, Loại giảm giá, Phạm vi dịch vụ.
+     */
     @Query("SELECT v FROM Voucher v WHERE v.isDeleted = false " +
             "AND (:keyword IS NULL OR LOWER(v.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(v.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "AND (:discountType IS NULL OR v.discountType = :discountType) " +
@@ -74,7 +96,9 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             @Param("serviceScope") Voucher.ServiceScope serviceScope
     );
 
-    /** Kiểm tra xem một voucher đã được tài khoản lưu vào Ví Voucher cá nhân hay chưa. */
+    /**
+     * Native Query: Kiểm tra xem Voucher đã có trong Ví của Tài khoản (Bảng trung gian account_vouchers) hay chưa.
+     */
     @Query(value = """
             SELECT CASE WHEN COUNT(1) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END
             FROM account_vouchers
@@ -82,7 +106,10 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             """, nativeQuery = true)
     boolean existsInWallet(@Param("accountId") int accountId, @Param("voucherId") Long voucherId);
 
-    /** Thêm một voucher vào Ví Voucher của tài khoản (tránh lưu trùng lặp). */
+    /**
+     * Native Query: Thêm Voucher vào Ví người dùng (Bảng account_vouchers).
+     * Sử dụng WHERE NOT EXISTS để chống trùng lặp dữ liệu trong database.
+     */
     @Modifying
     @Transactional
     @Query(value = """
@@ -96,7 +123,9 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             """, nativeQuery = true)
     int addToWallet(@Param("accountId") int accountId, @Param("voucherId") Long voucherId);
 
-    /** Lấy danh sách các voucher có trong ví của tài khoản. */
+    /**
+     * Native Query: Lấy toàn bộ danh sách Voucher nằm trong Ví cá nhân của một Tài khoản cụ thể.
+     */
     @Query(value = """
             SELECT v.*
             FROM vouchers v
@@ -106,7 +135,9 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             """, nativeQuery = true)
     List<Voucher> findWalletVouchers(@Param("accountId") int accountId);
 
-    /** Lấy thông tin một voucher cụ thể trong ví tài khoản. */
+    /**
+     * Native Query: Kiểm tra thông tin một Voucher cụ thể trong Ví của người dùng.
+     */
     @Query(value = """
             SELECT v.*
             FROM vouchers v
@@ -116,7 +147,8 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
     Optional<Voucher> findWalletVoucher(@Param("accountId") int accountId, @Param("voucherId") Long voucherId);
 
     /**
-     * Tăng số lượng đã sử dụng (`usedQuantity`) lên 1 theo cách nguyên tử (Atomic Update) khi áp dụng voucher thành công.
+     * Native Query: Tăng số lượng đã sử dụng (used_quantity) lên 1 khi người dùng áp dụng Voucher thành công.
+     * Đảm bảo điều kiện an toàn: Số lượng đã dùng phải nhỏ hơn tổng số lượng (total_quantity).
      */
     @Modifying
     @Transactional
@@ -128,4 +160,3 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             """, nativeQuery = true)
     int incrementUsedQuantityIfAvailable(@Param("code") String code);
 }
-

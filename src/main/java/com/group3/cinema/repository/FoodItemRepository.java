@@ -1,12 +1,9 @@
-/**
- * Interface Repository thao tác dữ liệu danh mục đồ ăn / nước uống đơn lẻ (`food_items`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `FoodItemService` và `ComboService` để lấy danh sách sản phẩm lẻ ghép combo.
- * 
- * Khởi tạo bởi: NinhDD - HE186113 (21/06/2026)
- */
 package com.group3.cinema.repository;
+
+/*
+ * Created on 2026-06-21: Repository for combo food item catalog management.
+ * Created by: NinhDD - HE186113
+ */
 
 import com.group3.cinema.entity.FoodItem;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,29 +13,51 @@ import org.springframework.data.repository.query.Param;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Interface Repository quản lý truy vấn dữ liệu cho Entity FoodItem (Danh mục món ăn / đồ uống lẻ).
+ * Kế thừa JpaRepository để thao tác CRUD và định nghĩa các Derived Query, JPQL tùy chỉnh.
+ *
+ * @author NinhDD - HE186113
+ */
 public interface FoodItemRepository extends JpaRepository<FoodItem, Long> {
 
     /**
-     * Kiểm tra xem tên sản phẩm đồ ăn/uống đã tồn tại trong hệ thống chưa khi tạo mới.
+     * Kiểm tra xem tên món ăn/đồ uống đã tồn tại trong CSDL chưa (Không phân biệt chữ hoa/chữ thường).
+     * Phục vụ kiểm tra ràng buộc duy nhất (Unique validation) khi THÊM MỚI món lẻ.
+     *
+     * @param name Tên món cần kiểm tra
+     * @return true nếu tên đã tồn tại, ngược lại trả về false
      */
     boolean existsByNameIgnoreCase(String name);
 
     /**
-     * Kiểm tra tên sản phẩm có bị trùng lặp với sản phẩm khác (ngoại trừ ID `id`) khi cập nhật.
+     * Kiểm tra xem tên món ăn/đồ uống đã tồn tại ở một bản ghi KHÁC hay chưa.
+     * Phục vụ kiểm tra ràng buộc duy nhất khi CẬP NHẬT (Edit) thông tin món lẻ.
+     *
+     * @param name Tên món mới
+     * @param id ID của món hiện tại đang chỉnh sửa
+     * @return true nếu tên bị trùng với món khác, ngược lại trả về false
      */
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
     /**
-     * Lấy các sản phẩm đồ ăn thuộc tập hợp trạng thái chỉ định, sắp xếp tên A-Z.
+     * Lấy danh sách các món lẻ theo tập hợp trạng thái truyền vào (VD: ACTIVE, NEW)
+     * và sắp xếp tăng dần theo tên (A-Z).
+     * Phục vụ nạp danh sách món lẻ khả dụng lên giao diện Tạo / Chỉnh sửa Combo.
+     *
+     * @param statuses Tập hợp trạng thái cần lọc (ví dụ: ["ACTIVE", "NEW"])
+     * @return Danh sách món ăn/đồ uống phù hợp
      */
     List<FoodItem> findByStatusInOrderByNameAsc(Collection<String> statuses);
 
     /**
-     * Tìm kiếm sản phẩm đồ ăn/uống theo từ khóa (tên hoặc danh mục) và trạng thái kinh doanh dành cho trang quản trị Admin/Manager.
-     * 
-     * @param keyword Từ khóa tìm kiếm.
-     * @param status Trạng thái (ACTIVE / INACTIVE / null).
-     * @return Danh sách sản phẩm thỏa mãn điều kiện, sắp xếp theo danh mục và tên.
+     * Truy vấn tìm kiếm và lọc danh sách món lẻ trong trang Quản lý Bắp nước (Admin Dashboard).
+     * Hỗ trợ tìm kiếm linh hoạt theo Từ khóa (khớp với tên món hoặc danh mục) và Trạng thái kinh doanh.
+     * Kết quả được sắp xếp tăng dần theo Danh mục, sau đó theo Tên món.
+     *
+     * @param keyword Từ khóa tìm kiếm (theo Tên món hoặc Danh mục - cho phép null/rỗng)
+     * @param status Trạng thái kinh doanh (ACTIVE, NEW, INACTIVE - cho phép null/rỗng)
+     * @return Danh sách các món ăn/đồ uống khớp với điều kiện lọc
      */
     @Query("SELECT f FROM FoodItem f WHERE " +
             "(:keyword IS NULL OR f.name LIKE %:keyword% OR f.category LIKE %:keyword%) AND " +
@@ -47,4 +66,3 @@ public interface FoodItemRepository extends JpaRepository<FoodItem, Long> {
     List<FoodItem> searchFoodItems(@Param("keyword") String keyword,
                                    @Param("status") String status);
 }
-
