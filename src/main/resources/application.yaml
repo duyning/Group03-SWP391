@@ -7,7 +7,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=Group3_SWP391;encrypt=false;trustServerCertificate=true}
     username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:sa}
+    password: ${DB_PASSWORD:123}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
     hikari:
       connection-timeout: 20000
@@ -61,13 +61,19 @@ mail:
           enable: true
 
 server:
-  port: 8081
+  port: 8080
   servlet:
     context-path: /
 
 app:
   seed:
     public-content: ${PUBLIC_CONTENT_SEED_ENABLED:false}
+    default-accounts: ${DEFAULT_ACCOUNTS_SEED_ENABLED:false}
+    demo-tickets: ${DEMO_TICKETS_SEED_ENABLED:false}
+    catalog-defaults: ${CATALOG_DEFAULTS_SEED_ENABLED:false}
+    combo-catalog: ${COMBO_CATALOG_SEED_ENABLED:false}
+    pricing-config: ${PRICING_CONFIG_SEED_ENABLED:false}
+    booking-demo-config: ${BOOKING_DEMO_CONFIG_SEED_ENABLED:false}
   upload:
     video-dir: uploads/videos/
     image-dir: uploads/images/

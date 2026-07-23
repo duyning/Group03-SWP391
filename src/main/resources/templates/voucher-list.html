@@ -355,7 +355,6 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <colgroup>
-                    <col style="width: 60px;">
                     <col style="width: 130px;">
                     <col style="width: 170px;">
                     <col style="width: 115px;">
@@ -368,7 +367,6 @@
                 </colgroup>
                 <thead>
                 <tr>
-                    <th class="text-center">ID</th>
                     <th>Mã Code</th>
                     <th>Tên Chương Trình</th>
                     <th>Loại Hình</th>
@@ -382,14 +380,13 @@
                 </thead>
                 <tbody>
                 <tr th:if="${#lists.isEmpty(voucherList)}">
-                    <td colspan="10" class="text-center py-5 text-muted bg-white">
+                    <td colspan="9" class="text-center py-5 text-muted bg-white">
                         <i class="fa-regular fa-folder-open display-5 d-block mb-3 text-secondary"></i>
                         <span class="fw-semibold">Không tìm thấy mã Voucher nào trong cơ sở dữ liệu.</span>
                     </td>
                 </tr>
 
                 <tr th:each="voucher : ${voucherList}">
-                    <td class="text-center fw-bold text-secondary" th:text="${voucher.id}">1</td>
                     <td>
                         <span class="badge-code" th:text="${voucher.code}">BETA2026</span>
                     </td>

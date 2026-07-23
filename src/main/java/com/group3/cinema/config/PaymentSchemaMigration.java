@@ -13,20 +13,24 @@
 package com.group3.cinema.config;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PaymentSchemaMigration {
     private final JdbcTemplate jdbcTemplate;
+    private final boolean seedBookingDemoConfigEnabled;
 
     /**
      * Constructor tiêm phụ thuộc JdbcTemplate.
      * 
      * @param jdbcTemplate Công cụ thực thi câu lệnh SQL trực tiếp.
      */
-    public PaymentSchemaMigration(JdbcTemplate jdbcTemplate) {
+    public PaymentSchemaMigration(JdbcTemplate jdbcTemplate,
+                                  @Value("${app.seed.booking-demo-config:false}") boolean seedBookingDemoConfigEnabled) {
         this.jdbcTemplate = jdbcTemplate;
+        this.seedBookingDemoConfigEnabled = seedBookingDemoConfigEnabled;
     }
 
     /**
@@ -77,6 +81,9 @@ public class PaymentSchemaMigration {
                             active bit NOT NULL DEFAULT 1
                         );
                     END;
+                    """);
+            if (seedBookingDemoConfigEnabled) {
+                jdbcTemplate.execute("""
                     IF NOT EXISTS (SELECT 1 FROM booking_seat_prices WHERE seat_type = 'std')
                         INSERT INTO booking_seat_prices(seat_type, price, active) VALUES ('std', 90000, 1);
                     IF NOT EXISTS (SELECT 1 FROM booking_seat_prices WHERE seat_type = 'vip')
@@ -84,6 +91,7 @@ public class PaymentSchemaMigration {
                     IF NOT EXISTS (SELECT 1 FROM booking_seat_prices WHERE seat_type = 'couple')
                         INSERT INTO booking_seat_prices(seat_type, price, active) VALUES ('couple', 180000, 1);
                     """);
+            }
             jdbcTemplate.execute("""
                     IF OBJECT_ID('booking_vouchers', 'U') IS NULL
                     BEGIN
@@ -94,10 +102,14 @@ public class PaymentSchemaMigration {
                             active bit NOT NULL DEFAULT 1
                         );
                     END;
+                    """);
+            if (seedBookingDemoConfigEnabled) {
+                jdbcTemplate.execute("""
                     IF NOT EXISTS (SELECT 1 FROM booking_vouchers WHERE code = 'CINEFLOW10')
                         INSERT INTO booking_vouchers(code, discount_percent, max_discount, active)
                         VALUES ('CINEFLOW10', 10, 50000, 1);
                     """);
+            }
             jdbcTemplate.execute("""
                     IF OBJECT_ID('booking_settings', 'U') IS NULL
                     BEGIN
@@ -106,10 +118,14 @@ public class PaymentSchemaMigration {
                             setting_value nvarchar(255) NOT NULL
                         );
                     END;
+                    """);
+            if (seedBookingDemoConfigEnabled) {
+                jdbcTemplate.execute("""
                     IF NOT EXISTS (SELECT 1 FROM booking_settings WHERE setting_key = 'cinema_name')
                         INSERT INTO booking_settings(setting_key, setting_value)
                         VALUES ('cinema_name', N'Rạp CineFlow Mỹ Đình');
                     """);
+            }
         } catch (Exception ignored) {
             // Trường hợp DB chưa có bảng do Hibernate tạo sau, ứng dụng vẫn khởi động bình thường.
         }

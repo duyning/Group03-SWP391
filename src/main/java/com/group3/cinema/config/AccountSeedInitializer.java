@@ -12,6 +12,7 @@ import com.group3.cinema.entity.MembershipLevel;
 import com.group3.cinema.entity.Role;
 import com.group3.cinema.repository.AccountRepository;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,6 +20,7 @@ public class AccountSeedInitializer {
 
     private final AccountRepository accountRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final boolean seedDefaultAccountsEnabled;
 
     /**
      * Constructor tiêm phụ thuộc AccountRepository và JdbcTemplate.
@@ -26,9 +28,12 @@ public class AccountSeedInitializer {
      * @param accountRepository Repository truy vấn thông tin tài khoản.
      * @param jdbcTemplate Công cụ thực thi SQL trực tiếp lên SQL Server.
      */
-    public AccountSeedInitializer(AccountRepository accountRepository, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+    public AccountSeedInitializer(AccountRepository accountRepository,
+                                  org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
+                                  @Value("${app.seed.default-accounts:false}") boolean seedDefaultAccountsEnabled) {
         this.accountRepository = accountRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.seedDefaultAccountsEnabled = seedDefaultAccountsEnabled;
     }
 
     /**
@@ -58,6 +63,9 @@ public class AccountSeedInitializer {
             System.out.println("Đã tự động xóa cột age cũ trong bảng account thành công.");
         } catch (Exception e) {
             System.err.println("Không thể xóa cột age: " + e.getMessage());
+        }
+        if (!seedDefaultAccountsEnabled) {
+            return;
         }
         createAccountIfMissing(
                 "Admin",

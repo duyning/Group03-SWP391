@@ -11,20 +11,24 @@ package com.group3.cinema.config;
 
 import com.group3.cinema.service.CatalogService;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CatalogInitializer {
 
     private final CatalogService catalogService;
+    private final boolean seedCatalogDefaultsEnabled;
 
     /**
      * Constructor tiêm phụ thuộc CatalogService.
      * 
      * @param catalogService Dịch vụ quản lý danh mục phòng chiếu và định dạng rạp.
      */
-    public CatalogInitializer(CatalogService catalogService) {
+    public CatalogInitializer(CatalogService catalogService,
+                              @Value("${app.seed.catalog-defaults:false}") boolean seedCatalogDefaultsEnabled) {
         this.catalogService = catalogService;
+        this.seedCatalogDefaultsEnabled = seedCatalogDefaultsEnabled;
     }
 
     /**
@@ -35,7 +39,7 @@ public class CatalogInitializer {
      */
     @PostConstruct
     public void initializeCatalogs() {
-        catalogService.seedFromExistingRooms();
+        catalogService.seedFromExistingRooms(seedCatalogDefaultsEnabled);
     }
 }
 

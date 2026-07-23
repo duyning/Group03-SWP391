@@ -220,6 +220,130 @@
             font-weight: 800;
         }
 
+        .booking-filter-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 1.2rem;
+            margin: 1.2rem;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.03);
+        }
+
+        .booking-filter-card *,
+        .booking-filter-card *::before,
+        .booking-filter-card *::after {
+            box-sizing: border-box;
+        }
+
+        .booking-filter-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+            padding-bottom: .75rem;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+
+        .booking-filter-title {
+            font-weight: 800;
+            font-size: .95rem;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+        }
+
+        .booking-filter-title span {
+            background: rgba(59, 130, 246, .1);
+            color: #3b82f6;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .booking-filter-reset {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            height: 38px;
+            padding: 0 .9rem;
+            font-size: .82rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .booking-filter-reset:hover {
+            background: #eaf1f8;
+            color: #0f172a;
+        }
+
+        .booking-filter-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr) minmax(0, 1.1fr);
+            column-gap: 28px;
+            row-gap: 16px;
+            align-items: stretch;
+        }
+
+        .booking-filter-field {
+            margin: 0;
+            display: grid;
+            grid-template-rows: 22px 48px;
+            gap: .45rem;
+            min-width: 0;
+        }
+
+        .booking-filter-field label {
+            height: 22px;
+            font-weight: 800;
+            font-size: .78rem;
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            color: #334155;
+            margin: 0;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .booking-filter-field .form-control {
+            font-size: .88rem;
+            padding: .5rem .85rem;
+            height: 48px;
+            min-height: 48px;
+            width: 100%;
+            max-width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #ffffff;
+            line-height: 1.2;
+        }
+
+        .booking-filter-field select.form-control {
+            appearance: auto;
+            display: block;
+        }
+
+        .booking-filter-field .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .14);
+            outline: none;
+        }
+
+        @media (max-width: 980px) {
+            .booking-filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .quick-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -358,41 +482,41 @@
             </div>
 
             <!-- Card Bộ Lọc Tức Thời Bắt Mắt Cho Lịch Sử Đặt Vé -->
-            <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.2rem; margin: 1.2rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #cbd5e1;">
-                    <div style="font-weight: 700; font-size: 0.9rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;"><i class="fa-solid fa-filter"></i></span>
+            <div class="booking-filter-card">
+                <div class="booking-filter-head">
+                    <div class="booking-filter-title">
+                        <span><i class="fa-solid fa-filter"></i></span>
                         Bộ Lọc Tra Cứu Nhanh
                     </div>
-                    <button type="button" onclick="resetBookingFilter()" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b';">
-                        <i class="fa-solid fa-rotate-left" style="margin-right: 4px;"></i> Xóa bộ lọc
+                    <button type="button" onclick="resetBookingFilter()" class="booking-filter-reset">
+                        <i class="fa-solid fa-rotate-left"></i> Xóa bộ lọc
                     </button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; align-items: end;">
-                    <div class="form-group" style="margin: 0;">
-                        <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; color: #334155;">
+                <div class="booking-filter-grid">
+                    <div class="booking-filter-field">
+                        <label>
                             <i class="fa-solid fa-magnifying-glass" style="color: #3b82f6;"></i> TÌM TÊN KHÁCH / PHIM
                         </label>
-                        <input type="text" id="filterBookingSearch" class="form-control" placeholder="Nhập tên khách hàng hoặc tên phim..." oninput="filterBookingHistory()" style="font-size: 0.85rem; padding: 0.5rem 0.85rem; height: 40px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.15)'" onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'">
+                        <input type="text" id="filterBookingSearch" class="form-control" placeholder="Nhập tên khách hàng hoặc tên phim..." oninput="filterBookingHistory()">
                     </div>
 
-                    <div class="form-group" style="margin: 0;">
-                        <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; color: #334155;">
+                    <div class="booking-filter-field">
+                        <label>
                             <i class="fa-solid fa-circle-check" style="color: #10b981;"></i> TRẠNG THÁI
                         </label>
-                        <select id="filterBookingStatus" class="form-control" onchange="filterBookingHistory()" style="font-size: 0.85rem; padding: 0.5rem 0.85rem; height: 40px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.15)'" onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'">
+                        <select id="filterBookingStatus" class="form-control" onchange="filterBookingHistory()">
                             <option value="">-- Tất cả trạng thái --</option>
                             <option value="Đã thanh toán">Đã thanh toán</option>
                             <option value="Đã hủy">Đã hủy</option>
                         </select>
                     </div>
 
-                    <div class="form-group" style="margin: 0;">
-                        <label style="font-weight: 700; font-size: 0.78rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; color: #334155;">
+                    <div class="booking-filter-field">
+                        <label>
                             <i class="fa-solid fa-calendar-days" style="color: #f59e0b;"></i> THỜI GIAN ĐẶT
                         </label>
-                        <input type="date" id="filterBookingDate" class="form-control" onchange="filterBookingHistory()" style="font-size: 0.85rem; padding: 0.5rem 0.85rem; height: 40px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.15)'" onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'">
+                        <input type="date" id="filterBookingDate" class="form-control" onchange="filterBookingHistory()">
                     </div>
                 </div>
             </div>

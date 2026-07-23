@@ -1,14 +1,14 @@
 <!doctype html>
 <!--
-  Bước 3 của booking. combos và foodItems lấy từ catalog đang bán; selectedCombos và
-  selectedFoodItems khôi phục số lượng khi người dùng quay lại sửa. Form chỉ gửi ID/số lượng,
+  Bước 3 của booking. combos lấy từ catalog đang bán; selectedCombos khôi phục số lượng
+  khi người dùng quay lại sửa. Form chỉ gửi ID/số lượng,
   giá hiển thị không được backend tin cậy mà sẽ được đọc lại từ cơ sở dữ liệu.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Chọn combo & món lẻ | CineFlow</title>
+    <title>Chọn combo | CineFlow</title>
     <link rel="stylesheet" th:href="@{/css/booking-flow.css}">
     <style>
         .combo-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}
@@ -41,8 +41,8 @@
     <section class="panel">
         <div class="combo-toolbar">
             <div>
-                <h1>Chọn combo hoặc món lẻ</h1>
-                <p>Bạn có thể chọn combo tiết kiệm, thêm riêng từng món ăn/nước uống, hoặc kết hợp cả hai.</p>
+                <h1>Chọn combo</h1>
+                <p>Chọn các gói bắp nước đang bán để dùng kèm suất chiếu.</p>
             </div>
             <a class="btn secondary small" th:href="@{/booking/summary}">Bỏ qua đồ ăn</a>
         </div>
@@ -50,7 +50,6 @@
         <div class="notice error" th:if="${error}" th:text="${error}"></div>
 
         <form method="post" th:action="@{/booking/combos}" id="comboForm">
-            <!-- Hai nhóm dùng chung qty-control nhưng data-kind giúp JavaScript cộng tổng riêng. -->
             <div class="section-head"><h2>Combo ưu đãi</h2><p>Chọn các gói bắp nước có sẵn.</p></div>
             <div class="item-grid" th:if="${combos != null && !#lists.isEmpty(combos)}">
                 <article class="item-card" th:each="combo:${combos}">
@@ -72,31 +71,9 @@
             </div>
             <div class="empty-state" th:if="${combos == null || #lists.isEmpty(combos)}">Hiện chưa có combo đang bán.</div>
 
-            <div class="section-head"><h2>Món lẻ</h2><p>Chọn riêng từng món ăn hoặc nước uống theo nhu cầu.</p></div>
-            <div class="item-grid" th:if="${foodItems != null && !#lists.isEmpty(foodItems)}">
-                <article class="item-card" th:each="food:${foodItems}">
-                    <div class="food-visual" aria-hidden="true">🍿</div>
-                    <div class="item-content">
-                        <span class="category" th:text="${food.category}">Đồ ăn</span>
-                        <h3 th:text="${food.name}">Món lẻ</h3>
-                        <p th:text="${food.description ?: 'Món lẻ tại quầy CineFlow'}">Mô tả</p>
-                        <strong class="item-price" th:text="${#numbers.formatDecimal(food.unitPrice,0,'COMMA',0,'POINT')} + 'đ'">0đ</strong>
-                        <div class="qty-row"><span class="qty-label">Số lượng</span>
-                            <div class="qty-control" data-kind="food" th:attr="data-price=${food.unitPrice}">
-                                <button type="button" class="qty-btn qty-minus" aria-label="Giảm số lượng">−</button>
-                                <input class="qty-input" type="number" min="0" max="10" th:name="${'food_' + food.id}" th:value="${selectedFoodItems.get(food.id) ?: 0}">
-                                <button type="button" class="qty-btn qty-plus" aria-label="Tăng số lượng">+</button>
-                            </div>
-                        </div>
-                        <div class="item-total">Tạm tính: <b>0đ</b></div>
-                    </div>
-                </article>
-            </div>
-            <div class="empty-state" th:if="${foodItems == null || #lists.isEmpty(foodItems)}">Hiện chưa có món lẻ đang bán.</div>
-
             <aside class="mini-summary">
                 <div>Ghế: <b th:text="${#strings.listJoin(summary.tickets.![seatLabel], ', ')}">A1</b><br>Tiền vé: <b th:text="${#numbers.formatDecimal(summary.ticketSubtotal,0,'COMMA',0,'POINT')} + 'đ'">0đ</b></div>
-                <div class="totals"><span>Combo: <b id="comboGrand">0đ</b></span><span>Món lẻ: <b id="foodGrand">0đ</b></span><span class="grand">Tổng đồ ăn: <b id="concessionGrand">0đ</b></span></div>
+                <div class="totals"><span class="grand">Tổng combo: <b id="concessionGrand">0đ</b></span></div>
             </aside>
 
             <div class="flow-actions"><a class="btn secondary" th:href="@{/booking/seats/change}">Đổi ghế</a><button class="btn" type="submit">Tiếp tục</button></div>
@@ -109,19 +86,16 @@
     const money = new Intl.NumberFormat('vi-VN').format;
     function refreshItemTotals() {
         let comboGrand = 0;
-        let foodGrand = 0;
         document.querySelectorAll('.qty-control').forEach(control => {
             const input = control.querySelector('.qty-input');
             const price = Number(control.dataset.price || 0);
             const qty = Math.max(0, Math.min(10, Number(input.value || 0)));
             input.value = qty;
             const subtotal = price * qty;
-            if (control.dataset.kind === 'food') foodGrand += subtotal; else comboGrand += subtotal;
+            comboGrand += subtotal;
             control.closest('.item-card').querySelector('.item-total b').textContent = money(subtotal) + 'đ';
         });
-        document.getElementById('comboGrand').textContent = money(comboGrand) + 'đ';
-        document.getElementById('foodGrand').textContent = money(foodGrand) + 'đ';
-        document.getElementById('concessionGrand').textContent = money(comboGrand + foodGrand) + 'đ';
+        document.getElementById('concessionGrand').textContent = money(comboGrand) + 'đ';
     }
     document.querySelectorAll('.qty-control').forEach(control => {
         const input = control.querySelector('.qty-input');

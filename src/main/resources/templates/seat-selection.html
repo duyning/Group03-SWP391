@@ -30,7 +30,10 @@
         .seat-side{position:sticky;top:92px}
         .seat-summary h2{margin-top:0;color:#0054a6}
         .summary-list{display:grid;gap:10px;margin:14px 0}
-        .summary-chip{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#eef5fc;color:#27425f;font-weight:800}
+        .summary-chip{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#eef5fc;color:#27425f;font-weight:800}
+        .summary-seat{display:grid;gap:2px;min-width:0}
+        .summary-seat small{color:#68768b;font-size:12px;font-weight:700}
+        .summary-price{white-space:nowrap;color:#0054a6}
         .seat-total{font-size:22px;color:#0054a6;display:flex;justify-content:space-between;border-top:2px solid #dce5ef;padding-top:14px;margin-top:14px}
         .legend{justify-content:flex-start;background:#fff;border:1px solid #dbe5f0;border-radius:14px;padding:14px;margin:20px 0 0;position:sticky;bottom:0;z-index:3;box-shadow:0 -8px 20px rgba(23,42,69,.06)}
         .legend-item{display:inline-flex;align-items:center;gap:8px}
@@ -74,7 +77,7 @@
                     <label th:each="seat:${seats}"
                            class="seat"
                            th:classappend="${' ' + #strings.toLowerCase(seat.status) + ' type-' + seat.type}"
-                           th:attr="data-label=${seat.label},data-price=${seat.price},data-seat-id=${seat.id},data-status=${seat.status},data-capacity=${seat.capacity}"
+                           th:attr="data-label=${seat.label},data-price=${seat.price},data-price-text=${#numbers.formatDecimal(seat.price,0,'COMMA',0,'POINT') + 'đ'},data-display-name=${seat.displayName},data-seat-id=${seat.id},data-status=${seat.status},data-capacity=${seat.capacity}"
                            th:style="|grid-row:${seat.rowIndex + 1};grid-column:${seat.colIndex + 1} / span ${seat.capacity > 1 ? seat.capacity : 1};--seat-color:${seat.color};|"
                            th:title="${seat.label + ' - ' + seat.displayName + (seat.sellable ? ' - ' + #numbers.formatDecimal(seat.price,0,'COMMA',0,'POINT') + 'đ' : '')}">
                         <input th:if="${seat.sellable && (seat.status == 'AVAILABLE' || seat.status == 'SELECTED')}"
@@ -107,7 +110,7 @@
             <h2>Ghế đã chọn</h2>
             <p th:text="${selection.format} + ' • ' + ${selection.roomName}">2D • Phòng 1</p>
             <div class="summary-list" id="selectedSeatList">
-                <div class="summary-chip"><span>Chưa chọn ghế</span><b>0đ</b></div>
+                <div class="summary-chip"><span>Chưa chọn ghế</span><b class="summary-price">0đ</b></div>
             </div>
             <div class="seat-total"><span>Tổng</span><b id="seatTotal">0đ</b></div>
             <div class="flow-actions">
@@ -129,7 +132,7 @@
         const selected = [...document.querySelectorAll('.seat input:checked')].map(input => input.closest('.seat'));
         document.querySelectorAll('.seat input').forEach(input => input.closest('.seat').classList.toggle('selected', input.checked));
         if (!selected.length) {
-            list.innerHTML = '<div class="summary-chip"><span>Chưa chọn ghế</span><b>0đ</b></div>';
+            list.innerHTML = '<div class="summary-chip"><span>Chưa chọn ghế</span><b class="summary-price">0đ</b></div>';
             total.textContent = '0đ';
             mobileCount.textContent = '0 ghế';
             mobileTotal.textContent = '0đ';
@@ -138,12 +141,18 @@
         let sum = 0;
         let selectedCount = 0;
         list.innerHTML = selected.map(seat => {
-            const price = Number(seat.dataset.price || 0);
+            const rawPrice = Number(String(seat.dataset.price || '0').replace(/[^\d.-]/g, ''));
+            const price = Number.isFinite(rawPrice) ? rawPrice : 0;
             const capacity = seatCapacity(seat);
             sum += price;
             selectedCount += capacity;
             const capacityLabel = capacity > 1 ? ` (${capacity} ghế)` : '';
-            return `<div class="summary-chip"><span>${seat.dataset.label}${capacityLabel}</span><b>${money(price)}đ</b></div>`;
+            const priceText = seat.dataset.priceText || (money(price) + 'đ');
+            const displayName = seat.dataset.displayName || 'Ghế';
+            return `<div class="summary-chip">
+                <span class="summary-seat"><strong>${seat.dataset.label}${capacityLabel}</strong><small>${displayName}</small></span>
+                <b class="summary-price">${priceText}</b>
+            </div>`;
         }).join('');
         total.textContent = money(sum) + 'đ';
         mobileCount.textContent = selectedCount + ' ghế';
@@ -181,6 +190,7 @@
         } catch (ignored) {
             seatPollingErrorNotice.style.display = 'block';
         }
+    }, 8000);
 </script>
 </body>
 </html>

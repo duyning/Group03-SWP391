@@ -29,10 +29,11 @@
         .method-card span{display:block;color:#64748b;font-weight:800;font-size:.82rem;margin-bottom:5px}
         .method-card strong{display:block;color:#0f315e;font-size:1.15rem}
         .method-card small{color:#64748b}
-        .filter-body{padding:18px;display:grid;grid-template-columns:1.4fr repeat(5,minmax(145px,1fr)) auto;gap:12px;align-items:end}
+        .filter-body{padding:18px;display:grid;grid-template-columns:minmax(260px,1.35fr) repeat(5,minmax(138px,1fr)) minmax(142px,auto);gap:12px;align-items:end}
         .filter-label{font-size:.78rem;font-weight:850;color:#475569;margin-bottom:6px}
         .form-control,.form-select{border-radius:10px;border-color:#cbd5e1;min-height:42px}
         .btn-filter{height:42px;border-radius:10px;font-weight:850}
+        .filter-actions{display:grid;grid-template-columns:minmax(84px,1fr) 44px;gap:10px;align-items:end}
         .table-wrap{overflow:auto}
         .invoice-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1260px}
         .invoice-table th{background:#f8fafc;color:#475569;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;padding:14px 16px;border-bottom:1px solid #e2e8f0;white-space:nowrap}
@@ -57,7 +58,7 @@
         .pager .disabled{opacity:.45;pointer-events:none}
         .showtime-grid{display:grid;gap:14px;padding:18px;background:#f8fbff}
         .showtime-card{border:1px solid #d9e2ec;border-radius:16px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.05);overflow:hidden}
-        .showtime-card summary{list-style:none;cursor:pointer;padding:18px;display:grid;grid-template-columns:2fr repeat(6,minmax(115px,1fr)) 44px;gap:14px;align-items:center}
+        .showtime-card summary{list-style:none;cursor:pointer;padding:18px;display:grid;grid-template-columns:minmax(260px,2fr) repeat(6,minmax(106px,1fr)) 44px;gap:12px;align-items:center}
         .showtime-card summary::-webkit-details-marker{display:none}
         .showtime-title strong{display:block;font-size:1.05rem;color:#0f172a}
         .showtime-title span{display:block;margin-top:4px;color:#64748b}
@@ -65,14 +66,15 @@
         .metric strong{font-size:1rem;color:#0f315e}
         .metric.revenue strong{color:#047857}
         .metric.refund strong{color:#7c3aed}
-        .expand-icon{width:38px;height:38px;border-radius:11px;background:#eef6ff;color:#1f5bd8;display:grid;place-items:center}
+        .expand-icon{width:38px;height:38px;border-radius:11px;background:#eef6ff;color:#1f5bd8;display:grid;place-items:center;justify-self:end;align-self:center}
         details[open] .expand-icon i{transform:rotate(180deg)}
         .invoice-mini{border-top:1px solid #edf2f7;background:#fff}
         .invoice-mini table{width:100%;border-collapse:collapse}
         .invoice-mini th{background:#fbfdff;color:#64748b;font-size:.75rem;text-transform:uppercase;padding:12px 18px;border-bottom:1px solid #edf2f7}
         .invoice-mini td{padding:13px 18px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
         .mini-actions{display:flex;gap:8px;justify-content:flex-end}
-        @media(max-width:1200px){.stats-grid,.method-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.filter-body{grid-template-columns:1fr 1fr}}
+        @media(max-width:1320px){.filter-body{grid-template-columns:repeat(3,minmax(0,1fr))}.filter-actions{grid-column:auto}}
+        @media(max-width:1200px){.stats-grid,.method-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(max-width:1200px){.showtime-card summary{grid-template-columns:1fr 1fr}.expand-icon{display:none}}
         @media(max-width:720px){.stats-grid,.method-grid,.filter-body{grid-template-columns:1fr}.page-head{flex-direction:column}.showtime-card summary{grid-template-columns:1fr}}
     </style>
@@ -170,7 +172,7 @@
                         <label class="filter-label">Đến ngày</label>
                         <input class="form-control" type="date" name="toDate" th:value="${filter.toDate}">
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="filter-actions">
                         <button class="btn btn-primary btn-filter" type="submit"><i class="fa-solid fa-filter me-1"></i>Lọc</button>
                         <a class="btn btn-outline-secondary btn-filter" th:href="@{/admin/invoices}"><i class="fa-solid fa-rotate-left"></i></a>
                     </div>
@@ -203,10 +205,6 @@
                             <div class="metric revenue">
                                 <span>Combo</span>
                                 <strong th:text="${#numbers.formatDecimal(group.comboRevenue,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong>
-                            </div>
-                            <div class="metric revenue">
-                                <span>Món lẻ</span>
-                                <strong th:text="${#numbers.formatDecimal(group.foodRevenue,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong>
                             </div>
                             <div class="metric revenue">
                                 <span>Tổng thu</span>

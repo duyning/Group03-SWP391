@@ -315,7 +315,6 @@
                         <tr>
                             <th width="76">Ảnh</th>
                             <th>Tên combo & thành phần</th>
-                            <th width="145" class="text-end">Giá món lẻ</th>
                             <th width="110" class="text-end">Chiết khấu</th>
                             <th width="145" class="text-end">Giá bán</th>
                             <th width="135" class="text-center">Trạng thái</th>
@@ -333,15 +332,6 @@
                                 <div class="combo-items-details" th:text="${combo.description}">
                                     1 x Bắp rang bơ lớn + 2 x Nước ngọt lớn
                                 </div>
-                            </td>
-                            <td class="text-end"
-                                th:with="priceDisplay=${combo.originalPrice != null ? combo.originalPrice : combo.price}">
-
-                                <div class="fw-semibold"
-                                     th:text="${#numbers.formatDecimal(priceDisplay, 0, 'POINT', 0, 'COMMA')} + ' đ'">125.000 đ</div>
-
-                                <div class="price-muted" th:if="${combo.costPrice != null and combo.costPrice > 0}"
-                                     th:text="'Vốn: ' + ${#numbers.formatDecimal(combo.costPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">Vốn: 62.000 đ</div>
                             </td>
                             <td class="text-end"
                                 th:with="dPercent=${combo.discountPercent != null ? combo.discountPercent : 0},
@@ -382,7 +372,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(combos)}">
-                            <td colspan="7" class="empty-state">
+                            <td colspan="6" class="empty-state">
                                 <i class="fa-solid fa-box-open fs-3 d-block mb-2"></i>
                                 Chưa có combo phù hợp với bộ lọc.
                             </td>

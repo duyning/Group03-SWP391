@@ -14,6 +14,7 @@
 package com.group3.cinema.config;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -25,14 +26,20 @@ public class RoomUnicodeMigration {
     private static final Logger log = LoggerFactory.getLogger(RoomUnicodeMigration.class);
 
     private final JdbcTemplate jdbcTemplate;
+    private final boolean seedComboCatalogEnabled;
+    private final boolean seedPricingConfigEnabled;
 
     /**
      * Constructor tiêm phụ thuộc JdbcTemplate.
      * 
      * @param jdbcTemplate Công cụ thực thi câu lệnh SQL trực tiếp.
      */
-    public RoomUnicodeMigration(JdbcTemplate jdbcTemplate) {
+    public RoomUnicodeMigration(JdbcTemplate jdbcTemplate,
+                                @Value("${app.seed.combo-catalog:false}") boolean seedComboCatalogEnabled,
+                                @Value("${app.seed.pricing-config:false}") boolean seedPricingConfigEnabled) {
         this.jdbcTemplate = jdbcTemplate;
+        this.seedComboCatalogEnabled = seedComboCatalogEnabled;
+        this.seedPricingConfigEnabled = seedPricingConfigEnabled;
     }
 
     /**
@@ -48,7 +55,9 @@ public class RoomUnicodeMigration {
         runMigrationStep("add movie columns", this::addMovieColumnsIfMissing);
         runMigrationStep("create combo catalog tables", this::createComboCatalogTablesIfMissing);
         runMigrationStep("migrate combo pricing columns", this::migrateComboPricingColumns);
-        runMigrationStep("seed default food items", this::seedDefaultFoodItems);
+        if (seedComboCatalogEnabled) {
+            runMigrationStep("seed default food items", this::seedDefaultFoodItems);
+        }
         runMigrationStep("add showtime override column", this::addShowtimeOverrideColumnIfMissing);
         runMigrationStep("add showtime active column", this::addShowtimeActiveColumnIfMissing);
         runMigrationStep("add ticket base price column", this::addTicketBasePriceColumnIfMissing);
@@ -59,7 +68,9 @@ public class RoomUnicodeMigration {
         runMigrationStep("normalize Vietnamese values", this::normalizeVietnameseValues);
         runMigrationStep("fix movie status constraint", this::fixMovieStatusConstraint);
         runMigrationStep("fix membership level constraint", this::fixMembershipLevelConstraint);
-        runMigrationStep("seed pricing configs", this::seedPricingConfigs);
+        if (seedPricingConfigEnabled) {
+            runMigrationStep("seed pricing configs", this::seedPricingConfigs);
+        }
     }
 
     /**
@@ -462,22 +473,31 @@ public class RoomUnicodeMigration {
         }
 
         try {
-            // Xóa toàn bộ constraint CHECK trên cột status của bảng movie
-            // (trường hợp constraint có tên khác do tên DB khác nhau giữa các môi trường)
+            // Xóa toàn bộ CHECK constraint đang ràng buộc movie.status.
+            // SQL Server có thể sinh constraint dạng table-level với parent_column_id = 0,
+            // nên không chỉ dựa vào parent_column_id mà còn kiểm tra definition.
             String dropAllStatusConstraints = """
-                    DECLARE @constraintName NVARCHAR(256)
-                    SELECT @constraintName = name
+                    DECLARE @sql NVARCHAR(MAX) = N''
+
+                    SELECT @sql = @sql + N'ALTER TABLE [dbo].[movie] DROP CONSTRAINT [' + cc.name + N'];'
                     FROM sys.check_constraints cc
-                    JOIN sys.columns c ON cc.parent_object_id = c.object_id AND cc.parent_column_id = c.column_id
-                    JOIN sys.tables t ON c.object_id = t.object_id
-                    WHERE t.name = 'movie' AND c.name = 'status'
-                    IF @constraintName IS NOT NULL
-                        EXEC('ALTER TABLE movie DROP CONSTRAINT [' + @constraintName + ']')
+                    WHERE cc.parent_object_id = OBJECT_ID(N'dbo.movie')
+                      AND (
+                            cc.parent_column_id = COLUMNPROPERTY(OBJECT_ID(N'dbo.movie'), N'status', 'ColumnId')
+                            OR LOWER(cc.definition) LIKE N'%status%'
+                            OR LOWER(cc.definition) LIKE N'%now_showing%'
+                            OR LOWER(cc.definition) LIKE N'%coming_soon%'
+                            OR LOWER(cc.definition) LIKE N'%special_screening%'
+                            OR LOWER(cc.definition) LIKE N'%stopped%'
+                          )
+
+                    IF @sql <> N''
+                        EXEC sp_executesql @sql
                     """;
             jdbcTemplate.execute(dropAllStatusConstraints);
-            log.info("[TrienLX - 2026-06-23] Đã xóa tất cả CHECK constraint trên cột movie.status (nếu có)");
+            log.info("[TrienLX - 2026-06-23] Đã xóa tất cả CHECK constraint cũ trên movie.status (nếu có)");
         } catch (Exception e) {
-            log.warn("[TrienLX - 2026-06-23] Không thể xóa CHECK constraint trên cột movie.status: {}", e.getMessage());
+            log.warn("[TrienLX - 2026-06-23] Không thể xóa CHECK constraint cũ trên movie.status: {}", e.getMessage());
         }
 
         try {

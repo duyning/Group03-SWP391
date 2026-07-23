@@ -18,6 +18,7 @@ import com.group3.cinema.repository.MovieRepository;
 import com.group3.cinema.repository.TicketRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ public class TicketSeedInitializer implements ApplicationRunner {
     private final TicketRepository ticketRepository;
     private final AccountRepository accountRepository;
     private final MovieRepository movieRepository;
+    private final boolean seedDemoTicketsEnabled;
 
     /**
      * Constructor tiêm phụ thuộc các Repositories cần thiết.
@@ -45,10 +47,12 @@ public class TicketSeedInitializer implements ApplicationRunner {
      */
     public TicketSeedInitializer(TicketRepository ticketRepository,
             AccountRepository accountRepository,
-            MovieRepository movieRepository) {
+            MovieRepository movieRepository,
+            @Value("${app.seed.demo-tickets:false}") boolean seedDemoTicketsEnabled) {
         this.ticketRepository = ticketRepository;
         this.accountRepository = accountRepository;
         this.movieRepository = movieRepository;
+        this.seedDemoTicketsEnabled = seedDemoTicketsEnabled;
     }
 
     /**
@@ -60,6 +64,9 @@ public class TicketSeedInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        if (!seedDemoTicketsEnabled) {
+            return;
+        }
         try {
             seedTickets();
         } catch (Exception e) {

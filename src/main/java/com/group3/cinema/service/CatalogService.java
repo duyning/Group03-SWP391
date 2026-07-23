@@ -206,9 +206,18 @@ public class CatalogService {
     /** Tự động khởi tạo danh mục mẫu loại phòng, âm thanh và các loại ghế từ dữ liệu phòng sẵn có. */
     @Transactional
     public void seedFromExistingRooms() {
+        seedFromExistingRooms(false);
+    }
+
+    /** Đồng bộ danh mục từ phòng hiện có; chỉ thêm dữ liệu mẫu khi được bật bằng cấu hình riêng. */
+    @Transactional
+    public void seedFromExistingRooms(boolean includeDefaultCatalogs) {
         for (Room room : roomRepository.findAll()) {
             ensureRoomType(room.getRoomType());
             ensureAudioTechnology(room.getAudioTech());
+        }
+        if (!includeDefaultCatalogs) {
+            return;
         }
         ensureRoomType("2D");
         ensureAudioTechnology("Dolby 7.1");
