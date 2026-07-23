@@ -1,9 +1,16 @@
-package com.group3.cinema.config;
-
-/*
- * Created on 2026-06-09: Seed customer-facing demo movies and news when tables are empty.
- * Created by: NinhDD - HE186113
+/**
+ * Lớp khởi tạo dữ liệu công khai trên trang chủ (PublicContentInitializer).
+ * 
+ * Tự động chạy khi ứng dụng khởi động (`@PostConstruct`) nếu thuộc tính `app.seed.public-content` được bật (`true`):
+ * 1. Khởi tạo danh sách Phim mẫu (Beta Movies) nếu CSDL chưa có hoặc cập nhật thông tin phim.
+ * 2. Khởi tạo danh sách Bài viết / Tin tức rạp (`Post`).
+ * 3. Khởi tạo các Chiến dịch Khuyến mãi (`Promotion`: Happy Monday, Member Day, Student Screen, Bank Weekend).
+ * 
+ * Phụ thuộc vào `roomUnicodeMigration` (thông qua `@DependsOn`).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (09/06/2026)
  */
+package com.group3.cinema.config;
 
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Post;
@@ -31,6 +38,14 @@ public class PublicContentInitializer {
     private final PromotionRepository promotionRepository;
     private final boolean seedPublicContentEnabled;
 
+    /**
+     * Constructor tiêm phụ thuộc các Repositories và cấu hình `app.seed.public-content`.
+     * 
+     * @param movieRepository Repository quản lý Phim.
+     * @param postRepository Repository quản lý Bài viết/Tin tức.
+     * @param promotionRepository Repository quản lý Khuyến mãi.
+     * @param seedPublicContentEnabled Cờ bật/tắt seed dữ liệu công khai từ file cấu hình (default: false).
+     */
     public PublicContentInitializer(MovieRepository movieRepository, PostRepository postRepository,
                                     PromotionRepository promotionRepository,
                                     @Value("${app.seed.public-content:false}") boolean seedPublicContentEnabled) {
@@ -40,6 +55,13 @@ public class PublicContentInitializer {
         this.seedPublicContentEnabled = seedPublicContentEnabled;
     }
 
+    /**
+     * Phương thức chính chạy khi khởi động ứng dụng.
+     * Kiểm tra cờ `seedPublicContentEnabled`, nếu `true` sẽ gọi lần lượt:
+     * - `seedMovies()`
+     * - `seedPosts()`
+     * - `seedPromotions()`
+     */
     @PostConstruct
     @Transactional
     public void seedPublicContent() {
@@ -51,6 +73,11 @@ public class PublicContentInitializer {
         seedPromotions();
     }
 
+    /**
+     * Khởi tạo danh sách phim mẫu từ rạp Beta (13 bộ phim hot).
+     * Gọi `movieRepository.findAll()`, nếu đã có phim sẽ cập nhật thông tin chuẩn qua `copyMovieData()`,
+     * nếu chưa có sẽ tạo mới và lưu hàng loạt bằng `movieRepository.saveAll()`.
+     */
     private void seedMovies() {
         if (movieRepository.count() > 0) {
             return;
@@ -125,45 +152,10 @@ public class PublicContentInitializer {
                 .toList();
         movieRepository.saveAll(moviesToSave);
     }
-    private void seedDemoMoviesUnused() {
-        if (movieRepository.count() > 0) {
-            return;
-        }
 
-        movieRepository.saveAll(List.of(
-                movie("Doraemon: Nobita Và Bản Giao Hưởng Địa Cầu", "Hoạt hình, Gia đình", 115,
-                        LocalDate.of(2026, 6, 14), Movie.MovieStatus.NOW_SHOWING,
-                        "https://images.unsplash.com/photo-1572039558269-46922af9c109?auto=format&fit=crop&w=700&q=80",
-                        "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1600&q=80",
-                        "Một chuyến phiêu lưu âm nhạc đầy cảm xúc, nơi Nobita và những người bạn bảo vệ hành tinh bằng giai điệu của tình bạn.",
-                        "Kazuaki Imai", "Doraemon, Nobita, Shizuka, Jaian, Suneo", "Lồng tiếng Việt", "P"),
-                movie("Lật Mặt: Vòng Xoáy Ký Ức", "Hành động, Tâm lý", 128,
-                        LocalDate.of(2026, 6, 20), Movie.MovieStatus.NOW_SHOWING,
-                        "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=700&q=80",
-                        "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=80",
-                        "Một vụ mất tích kéo theo chuỗi bí mật gia đình, những màn rượt đuổi nghẹt thở và lựa chọn sinh tử.",
-                        "Lý Hải", "Quốc Cường, Diệp Bảo Ngọc, Thanh Thức", "Tiếng Việt", "T13"),
-                movie("Inside Out 2", "Hoạt hình, Phiêu lưu", 100,
-                        LocalDate.of(2026, 6, 28), Movie.MovieStatus.COMING_SOON,
-                        "https://images.unsplash.com/photo-1502136969935-8d8eef54d77b?auto=format&fit=crop&w=700&q=80",
-                        "https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1600&q=80",
-                        "Những cảm xúc mới xuất hiện, khiến thế giới nội tâm tuổi trưởng thành trở nên rực rỡ và nhiều bất ngờ hơn.",
-                        "Kelsey Mann", "Amy Poehler, Maya Hawke, Kensington Tallman", "Phụ đề Việt", "P"),
-                movie("Đêm Gala Điện Ảnh Việt", "Sự kiện, Âm nhạc", 150,
-                        LocalDate.of(2026, 7, 5), Movie.MovieStatus.SPECIAL_SCREENING,
-                        "https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=700&q=80",
-                        "https://images.unsplash.com/photo-1507924538820-ede94a04019d?auto=format&fit=crop&w=1600&q=80",
-                        "Suất chiếu đặc biệt kết hợp giao lưu nghệ sĩ, thảm đỏ mini và phần trình diễn âm nhạc sau phim.",
-                        "Beta Cinemas", "Khách mời đặc biệt", "Tiếng Việt", "T13"),
-                movie("Vùng Đất Im Lặng: Ngày Một", "Kinh dị, Giật gân", 99,
-                        LocalDate.of(2026, 7, 12), Movie.MovieStatus.COMING_SOON,
-                        "https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=700&q=80",
-                        "https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=1600&q=80",
-                        "Khi thành phố chìm trong tĩnh lặng, từng tiếng động nhỏ đều có thể đổi lấy mạng sống.",
-                        "Michael Sarnoski", "Lupita Nyong'o, Joseph Quinn", "Phụ đề Việt", "T16")
-        ));
-    }
-
+    /**
+     * Phương thức tạo đối tượng Movie cơ bản.
+     */
     private Movie movie(String title, String genre, Integer duration, LocalDate releaseDate,
                         Movie.MovieStatus status, String posterUrl, String bannerUrl,
                         String description, String director, String cast,
@@ -185,6 +177,9 @@ public class PublicContentInitializer {
         return movie;
     }
 
+    /**
+     * Phương thức hỗ trợ tạo đối tượng Beta Movie với đầy đủ thông tin định dạng và trailer.
+     */
     private Movie betaMovie(String title, String genre, Integer duration, LocalDate releaseDate,
                             Movie.MovieStatus status, String posterUrl, String trailerUrl,
                             String description, String director, String cast,
@@ -198,6 +193,9 @@ public class PublicContentInitializer {
         return movie;
     }
 
+    /**
+     * Seed danh sách các bài viết tin tức mẫu (`Post`) nếu `postRepository.count() == 0`.
+     */
     private void seedPosts() {
         if (postRepository.count() > 0) {
             return;
@@ -231,6 +229,9 @@ public class PublicContentInitializer {
         ));
     }
 
+    /**
+     * Hỗ trợ tạo đối tượng Post nhanh.
+     */
     private Post post(String title, String category, String author, String summary,
                       String thumbnail, String content, String tags, LocalDateTime publishedAt) {
         Post post = new Post();
@@ -246,6 +247,9 @@ public class PublicContentInitializer {
         return post;
     }
 
+    /**
+     * Seed các chiến dịch khuyến mãi (`Promotion`) nếu `promotionRepository.count() == 0`.
+     */
     private void seedPromotions() {
         if (promotionRepository.count() > 0) {
             return;
@@ -292,6 +296,9 @@ public class PublicContentInitializer {
         ));
     }
 
+    /**
+     * Hỗ trợ tạo đối tượng Promotion nhanh.
+     */
     private Promotion promotion(String title,
                                 Promotion.CampaignType type,
                                 Promotion.TargetGroup targetGroup,
@@ -317,6 +324,9 @@ public class PublicContentInitializer {
         return promotion;
     }
 
+    /**
+     * Hỗ trợ sao chép thông tin từ bộ phim nguồn sang phim đích để cập nhật dữ liệu.
+     */
     private Movie copyMovieData(Movie target, Movie source) {
         target.setGenre(source.getGenre());
         target.setDuration(source.getDuration());
@@ -334,3 +344,4 @@ public class PublicContentInitializer {
         return target;
     }
 }
+

@@ -1,9 +1,16 @@
-package com.group3.cinema.service;
-
-/*
- * Added on 2026-06-26: Send booking confirmation email after successful payment.
- * Created by: HuyPB - HE191335
+/**
+ * Service bất đồng bộ gửi Thư điện tử (Email) xác nhận đặt vé thành công cho Khách hàng (`BookingEmailService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được kích hoạt bất đồng bộ (`@Async`) bởi `CustomerBookingService` hoặc `PaymentService` ngay sau khi nhận thông báo thanh toán thành công từ cổng thanh toán.
+ * - Gọi đến:
+ *   + `CustomerBookingService`: Truy vấn thông tin chi tiết đơn hàng (`getBookingDetails`).
+ *   + `AccountRepository`: Lấy địa chỉ email người mua.
+ *   + `JavaMailSender`: Gửi thư điện tử xác nhận vé.
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (26/06/2026)
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.BookingCombo;
@@ -45,6 +52,11 @@ public class BookingEmailService {
         this.bookingService = bookingService;
     }
 
+    /**
+     * Gửi email xác nhận thông tin vé và đơn hàng bất đồng bộ (`@Async`).
+     * 
+     * @param bookingId ID đơn đặt vé vừa thanh toán thành công.
+     */
     @Async
     @Transactional(readOnly = true)
     public void sendTicketEmail(Long bookingId) {
@@ -72,6 +84,9 @@ public class BookingEmailService {
         }
     }
 
+    /**
+     * Xây dựng nội dung văn bản email xác nhận đặt vé bao gồm phim, suất chiếu, phòng, ghế, combo bắp nước và tổng tiền.
+     */
     private String buildMailBody(Account account, CustomerBookingService.BookingDetails details) {
         String seats = details.tickets().stream()
                 .map(BookingTicket::getSeatLabel)
@@ -137,3 +152,4 @@ public class BookingEmailService {
         return value == null || value.isBlank() ? "ban" : value;
     }
 }
+

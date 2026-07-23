@@ -1,3 +1,12 @@
+/**
+ * Entity lưu trữ Thông báo gửi tới tài khoản người dùng (`notification`).
+ * 
+ * Chức năng:
+ * - Lưu liên kết tài khoản (`account`), tiêu đề (`title`), nội dung (`content`), hình ảnh đi kèm (`imageUrl`),
+ *   đường dẫn hành động (`actionUrl`).
+ * - Phân loại loại thông báo (`NotificationType`: TICKET_CONFIRMED, TICKET_CANCELLED, PROMOTION, SYSTEM, ACCUMULATE_POINTS).
+ * - Quản lý trạng thái đã đọc (`isRead`) và tự động gán ngày giờ tạo (`@PrePersist`).
+ */
 package com.group3.cinema.entity;
 
 import jakarta.persistence.Column;
@@ -23,7 +32,6 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Liên kết với bảng Account thay vì User
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
@@ -53,14 +61,14 @@ public class Notification {
     public Notification() {
     }
 
-    // Tự động gán thời gian tạo và trạng thái chưa đọc khi lưu mới vào DB
+    /**
+     * Tự động gán thời gian tạo hiện tại và đặt cờ trạng thái chưa đọc (`isRead = false`) trước khi lưu vào CSDL (`@PrePersist`).
+     */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.isRead = false;
     }
-
-    // --- GETTER & SETTER ---
 
     public Long getId() {
         return id;
@@ -134,3 +142,4 @@ public class Notification {
         this.createdAt = createdAt;
     }
 }
+

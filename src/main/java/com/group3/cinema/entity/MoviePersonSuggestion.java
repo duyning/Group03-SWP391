@@ -1,3 +1,9 @@
+/**
+ * Entity lưu trữ gợi ý tên Đạo diễn, Nhà sản xuất, Diễn viên (`movie_person_suggestions`).
+ * 
+ * Phục vụ tính năng gợi ý tự động (Autocomplete) cho Admin/Manager khi thêm hoặc chỉnh sửa phim.
+ * Phân loại (`type`): DIRECTOR (Đạo diễn), PRODUCER (Nhà sản xuất), ACTOR (Diễn viên).
+ */
 package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
@@ -15,8 +21,9 @@ public class MoviePersonSuggestion {
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String name;
 
+    /** Loại nhân sự: DIRECTOR | PRODUCER | ACTOR */
     @Column(nullable = false, columnDefinition = "NVARCHAR(50)")
-    private String type; // "DIRECTOR", "PRODUCER", "ACTOR"
+    private String type;
 
     public MoviePersonSuggestion() {
     }
@@ -50,3 +57,4 @@ public class MoviePersonSuggestion {
         this.type = type;
     }
 }
+

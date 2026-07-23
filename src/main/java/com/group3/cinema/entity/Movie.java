@@ -1,13 +1,16 @@
-package com.group3.cinema.entity;
-
-/*
- * Added on 2026-06-04: Movie entity for cinema movie data.
- * Created by: HuyPB - HE191335
- * Updated on 2026-06-23 by: TrienLX
- * Chi tiết thay đổi:
- * - Bổ sung trạng thái STOPPED ("Ngừng chiếu") vào enum MovieStatus
- * - Bổ sung logic phân tích cú pháp cho STOPPED trong fromJson.
+/**
+ * Entity đại diện cho phim chiếu rạp trong hệ thống (`movie`).
+ * 
+ * Luồng nghiệp vụ:
+ * - Admin/Manager quản lý lưu trữ thông tin phim vào CSDL.
+ * - Trang phía khách hàng chỉ hiển thị phim có `active = true`.
+ * - `status` quyết định phim hiển thị tại mục nào: Phim Đang chiếu (NOW_SHOWING), Phim Sắp chiếu (COMING_SOON),
+ *   Suất chiếu đặc biệt (SPECIAL_SCREENING), hoặc Ngừng chiếu (STOPPED).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (04/06/2026)
+ * Cập nhật bởi: TrienLX (23/06/2026 - Bổ sung trạng thái STOPPED)
  */
+package com.group3.cinema.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -23,16 +26,6 @@ import jakarta.persistence.Table;
 import java.text.Normalizer;
 import java.time.LocalDate;
 
-/**
- * Represents a movie shown in the cinema system.
- *
- * Business flow:
- * - Admin or seed data stores movie information in the movie table.
- * - Customer-facing screens only display movies where active = true.
- * - status controls which UI section the movie appears in:
- *   NOW_SHOWING, COMING_SOON, or SPECIAL_SCREENING.
- * - posterUrl is used for card images; bannerUrl is used for large hero/detail backgrounds.
- */
 @Entity
 @Table(name = "movie")
 public class Movie {
@@ -63,10 +56,6 @@ public class Movie {
     @Column(columnDefinition = "NVARCHAR(255)")
     private String director;
 
-    /*
-     * Mapped to movie_cast instead of cast because "cast" can be confusing in SQL
-     * and may conflict with SQL function naming.
-     */
     @Column(name = "movie_cast", columnDefinition = "NVARCHAR(MAX)")
     private String cast;
 
@@ -81,21 +70,12 @@ public class Movie {
     @Column(columnDefinition = "NVARCHAR(255)")
     private String producer;
 
-    /*
-     * Stored as text so database values remain readable and stable even if enum
-     * order changes later.
-     */
     @Enumerated(EnumType.STRING)
     private MovieStatus status;
 
     @Column(columnDefinition = "NVARCHAR(50)")
     private String format;
 
-    /*
-     * Soft-display flag:
-     * true  = movie is visible to customers.
-     * false = movie stays in database but is hidden from public movie pages.
-     */
     private boolean active = true;
 
     private boolean deleted = false;
@@ -271,25 +251,13 @@ public class Movie {
         this.deleted = deleted;
     }
 
+    /**
+     * Enum định nghĩa các trạng thái trình chiếu của phim.
+     */
     public enum MovieStatus {
-        /*
-         * Movie is currently available on public listing and booking flows.
-         */
         NOW_SHOWING("Đang chiếu"),
-
-        /*
-         * Movie is announced before release; shown in upcoming movie sections.
-         */
         COMING_SOON("Sắp chiếu"),
-
-        /*
-         * Movie belongs to a limited/special screening group.
-         */
         SPECIAL_SCREENING("Suất chiếu đặc biệt"),
-
-        /*
-         * Movie has stopped screening or is hidden.
-         */
         STOPPED("Ngừng chiếu");
 
         private final String displayName;
@@ -303,6 +271,14 @@ public class Movie {
             return displayName;
         }
 
+        /**
+         * Chuyển đổi linh hoạt từ chuỗi JSON/chuỗi tiếng Việt nhập từ giao diện sang Enum MovieStatus.
+         * 
+         * Gọi hàm `normalize()` để bỏ dấu tiếng Việt trước khi so sánh tương đối.
+         * 
+         * @param value Giá trị chuỗi nhập vào từ request.
+         * @return MovieStatus tương ứng hoặc null nếu không khớp.
+         */
         @JsonCreator
         public static MovieStatus fromJson(String value) {
             if (value == null || value.isBlank()) {
@@ -335,6 +311,12 @@ public class Movie {
             return null;
         }
 
+        /**
+         * Bỏ dấu tiếng Việt và chữ đ/Đ để hỗ trợ tìm kiếm không phân biệt ký tự đặc biệt.
+         * 
+         * @param value Chuỗi gốc.
+         * @return Chuỗi đã không còn dấu.
+         */
         private static String normalize(String value) {
             String normalized = Normalizer.normalize(value.trim(), Normalizer.Form.NFD)
                     .replaceAll("\\p{M}", "");
@@ -344,3 +326,4 @@ public class Movie {
         }
     }
 }
+

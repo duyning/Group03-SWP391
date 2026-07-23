@@ -1,9 +1,14 @@
-package com.group3.cinema.entity;
-
-/*
- * Added on 2026-06-24: Stores held and booked seats for each customer booking.
- * Created by: HuyPB - HE191335
+/**
+ * Entity lưu giữ vị trí ghế đang được giữ tạm thời hoặc đã bán thành công theo từng suất chiếu (`booking_tickets`).
+ * 
+ * Đảm bảo tính nhất quán (Concurreny Control):
+ * - Đặt ràng buộc uniqueConstraint trên cặp `(showtime_id, seat_id)` để ngăn hai người cùng đặt 1 ghế.
+ * - `holdToken` và `holdExpiresAt`: Giữ ghế tạm trong N phút (thường 5-10 phút) cho người dùng thanh toán.
+ * - Trạng thái (`Status`): HOLDING (Đang giữ tạm), BOOKED (Đã bán thành công).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -12,6 +17,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "booking_tickets", uniqueConstraints = @UniqueConstraint(columnNames = {"showtime_id", "seat_id"}))
 public class BookingTicket {
+
+    /**
+     * Enum trạng thái ghế đặt trong suất chiếu:
+     * - HOLDING: Đang giữ tạm thời chờ thanh toán.
+     * - BOOKED: Đã thanh toán và xuất vé thành công.
+     */
     public enum Status { HOLDING, BOOKED }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,3 +57,4 @@ public class BookingTicket {
     public LocalDateTime getHoldExpiresAt() { return holdExpiresAt; }
     public void setHoldExpiresAt(LocalDateTime value) { this.holdExpiresAt = value; }
 }
+

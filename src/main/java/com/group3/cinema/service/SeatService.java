@@ -1,6 +1,15 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Service quản lý Thiết kế Sơ đồ ghế 2D, Khởi tạo và Lưu trữ cấu hình ghế theo từng phòng chiếu (`SeatService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `AdminSeatController` để hiển thị công cụ vẽ sơ đồ ghế và lưu ma trận ghế.
+ * - Tương tác với:
+ *   + `SeatRepository`: Lưu sơ đồ ghế dạng ma trận (`saveAll`), xóa toàn bộ ghế cũ (`deleteAllByRoomId`), đếm số ghế theo loại (`countByRoomIdAndSeatType`).
+ *   + `RoomRepository`: Cập nhật tổng số ghế (`totalSeats`) và kích thước số hàng/cột (`rows`, `cols`).
+ *   + `SeatTypeRepository`: Tra cứu sức chứa từng loại ghế.
+ *   + `ShowtimeRepository`: Kiểm tra nếu phòng vướng lịch chiếu sắp tới thì chặn đổi số hàng/cột sơ đồ.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
  */
 package com.group3.cinema.service;
 
@@ -49,22 +58,16 @@ public class SeatService {
 
     private static final String ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    // â”€â”€â”€ Äá»c sÆ¡ Ä‘á»“ gháº¿ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ————————————————————————————————————————————————————————————————————————————————
 
-    /**
-     * Láº¥y toÃ n bá»™ gháº¿ cá»§a phÃ²ng, Ä‘Ã£ sáº¯p xáº¿p theo (rowIndex, colIndex).
-     * Náº¿u phÃ²ng chÆ°a cÃ³ sÆ¡ Ä‘á»“ â†’ tráº£ vá» danh sÃ¡ch rá»—ng (frontend sáº½ dÃ¹ng
-     * initData() táº¡o máº·c Ä‘á»‹nh).
-     */
+    /** Lấy danh sách toàn bộ vị trí ghế của phòng chiếu đã sắp xếp theo hàng và cột. */
     public List<Seat> getSeatsForRoom(Long roomId) {
         validateRoomId(roomId);
         return seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(roomId);
     }
 
     /**
-     * Chuyá»ƒn danh sÃ¡ch Seat thÃ nh máº£ng 2D String (chá»‰ chá»©a seatType),
-     * kÃ­ch thÆ°á»›c [rows][cols] láº¥y tá»« Room entity.
-     * DÃ¹ng Ä‘á»ƒ truyá»n sang JavaScript qua Thymeleaf (JSON).
+     * Dựng mảng 2D String đại diện cho ma trận sơ đồ ghế (kích thước rows x cols) để render giao diện Thymeleaf/JS.
      */
     public String[][] buildMatrix(Long roomId) {
         validateRoomId(roomId);
@@ -76,12 +79,12 @@ public class SeatService {
         validateGridSize(rows, cols);
         String[][] matrix = new String[rows][cols];
 
-        // Khá»Ÿi táº¡o máº·c Ä‘á»‹nh "std"
+        // Khởi tạo mặc định "std"
         for (int r = 0; r < rows; r++)
             for (int c = 0; c < cols; c++)
                 matrix[r][c] = "std";
 
-        // Ghi Ä‘Ã¨ theo dá»¯ liá»‡u Ä‘Ã£ lÆ°u
+        // Ghi đè theo dữ liệu đã lưu
         List<Seat> seats = seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(roomId);
         for (Seat seat : seats) {
             int r = seat.getRowIndex();
@@ -93,10 +96,7 @@ public class SeatService {
         return matrix;
     }
 
-    /**
-     * Chuyá»ƒn matrix 2D thÃ nh chuá»—i JSON Ä‘á»ƒ embed vÃ o script Thymeleaf.
-     * VÃ­ dá»¥: [["std","vip"],["couple","skip"]]
-     */
+    /** Chuyển đổi mảng 2D ma trận sơ đồ ghế thành chuỗi JSON hợp lệ. */
     public String matrixToJson(String[][] matrix) {
         List<String> errors = validateMatrix(matrix);
         if (!errors.isEmpty()) {
@@ -116,15 +116,13 @@ public class SeatService {
         return sb.toString();
     }
 
-    // â”€â”€â”€ LÆ°u sÆ¡ Ä‘á»“ gháº¿ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ————————————————————————————————————————————————————————————————————————————————
 
     /**
-     * LÆ°u toÃ n bá»™ sÆ¡ Ä‘á»“ gháº¿:
-     * 1. XÃ³a táº¥t cáº£ gháº¿ cÅ© cá»§a phÃ²ng
-     * 2. Táº¡o má»›i theo matrixJson gá»­i tá»« trÃ¬nh duyá»‡t
-     *
-     * @param roomId     ID phÃ²ng
-     * @param matrixJson JSON 2D máº£ng type: [["std","vip",...], ...]
+     * Lưu lại toàn bộ ma trận sơ đồ ghế mới cho phòng chiếu (xóa sơ đồ cũ và sinh nhãn ghế tự động A1, A2... hoặc ghế đôi A1-A2).
+     * 
+     * @param roomId ID phòng chiếu.
+     * @param matrixJson Mảng 2D biểu diễn từng vị trí loại ghế.
      */
     @Transactional
     public void saveMatrix(Long roomId, String[][] matrixJson) {
@@ -137,7 +135,7 @@ public class SeatService {
         }
         validateLayoutChangeAllowed(room, matrixJson);
 
-        // XÃ³a sÆ¡ Ä‘á»“ cÅ©
+        // Xóa sơ đồ cũ
         seatRepository.deleteAllByRoomId(roomId);
 
         int rows = matrixJson.length;
@@ -176,6 +174,7 @@ public class SeatService {
         roomRepository.save(room);
     }
 
+    /** Kiểm tra tính hợp lệ quy tắc vẽ ma trận sơ đồ ghế (kiểm tra ô lẻ, ghế đôi couple chiếm 2 ô...). */
     public List<String> validateMatrix(String[][] matrix) {
         List<String> errors = new ArrayList<>();
         if (matrix == null || matrix.length == 0) {
@@ -261,7 +260,7 @@ public class SeatService {
         return rowIndex < ALPHABET.length() ? String.valueOf(ALPHABET.charAt(rowIndex)) : "?";
     }
 
-    /** Sinh nhÃ£n gháº¿ dá»±a theo loáº¡i */
+    /** Sinh nhãn ghế dựa theo loại */
     private String buildLabel(String type, String rowLetter, int c,
                                int totalCols, String[] rowTypes) {
         return switch (type) {
@@ -271,8 +270,9 @@ public class SeatService {
         };
     }
 
-    // â”€â”€â”€ Thá»‘ng kÃª â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ————————————————————————————————————————————————————————————————————————————————
 
+    /** Đếm tổng số vị trí ghế thuộc loại chỉ định (VIP, COUPLE, STD...). */
     public long countByType(Long roomId, String type) {
         validateRoomId(roomId);
         if (type == null || type.isBlank()) {
@@ -281,6 +281,7 @@ public class SeatService {
         return seatRepository.countByRoomIdAndSeatType(roomId, type);
     }
 
+    /** Kiểm tra xem phòng chiếu đã khởi tạo sơ đồ ghế hay chưa. */
     public boolean hasSeats(Long roomId) {
         validateRoomId(roomId);
         return seatRepository.existsByRoomId(roomId);

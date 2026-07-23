@@ -1,6 +1,11 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Entity lưu trữ Cấu hình Loại Ghế (`seat_types`).
+ * 
+ * Mã loại ghế (`code`): std, vip, couple, broken, empty, skip.
+ * Các thuộc tính: Tên hiển thị (`displayName`), Mã màu CSS render sơ đồ ghế (`color`),
+ * Sức chứa (`capacity`: Ghế đôi = 2, Thường = 1), Cờ mở bán (`sellable`).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
  */
 package com.group3.cinema.entity;
 
@@ -50,6 +55,9 @@ public class SeatType {
         return new Builder();
     }
 
+    /**
+     * Lớp Builder giúp khởi tạo nhanh đối tượng SeatType.
+     */
     public static class Builder {
         private final SeatType seatType = new SeatType();
 
@@ -149,3 +157,4 @@ public class SeatType {
         this.active = active;
     }
 }
+

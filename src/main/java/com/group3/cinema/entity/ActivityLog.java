@@ -1,15 +1,21 @@
+/**
+ * Entity ghi lại nhật ký hoạt động hệ thống (`activity_logs`).
+ * 
+ * Áp dụng theo dõi thao tác người dùng ở mọi vai trò: ADMIN, MANAGER, CUSTOMER.
+ * 
+ * Đóng vai trò:
+ * - Lưu ID tài khoản thực hiện (`accountId`), mã loại hành động (`ActionType`),
+ *   mô tả chi tiết hành động (`description`), địa chỉ IP máy khách (`ipAddress`) và thời gian thực hiện (`createdAt`).
+ * - Phục vụ giao diện truy vấn nhật ký hệ thống (`activity-log.html`) cho Admin.
+ * 
+ * Ngày thực hiện: 09/07/2026
+ * Khởi tạo bởi: DuongND_HE186619
+ */
 package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * Entity ghi lại nhật ký hoạt động của người dùng trong hệ thống.
- * Áp dụng cho mọi vai trò: ADMIN, MANAGER, CUSTOMER.
- *
- * Ngày thực hiện: 09/07/2026
- * Tạo bởi: DuongND_HE186619
- */
 @Entity
 @Table(name = "activity_logs", indexes = {
     @Index(name = "idx_activity_log_account", columnList = "accountId"),
@@ -17,6 +23,10 @@ import java.time.LocalDateTime;
 })
 public class ActivityLog {
 
+    /**
+     * Enum các loại hành động nhật ký hệ thống:
+     * LOGIN, LOGOUT, PROFILE_UPDATE, PASSWORD_CHANGE, TICKET_BOOKING, PAYMENT, VOUCHER_USE, v.v.
+     */
     public enum ActionType {
         LOGIN, LOGOUT,
         PROFILE_UPDATE, PASSWORD_CHANGE,
@@ -82,7 +92,11 @@ public class ActivityLog {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    /** Trả về tên hiển thị của hành động để dùng trên UI */
+    /**
+     * Trả về tên hiển thị tiếng Việt của hành động phục vụ Thymeleaf UI.
+     * 
+     * @return Tên hành động tiếng Việt tương ứng.
+     */
     public String getActionDisplayName() {
         return switch (action) {
             case LOGIN -> "Đăng nhập";
@@ -108,7 +122,11 @@ public class ActivityLog {
         };
     }
 
-    /** Trả về CSS class cho icon theo loại hành động */
+    /**
+     * Trả về CSS FontAwesome class icon biểu thị hành động cho giao diện nhật ký.
+     * 
+     * @return Tên class icon CSS.
+     */
     public String getActionIconClass() {
         return switch (action) {
             case LOGIN -> "fa-sign-in-alt log-icon--login";
@@ -126,3 +144,4 @@ public class ActivityLog {
         };
     }
 }
+

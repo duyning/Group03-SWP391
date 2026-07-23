@@ -156,8 +156,8 @@ public class MovieService {
     @Transactional
     public void autoUpdateMovieStatuses() {
         /*
-         * Phim đến ngày khởi chiếu được chuyển sang NOW_SHOWING; phim đã qua hạn
-         * một khoảng an toàn được dừng và tắt active để không xuất hiện ở màn khách hàng.
+         * Phim đến ngày khởi chiếu được chuyển sang NOW_SHOWING; phim không còn
+         * suất chiếu từ hôm nay trở đi sẽ được dừng và ẩn khỏi màn khách hàng.
          */
         java.time.LocalDate today = java.time.LocalDate.now();
         movieRepository.autoUpdateUpcomingToNowShowing(
@@ -165,7 +165,7 @@ public class MovieService {
                 Movie.MovieStatus.NOW_SHOWING,
                 Movie.MovieStatus.COMING_SOON
         );
-        movieRepository.autoDeactivateExpiredMovies(today, today.minusDays(7), Movie.MovieStatus.STOPPED);
+        movieRepository.autoDeactivateExpiredMovies(today, Movie.MovieStatus.STOPPED);
         movieRepository.deactivateStoppedMovies(Movie.MovieStatus.STOPPED);
     }
 

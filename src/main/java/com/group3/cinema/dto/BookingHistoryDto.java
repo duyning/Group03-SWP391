@@ -1,19 +1,28 @@
+/**
+ * Đối tượng chuyển đổi dữ liệu Lịch sử Đặt vé Khách hàng (BookingHistoryDto).
+ * 
+ * Được sử dụng bởi `CustomerBookingService` và `ProfileController` để đóng gói dữ liệu
+ * truyền hiển thị trên giao diện `booking-history.html` hoặc `profile.html`.
+ */
 package com.group3.cinema.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class BookingHistoryDto {
-    private String bookingCode;
-    private LocalDateTime bookingTime;
-    private BigDecimal totalAmount;
-    private String paymentMethod;
-    private String status;
-    private String summary;
+    private String bookingCode;      // Mã đơn đặt vé (ví dụ: BK123456)
+    private LocalDateTime bookingTime; // Thời điểm thực hiện đặt vé
+    private BigDecimal totalAmount;    // Tổng số tiền thanh toán
+    private String paymentMethod;     // Phương thức thanh toán (VNPay, PayOS, Tiền mặt)
+    private String status;            // Trạng thái đơn (PAID, PENDING, CANCELLED)
+    private String summary;           // Tóm tắt đơn vé (Tên phim, số ghế, combo bắp nước)
     
-    // Thuộc tính phụ để CSS badge
+    // Thuộc tính phụ dùng để gắn lớp CSS badge hiển thị màu sắc trên giao diện Thymeleaf
     private String statusClass;
 
+    /**
+     * Constructor mặc định không tham số.
+     */
     public BookingHistoryDto() {
     }
 
@@ -73,3 +82,4 @@ public class BookingHistoryDto {
         this.statusClass = statusClass;
     }
 }
+

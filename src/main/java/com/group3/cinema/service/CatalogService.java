@@ -1,6 +1,15 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Service quản lý danh mục cấu hình hệ thống bao gồm: Loại phòng chiếu (`RoomType`), Công nghệ âm thanh (`AudioTechnology`), và Loại ghế (`SeatType`) (`CatalogService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `CatalogController`, `RoomService`, `CatalogInitializer`.
+ * - Tương tác với các Repository:
+ *   + `RoomTypeRepository`: Thao tác dữ liệu loại phòng (`2D`, `3D`, `IMAX`).
+ *   + `AudioTechnologyRepository`: Thao tác công nghệ âm thanh (`Dolby 7.1`, `Dolby Atmos`).
+ *   + `SeatTypeRepository`: Thao tác loại ghế (`Ghế thường`, `VIP`, `Couple`).
+ *   + `RoomRepository`: Duyệt phòng hiện tại để tự động khởi tạo danh mục ban đầu (`seedFromExistingRooms`).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
  */
 package com.group3.cinema.service;
 
@@ -45,30 +54,37 @@ public class CatalogService {
         this.roomRepository = roomRepository;
     }
 
+    /** Lấy toàn bộ danh sách loại phòng chiếu. */
     public List<RoomType> getAllRoomTypes() {
         return roomTypeRepository.findAllByOrderByNameAsc();
     }
 
+    /** Lấy danh sách loại phòng chiếu đang hoạt động (`active = true`). */
     public List<RoomType> getActiveRoomTypes() {
         return roomTypeRepository.findByActiveTrueOrderByNameAsc();
     }
 
+    /** Lấy tất cả danh sách công nghệ âm thanh. */
     public List<AudioTechnology> getAllAudioTechnologies() {
         return audioTechnologyRepository.findAllByOrderByNameAsc();
     }
 
+    /** Lấy danh sách công nghệ âm thanh đang active. */
     public List<AudioTechnology> getActiveAudioTechnologies() {
         return audioTechnologyRepository.findByActiveTrueOrderByNameAsc();
     }
 
+    /** Lấy tất cả danh sách loại ghế. */
     public List<SeatType> getAllSeatTypes() {
         return seatTypeRepository.findAllByOrderByIdAsc();
     }
 
+    /** Lấy danh sách loại ghế đang active. */
     public List<SeatType> getActiveSeatTypes() {
         return seatTypeRepository.findByActiveTrueOrderByIdAsc();
     }
 
+    /** Chuyển đổi danh sách loại ghế sang mảng định dạng chuỗi JSON cho giao diện sơ đồ ghế. */
     public String seatTypesToJson(List<SeatType> seatTypes) {
         StringBuilder json = new StringBuilder("[");
         for (int i = 0; i < seatTypes.size(); i++) {
@@ -88,6 +104,7 @@ public class CatalogService {
         return json.toString();
     }
 
+    /** Thêm mới một loại phòng chiếu. */
     @Transactional
     public void addRoomType(String name, String description) {
         String cleanName = requireName(name, "Tên loại phòng không được để trống.");
@@ -102,6 +119,7 @@ public class CatalogService {
                 .build());
     }
 
+    /** Cập nhật thông tin loại phòng chiếu. */
     @Transactional
     public void updateRoomType(Long id, String name, String description, boolean active) {
         validateId(id, "ID loại phòng không hợp lệ.");
@@ -120,6 +138,7 @@ public class CatalogService {
         roomTypeRepository.save(roomType);
     }
 
+    /** Thêm mới một công nghệ âm thanh. */
     @Transactional
     public void addAudioTechnology(String name, String description) {
         String cleanName = requireName(name, "Tên công nghệ âm thanh không được để trống.");
@@ -134,6 +153,7 @@ public class CatalogService {
                 .build());
     }
 
+    /** Cập nhật thông tin công nghệ âm thanh. */
     @Transactional
     public void updateAudioTechnology(Long id, String name, String description, boolean active) {
         validateId(id, "ID công nghệ âm thanh không hợp lệ.");
@@ -152,6 +172,7 @@ public class CatalogService {
         audioTechnologyRepository.save(audioTechnology);
     }
 
+    /** Thêm mới một loại ghế xem phim. */
     @Transactional
     public void addSeatType(String displayName, String color, int capacity, boolean sellable) {
         String cleanName = requireName(displayName, "Tên loại ghế không được để trống.");
@@ -169,6 +190,7 @@ public class CatalogService {
                 .build());
     }
 
+    /** Cập nhật thuộc tính hiển thị, màu sắc, sức chứa của loại ghế. */
     @Transactional
     public void updateSeatType(Long id, String color, int capacity, boolean sellable, boolean active) {
         validateId(id, "ID loại ghế không hợp lệ.");
@@ -181,6 +203,7 @@ public class CatalogService {
         seatTypeRepository.save(seatType);
     }
 
+    /** Tự động khởi tạo danh mục mẫu loại phòng, âm thanh và các loại ghế từ dữ liệu phòng sẵn có. */
     @Transactional
     public void seedFromExistingRooms() {
         for (Room room : roomRepository.findAll()) {
@@ -306,3 +329,4 @@ public class CatalogService {
                 .replace("\r", "\\r");
     }
 }
+

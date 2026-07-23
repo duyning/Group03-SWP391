@@ -1,9 +1,15 @@
-package com.group3.cinema.entity;
-
-/*
- * Created on 2026-06-25: Promotion campaign entity separated from news and voucher flows.
- * Created by: NinhDD - HE186113
+/**
+ * Entity quản lý các Chương trình & Chiến dịch Khuyến mãi (`promotions`).
+ * 
+ * Khác với Voucher cá nhân (lưu mã giảm giá), Promotion là chiến dịch truyền thông hiển thị rộng rãi
+ * trên trang chủ / trang khuyến mãi rạp (ví dụ: Happy Monday, Member Day, Ưu đãi Học sinh Sinh viên).
+ * 
+ * Hỗ trợ tự động tính toán tiến độ chiến dịch (`getProgressPercent`), số ngày còn lại (`getRemainingDays`),
+ * trạng thái chiến dịch thực tế dựa trên thời gian thực (`getCampaignState`: Sắp diễn ra, Đang diễn ra, Đã kết thúc).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (25/06/2026)
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -100,6 +106,11 @@ public class Promotion {
         }
     }
 
+    /**
+     * Xác định trạng thái diễn ra thực tế của chiến dịch dựa trên thời gian hiện tại (`LocalDate.now()`).
+     * 
+     * @return CampaignState (DRAFT, INACTIVE, UPCOMING - Sắp diễn ra, RUNNING - Đang diễn ra, EXPIRED - Đã kết thúc).
+     */
     public CampaignState getCampaignState() {
         if (status == PromotionStatus.DRAFT) {
             return CampaignState.DRAFT;
@@ -125,6 +136,11 @@ public class Promotion {
         return getCampaignState().getCssClass();
     }
 
+    /**
+     * Tính số ngày còn lại của chiến dịch khuyến mãi cho đến khi hết hạn.
+     * 
+     * @return Số ngày còn lại (dạng số nguyên long, tối thiểu là 0).
+     */
     public long getRemainingDays() {
         if (endDate == null) {
             return 0;
@@ -132,6 +148,9 @@ public class Promotion {
         return Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), endDate));
     }
 
+    /**
+     * Tính tổng thời gian chiến dịch (số ngày từ ngày bắt đầu đến ngày kết thúc).
+     */
     public long getTotalDays() {
         if (startDate == null || endDate == null) {
             return 0;
@@ -139,6 +158,9 @@ public class Promotion {
         return Math.max(1, ChronoUnit.DAYS.between(startDate, endDate) + 1);
     }
 
+    /**
+     * Tính số ngày đã trôi qua kể từ ngày bắt đầu chiến dịch.
+     */
     public long getElapsedDays() {
         if (startDate == null || endDate == null) {
             return 0;
@@ -153,6 +175,9 @@ public class Promotion {
         return Math.max(1, ChronoUnit.DAYS.between(startDate, today) + 1);
     }
 
+    /**
+     * Tính tỷ lệ phần trăm tiến độ chiến dịch đã chạy (từ 0% đến 100%).
+     */
     public int getProgressPercent() {
         long totalDays = getTotalDays();
         if (totalDays <= 0) {
@@ -161,6 +186,11 @@ public class Promotion {
         return (int) Math.min(100, Math.round((getElapsedDays() * 100.0) / totalDays));
     }
 
+    /**
+     * Kiểm tra xem chiến dịch khuyến mãi có đủ điều kiện hiển thị công khai trên giao diện người dùng không.
+     * 
+     * @return true nếu trạng thái ACTIVE và chưa trôi quá ngày kết thúc.
+     */
     public boolean isPubliclyVisible() {
         return status == PromotionStatus.ACTIVE
                 && endDate != null
@@ -358,3 +388,4 @@ public class Promotion {
         }
     }
 }
+

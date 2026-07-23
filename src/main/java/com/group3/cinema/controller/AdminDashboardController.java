@@ -174,7 +174,6 @@ public class AdminDashboardController {
                     return new BookingDto(b.getId(), custName, movieTitle, ticketQty, b.getTotalAmount(), timeStr, statusLabel);
                 })
                 .sorted((b1, b2) -> b2.id().compareTo(b1.id())) // Latest first
-                .limit(10)
                 .collect(Collectors.toList());
         model.addAttribute("bookings", bookingHistory);
 

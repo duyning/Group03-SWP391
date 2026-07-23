@@ -397,6 +397,20 @@ public class BookingController {
         session.removeAttribute("voucherCode");
     }
 
+    @PostMapping("/release-hold")
+    @ResponseBody
+    public Map<String, Object> releaseHold(HttpSession session) {
+        String token = (String) session.getAttribute("seatHoldToken");
+        if (token != null && !token.isBlank()) {
+            seatHoldingService.releaseHold(token);
+            session.removeAttribute("seatHoldToken");
+            session.removeAttribute("seatHoldExpiresAt");
+            // Không xóa BOOKING_SELECTION_SESSION_KEY ở đây vì có thể gây race condition
+            // khi beacon được gửi đồng thời với form submit.
+        }
+        return Map.of("success", true);
+    }
+
     private void clearBookingSteps(HttpSession session) {
         // Gọi khi bắt đầu một suất chiếu mới để không tái sử dụng dữ liệu của booking trước.
         session.removeAttribute("seatHoldToken");

@@ -1,9 +1,13 @@
-package com.group3.cinema.entity;
-
-/*
- * Created on 2026-06-21: Combo item mapping entity for calculated combo pricing.
- * Created by: NinhDD - HE186113
+/**
+ * Entity bảng trung gian lưu các mặt hàng món đồ ăn/uống lẻ (`FoodItem`) thuộc về gói `Combo` (`combo_items`).
+ * 
+ * Chức năng:
+ * - Lưu liên kết `combo` và `foodItem`.
+ * - Số lượng (`quantity`), đơn giá niêm yết (`unitPrice`), giá vốn nhập (`costPrice`) tại thời điểm tạo combo.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (21/06/2026)
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -90,3 +94,4 @@ public class ComboItem {
         this.costPrice = costPrice;
     }
 }
+

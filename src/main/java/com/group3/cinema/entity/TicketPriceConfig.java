@@ -1,7 +1,14 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: TicketPriceConfig.java
- * Người tạo: TrienLX
+/**
+ * Entity cấu hình Ma trận Giá vé cơ sở (`ticket_price_configs`).
+ * 
+ * Quy tắc tính giá:
+ * - Loại ngày (`dayType`): "Trong tuần", "Cuối tuần", "Ngày lễ".
+ * - Khung giờ (`slotName`): "Suất sớm", "Giờ thường", "Giờ vàng", "Suất khuya".
+ * - Khoảng thời gian áp dụng (`startTime`, `endTime`).
+ * - Mức giá cơ bản (`basePrice`).
+ * - Hỗ trợ áp dụng giá vé riêng cho từng phim cụ thể (`movieId`).
+ * 
+ * Khởi tạo bởi: TrienLX
  */
 package com.group3.cinema.entity;
 
@@ -18,10 +25,10 @@ public class TicketPriceConfig {
     private Long id;
 
     @Column(name = "day_type", nullable = false, length = 30)
-    private String dayType;   // "Trong tuần" | "Cuối tuần" | "Ngày lễ"
+    private String dayType;
 
     @Column(name = "slot_name", nullable = false, length = 30)
-    private String slotName;  // "Suất sớm" | "Giờ thường" | "Giờ vàng" | "Suất khuya"
+    private String slotName;
 
     @Column(name = "start_time", nullable = false)
     @JsonFormat(pattern = "HH:mm:ss")
@@ -74,3 +81,4 @@ public class TicketPriceConfig {
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
 }
+

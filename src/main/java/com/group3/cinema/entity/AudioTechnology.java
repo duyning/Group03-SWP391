@@ -1,6 +1,10 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Entity quản lý danh mục Công nghệ Âm thanh phòng chiếu (`audio_technologies`).
+ * 
+ * Ví dụ: Dolby 7.1, Dolby Atmos, DTS:X.
+ * Được chọn khi khởi tạo thông số phòng chiếu (`Room`).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
  */
 package com.group3.cinema.entity;
 
@@ -37,6 +41,9 @@ public class AudioTechnology {
         return new Builder();
     }
 
+    /**
+     * Lớp Builder giúp tạo nhanh đối tượng AudioTechnology.
+     */
     public static class Builder {
         private final AudioTechnology audioTechnology = new AudioTechnology();
 
@@ -97,3 +104,4 @@ public class AudioTechnology {
         this.active = active;
     }
 }
+

@@ -1,3 +1,13 @@
+/**
+ * Entity quản lý Gói Combo Bắp Nước (`combos`) phục vụ bán vé online và bán vé tại quầy.
+ * 
+ * Chức năng:
+ * - Lưu thông tin tên gói combo (`name`), mô tả (`description`), hình ảnh (`image`).
+ * - Lưu chi tiết cấu trúc giá: Giá niêm yết bán (`price`), Giá gốc chưa giảm (`originalPrice`),
+ *   Tỷ lệ giảm (% `discountPercent`), Giá vốn (`costPrice`).
+ * - Liên kết danh sách các món đồ ăn/uống chi tiết cấu thành combo (`items`: `List<ComboItem>`).
+ * - Quản lý trạng thái bán ("ACTIVE" - Đang bán, "INACTIVE" - Ngừng bán).
+ */
 package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
@@ -19,7 +29,6 @@ public class Combo {
     @Column(columnDefinition = "NVARCHAR(500)")
     private String description;
 
-    // DÃ¹ng BigDecimal hoáº·c Double Ä‘á»ƒ lÆ°u giÃ¡ tiá»n cho chuáº©n cáº¥u trÃºc sá»‘
     @Column(nullable = false)
     private BigDecimal price = BigDecimal.ZERO;
 
@@ -38,14 +47,12 @@ public class Combo {
     @Column(columnDefinition = "NVARCHAR(255)")
     private String image;
 
-    // ACTIVE (Äang bÃ¡n) | INACTIVE (Ngá»«ng bÃ¡n)
     @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
     private String status = "INACTIVE";
 
     @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ComboItem> items = new ArrayList<>();
 
-    // ===== Getters and Setters =====
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
@@ -73,8 +80,15 @@ public class Combo {
             items.forEach(this::addItem);
         }
     }
+
+    /**
+     * Thêm một thành phần món ăn/uống vào gói combo và thiết lập tham chiếu 2 chiều.
+     * 
+     * @param item Đối tượng ComboItem.
+     */
     public void addItem(ComboItem item) {
         item.setCombo(this);
         this.items.add(item);
     }
 }
+

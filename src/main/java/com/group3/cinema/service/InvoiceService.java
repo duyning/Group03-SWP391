@@ -1,3 +1,14 @@
+/**
+ * Service quản lý Hóa đơn, Thống kê doanh thu theo suất chiếu/phương thức thanh toán, Hủy và Hoàn tiền hóa đơn (`InvoiceService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `AdminInvoiceController` (Trang quản trị tìm kiếm hóa đơn bán vé, xem chi tiết hóa đơn, xuất file CSV báo cáo).
+ * - Tương tác với:
+ *   + `BookingRepository`: Tra cứu danh sách hóa đơn theo từ khóa, thời gian, trạng thái (`searchInvoices`).
+ *   + `PaymentRepository`: Tra cứu giao dịch thanh toán thành công/hoàn tiền.
+ *   + `BookingTicketRepository`, `BookingComboRepository`: Lấy thông tin các vé ghế và combo đi kèm trong hóa đơn.
+ *   + `AccountRepository`, `ShowtimeRepository`: Lấy thông tin khách mua vé và suất chiếu.
+ */
 package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Account;
@@ -61,6 +72,7 @@ public class InvoiceService {
         this.showtimeRepository = showtimeRepository;
     }
 
+    /** Tìm kiếm, phân trang và gom nhóm danh sách hóa đơn theo suất chiếu. */
     @Transactional(readOnly = true)
     public InvoicePage searchInvoices(InvoiceFilter filter) {
         InvoiceFilter normalized = normalizeFilter(filter);
@@ -97,6 +109,7 @@ public class InvoiceService {
         );
     }
 
+    /** Tra cứu chi tiết thông tin hóa đơn (gồm danh sách ghế, combo bắp nước, lịch sử giao dịch). */
     @Transactional(readOnly = true)
     public InvoiceDetails getInvoiceDetails(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -122,6 +135,7 @@ public class InvoiceService {
         );
     }
 
+    /** Thực hiện hủy đơn hàng hóa đơn đang ở trạng thái `PENDING`. */
     @Transactional
     public void cancelPendingInvoice(Long bookingId, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -143,6 +157,7 @@ public class InvoiceService {
         }
     }
 
+    /** Thực hiện hoàn tiền cho hóa đơn đã thanh toán thành công (`PAID` -> `CANCELLED`/`REFUNDED`). */
     @Transactional
     public void refundPaidInvoice(Long bookingId, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -165,6 +180,7 @@ public class InvoiceService {
         paymentRepository.save(latestPayment);
     }
 
+    /** Xuất file báo cáo danh sách hóa đơn theo định dạng CSV (UTF-8). */
     @Transactional(readOnly = true)
     public byte[] exportInvoicesCsv(InvoiceFilter filter) {
         InvoiceFilter normalized = normalizeFilter(filter);
@@ -480,6 +496,27 @@ public class InvoiceService {
         return "\"" + text + "\"";
     }
 
+    /** Chuyển đổi enum phương thức thanh toán sang tên hiển thị tiếng Việt. */
+    private static String paymentMethodText(Payment.Method method) {
+        Payment.Method normalizedMethod = normalizedBusinessPaymentMethod(method);
+        if (normalizedMethod == null) {
+            return "";
+        }
+        return switch (normalizedMethod) {
+            case CASH -> "Tiền mặt";
+            case PAYOS -> "PayOS";
+            default -> "PayOS";
+        };
+    }
+
+    /** Chuẩn hóa phương thức thanh toán: chỉ phân biệt CASH (tiền mặt) và tất cả các loại còn lại gom vào PAYOS. */
+    private static Payment.Method normalizedBusinessPaymentMethod(Payment.Method method) {
+        if (method == null) {
+            return null;
+        }
+        return method == Payment.Method.CASH ? Payment.Method.CASH : Payment.Method.PAYOS;
+    }
+
     private static class PaymentMethodSummaryBuilder {
         private long count;
         private BigDecimal amount = BigDecimal.ZERO;
@@ -592,27 +629,9 @@ public class InvoiceService {
         }
     }
 
-    private static String paymentMethodText(Payment.Method method) {
-        Payment.Method normalizedMethod = normalizedBusinessPaymentMethod(method);
-        if (normalizedMethod == null) {
-            return "";
-        }
-        return switch (normalizedMethod) {
-            case CASH -> "Tiền mặt";
-            case PAYOS -> "PayOS";
-            default -> "PayOS";
-        };
-    }
-
-    private static Payment.Method normalizedBusinessPaymentMethod(Payment.Method method) {
-        if (method == null) {
-            return null;
-        }
-        return method == Payment.Method.CASH ? Payment.Method.CASH : Payment.Method.PAYOS;
-    }
-
     public record InvoiceDetails(InvoiceRow row, Booking booking, Account account,
                                  Showtime showtime, List<BookingTicket> tickets,
                                  List<BookingCombo> combos, List<BookingFoodItem> foodItems,
                                  List<Payment> payments) { }
 }
+

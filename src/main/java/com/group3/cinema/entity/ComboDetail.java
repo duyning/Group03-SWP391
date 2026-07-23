@@ -1,3 +1,8 @@
+/**
+ * Entity bảng trung gian định nghĩa số lượng sản phẩm lẻ (`Product`) cấu thành nên một `Combo` (`combo_details`).
+ * 
+ * Ví dụ: Combo 1 bao gồm 1 Bỏng ngô phô mai (Product ID 1) + 2 Nước ngọt Coca (Product ID 2).
+ */
 package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
@@ -10,12 +15,10 @@ public class ComboDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Liên kết ngược về Combo
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "combo_id", nullable = false)
     private Combo combo;
 
-    // Liên kết tới Menu món lẻ
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
@@ -23,7 +26,6 @@ public class ComboDetail {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    // ===== GETTERS AND SETTERS =====
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -35,4 +37,4 @@ public class ComboDetail {
 
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
-}
+}

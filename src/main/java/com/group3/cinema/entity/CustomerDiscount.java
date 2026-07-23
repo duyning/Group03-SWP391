@@ -1,9 +1,12 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: CustomerDiscount.java
- * Người tạo: TrienLX
- * Ngày tạo: 2026-06-25
- * Chi tiết: Định nghĩa mức chiết khấu theo loại đối tượng (Sinh viên, Trẻ em, Người lớn...).
+/**
+ * Entity cấu hình Mức giảm giá theo loại Khách hàng (`customer_discounts`).
+ * 
+ * Áp dụng cho các nhóm đối tượng:
+ * - STUDENT (Sinh viên/Học sinh), CHILD (Trẻ em), ELDERLY (Người cao tuổi), ADULT (Người lớn).
+ * - Lưu tỷ lệ chiết khấu (`discountRate`: 0.10, 0.20), giá vé đồng giá ngày thường (`fixedPriceWeekday`),
+ *   giá vé tối thiểu áp dụng (`minPriceToApply`) và số tiền giảm tối đa (`maxDiscountAmount`).
+ * 
+ * Khởi tạo bởi: TrienLX (25/06/2026)
  */
 package com.group3.cinema.entity;
 
@@ -18,13 +21,13 @@ public class CustomerDiscount {
     private Long id;
 
     @Column(name = "customer_type", nullable = false, unique = true, length = 30, columnDefinition = "NVARCHAR(30)")
-    private String customerType; // "STUDENT", "CHILD", "ELDERLY", "ADULT"
+    private String customerType;
 
     @Column(name = "discount_rate", nullable = false)
-    private double discountRate; // 0.10, 0.20, 0.30
+    private double discountRate;
 
     @Column(name = "fixed_price_weekday")
-    private Double fixedPriceWeekday; // Đồng giá ngày thường (nếu có, e.g., 55000.0)
+    private Double fixedPriceWeekday;
 
     @Column(name = "min_price_to_apply", nullable = false)
     private double minPriceToApply = 0.0;
@@ -89,3 +92,4 @@ public class CustomerDiscount {
         this.maxDiscountAmount = maxDiscountAmount;
     }
 }
+

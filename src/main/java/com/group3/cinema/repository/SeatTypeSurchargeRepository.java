@@ -1,9 +1,10 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: SeatTypeSurchargeRepository.java
- * Người tạo: TrienLX
- * Ngày tạo: 2026-06-25
- * Chi tiết: Khai báo repository cho SeatTypeSurcharge.
+/**
+ * Interface Repository quản lý phụ thu theo loại ghế (`seat_type_surcharges`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `PricingService` và `CustomerBookingService` để truy vấn số tiền cộng thêm cho ghế VIP / Couple.
+ * 
+ * Khởi tạo bởi: TrienLX (25/06/2026)
  */
 package com.group3.cinema.repository;
 
@@ -15,5 +16,8 @@ import java.util.Optional;
 
 @Repository
 public interface SeatTypeSurchargeRepository extends JpaRepository<SeatTypeSurcharge, Long> {
+
+    /** Tìm cấu hình phụ thu theo mã loại ghế ("std", "vip", "couple"). */
     Optional<SeatTypeSurcharge> findBySeatTypeCode(String seatTypeCode);
 }
+

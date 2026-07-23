@@ -1,9 +1,22 @@
-package com.group3.cinema.service.api;
-
-/*
- * Service xử lý nghiệp vụ lịch chiếu.
- * Created/updated by: Group 03 - SWP391, NinhDD - HE186113, TrienLX
+/**
+ * Service xử lý logic nghiệp vụ quản lý Suất chiếu phim (`ShowtimeService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `ShowtimeApiController`, `CustomerBookingService`, `PublicContentInitializer`.
+ * - Gọi tới các Repository:
+ *   + `ShowtimeRepository`: Truy vấn và lưu bản ghi suất chiếu (`save`, `searchShowtimes`, `findByRoomIgnoreCaseAndShowDate`).
+ *   + `MovieRepository`: Lấy thông tin thời lượng phim (`resolveDuration`).
+ *   + `TicketRepository`: Kiểm tra ràng buộc và dọn dẹp vé chưa bán khi chỉnh sửa/xóa suất chiếu (`hasBookedTicketsForShowtime`, `deleteAllByShowtimeId`).
+ *   + `BookingRepository`: Kiểm tra các đơn đặt vé active đang được xử lý (`hasActiveBookingsForShowtime`).
+ * 
+ * Logic nghiệp vụ chính:
+ * - Tự động tính toán loại ngày (`determineDayType`: "Trong tuần", "Cuối tuần", "Ngày lễ").
+ * - Kiểm tra trùng lặp lịch chiếu theo từng phòng chiếu (`validateRoomTimeOverlap`), tự động cộng thời gian giãn cách dọn dẹp phòng (30 phút).
+ * - Hỗ trợ xếp lịch theo lô hàng loạt cho nhiều ngày và nhiều phòng (`saveShowtimeBatch`).
+ * 
+ * Khởi tạo bởi: Group 03 - SWP391, NinhDD - HE186113, TrienLX
  */
+package com.group3.cinema.service.api;
 
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Showtime;
@@ -40,6 +53,9 @@ public class ShowtimeService {
     @Autowired
     private BookingRepository bookingRepository;
 
+    @Autowired
+    private com.group3.cinema.repository.BookingTicketRepository bookingTicketRepository;
+
     public ShowtimeService(ShowtimeRepository showtimeRepository,
                            MovieRepository movieRepository,
                            TicketRepository ticketRepository) {
@@ -48,18 +64,22 @@ public class ShowtimeService {
         this.ticketRepository = ticketRepository;
     }
 
+    /** Lấy danh sách tất cả suất chiếu active. */
     public List<Showtime> getAllShowtimes() {
         return showtimeRepository.findAll();
     }
 
+    /** Tìm chi tiết suất chiếu theo ID. */
     public Optional<Showtime> getShowtimeById(Long id) {
         return showtimeRepository.findById(id);
     }
 
+    /** Tìm kiếm danh sách suất chiếu đa điều kiện (theo phim, loại ngày, từ ngày đến ngày). */
     public List<Showtime> searchShowtimes(Integer movieId, String dayType, LocalDate startDate, LocalDate endDate) {
         return showtimeRepository.searchShowtimes(movieId, dayType, startDate, endDate);
     }
 
+    /** Lưu đơn lẻ một suất chiếu phim mới. */
     @Transactional
     public Showtime saveShowtime(Showtime showtime) {
         prepareAndValidateShowtime(showtime, null, false);
@@ -68,6 +88,7 @@ public class ShowtimeService {
         return showtimeRepository.save(showtime);
     }
 
+    /** Cập nhật thông tin một suất chiếu đơn lẻ đã có. */
     @Transactional
     public Showtime updateShowtime(Long id, Showtime updatedShowtime) {
         return showtimeRepository.findById(id).map(showtime -> {
@@ -82,6 +103,7 @@ public class ShowtimeService {
         }).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
     }
 
+    /** Cập nhật một nhóm hàng loạt suất chiếu cũ bằng nhóm suất chiếu mới. */
     @Transactional
     public List<Showtime> updateShowtimeBatch(Long id, com.group3.cinema.controller.api.ShowtimeController.ShowtimeRequest req) {
         if (req.getGroupIds() != null && !req.getGroupIds().isEmpty()) {
@@ -120,6 +142,7 @@ public class ShowtimeService {
         );
     }
 
+    /** Xếp lịch chiếu hàng loạt theo danh sách các khung giờ chỉ định. */
     @Transactional
     public List<Showtime> saveShowtimeBatch(Long movieId,
                                             LocalDate startDate,
@@ -165,6 +188,7 @@ public class ShowtimeService {
         return savedShowtimes;
     }
 
+    /** Xếp lịch chiếu hàng loạt liên tiếp nhiều slot từ một mốc giờ bắt đầu. */
     @Transactional
     public List<Showtime> saveShowtimeBatch(Long movieId,
                                             LocalDate startDate,
@@ -175,6 +199,7 @@ public class ShowtimeService {
         return saveShowtimeBatch(movieId, startDate, endDate, showTime, room, slotCount, false);
     }
 
+    /** Xếp lịch chiếu hàng loạt liên tiếp với tùy chọn bỏ qua kiểm tra thời gian quá khứ khi edit. */
     @Transactional
     public List<Showtime> saveShowtimeBatch(Long movieId,
                                             LocalDate startDate,
@@ -240,6 +265,7 @@ public class ShowtimeService {
         return savedShowtimes;
     }
 
+    /** Điều chỉnh thông tin riêng cho một ngày chiếu cụ thể (Ghi đè - Override). */
     @Transactional
     public Showtime overrideSingleDay(Long originalShowtimeId,
                                       Long movieId,
@@ -280,11 +306,13 @@ public class ShowtimeService {
         return showtimeRepository.save(target);
     }
 
+    /** Xóa suất chiếu theo ID. */
     @Transactional
     public boolean deleteShowtime(Long id) {
         return deleteShowtimeInternal(id);
     }
 
+    /** Thực hiện dọn dẹp bản ghi vé chưa bán và xóa bản ghi suất chiếu. */
     private boolean deleteShowtimeInternal(Long id) {
         if (id == null || !showtimeRepository.existsById(id)) {
             return false;
@@ -296,27 +324,27 @@ public class ShowtimeService {
         return false;
     }
 
+    /** Kiểm tra suất chiếu có thể sửa/xóa hay không (chặn khi đã hết giờ, đã có vé bán hoặc có khách giữ chỗ). */
     private void validateShowtimeEditable(Long id) {
         if (id == null) return;
         Showtime showtime = showtimeRepository.findById(id).orElse(null);
         if (showtime == null) return;
 
-        // Check if the showtime has already ended
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime showDateTime = LocalDateTime.of(showtime.getShowDate(), showtime.getShowTime());
         if (showDateTime.isBefore(now)) {
             throw new IllegalArgumentException("Suất chiếu đã kết thúc, không thể chỉnh sửa hoặc xóa.");
         }
 
-        // Check booked tickets and active bookings
         if (ticketRepository.hasBookedTicketsForShowtime(id)) {
             throw new IllegalArgumentException("Không thể chỉnh sửa hoặc xóa suất chiếu này vì đã có vé được đặt.");
         }
-        if (bookingRepository.hasActiveBookingsForShowtime(id, now)) {
-            throw new IllegalArgumentException("Không thể chỉnh sửa hoặc xóa suất chiếu này vì đang có khách hàng thực hiện mua vé.");
+        if (bookingRepository.hasActiveBookingsForShowtime(id, now) || bookingTicketRepository.hasActiveHoldingsOrBookingsForShowtime(id, now)) {
+            throw new IllegalArgumentException("Không thể chỉnh sửa hoặc xóa suất chiếu này vì đang có khách hàng giữ ghế/thực hiện mua vé.");
         }
     }
 
+    /** Kiểm tra tính hợp lệ tổng thể của thông tin suất chiếu trước khi ghi CSDL. */
     private void prepareAndValidateShowtime(Showtime showtime, Long editingId, boolean allowPastWhenEditing) {
         if (showtime == null) {
             throw new IllegalArgumentException("Dữ liệu lịch chiếu không hợp lệ.");
@@ -344,6 +372,7 @@ public class ShowtimeService {
         validateRoomTimeOverlap(showtime, editingId);
     }
 
+    /** Kiểm tra không cho phép tạo/sửa lịch chiếu ở thời điểm quá khứ. */
     private void validateDateTimeNotPast(LocalDate date, LocalTime time) {
         if (date == null || time == null) {
             return;
@@ -359,6 +388,7 @@ public class ShowtimeService {
         }
     }
 
+    /** Kiểm tra xem khung giờ dự định chiếu có bị trùng đè lên suất chiếu khác trong cùng phòng hay không. */
     private void validateRoomTimeOverlap(Showtime candidate, Long editingId) {
         int candidateStart = toMinutes(candidate.getShowTime());
         int candidateEnd = candidateStart + resolveDuration(candidate.getMovie()) + ROOM_TURNOVER_MINUTES;
@@ -389,6 +419,7 @@ public class ShowtimeService {
         }
     }
 
+    /** Tách chuỗi danh sách phòng chiếu bằng dấu phẩy. */
     private List<String> splitRooms(String room) {
         List<String> rooms = new ArrayList<>();
         for (String value : room.split(",")) {
@@ -403,10 +434,12 @@ public class ShowtimeService {
         return rooms;
     }
 
+    /** Quy đổi LocalTime thành tổng số phút trong ngày. */
     private int toMinutes(LocalTime time) {
         return time.getHour() * 60 + time.getMinute();
     }
 
+    /** Lấy thời lượng phim (phút), mặc định 120 phút nếu không có dữ liệu. */
     private int resolveDuration(Movie movie) {
         if (movie == null || movie.getDuration() == null || movie.getDuration() <= 0) {
             return DEFAULT_MOVIE_DURATION_MINUTES;
@@ -414,6 +447,7 @@ public class ShowtimeService {
         return movie.getDuration();
     }
 
+    /** Lấy số liệu thống kê suất chiếu cho Dashboard quản trị. */
     public Map<String, Long> getShowtimeStats() {
         Map<String, Long> stats = new HashMap<>();
         LocalDate today = LocalDate.now();
@@ -427,6 +461,7 @@ public class ShowtimeService {
         return stats;
     }
 
+    /** Xác định loại ngày (Trong tuần, Cuối tuần, Ngày lễ) dựa theo ngày chiếu. */
     public String determineDayType(LocalDate date) {
         int month = date.getMonthValue();
         int day = date.getDayOfMonth();
@@ -442,3 +477,4 @@ public class ShowtimeService {
         return "Trong tuần";
     }
 }
+

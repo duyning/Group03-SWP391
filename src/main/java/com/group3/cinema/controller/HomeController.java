@@ -11,6 +11,7 @@ import com.group3.cinema.entity.Movie;
 import com.group3.cinema.service.BannerService;
 import com.group3.cinema.service.MovieService;
 import com.group3.cinema.service.PostService;
+import com.group3.cinema.service.SeatHoldingService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -39,6 +40,9 @@ public class HomeController {
     @Autowired
     private BannerService bannerService;
 
+    @Autowired
+    private SeatHoldingService seatHoldingService;
+
     /**
      * Hiển thị trang chủ tại cả URL gốc và {@code /home}.
      *
@@ -52,6 +56,13 @@ public class HomeController {
      */
     @GetMapping({"/", "/home"})
     public String showHome(HttpSession session, Model model) {
+        // Nhả ghế đang giữ (nếu có) khi user quay về trang chủ
+        String holdToken = (String) session.getAttribute("seatHoldToken");
+        if (holdToken != null && !holdToken.isBlank()) {
+            try { seatHoldingService.releaseHold(holdToken); } catch (Exception ignored) {}
+            session.removeAttribute("seatHoldToken");
+            session.removeAttribute("seatHoldExpiresAt");
+        }
         Account loggedInUser = (Account) session.getAttribute("loggedInUser");
         if (loggedInUser != null) {
             model.addAttribute("user", loggedInUser);

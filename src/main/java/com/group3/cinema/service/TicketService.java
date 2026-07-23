@@ -1,9 +1,19 @@
-package com.group3.cinema.service;
-
-/*
- * Service xử lý nghiệp vụ vé xem phim.
- * Created/updated by: NinhDD - HE186113, TrienLX
+/**
+ * Service tính toán giá vé nâng cao, Phụ thu phòng/ghế, Chiết khấu đối tượng khách và Bán vé tại quầy/Online (`TicketService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `AdminTicketController` (Bán vé tại quầy, Đổi vị trí ghế, Chiết khấu vé), `CounterSaleService`, `CustomerBookingService`, `SeatHoldingService`.
+ * - Tương tác với:
+ *   + `TicketRepository`: Lưu thông báo vé (`save`), thống kê vé theo suất chiếu (`countByShowtimeIdAndStatusAndDeletedFalse`), tìm kiếm vé (`searchTickets`).
+ *   + `TicketPriceConfigRepository`: Lấy giá vé gốc cấu hình theo khung giờ (Suất sớm, Giờ vàng, Suất khuya) và loại ngày (Trong tuần, Cuối tuần, Ngày lễ).
+ *   + `SeatTypeSurchargeRepository`: Lấy phụ thu loại ghế (VIP, Sweetbox Couple).
+ *   + `FormatSurchargeRepository`: Lấy phụ thu công nghệ định dạng phòng chiếu (3D, IMAX...).
+ *   + `CustomerDiscountRepository`: Lấy mức giảm giá cho Học sinh/Sinh viên/Trẻ em/Người cao tuổi.
+ *   + `ShowtimeRepository`, `RoomRepository`, `SeatRepository`: Lấy suất chiếu, phòng và vị trí ghế.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113, TrienLX
  */
+package com.group3.cinema.service;
 
 import com.group3.cinema.entity.CustomerDiscount;
 import com.group3.cinema.entity.FormatSurcharge;
@@ -63,14 +73,17 @@ public class TicketService {
         this.showtimeRepository = showtimeRepository;
     }
 
+    /** Lấy danh sách vé đã đặt của tài khoản cá nhân. */
     public List<Ticket> getTicketsByAccount(int accountId) {
         return ticketRepository.findByAccountAccountIDOrderByBookingTimeDesc(accountId);
     }
 
+    /** Lấy thông tin chi tiết một tấm vé theo ID. */
     public Optional<Ticket> getTicketDetail(Long ticketId, int accountId) {
         return ticketRepository.findByIdAndAccountAccountID(ticketId, accountId);
     }
 
+    /** Xác định khung giờ chiếu (Suất sớm, Giờ thường, Giờ vàng, Suất khuya). */
     public String determineTimeSlot(LocalTime time) {
         if (time == null) {
             return "Giờ thường";
@@ -88,12 +101,16 @@ public class TicketService {
         return "Suất khuya";
     }
 
+    /** Tính toán giá vé bán ra cuối cùng cho vị trí ghế và suất chiếu. */
     public double calculatePrice(Showtime showtime, Seat seat, String customerType) {
         Ticket ticket = new Ticket();
         populateTicketPriceDetails(ticket, showtime, seat, customerType);
         return ticket.getFinalPrice();
     }
 
+    /**
+     * Điền chi tiết bóc tách thành phần giá vé: Giá gốc, Phụ thu ghế, Phụ thu phòng/định dạng, Mức giảm giá đối tượng khách hàng.
+     */
     public void populateTicketPriceDetails(Ticket ticket, Showtime showtime, Seat seat, String customerType) {
         if (ticket == null) {
             return;
@@ -129,7 +146,6 @@ public class TicketService {
                     return false;
                 }
             } catch (Exception e) {
-                // Ignore parse errors
             }
         }
         return true;
@@ -286,14 +302,15 @@ public class TicketService {
 
     @Transactional
     public void generateTicketsForShowtime(Showtime showtime) {
-        // Vé quản lý được tạo khi giữ/bán ghế, không sinh trước toàn bộ vé trống.
     }
 
+    /** Lấy danh sách vé thuộc suất chiếu chưa bị xóa. */
     @Transactional(readOnly = true)
     public List<Ticket> getTicketsByShowtime(Long showtimeId) {
         return ticketRepository.findByShowtimeIdAndDeletedFalse(showtimeId);
     }
 
+    /** Lấy danh sách sơ đồ vị trí ghế của suất chiếu. */
     @Transactional(readOnly = true)
     public List<Seat> getSeatsForShowtime(Long showtimeId) {
         Showtime showtime = showtimeRepository.findById(showtimeId)
@@ -305,6 +322,7 @@ public class TicketService {
         return seatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(roomOpt.get().getId());
     }
 
+    /** Giữ vị trí ghế cho suất chiếu ở trạng thái `PENDING`. */
     @Transactional
     public Ticket holdSeat(Long showtimeId, Long seatId) {
         Showtime showtime = showtimeRepository.findById(showtimeId)
@@ -321,6 +339,7 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
+    /** Hủy trạng thái giữ ghế `PENDING`. */
     @Transactional
     public void releaseSeat(Long showtimeId, Long seatId) {
         ticketRepository.findByShowtimeIdAndSeatIdAndDeletedFalse(showtimeId, seatId)
@@ -328,6 +347,7 @@ public class TicketService {
                 .ifPresent(ticketRepository::delete);
     }
 
+    /** Thực hiện xuất vé bán lẻ trực tiếp tại quầy theo suất chiếu và ghế. */
     @Transactional
     public Ticket sellTicket(Long showtimeId, Long seatId, String customerType) {
         Showtime showtime = showtimeRepository.findById(showtimeId)
@@ -345,6 +365,7 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
+    /** Xác nhận bán tấm vé theo ID. */
     @Transactional
     public Ticket sellTicket(Long ticketId, String customerType) {
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -361,6 +382,7 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
+    /** Thực hiện chuyển sang vị trí ghế mới trên cùng một suất chiếu. */
     @Transactional
     public Ticket changeSeat(Long ticketId, Long newSeatId) {
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -384,6 +406,7 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
+    /** Đổi nhóm đối tượng khách hàng (ADULT, STUDENT, CHILD...) và cập nhật lại mức chiết khấu giá vé. */
     @Transactional
     public Ticket updateCustomerType(Long ticketId, String customerType) {
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -397,6 +420,7 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
+    /** Chuyển đổi trạng thái vé giữa PENDING và BOOKED. */
     @Transactional
     public Ticket toggleTicketStatus(Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -410,6 +434,7 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
+    /** Hủy vé xem phim và đánh dấu hoàn tiền (`status = REFUNDED`, `isDeleted = true`). */
     @Transactional
     public Ticket cancelTicket(Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -419,6 +444,7 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
+    /** Lấy dữ liệu báo cáo thống kê tình hình bán vé và tỷ lệ lấp đầy ghế (Occupancy Rate) của suất chiếu. */
     public Map<String, Object> getShowtimeStats(Long showtimeId) {
         Showtime showtime = showtimeRepository.findById(showtimeId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
@@ -449,6 +475,7 @@ public class TicketService {
         return stats;
     }
 
+    /** Bóc tách bảng phân tích giá vé cho suất chiếu và vị trí ghế. */
     public Map<String, Object> getPriceBreakdownForSeat(Long showtimeId, Long seatId, String customerType) {
         Showtime showtime = showtimeRepository.findById(showtimeId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu!"));
@@ -457,6 +484,7 @@ public class TicketService {
         return computeBreakdownMap(showtime, seat, customerType);
     }
 
+    /** Bóc tách bảng phân tích chi tiết cấu thành đơn giá của một tấm vé. */
     public Map<String, Object> getPriceBreakdownForTicket(Long ticketId, String customerType) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vé!"));
@@ -475,6 +503,7 @@ public class TicketService {
         return breakdown;
     }
 
+    /** Khởi tạo trực tiếp một tấm vé mới. */
     @Transactional
     public Ticket createTicket(Long showtimeId, Long seatId, String customerType, String status) {
         Showtime showtime = showtimeRepository.findById(showtimeId)
@@ -490,6 +519,7 @@ public class TicketService {
                 status != null ? status : "BOOKED"));
     }
 
+    /** Cập nhật toàn bộ thuộc tính tấm vé. */
     @Transactional
     public Ticket updateTicket(Long ticketId, Long showtimeId, Long seatId, String customerType, String status) {
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -509,6 +539,7 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
+    /** Tìm kiếm danh sách vé xem phim theo phim, phòng, trạng thái, khoảng ngày chiếu và từ khóa. */
     @Transactional(readOnly = true)
     public List<Ticket> searchTickets(Integer movieId, String room, String status, java.time.LocalDate fromDate, java.time.LocalDate toDate, String searchTerm) {
         return ticketRepository.searchTickets(movieId, room, status, fromDate, toDate, searchTerm);
@@ -532,3 +563,4 @@ public class TicketService {
         ticket.setDeleted(false);
     }
 }
+

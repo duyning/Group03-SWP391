@@ -1,15 +1,18 @@
+/**
+ * Enum đại diện cho các cấp độ hạng thành viên (Membership Level) của tài khoản khách hàng.
+ * 
+ * Các hạng: BRONZE (Đồng), SILVER (Bạc), GOLD (Vàng), PLAT (Bạch kim).
+ * Dùng để tính điểm tích lũy và hưởng chính sách giảm giá vé/ưu đãi bắp nước tương ứng.
+ * 
+ * Ngày thực hiện: 04/06/2026
+ * Tạo bởi: DuongND_HE186619
+ */
 package com.group3.cinema.entity;
 
-/**
- * Enum Ä‘áº¡i diá»‡n cho cÃ¡c cáº¥p Ä‘á»™ thÃ nh viÃªn (Membership Level) cá»§a tÃ i khoáº£n.
- * Bao gá»“m cÃ¡c háº¡ng: SILVER (Báº¡c), GOLD (VÃ ng), PLAT (Báº¡ch kim).
- * 
- * NgÃ y thá»±c hiá»‡n: 04/06/2026
- * Táº¡o bá»Ÿi: DuongND_HE186619
- */
 public enum MembershipLevel {
     BRONZE,
     SILVER,
     GOLD,
     PLAT
 }
+

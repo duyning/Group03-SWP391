@@ -1,6 +1,16 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Service quản lý Phòng chiếu phim, Cấu hình công nghệ phòng (IMAX, 2D/3D), Âm thanh (Dolby Atmos) và Trạng thái vận hành phòng (`RoomService`).
+ * 
+ * Luồng gọi & Sử dụng:
+ * - Được gọi bởi `AdminRoomController` và `ShowtimeService`.
+ * - Tương tác với:
+ *   + `RoomRepository`: Lưu phòng (`save`), lọc phòng chiếu (`findByCinemaId`).
+ *   + `RoomTypeRepository`: Kiểm tra loại phòng hợp lệ (`findByNameIgnoreCase`).
+ *   + `AudioTechnologyRepository`: Kiểm tra công nghệ âm thanh active.
+ *   + `SeatRepository`: Xóa sơ đồ ghế cũ (`deleteAllByRoomId`), kiểm tra tồn tại ghế (`existsByRoomId`).
+ *   + `ShowtimeRepository`: Kiểm tra phòng đang vướng lịch chiếu (`existsByRoomIgnoreCaseAndShowDateGreaterThanEqual`).
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
  */
 package com.group3.cinema.service;
 
@@ -46,16 +56,13 @@ public class RoomService {
         this.showtimeRepository = showtimeRepository;
     }
 
-    // â”€â”€â”€ Láº¥y danh sÃ¡ch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-    /** Láº¥y táº¥t cáº£ phÃ²ng (khÃ´ng lá»c) */
+    /** Lấy toàn bộ danh sách phòng chiếu thuộc 1 rạp phim. */
     public List<Room> getAllRooms(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId);
     }
 
     /**
-     * Lá»c phÃ²ng theo cÃ¡c tiÃªu chÃ­ tÃ¬m kiáº¿m.
-     * Chuá»—i rá»—ng Ä‘Æ°á»£c coi lÃ  "khÃ´ng lá»c" (null).
+     * Lọc danh sách phòng chiếu theo tên, định dạng chiếu, âm thanh, trạng thái và tổng số ghế tối thiểu.
      */
     public List<Room> filterRooms(Long cinemaId, String roomName, String roomType,
                                    String audioTech, String status, Integer minSeats) {
@@ -83,7 +90,7 @@ public class RoomService {
                 .toList();
     }
 
-    /** TÃ¬m 1 phÃ²ng theo id */
+    /** Lấy chi tiết 1 phòng chiếu theo ID. */
     public Optional<Room> findById(Long id) {
         return roomRepository.findById(id)
                 .map(room -> {
@@ -92,12 +99,12 @@ public class RoomService {
                 });
     }
 
-    // â”€â”€â”€ Thá»‘ng kÃª â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+    /** Đếm tổng số phòng chiếu của rạp. */
     public long countTotal(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId).size();
     }
 
+    /** Đếm số phòng đang trong trạng thái "Hoạt động". */
     public long countActive(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId).stream()
                 .peek(this::normalizeRoomStatus)
@@ -105,6 +112,7 @@ public class RoomService {
                 .count();
     }
 
+    /** Đếm số phòng đang trong trạng thái "Bảo trì". */
     public long countMaintenance(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId).stream()
                 .peek(this::normalizeRoomStatus)
@@ -112,12 +120,14 @@ public class RoomService {
                 .count();
     }
 
+    /** Tính tổng sức chứa tất cả số ghế của toàn bộ các phòng trong rạp. */
     public long sumTotalSeats(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId).stream()
                 .mapToLong(Room::getTotalSeats)
                 .sum();
     }
 
+    /** Lấy danh sách các tùy chọn loại phòng hiện có của rạp. */
     public List<String> getRoomTypeOptions(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId).stream()
                 .map(Room::getRoomType)
@@ -127,6 +137,7 @@ public class RoomService {
                 .toList();
     }
 
+    /** Lấy danh sách các tùy chọn công nghệ âm thanh của rạp. */
     public List<String> getAudioTechOptions(Long cinemaId) {
         return roomRepository.findByCinemaId(cinemaId).stream()
                 .map(Room::getAudioTech)
@@ -136,13 +147,15 @@ public class RoomService {
                 .toList();
     }
 
-    // â”€â”€â”€ CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+    /** Lưu bản ghi phòng chiếu. */
     @Transactional
     public Room save(Room room) {
         return roomRepository.save(room);
     }
 
+    /**
+     * Khởi tạo phòng chiếu mới trong rạp (chặn đặt trạng thái Hoạt động khi chưa kẻ sơ đồ ghế).
+     */
     @Transactional
     public Room addRoom(Long cinemaId, String roomName, List<String> roomTypes,
                         String audioTech, String status) {
@@ -167,6 +180,7 @@ public class RoomService {
         return roomRepository.save(room);
     }
 
+    /** Cập nhật thông tin phòng chiếu (kiểm tra không cho phép đổi tên nếu vướng lịch chiếu hiện tại/tương lai). */
     @Transactional
     public Room updateRoom(Long id, String roomName, List<String> roomTypes,
                            String audioTech, String status) {
@@ -191,6 +205,7 @@ public class RoomService {
         return roomRepository.save(room);
     }
 
+    /** Xóa phòng chiếu và xóa toàn bộ danh sách ghế thuộc phòng chiếu đó. */
     @Transactional
     public void deleteRoom(Long id) {
         if (id == null || id <= 0) {
@@ -331,8 +346,10 @@ public class RoomService {
         }
     }
 
+    /** Kiểm tra xem phòng chiếu hiện có vướng lịch chiếu suất nào từ thời điểm hôm nay trở đi hay không. */
     public boolean hasUpcomingShowtimes(String roomName) {
         return StringUtils.hasText(roomName)
                 && showtimeRepository.existsByRoomIgnoreCaseAndShowDateGreaterThanEqual(roomName.trim(), LocalDate.now());
     }
 }
+

@@ -1,9 +1,14 @@
-package com.group3.cinema.entity;
-
-/*
- * Added on 2026-06-24: Stores combo selections attached to a customer booking.
- * Created by: HuyPB - HE191335
+/**
+ * Entity lưu chi tiết các gói Combo bắp nước đi kèm đơn đặt vé (`booking_combos`).
+ * 
+ * Chức năng:
+ * - Liên kết tới đơn đặt vé `bookingId`.
+ * - Lưu ID combo (`comboId`), tên combo (`comboName`), số lượng mua (`quantity`),
+ *   đơn giá tại thời điểm mua (`unitPrice`) và thành tiền (`subtotal`).
+ * 
+ * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */
+package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -32,3 +37,4 @@ public class BookingCombo {
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal v) { subtotal = v; }
 }
+

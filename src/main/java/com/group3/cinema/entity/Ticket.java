@@ -1,9 +1,18 @@
-package com.group3.cinema.entity;
-
-/*
- * Entity quản lý vé xem phim.
- * Created/updated by: NinhDD - HE186113, TrienLX
+/**
+ * Entity quản lý vé xem phim chi tiết (`tickets`).
+ * 
+ * Chức năng:
+ * - Lưu giữ thông tin từng chiếc vé: Tài khoản người mua (`Account`), Phim (`Movie`), Suất chiếu (`Showtime`),
+ *   Ghế ngồi (`Seat`), Tên phòng, Nhãn ghế, Loại ghế, Ngày/Giờ chiếu.
+ * - Lưu chi tiết thành phần giá: Giá gốc (`basePrice`), Phụ thu ghế (`seatSurcharge`), Phụ thu định dạng (`formatSurcharge`),
+ *   Số tiền giảm giá (`discountAmount`), Giá thực tế (`finalPrice`).
+ * - Quản lý thông tin khách hàng nhận vé (`customerName`, `customerPhone`, `customerType`) và mã đơn (`bookingCode`).
+ * - Tự động tính toán chuyển đổi trạng thái CONFIRMED -> USED khi thời gian chiếu trôi qua.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113
+ * Cập nhật bởi: TrienLX (Bổ sung base_price và đồng bộ trạng thái vé)
  */
+package com.group3.cinema.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
@@ -294,6 +303,14 @@ public class Ticket {
         this.createdAt = createdAt;
     }
 
+    /**
+     * Lấy trạng thái của vé.
+     * 
+     * Tự động kiểm tra thời điểm hiện tại (`LocalDateTime.now()`) so với ngày giờ chiếu (`showDate`, `showTime`).
+     * Nếu trạng thái đang là `CONFIRMED` nhưng suất chiếu đã diễn ra -> tự động trả về `USED`.
+     * 
+     * @return Trạng thái vé hiện tại.
+     */
     public String getStatus() {
         if ("CONFIRMED".equals(status) && showDate != null && showTime != null) {
             LocalDateTime showDateTime = LocalDateTime.of(showDate, showTime);
@@ -356,6 +373,11 @@ public class Ticket {
         this.deleted = deleted;
     }
 
+    /**
+     * Trả về tên hiển thị tiếng Việt tương ứng cho trạng thái vé phục vụ Thymeleaf UI.
+     * 
+     * @return Chuỗi tên trạng thái tiếng Việt (Đã xác nhận, Đã sử dụng, Đã hủy, v.v.).
+     */
     public String getStatusDisplayName() {
         String currentStatus = getStatus();
         if (currentStatus == null) {
@@ -374,6 +396,11 @@ public class Ticket {
         };
     }
 
+    /**
+     * Trả về tên loại ghế tiếng Việt tương ứng.
+     * 
+     * @return Tên hiển thị (VIP, Ghế đôi, Thường, v.v.).
+     */
     public String getSeatTypeDisplayName() {
         if (seatType == null || seatType.isBlank()) {
             return "Thường";
@@ -388,3 +415,4 @@ public class Ticket {
         };
     }
 }
+

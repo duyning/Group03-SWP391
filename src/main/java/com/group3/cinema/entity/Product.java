@@ -1,3 +1,10 @@
+/**
+ * Entity lưu danh mục Sản phẩm đồ ăn bắp nước bán lẻ (`products`).
+ * 
+ * Chức năng:
+ * - Lưu tên sản phẩm (`name`), giá bán lẻ (`price`), mô tả ngắn (`description`), trạng thái kinh doanh (`status`: ACTIVE, INACTIVE).
+ * - Tự động thiết lập thời gian khởi tạo và cập nhật (`@PrePersist`, `@PreUpdate`).
+ */
 package com.group3.cinema.entity;
 
 import jakarta.persistence.*;
@@ -30,7 +37,7 @@ public class Product {
     @NotBlank(message = "Vui lòng chọn trạng thái kinh doanh")
     @Size(max = 20)
     @Column(name = "status", nullable = false, length = 20, columnDefinition = "NVARCHAR(20)")
-    private String status = "ACTIVE"; // ACTIVE | INACTIVE
+    private String status = "ACTIVE";
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -38,6 +45,9 @@ public class Product {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    /**
+     * Tự động khởi tạo thời gian tạo, cập nhật và cắt khoảng trắng tên sản phẩm trước khi lưu (`@PrePersist`).
+     */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -46,13 +56,15 @@ public class Product {
         if (this.name != null) this.name = this.name.trim();
     }
 
+    /**
+     * Tự động cập nhật thời gian sửa đổi và cắt khoảng trắng tên sản phẩm trước khi update (`@PreUpdate`).
+     */
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
         if (this.name != null) this.name = this.name.trim();
     }
 
-    // ===== GETTERS AND SETTERS =====
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -73,4 +85,4 @@ public class Product {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-}
+}

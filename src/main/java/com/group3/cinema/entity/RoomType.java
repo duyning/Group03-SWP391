@@ -1,6 +1,9 @@
-/*
- * Updated on 2026-06-04: Added project file ownership metadata.
- * Created by: NinhDD - HE186113
+/**
+ * Entity lưu trữ Danh mục Định dạng / Loại Phòng chiếu (`room_types`).
+ * 
+ * Ví dụ: 2D, 3D, IMAX, 4DX, Gold Class.
+ * 
+ * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
  */
 package com.group3.cinema.entity;
 
@@ -37,6 +40,9 @@ public class RoomType {
         return new Builder();
     }
 
+    /**
+     * Lớp Builder giúp khởi tạo đối tượng RoomType.
+     */
     public static class Builder {
         private final RoomType roomType = new RoomType();
 
@@ -97,3 +103,4 @@ public class RoomType {
         this.active = active;
     }
 }
+

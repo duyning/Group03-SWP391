@@ -199,6 +199,14 @@
     modal.addEventListener('click', (event) => {
         if (event.target === modal) modal.classList.remove('open');
     });
+    // Gửi beacon nhả ghế khi người dùng đóng tab/trình duyệt mà không hoàn tất thanh toán.
+    let _summaryNavigating = false;
+    document.querySelectorAll('form, a').forEach(el => el.addEventListener('click', () => { _summaryNavigating = true; }));
+    window.addEventListener('beforeunload', () => {
+        if (!_summaryNavigating && navigator.sendBeacon) {
+            navigator.sendBeacon('/booking/release-hold');
+        }
+    });
 </script>
 </body>
 </html>

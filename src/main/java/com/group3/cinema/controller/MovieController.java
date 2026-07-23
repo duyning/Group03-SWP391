@@ -15,6 +15,7 @@ import com.group3.cinema.entity.MovieReview;
 import com.group3.cinema.service.MovieRecommendationService;
 import com.group3.cinema.service.MovieReviewService;
 import com.group3.cinema.service.MovieService;
+import com.group3.cinema.service.SeatHoldingService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +45,9 @@ public class MovieController {
     @Autowired
     private MovieRecommendationService movieRecommendationService;
 
+    @Autowired
+    private SeatHoldingService seatHoldingService;
+
     /**
      * Hiển thị màn danh sách phim.
      *
@@ -53,6 +57,7 @@ public class MovieController {
      */
     @GetMapping("/movies")
     public String showMovies(HttpSession session, Model model) {
+        releaseHoldIfPresent(session);
         Account loggedInUser = addLoggedInUser(session, model);
         model.addAttribute("nowShowingMovies", movieService.getNowShowingMovies());
         model.addAttribute("comingSoonMovies", movieService.getComingSoonMovies());
@@ -226,6 +231,16 @@ public class MovieController {
             model.addAttribute("user", loggedInUser);
         }
         return loggedInUser;
+    }
+
+    /** Nhả ghế đang giữ (nếu có) khi user rời luồng đặt vé. */
+    private void releaseHoldIfPresent(HttpSession session) {
+        String holdToken = (String) session.getAttribute("seatHoldToken");
+        if (holdToken != null && !holdToken.isBlank()) {
+            try { seatHoldingService.releaseHold(holdToken); } catch (Exception ignored) {}
+            session.removeAttribute("seatHoldToken");
+            session.removeAttribute("seatHoldExpiresAt");
+        }
     }
 
     private List<String> nullToEmpty(List<String> values) {
