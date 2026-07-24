@@ -22,9 +22,12 @@ body {
 
 .register-wrapper,
 .page-wrapper {
-    min-height: 100vh !important;
+    width: 100% !important;
+    min-height: calc(100vh - 112px) !important;
     display: grid !important;
     place-items: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     padding: 42px 18px !important;
     background: transparent !important;
 }
@@ -38,6 +41,8 @@ body {
 .card-container,
 .profile-card {
     width: min(100%, 520px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     background: rgba(255, 255, 255, 0.96) !important;
     border: 1px solid rgba(255, 255, 255, 0.75) !important;
     border-radius: 18px !important;

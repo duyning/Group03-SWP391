@@ -63,12 +63,7 @@ public class ResetPasswordController {
             model.addAttribute("successMessage", "Đổi mật khẩu thành công!");
             return prepareForm(model, "", "", "");
         } catch (IllegalArgumentException e) {
-            String message = e.getMessage();
-            if ("Old password is incorrect".equals(message)) {
-                model.addAttribute("oldPasswordError", "Mật khẩu cũ không đúng.");
-            } else if (message != null && !message.isBlank()) {
-                model.addAttribute("formError", message);
-            }
+            addPasswordFieldError(model, e.getMessage());
             return prepareForm(model, oldPassword, newPassword, confirmPassword);
         }
     }
@@ -78,5 +73,30 @@ public class ResetPasswordController {
         model.addAttribute("newPassword", newPassword == null ? "" : newPassword);
         model.addAttribute("confirmPassword", confirmPassword == null ? "" : confirmPassword);
         return "reset-password";
+    }
+
+    private void addPasswordFieldError(Model model, String message) {
+        if (message == null || message.isBlank()) {
+            model.addAttribute("formError", "Không đổi được mật khẩu. Vui lòng thử lại.");
+            return;
+        }
+
+        switch (message) {
+            case "Old password is incorrect", "Mật khẩu cũ không được để trống" ->
+                    model.addAttribute("oldPasswordError", message.equals("Old password is incorrect")
+                            ? "Mật khẩu cũ không đúng"
+                            : message);
+            case "Mật khẩu mới không được để trống", "New password must be different from old password", "New password must be 8-20 characters" ->
+                    model.addAttribute("newPasswordError", switch (message) {
+                        case "New password must be different from old password" -> "Mật khẩu mới phải khác mật khẩu cũ";
+                        case "New password must be 8-20 characters" -> "Mật khẩu mới phải từ 8 đến 20 ký tự";
+                        default -> message;
+                    });
+            case "Xác nhận mật khẩu không được để trống", "Confirm password does not match" ->
+                    model.addAttribute("confirmPasswordError", message.equals("Confirm password does not match")
+                            ? "Mật khẩu xác nhận không khớp"
+                            : message);
+            default -> model.addAttribute("formError", message);
+        }
     }
 }

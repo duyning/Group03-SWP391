@@ -21,12 +21,23 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
             justify-content: flex-start;
-            padding: 32px;
+            padding: 16px 24px;
+        }
+        .create-manager-main .admin-topbar {
+            min-height: 52px;
+            margin-bottom: 12px;
+            padding: 8px 14px;
+        }
+        .create-manager-main .admin-topbar-actions {
+            display: none;
         }
         .admin-main.create-manager-main .register-wrapper {
-            max-width: 620px;
+            width: 100%;
+            max-width: 920px;
+            min-height: auto;
+            margin: 0 auto;
         }
 
         /* Background decoration shapes → blue tones */
@@ -46,6 +57,8 @@
             border: 1px solid rgba(37, 99, 235, 0.12) !important;
             box-shadow: 0 25px 50px rgba(37, 99, 235, 0.12),
                         0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
+            padding: 1.25rem 1.5rem !important;
+            border-radius: 20px !important;
         }
 
         /* Header: blue tones */
@@ -59,15 +72,29 @@
         }
         .register-header h1 {
             color: #1e293b !important;
+            font-size: 1.55rem !important;
+            margin-bottom: 4px !important;
         }
         .register-header p {
             color: #64748b !important;
+        }
+        .register-header {
+            margin-bottom: 1rem !important;
+        }
+        .logo-icon {
+            width: 50px !important;
+            height: 50px !important;
+            border-radius: 14px !important;
+            margin-bottom: 10px !important;
+            font-size: 1.3rem !important;
         }
 
         /* Input wrappers: white bg with subtle blue borders */
         .input-icon-wrapper {
             background: rgba(255, 255, 255, 0.8) !important;
             border: 1.5px solid #cbd5e1 !important;
+            min-height: 52px !important;
+            border-radius: 12px !important;
         }
         .input-icon-wrapper:hover {
             border-color: #93c5fd !important;
@@ -88,6 +115,9 @@
         }
         .form-input {
             color: #1e293b !important;
+            min-height: 52px !important;
+            padding-top: 14px !important;
+            padding-bottom: 14px !important;
         }
         .form-input::placeholder {
             color: #94a3b8 !important;
@@ -117,6 +147,26 @@
         .error-message {
             color: #ef4444 !important;
         }
+        .create-manager-main .register-form {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 14px;
+        }
+        .create-manager-main .form-floating-group {
+            margin-bottom: 0 !important;
+        }
+        .create-manager-main .form-row {
+            display: contents !important;
+        }
+        .create-manager-main .manager-address-group,
+        .create-manager-main .btn-register {
+            grid-column: 1 / -1;
+        }
+        .create-manager-main .textarea-input {
+            min-height: 52px !important;
+            height: 52px !important;
+            resize: none;
+        }
 
         /* Toggle password */
         .toggle-password {
@@ -129,6 +179,9 @@
         /* Submit button: blue gradient */
         .btn-register {
             background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+            min-height: 52px !important;
+            padding: 14px !important;
+            margin-top: 2px !important;
         }
         .btn-register:hover {
             box-shadow: 0 12px 35px rgba(37, 99, 235, 0.35) !important;
@@ -148,6 +201,15 @@
         /* Footer border */
         .register-footer {
             border-top: 1px solid #e2e8f0 !important;
+        }
+
+        @media (max-width: 900px) {
+            .create-manager-main .register-form {
+                grid-template-columns: 1fr;
+            }
+            .admin-main.create-manager-main {
+                padding: 14px;
+            }
         }
 
         /* Success alert */
@@ -347,7 +409,7 @@
             </div>
 
             <!-- Address -->
-            <div class="form-floating-group">
+            <div class="form-floating-group manager-address-group">
                 <div class="input-icon-wrapper textarea-wrapper">
                     <i class="fas fa-map-marker-alt input-icon"></i>
                     <textarea th:field="*{address}"
@@ -367,11 +429,6 @@
                 <i class="fas fa-plus btn-arrow"></i>
             </button>
         </form>
-
-        <!-- Footer -->
-        <div class="register-footer">
-            <p><a th:href="@{/admin/dashboard}" class="login-link"><i class="fas fa-arrow-left"></i> Quay lại Dashboard</a></p>
-        </div>
     </div>
 </div>
     </main>

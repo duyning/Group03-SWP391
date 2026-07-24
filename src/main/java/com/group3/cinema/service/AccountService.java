@@ -5,8 +5,11 @@ import com.group3.cinema.entity.MembershipLevel;
 import com.group3.cinema.entity.Role;
 import com.group3.cinema.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.List;
 
 /**
@@ -19,11 +22,19 @@ import java.util.List;
 @Service
 public class AccountService {
 
+    private static final SecureRandom OTP_RANDOM = new SecureRandom();
+
     @Autowired
     private AccountRepository accountRepository;
 
     @Autowired
     private org.springframework.mail.javamail.JavaMailSender mailSender;
+
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
 
     /**
      * Register a new customer account.
@@ -242,20 +253,24 @@ public class AccountService {
 
     private String generateAndSendOTP(String email, String subject, String textTemplate) {
         // Generate 6-digit OTP
-        String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+        String otp = String.format("%06d", OTP_RANDOM.nextInt(1_000_000));
+
+        if (mailUsername == null || mailUsername.isBlank() || mailPassword == null || mailPassword.isBlank()) {
+            throw new IllegalStateException("Chưa cấu hình email gửi OTP. Vui lòng kiểm tra MAIL_USERNAME và MAIL_PASSWORD.");
+        }
         
         try {
             org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
+            message.setFrom(mailUsername);
             message.setTo(email);
             message.setSubject(subject);
             message.setText(String.format(textTemplate, otp));
             
             mailSender.send(message);
             System.out.println("Đã gửi OTP " + otp + " tới email " + email);
-        } catch (Exception e) {
+        } catch (MailException e) {
             System.err.println("Lỗi khi gửi email: " + e.getMessage());
-            // Fallback for testing when email fails
-            System.out.println("FALLBACK OTP (do lỗi gửi email): " + otp);
+            throw new IllegalStateException("Không gửi được OTP qua email. Vui lòng kiểm tra cấu hình SMTP hoặc thử lại sau.");
         }
 
         return otp;

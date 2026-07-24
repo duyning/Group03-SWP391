@@ -377,13 +377,16 @@
         .modal-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; }
         .modal-desc  { font-size: 0.9rem;  color: #64748b; margin-bottom: 24px; }
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .accounts-main .admin-topbar-actions {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <!-- Sidebar -->
     <div th:replace="~{fragments/admin_sidebar :: adminSidebar('accounts')}"></div>
 
-    <main class="main">
+    <main class="main accounts-main">
         <header th:replace="~{fragments/admin_sidebar :: adminTopbar}"></header>
 
         <!-- Page header -->
@@ -441,13 +444,9 @@
                         <i class="fas fa-filter" style="color:var(--primary);"></i>
                         Bộ lọc tài khoản
                     </div>
-                    <div class="filter-subtitle">
-                        Rule tìm kiếm: email bắt đầu bằng từ khóa, không phân biệt chữ hoa thường.
-                    </div>
+
                 </div>
-                <div class="filter-rules">
-                    <span class="rule-chip"><i class="fas fa-envelope"></i> Email bắt đầu bằng từ khóa</span>
-                </div>
+               
             </div>
             <form th:action="@{/admin/accounts}" method="get" class="filter-row">
                 <div class="filter-group" style="flex:3;min-width:220px;">
@@ -458,7 +457,7 @@
                                autocomplete="off"
                                placeholder="Ví dụ: admin@group03.com, minh@gmail.com">
                     </div>
-                    <div class="field-hint">Nhập các ký tự đầu của email tài khoản.</div>
+
                 </div>
                 <div class="filter-group">
                     <label>Vai trò</label>
@@ -468,7 +467,7 @@
                         <option value="MANAGER"  th:selected="${roleFilter == 'MANAGER'}">Quản lý</option>
                         <option value="CUSTOMER" th:selected="${roleFilter == 'CUSTOMER'}">Khách hàng</option>
                     </select>
-                    <div class="field-hint">Lọc theo quyền của tài khoản.</div>
+
                 </div>
                 <div class="filter-group">
                     <label>Trạng thái</label>
@@ -477,7 +476,6 @@
                         <option value="active"   th:selected="${statusFilter == 'active'}">Đang hoạt động</option>
                         <option value="inactive" th:selected="${statusFilter == 'inactive'}">Đã vô hiệu hóa</option>
                     </select>
-                    <div class="field-hint">Active: được đăng nhập. Inactive: bị khóa đăng nhập.</div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px;">
                     <button type="submit" class="btn btn-primary">
