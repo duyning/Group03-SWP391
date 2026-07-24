@@ -45,6 +45,9 @@ public class MovieService {
     @Autowired
     private com.group3.cinema.repository.BookingTicketRepository bookingTicketRepository;
 
+    @Autowired
+    private com.group3.cinema.repository.api.ShowtimeRepository showtimeRepository;
+
     public MovieService(MovieRepository movieRepository, MoviePersonSuggestionRepository suggestionRepository) {
         this.movieRepository = movieRepository;
         this.suggestionRepository = suggestionRepository;
@@ -245,6 +248,15 @@ public class MovieService {
             if (bookingRepository.hasActiveBookingsForMovie(id, now) || bookingTicketRepository.hasActiveHoldingsOrBookingsForMovie(id, now)) {
                 throw new IllegalArgumentException("Không thể xóa phim này vì đang có khách hàng giữ ghế/thực hiện mua vé.");
             }
+
+            // Xóa tất cả các suất chiếu của phim (và dọn dẹp các vé chưa bán thuộc các suất chiếu đó)
+            List<com.group3.cinema.entity.Showtime> showtimes = showtimeRepository.findByMovieId(id);
+            for (com.group3.cinema.entity.Showtime showtime : showtimes) {
+                bookingTicketRepository.deleteByShowtimeId(showtime.getId());
+                ticketRepository.deleteAllByShowtimeId(showtime.getId());
+            }
+            showtimeRepository.deleteByMovieId(id);
+
             movie.setDeleted(true);
             movie.setActive(false);
             movie.setStatus(Movie.MovieStatus.STOPPED);

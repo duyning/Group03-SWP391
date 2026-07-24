@@ -14,6 +14,7 @@ package com.group3.cinema.repository.api;
 
 import com.group3.cinema.entity.Showtime;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -127,5 +128,14 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
     /** Đếm các suất chiếu từ ngày hôm nay trở đi (`>= today`) của bộ phim. */
     @Query("SELECT COUNT(s) FROM Showtime s WHERE s.movie.id = :movieId AND s.showDate >= :today AND s.active = true")
     long countFutureShowtimesByMovieId(@Param("movieId") int movieId, @Param("today") LocalDate today);
+
+    /** Lấy tất cả suất chiếu thuộc về một phim. */
+    @Query("SELECT s FROM Showtime s WHERE s.movie.id = :movieId")
+    List<Showtime> findByMovieId(@Param("movieId") int movieId);
+
+    /** Xóa tất cả suất chiếu thuộc về một phim. */
+    @Modifying
+    @Query("DELETE FROM Showtime s WHERE s.movie.id = :movieId")
+    void deleteByMovieId(@Param("movieId") int movieId);
 }
 

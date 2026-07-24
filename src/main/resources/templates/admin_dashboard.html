@@ -138,6 +138,31 @@
             border-left: 4px solid var(--primary);
         }
 
+        .stat-card-link {
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .stat-card-link:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 84, 166, 0.18), 0 8px 10px -6px rgba(0, 84, 166, 0.1);
+        }
+
+        .stat-card-link .stat-arrow {
+            margin-left: auto;
+            color: #94a3b8;
+            font-size: 14px;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .stat-card-link:hover .stat-arrow {
+            transform: translateX(4px);
+            color: var(--primary);
+        }
+
         .stat-icon {
             width: 48px;
             height: 48px;
@@ -316,20 +341,22 @@
                     <p>Doanh thu</p>
                 </div>
             </div>
-            <div class="stat-card" style="border-left-color: var(--primary);">
+            <a th:href="@{/admin/invoices}" class="stat-card stat-card-link" style="border-left-color: var(--primary);" title="Click để xem danh sách chi tiết vé & hóa đơn">
                 <div class="stat-icon" style="background: #eff6ff; color: var(--primary);"><i class="fas fa-ticket-alt"></i></div>
                 <div class="stat-info">
                     <h3 th:text="${totalTicketsSold}">0</h3>
                     <p>Vé bán ra</p>
                 </div>
-            </div>
-            <div class="stat-card" style="border-left-color: var(--warning);">
+                <div class="stat-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+            <a th:href="@{/admin/invoices}" class="stat-card stat-card-link" style="border-left-color: var(--warning);" title="Click để xem danh sách chi tiết lượt đặt & hóa đơn">
                 <div class="stat-icon" style="background: #fffbeb; color: var(--warning);"><i class="fas fa-shopping-cart"></i></div>
                 <div class="stat-info">
                     <h3 th:text="${totalBookingsPaid}">0</h3>
                     <p>Số lượt đặt</p>
                 </div>
-            </div>
+                <div class="stat-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
         </section>
 
         <!-- Section Biểu đồ Phân tích -->

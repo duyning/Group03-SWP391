@@ -319,6 +319,7 @@ public class ShowtimeService {
         }
         validateShowtimeEditable(id);
 
+        bookingTicketRepository.deleteByShowtimeId(id);
         ticketRepository.deleteAllByShowtimeId(id);
         showtimeRepository.deleteById(id);
         return false;

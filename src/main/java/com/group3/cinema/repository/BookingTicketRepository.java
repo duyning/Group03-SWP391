@@ -80,5 +80,12 @@ public interface BookingTicketRepository extends JpaRepository<BookingTicket, Lo
                    OR (bt.status = com.group3.cinema.entity.BookingTicket$Status.HOLDING AND bt.holdExpiresAt > :now))
             """)
     boolean hasActiveHoldingsOrBookingsForShowtime(@Param("showtimeId") Long showtimeId, @Param("now") LocalDateTime now);
+
+    /**
+     * Xóa tất cả các bản ghi giữ ghế / vé tạm thuộc về một suất chiếu.
+     */
+    @Modifying
+    @Query("DELETE FROM BookingTicket bt WHERE bt.showtimeId = :showtimeId")
+    int deleteByShowtimeId(@Param("showtimeId") Long showtimeId);
 }
 
