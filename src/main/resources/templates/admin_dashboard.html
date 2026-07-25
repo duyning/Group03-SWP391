@@ -310,11 +310,26 @@
     <div th:replace="~{fragments/admin_sidebar :: adminSidebar('dashboard')}"></div>
 
     <main class="main">
-        <div class="header-content">
+        <div class="header-content" style="flex-wrap: wrap; gap: 15px;">
             <div>
                 <h1 class="page-title">Dashboard</h1>
-                <p class="breadcrumb">Tổng quan hệ thống quản trị Beta Cinemas</p>
+                <p class="breadcrumb">Tổng quan doanh thu & hiệu quả hoạt động rạp CineFlow</p>
             </div>
+
+            <!-- Form Bộ Lọc Doanh Thu Theo Năm -->
+            <form method="get" th:action="@{/admin/dashboard}" id="dashboardFilterForm" style="display: flex; align-items: center; gap: 10px; background: white; padding: 10px 16px; border-radius: 10px; box-shadow: var(--card-shadow);">
+                <span style="font-weight: 700; font-size: 13px; color: #475569; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> NĂM DOANH THU:
+                </span>
+                
+                <select name="year" onchange="this.form.submit()" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; font-size: 13px; color: #1e293b; outline: none; cursor: pointer;">
+                    <option th:each="y : ${availableYears}" 
+                            th:value="${y}" 
+                            th:selected="${y == selectedYear}" 
+                            th:text="'Năm ' + ${y}"></option>
+                </select>
+            </form>
+
             <div class="user-chip" th:if="${user != null}">
                 <i class="fas fa-user-shield"></i>
                 <span th:text="${user.name}">Manager</span>
@@ -333,46 +348,84 @@
             <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
         </div>
 
-        <section class="stats-grid">
-            <div class="stat-card" style="border-left-color: var(--success);">
+        <section class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+            <a th:href="@{/admin/invoices(fromDate=${startDate}, toDate=${endDate})}" 
+               class="stat-card stat-card-link" 
+               style="border-left-color: var(--success);" 
+               th:title="'Click để xem danh sách chi tiết hóa đơn nguồn ' + ${periodLabel}">
                 <div class="stat-icon" style="background: #ecfdf5; color: var(--success);"><i class="fas fa-wallet"></i></div>
                 <div class="stat-info">
                     <h3 th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 0, 'POINT', 0, 'POINT') + ' đ' : '0 đ'}">0 đ</h3>
-                    <p>Doanh thu</p>
-                </div>
-            </div>
-            <a th:href="@{/admin/invoices}" class="stat-card stat-card-link" style="border-left-color: var(--primary);" title="Click để xem danh sách chi tiết vé & hóa đơn">
-                <div class="stat-icon" style="background: #eff6ff; color: var(--primary);"><i class="fas fa-ticket-alt"></i></div>
-                <div class="stat-info">
-                    <h3 th:text="${totalTicketsSold}">0</h3>
-                    <p>Vé bán ra</p>
+                    <p th:text="${periodRevenueLabel}">Doanh thu</p>
                 </div>
                 <div class="stat-arrow"><i class="fas fa-chevron-right"></i></div>
             </a>
-            <a th:href="@{/admin/invoices}" class="stat-card stat-card-link" style="border-left-color: var(--warning);" title="Click để xem danh sách chi tiết lượt đặt & hóa đơn">
-                <div class="stat-icon" style="background: #fffbeb; color: var(--warning);"><i class="fas fa-shopping-cart"></i></div>
+
+            <a th:href="@{/admin/invoices(fromDate=${startDate}, toDate=${endDate})}" 
+               class="stat-card stat-card-link" 
+               style="border-left-color: var(--primary);" 
+               th:title="'Click để xem danh sách vé bán ra ' + ${periodLabel}">
+                <div class="stat-icon" style="background: #eff6ff; color: var(--primary);"><i class="fas fa-ticket-alt"></i></div>
                 <div class="stat-info">
-                    <h3 th:text="${totalBookingsPaid}">0</h3>
-                    <p>Số lượt đặt</p>
+                    <h3 th:text="${totalTicketsSold}">0</h3>
+                    <p th:text="${periodTicketsLabel}">Vé bán ra</p>
                 </div>
                 <div class="stat-arrow"><i class="fas fa-chevron-right"></i></div>
             </a>
         </section>
 
-        <!-- Section Biểu đồ Phân tích -->
-        <section class="charts-grid">
-            <!-- Biểu đồ phim hàng đầu -->
+        <!-- Section Biểu đồ Diễn biến Doanh Thu 12 Tháng Theo Năm -->
+        <section class="charts-grid" style="grid-template-columns: 1fr; margin-bottom: 25px;">
             <div class="chart-card">
-                <h3><i class="fas fa-chart-bar"></i> Top 5 phim doanh thu cao nhất</h3>
-                <div style="position: relative; height:300px;">
-                    <canvas id="topMoviesChart"></canvas>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;"><i class="fas fa-chart-line" style="color: var(--success);"></i> Biểu đồ diễn biến doanh thu 12 tháng <span style="font-size: 13px; font-weight: normal; color: #64748b;" th:text="'(Năm ' + ${selectedYear} + ')'"></span></h3>
+                    <span style="font-size: 12px; color: #64748b;"><i class="fas fa-calendar-alt"></i> Theo dõi xu hướng phát triển doanh thu từ Tháng 1 đến Tháng 12</span>
+                </div>
+                <div style="position: relative; height: 280px;">
+                    <canvas id="monthlyRevenueChart"></canvas>
                 </div>
             </div>
-            <!-- Biểu đồ phương thức thanh toán -->
+        </section>
+
+        <!-- Section Biểu đồ Doanh Thu Top Phim -->
+        <section class="charts-grid" style="grid-template-columns: 1fr;">
+            <!-- Biểu đồ phim hàng đầu -->
             <div class="chart-card">
-                <h3><i class="fas fa-chart-pie"></i> Cơ cấu phương thức thanh toán</h3>
-                <div style="position: relative; height:300px; display:flex; justify-content:center;">
-                    <canvas id="paymentStatsChart"></canvas>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;"><i class="fas fa-chart-bar" style="color: var(--primary);"></i> Top 5 phim doanh thu cao nhất <span style="font-size: 13px; font-weight: normal; color: #64748b;" th:text="'(' + ${periodLabel} + ')'"></span></h3>
+                    <span style="font-size: 12px; color: #64748b;"><i class="fas fa-info-circle"></i> Click vào từng phim bên dưới để xem danh sách hóa đơn chi tiết</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 25px; align-items: center;">
+                    <div style="position: relative; height:320px;">
+                        <canvas id="topMoviesChart"></canvas>
+                    </div>
+                    
+                    <!-- Bảng Danh Sách Phim Clickable -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px;">
+                        <div style="font-weight: 700; font-size: 13px; color: #334155; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px;">
+                            CHI TIẾT DOANH THU THEO PHIM
+                        </div>
+                        <div th:if="${#lists.isEmpty(topMovies)}" style="color: #94a3b8; font-size: 13px; text-align: center; padding: 20px 0;">
+                            Chưa có dữ liệu doanh thu trong khoảng thời gian này.
+                        </div>
+                        <div th:each="m, iter : ${topMovies}" style="margin-bottom: 10px;">
+                            <a th:href="@{/admin/invoices(keyword=${m.title}, fromDate=${startDate}, toDate=${endDate})}" 
+                               style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: inherit; transition: all 0.2s;"
+                               onmouseover="this.style.borderColor='var(--primary)'; this.style.transform='translateX(4px)';"
+                               onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none';"
+                               th:title="'Click để xem hóa đơn chi tiết phim: ' + ${m.title}">
+                                <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                                    <span style="width: 22px; height: 22px; border-radius: 50%; background: #eff6ff; color: var(--primary); font-weight: 800; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;" th:text="${iter.count}">1</span>
+                                    <span style="font-weight: 700; font-size: 13px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" th:text="${m.title}">Tên phim</span>
+                                </div>
+                                <div style="text-align: right; flex-shrink: 0; margin-left: 10px;">
+                                    <div style="font-weight: 800; font-size: 13px; color: var(--primary);" th:text="${#numbers.formatDecimal(m.revenue, 0, 'POINT', 0, 'POINT') + ' đ'}">0 đ</div>
+                                    <div style="font-size: 11px; color: #64748b;" th:text="${m.ticketsSold + ' vé'}">0 vé</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -482,7 +535,7 @@
     <script th:inline="javascript">
         /*<![CDATA[*/
         const topMoviesData = /*[[${topMovies}]]*/ [];
-        const paymentStatsData = /*[[${paymentStats}]]*/ [];
+        const monthlyRevenuesData = /*[[${monthlyRevenues}]]*/ [];
         const rawBookings = /*[[${bookings}]]*/ [];
         /*]]>*/
         
@@ -530,53 +583,49 @@
 
         function renderBookingTablePage() {
             const tbody = document.getElementById('bookingTableBody');
-            const badge = document.getElementById('bookingCountBadge');
-            const info = document.getElementById('bookingPaginationInfo');
+            const info = document.getElementById('bookingPageInfo');
             const controls = document.getElementById('bookingPaginationControls');
-
-            if (badge) badge.textContent = filteredBookings.length + ' giao dịch';
             if (!tbody) return;
 
-            if (filteredBookings.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding: 30px;">Không tìm thấy giao dịch nào phù hợp.</td></tr>`;
-                if (info) info.textContent = 'Hiển thị 0 giao dịch';
+            const totalItems = filteredBookings.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / BOOKING_PAGE_SIZE));
+            if (currentBookingPage > totalPages) currentBookingPage = totalPages;
+
+            const startIdx = (currentBookingPage - 1) * BOOKING_PAGE_SIZE;
+            const pageItems = filteredBookings.slice(startIdx, startIdx + BOOKING_PAGE_SIZE);
+
+            if (totalItems === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:1.5rem;">Không tìm thấy giao dịch nào phù hợp với bộ lọc.</td></tr>';
+                if (info) info.innerHTML = 'Hiển thị <b>0</b> - <b>0</b> trong tổng số <b>0</b> giao dịch';
                 if (controls) controls.innerHTML = '';
                 return;
             }
 
-            const totalPages = Math.ceil(filteredBookings.length / BOOKING_PAGE_SIZE);
-            if (currentBookingPage > totalPages) currentBookingPage = totalPages;
-
-            const start = (currentBookingPage - 1) * BOOKING_PAGE_SIZE;
-            const end = Math.min(start + BOOKING_PAGE_SIZE, filteredBookings.length);
-            const pageItems = filteredBookings.slice(start, end);
-
-            if (info) info.textContent = `Hiển thị ${start + 1} - ${end} trên ${filteredBookings.length} giao dịch`;
-
             let html = '';
             pageItems.forEach(b => {
-                const priceStr = b.totalPrice != null ? Number(b.totalPrice).toLocaleString('vi-VN') + ' đ' : '0 đ';
                 let badgeClass = 'badge-secondary';
                 if (b.status === 'Đã thanh toán') badgeClass = 'badge-success';
                 else if (b.status === 'Chờ thanh toán') badgeClass = 'badge-warning';
                 else if (b.status === 'Đã hủy') badgeClass = 'badge-danger';
 
-                html += `
-                    <tr>
-                        <td>${escHtml(b.customerName || 'Khách vãng lai')}</td>
-                        <td style="font-weight:600;">${escHtml(b.movieTitle || 'N/A')}</td>
-                        <td>${b.ticketQuantity || 0}</td>
-                        <td style="font-weight:700;">${priceStr}</td>
-                        <td>${escHtml(b.bookingTime || '')}</td>
-                        <td><span class="badge ${badgeClass}">${escHtml(b.status || '')}</span></td>
-                    </tr>
-                `;
+                const priceStr = b.totalPrice != null ? Number(b.totalPrice).toLocaleString('vi-VN') + ' đ' : '0 đ';
+
+                html += `<tr>
+                    <td>${escHtml(b.customerName)}</td>
+                    <td style="font-weight:600;">${escHtml(b.movieTitle)}</td>
+                    <td>${b.ticketQuantity}</td>
+                    <td style="font-weight:700;">${priceStr}</td>
+                    <td>${escHtml(b.bookingTime)}</td>
+                    <td><span class="badge ${badgeClass}">${escHtml(b.status)}</span></td>
+                </tr>`;
             });
+
             tbody.innerHTML = html;
 
-            // Render pagination controls
-            let ctrlHtml = '';
-            ctrlHtml += `<button class="btn btn-sm" ${currentBookingPage === 1 ? 'disabled' : ''} onclick="changeBookingPage(${currentBookingPage - 1})" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">&laquo; Trước</button>`;
+            const endIdx = Math.min(startIdx + BOOKING_PAGE_SIZE, totalItems);
+            if (info) info.innerHTML = `Hiển thị <b>${startIdx + 1}</b> - <b>${endIdx}</b> trong tổng số <b>${totalItems}</b> giao dịch`;
+
+            let ctrlHtml = `<button class="btn btn-sm" ${currentBookingPage === 1 ? 'disabled' : ''} onclick="changeBookingPage(${currentBookingPage - 1})" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">&laquo; Trước</button> `;
             
             for (let p = 1; p <= totalPages; p++) {
                 const activeStyle = p === currentBookingPage ? 'background:var(--primary-color, #3b82f6); color:#fff; font-weight:bold;' : 'background:#ffffff; color:#334155;';
@@ -601,80 +650,100 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderBookingTablePage();
         });
+
+        // [LUỒNG XỬ LÝ FRONTEND 1: Vẽ Biểu đồ Đường Diễn biến Doanh thu 12 Tháng bằng Chart.js]
+        // Nhãn trục hoành tương ứng 12 tháng trong năm
+        const monthLabels = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
         
-        // 1. Render Top Movies Chart
+        if (document.getElementById('monthlyRevenueChart')) {
+            new Chart(document.getElementById('monthlyRevenueChart'), {
+                type: 'line', // Biểu đồ dạng đường mượt
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: 'Doanh thu tháng (đ)',
+                        data: monthlyRevenuesData, // Mảng 12 phần tử nhận từ Backend Spring Model
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)', // Màu nền dưới đường
+                        borderColor: '#10b981', // Màu đường vẽ xanh lá
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            // Định dạng hiển thị tiền tệ VNĐ khi di chuột vào từng tháng
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    label += (context.raw || 0).toLocaleString('vi-VN') + ' đ';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                // Định dạng trục tung y theo chuẩn đ (VNĐ)
+                                callback: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // [LUỒNG XỬ LÝ FRONTEND 2: Vẽ Biểu đồ Cột Top 5 Phim Doanh Thu Cao Nhất]
         const movieLabels = topMoviesData.map(m => m.title);
         const movieRevenues = topMoviesData.map(m => m.revenue);
         
-        new Chart(document.getElementById('topMoviesChart'), {
-            type: 'bar',
-            data: {
-                labels: movieLabels,
-                datasets: [{
-                    label: 'Doanh thu (đ)',
-                    data: movieRevenues,
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                    borderColor: 'rgb(59, 130, 246)',
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
+        if (document.getElementById('topMoviesChart')) {
+            new Chart(document.getElementById('topMoviesChart'), {
+                type: 'bar', // Biểu đồ hình cột
+                data: {
+                    labels: movieLabels,
+                    datasets: [{
+                        label: 'Doanh thu (đ)',
+                        data: movieRevenues, // Dữ liệu doanh thu của Top 5 phim
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value.toLocaleString('vi-VN') + ' đ';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        // 2. Render Payment Method Chart
-        const paymentLabels = paymentStatsData.map(p => p.method);
-        const paymentValues = paymentStatsData.map(p => p.revenue);
-        
-        new Chart(document.getElementById('paymentStatsChart'), {
-            type: 'doughnut',
-            data: {
-                labels: paymentLabels,
-                datasets: [{
-                    data: paymentValues,
-                    backgroundColor: [
-                        '#10b981',
-                        '#2563eb'
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { boxWidth: 12, padding: 15 }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) label += ': ';
-                                label += context.raw.toLocaleString('vi-VN') + ' đ';
-                                return label;
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' đ';
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
     </script>
 </body>
 

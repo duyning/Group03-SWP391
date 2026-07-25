@@ -94,6 +94,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                           AND (LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                                OR LOWER(a.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
                                OR a.phoneNum LIKE CONCAT('%', :keyword, '%'))
+                   )
+                   OR EXISTS (
+                        SELECT s.id FROM Showtime s
+                        JOIN s.movie m
+                        WHERE s.id = b.showtimeId
+                          AND LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    ))
             ORDER BY b.createdAt DESC
             """)

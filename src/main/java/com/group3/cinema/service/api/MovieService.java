@@ -109,22 +109,25 @@ public class MovieService {
     }
 
     /**
-     * Kiểm tra tính hợp lệ dữ liệu nhập của phim (chặn tên rỗng, kiểm tra trùng lặp tiêu đề, poster, trailer).
-     * 
-     * @param movie Đối tượng phim cần kiểm tra.
-     * @param id ID của phim (0 nếu tạo mới, khác 0 nếu cập nhật).
-     * @throws IllegalArgumentException nếu dữ liệu vi phạm ràng buộc.
+     * BƯỚC NGHỆP VỤ: Chuẩn hóa tên phim để so sánh chống trùng lặp.
+     * Loại bỏ khoảng trắng thừa, dấu câu, gạch nối, ký tự đặc biệt, chuyển về chữ thường.
      */
     private String normalizeMovieTitle(String title) {
         if (title == null) return "";
         return title.toLowerCase().replaceAll("[^\\p{L}\\p{Nd}]", "");
     }
 
+    /**
+     * BƯỚC NGHỆP VỤ: Kiểm tra dữ liệu phim đầu vào (chống tên rỗng, chống trùng poster/trailer/tên phim).
+     * Gọi từ: MovieService.createMovie() và MovieService.updateMovie()
+     */
     public void validateMovie(Movie movie, int id) {
+        // [1] Chặn tên phim để trống
         if (movie.getTitle() == null || movie.getTitle().isBlank()) {
             throw new IllegalArgumentException("Tên phim không được để trống.");
         }
 
+        // [2] Kiểm tra trùng tên phim (bỏ qua ký tự đặc biệt) với các phim khác chưa bị xóa
         String inputNormalized = normalizeMovieTitle(movie.getTitle());
         List<Movie> existingMovies = movieRepository.findAll();
         for (Movie m : existingMovies) {
@@ -135,11 +138,13 @@ public class MovieService {
             }
         }
 
+        // [3] Kiểm tra trùng URL Poster nếu có nhập
         if (movie.getPosterUrl() != null && !movie.getPosterUrl().isBlank()) {
             if (movieRepository.existsDuplicatePoster(movie.getPosterUrl().trim(), id)) {
                 throw new IllegalArgumentException("Ảnh poster phim đã tồn tại trong hệ thống.");
             }
         }
+        // [4] Kiểm tra trùng URL Trailer nếu có nhập
         if (movie.getTrailerUrl() != null && !movie.getTrailerUrl().isBlank()) {
             if (movieRepository.existsDuplicateTrailer(movie.getTrailerUrl().trim(), id)) {
                 throw new IllegalArgumentException("Trailer video đã tồn tại trong hệ thống.");
@@ -147,9 +152,6 @@ public class MovieService {
         }
     }
 
-    /**
-     * Tự động trích xuất và lưu danh sách gợi ý Đạo diễn, Nhà sản xuất, Diễn viên vào bảng `movie_person_suggestions`.
-     */
     private void saveSuggestions(Movie movie) {
         if (movie.getDirector() != null) {
             savePersonSuggestions(movie.getDirector(), "DIRECTOR");
@@ -162,9 +164,6 @@ public class MovieService {
         }
     }
 
-    /**
-     * Tách danh sách tên bằng dấu phẩy và lưu vào bảng gợi ý nhân sự phim nếu chưa tồn tại.
-     */
     private void savePersonSuggestions(String rawNames, String type) {
         String[] names = rawNames.split(",");
         for (String name : names) {

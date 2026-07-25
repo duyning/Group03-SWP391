@@ -867,15 +867,17 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // [LUỒNG XỬ LÝ FRONTEND WISH-LIST]
             const btnWishlist = document.getElementById('btnWishlist');
             if (!btnWishlist) return;
             const movieId = btnWishlist.getAttribute('data-movie-id');
 
-            // 1. Check if movie is wishlisted
+            // BƯỚC 1: Khi trang web tải xong -> Gửi AJAX GET /api/wishlist/check để kiểm tra xem user hiện tại đã thích phim này chưa
             fetch(`/api/wishlist/check?movieId=${movieId}`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.wishlisted) {
+                        // Nếu đã thích -> Đổi class active và icon trái tim đỏ đậm (fa-solid fa-heart)
                         btnWishlist.classList.add('active');
                         const icon = btnWishlist.querySelector('i');
                         if (icon) {
@@ -885,13 +887,15 @@
                 })
                 .catch(() => {});
 
-            // 2. Add click listener to toggle wishlist
+            // BƯỚC 2: Gắn sự kiện Click nút Nút Yêu thích (btnWishlist) để Thêm / Xóa khỏi Wishlist
             btnWishlist.addEventListener('click', async function() {
                 try {
+                    // Gửi AJAX POST /api/wishlist/toggle?movieId=... tới Backend WishlistController
                     const response = await fetch(`/api/wishlist/toggle?movieId=${movieId}`, {
                         method: 'POST'
                     });
                     
+                    // Nếu chưa đăng nhập (HTTP 401) -> Bật thông báo Toast yêu cầu đăng nhập
                     if (response.status === 401) {
                         const data = await response.json();
                         showToast('error', data.message || 'Vui lòng đăng nhập.');
@@ -902,10 +906,12 @@
                     if (response.ok) {
                         const icon = btnWishlist.querySelector('i');
                         if (data.added) {
+                            // Trường hợp vừa Thêm vào yêu thích thành công
                             btnWishlist.classList.add('active');
                             if (icon) icon.className = 'fa-solid fa-heart';
                             showToast('success', data.message);
                         } else {
+                            // Trường hợp vừa Xóa khỏi yêu thích thành công
                             btnWishlist.classList.remove('active');
                             if (icon) icon.className = 'fa-regular fa-heart';
                             showToast('success', data.message);

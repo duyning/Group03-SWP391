@@ -389,23 +389,34 @@ public class ShowtimeService {
         }
     }
 
-    /** Kiểm tra xem khung giờ dự định chiếu có bị trùng đè lên suất chiếu khác trong cùng phòng hay không. */
+    /**
+     * BƯỚC NGHỆP VỤ VÀ LUỒNG XỬ LÝ: Kiểm tra trùng đè lịch chiếu trong cùng phòng (Room Overlap Check).
+     * Quy tắc BR-25/BR-26: Một phòng chiếu trong khoảng [Giờ bắt đầu -> Giờ kết thúc + 15 phút dọn dẹp] không thể xếp 2 suất chiếu đè lên nhau.
+     * 
+     * @param candidate Suất chiếu đang tạo mới hoặc cập nhật.
+     * @param editingId ID của suất chiếu hiện tại (nếu là chỉnh sửa) để tránh tự so sánh trùng với chính nó.
+     */
     private void validateRoomTimeOverlap(Showtime candidate, Long editingId) {
         int candidateStart = toMinutes(candidate.getShowTime());
+        // Thời gian kết thúc = Giờ chiếu + Thời lượng phim + 15 phút dọn dẹp phòng
         int candidateEnd = candidateStart + resolveDuration(candidate.getMovie()) + ROOM_TURNOVER_MINUTES;
 
+        // Tra cứu tất cả các suất chiếu đã có tại phòng này trong cùng ngày
         List<Showtime> sameRoomShowtimes = showtimeRepository.findByRoomIgnoreCaseAndShowDate(
                 candidate.getRoom(),
                 candidate.getShowDate()
         );
 
         for (Showtime existing : sameRoomShowtimes) {
+            // Bỏ qua chính suất chiếu đang được sửa
             if (editingId != null && editingId.equals(existing.getId())) {
                 continue;
             }
 
             int existingStart = toMinutes(existing.getShowTime());
             int existingEnd = existingStart + resolveDuration(existing.getMovie()) + ROOM_TURNOVER_MINUTES;
+
+            // Thuật toán kiểm tra 2 khoảng thời gian giao nhau: [candidateStart, candidateEnd] vs [existingStart, existingEnd]
             if (candidateStart < existingEnd && candidateEnd > existingStart) {
                 String movieTitle = existing.getMovie() != null ? existing.getMovie().getTitle() : "suất chiếu khác";
                 LocalTime existingEndTime = existing.getShowTime().plusMinutes(resolveDuration(existing.getMovie()) + ROOM_TURNOVER_MINUTES);
