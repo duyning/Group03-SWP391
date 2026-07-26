@@ -1,4 +1,12 @@
 <!doctype html>
+<!--
+LUỒNG FRONTEND TRANG WISH LIST (EXECUTION FLOW):
+Giao diện wishlist.html -> WishlistController nạp danh sách phim -> Render lưới phim -> Click "Xóa yêu thích" -> POST /api/wishlist/toggle?movieId=ID -> Xóa thẻ phim với hiệu ứng fadeOut
+
+Các bước tương tác:
+Bước 1: Tải danh sách phim đã thả tim của tài khoản.
+Bước 2: Click nút "Xóa yêu thích" (`removeFromWishlist(movieId)`) -> Gửi POST AJAX tới Server và xóa phần tử HTML khỏi DOM.
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>

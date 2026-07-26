@@ -1,12 +1,13 @@
 package com.group3.cinema.controller;
 
-/*
- * Added on 2026-06-04: Movie routes for listing, detail, and search.
- * Updated on 2026-06-04: Added GET /search for UC-G03 Search Movies.
- * Updated on 2026-06-04: Passed logged-in user to search page header.
- * Updated on 2026-06-26: Added multi-select guest search filters, sorting,
- * and pagination model data for search-result.html.
- * Created by: HuyPB - HE191335
+/**
+ * LUỒNG CHẠY CHỨC NĂNG QUẢN LÝ PHIM (EXECUTION FLOW):
+ * Trình duyệt -> MovieController -> MovieService -> MovieRepository -> Database (bảng movie) -> Render View HTML
+ * 
+ * Các bước xử lý:
+ * 1. Xem danh sách phim khách hàng: GET /movies -> MovieController.listMovies() -> MovieService.findNowShowingMovies() / findComingSoonMovies() -> movie-list.html
+ * 2. Tìm kiếm phim khách hàng: GET /search?keyword=... -> MovieController.searchMovies() -> MovieService.searchMovies() -> search-result.html
+ * 3. Xem chi tiết phim: GET /movies/{id} -> MovieController.getMovieDetail() -> MovieService.getMovieById() -> movie-detail.html
  */
 
 import com.group3.cinema.entity.Account;

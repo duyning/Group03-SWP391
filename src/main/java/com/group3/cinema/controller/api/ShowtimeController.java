@@ -1,8 +1,14 @@
 package com.group3.cinema.controller.api;
 
-/*
- * REST Controller quản lý lịch chiếu.
- * Created/updated by: TrienLX - HE182285, NinhDD - HE186113
+/**
+ * LUỒNG CHẠY CHỨC NĂNG QUẢN LÝ SUẤT CHIẾU (EXECUTION FLOW):
+ * AJAX Frontend -> ShowtimeController (REST API) -> ShowtimeService -> ShowtimeRepository -> Database (bảng showtimes)
+ * 
+ * Các endpoint chính:
+ * 1. Lấy danh sách suất chiếu: GET /api/showtimes?movieId=...&startDate=... -> ShowtimeService.searchShowtimes()
+ * 2. Thêm mới suất chiếu hàng loạt: POST /api/showtimes -> ShowtimeService.saveShowtimeBatch() (tự tính thời gian + 15p dọn phòng, check trùng giờ)
+ * 3. Ghi đè 1 ngày chiếu lẻ: POST /api/showtimes/override-day -> ShowtimeService.overrideSingleDay()
+ * 4. Xóa suất chiếu: DELETE /api/showtimes/{id} -> ShowtimeService.deleteShowtime() (nếu có vé thì soft-delete ẩn)
  */
 
 import com.fasterxml.jackson.annotation.JsonFormat;

@@ -1,16 +1,14 @@
-/**
- * Entity đại diện cho phim chiếu rạp trong hệ thống (`movie`).
- * 
- * Luồng nghiệp vụ:
- * - Admin/Manager quản lý lưu trữ thông tin phim vào CSDL.
- * - Trang phía khách hàng chỉ hiển thị phim có `active = true`.
- * - `status` quyết định phim hiển thị tại mục nào: Phim Đang chiếu (NOW_SHOWING), Phim Sắp chiếu (COMING_SOON),
- *   Suất chiếu đặc biệt (SPECIAL_SCREENING), hoặc Ngừng chiếu (STOPPED).
- * 
- * Khởi tạo bởi: HuyPB - HE191335 (04/06/2026)
- * Cập nhật bởi: TrienLX (23/06/2026 - Bổ sung trạng thái STOPPED)
- */
 package com.group3.cinema.entity;
+
+/**
+ * LUỒNG THỰC THỂ PHIM (ENTITY MOVIE):
+ * CSDL (Bảng `movie`) <-> JPA ORM <-> Movie Entity <-> MovieRepository <-> MovieService
+ * 
+ * Các trường dữ liệu nòng cốt:
+ * 1. Thuộc tính chính: id (PK), title, genre, duration, releaseDate, posterUrl, trailerUrl, format (2D/3D/IMAX).
+ * 2. MovieStatus Enum: NOW_SHOWING (Đang chiếu), COMING_SOON (Sắp chiếu), SPECIAL_SCREENING (Suất đặc biệt), STOPPED (Ngừng chiếu).
+ * 3. Trạng thái xóa mềm / kích hoạt: active (bật/tắt), deleted (true khi soft-delete).
+ */
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;

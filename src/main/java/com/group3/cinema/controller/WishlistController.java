@@ -1,9 +1,13 @@
 package com.group3.cinema.controller;
 
-/*
- * Controller class handling view routing and AJAX APIs for movie Wishlist.
- * Created by: Antigravity AI
- * Date: 2026-07-13
+/**
+ * LUỒNG CHẠY CHỨC NĂNG PHIM YÊU THÍCH WISH LIST (EXECUTION FLOW):
+ * Trình duyệt -> WishlistController -> WishlistService -> WishlistRepository -> Database (bảng wishlist_item)
+ * 
+ * Các endpoint chính:
+ * 1. Xem danh sách yêu thích: GET /wishlist -> WishlistController.viewWishlist() -> WishlistService.getWishlistMovies() -> wishlist.html
+ * 2. Thả tim / Bỏ tim: POST /api/wishlist/toggle?movieId=ID -> WishlistController.toggleWishlist() -> WishlistService.toggleWishlist() -> JSON {wishlisted: true/false}
+ * 3. Kiểm tra trạng thái tim: GET /api/wishlist/check?movieId=ID -> WishlistController.checkWishlist() -> JSON {wishlisted: true/false}
  */
 
 import com.group3.cinema.entity.Account;

@@ -1,8 +1,15 @@
 package com.group3.cinema.controller;
 
-/*
- * Created on 2026-06-09: Added admin dashboard route for manager/admin login flow.
- * Created by: NinhDD - HE186113
+/**
+ * LUỒNG CHẠY CHỨC NĂNG DASHBOARD (EXECUTION FLOW):
+ * Trình duyệt (admin_dashboard.html) -> AdminDashboardController.showDashboard() -> Repositories (Movie, Room, Seat, Showtime, Booking) -> admin_dashboard.html
+ * 
+ * Các bước xử lý:
+ * Bước 1: Nhận HTTP GET /admin/dashboard?year=YYYY (mặc định YYYY = năm hiện tại).
+ * Bước 2: Kiểm tra Session đăng nhập Admin / Manager.
+ * Bước 3: Gọi Repositories đếm tổng số Phim, Phòng, Ghế, Suất chiếu và tổng Doanh thu / Vé bán trong năm.
+ * Bước 4: Gọi BookingRepository gom nhóm Top 5 phim doanh thu cao nhất và mảng doanh thu 12 tháng.
+ * Bước 5: Đẩy dữ liệu vào Model và render ra giao diện admin_dashboard.html (Chart.js vẽ biểu đồ).
  */
 
 import com.group3.cinema.entity.Account;

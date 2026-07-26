@@ -1,9 +1,12 @@
 <!doctype html>
 <!--
-  Updated on 2026-06-04: Movie list page follows the provided Beta Cinemas UI style.
-  Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
-  Updated on 2026-06-04: Removed English visible text from search result status and image alt text.
-  Created by: HuyPB - HE191335
+LUỒNG FRONTEND DANH SÁCH PHIM (EXECUTION FLOW):
+Khách hàng truy cập GET /movies -> MovieController nạp 3 danh sách phim (Đang chiếu, Sắp chiếu, Suất đặc biệt) -> movie-list.html render -> JS chuyển Tab không nạp lại trang
+
+Các bước tương tác:
+Bước 1: Click các Tab "PHIM SẮP CHIẾU", "PHIM ĐANG CHIẾU", "SUẤT CHIẾU ĐẶC BIỆT" -> JS bật/tắt class .active hiển thị danh sách tương ứng.
+Bước 2: Click nút "Mua vé" -> Chuyển hướng /booking/showtimes?movieId=ID.
+Bước 3: Click nút "Chi tiết" hoặc Poster -> Chuyển hướng /movies/ID.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 

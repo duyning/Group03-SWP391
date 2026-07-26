@@ -1,8 +1,11 @@
 <!doctype html>
 <!--
-  Added on 2026-06-24: Customer select-showtime screen.
-  Updated on 2026-06-26: Cleaner schedule UI; cinema name and showtime data are rendered from SQL-backed model data.
-  Created by: HuyPB - HE191335
+LUỒNG FRONTEND CHỌN SUẤT CHIẾU (EXECUTION FLOW):
+Giao diện booking-showtime.html -> Click chọn ngày chiếu trên Tab -> JS đổi hiển thị panel suất chiếu -> Click chọn giờ chiếu -> POST /booking/showtimes/select -> Chuyển sang sơ đồ chọn ghế (seat-selection.html)
+
+Các bước tương tác:
+Bước 1: Click `.date-tab` chọn ngày -> Đổi class active mở danh sách giờ chiếu của ngày đó.
+Bước 2: Click nút `.time-card` giờ chiếu -> Submit Form POST /booking/showtimes/select mang theo showtimeId.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>

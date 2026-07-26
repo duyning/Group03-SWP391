@@ -1,17 +1,14 @@
-/**
- * Interface Repository thao tác dữ liệu phim chiếu rạp (`movie`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `MovieService`, `PublicContentInitializer`, `CustomerBookingService`, `CatalogInitializer`.
- * - Hỗ trợ các chức năng: Tìm kiếm phim hiển thị khách hàng (`searchActiveMovies`), tìm kiếm đa điều kiện trang Admin (`searchMovies`),
- *   tự động cập nhật phim sắp chiếu thành đang chiếu khi đến ngày phát hành (`autoUpdateUpcomingToNowShowing`),
- *   tự động dừng chiếu các phim hết suất chiếu (`autoDeactivateExpiredMovies`),
- *   kiểm tra trùng lặp tiêu đề, poster, trailer phim (`existsDuplicateTitle`, `existsDuplicatePoster`, `existsDuplicateTrailer`).
- * 
- * Khởi tạo bởi: HuyPB - HE191335 (04/06/2026)
- * Cập nhật bởi: TrienLX (23/06/2026)
- */
 package com.group3.cinema.repository;
+
+/**
+ * LUỒNG CHẠY REPOSITORY QUẢN LÝ PHIM (EXECUTION FLOW):
+ * MovieService -> MovieRepository (Spring Data JPA SQL Queries) -> Bảng `movie` trong CSDL SQL Server
+ * 
+ * Các câu lệnh SQL nòng cốt:
+ * 1. searchActiveMovies(): Truy vấn danh sách phim đang chiếu / sắp chiếu cho khách hàng (UC-G03).
+ * 2. searchMovies(): Truy vấn lọc đa tiêu chí (tên, thể loại, đạo diễn, ngày chiếu) cho Admin.
+ * 3. autoUpdateUpcomingToNowShowing() & autoDeactivateExpiredMovies(): Tự động cập nhật trạng thái chiếu theo thời gian thực.
+ */
 
 import com.group3.cinema.entity.Movie;
 import org.springframework.data.jpa.repository.JpaRepository;

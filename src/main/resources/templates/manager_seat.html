@@ -1,6 +1,11 @@
 <!--
-  Updated on 2026-06-04: Added project file ownership metadata.
-  Created by: NinhDD - HE186113
+LUỒNG FRONTEND QUẢN LÝ GHẾ & SƠ ĐỒ BÁN VÉ (EXECUTION FLOW):
+Giao diện manager_seat.html -> JS renderMatrix() -> User click/kéo vẽ sơ đồ ghế -> Click "Lưu sơ đồ" -> POST JSON /admin/rooms/{id}/seats/save -> Server cập nhật CSDL
+
+Các bước tương tác:
+Bước 1: Khởi tạo nạp mảng SERVER_MATRIX vẽ 40 ghế (màu Thường, VIP, Couple, Hỏng).
+Bước 2: Chọn loại ghế bên Palette panel -> Click/Rê chuột trên sơ đồ để vẽ.
+Bước 3: Click "Lưu sơ đồ" -> Gọi saveMatrix() gửi POST JSON tới Server.
 -->
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">

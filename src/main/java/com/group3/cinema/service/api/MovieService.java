@@ -1,17 +1,14 @@
-/**
- * Service xử lý logic nghiệp vụ quản lý Phim chiếu rạp (`MovieService`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `MovieApiController` để xử lý các request CRUD danh mục phim, thay đổi trạng thái ẩn/hiện, tìm kiếm phân loại và tự động cập nhật trạng thái.
- * - Gọi đến các Repository:
- *   + `MovieRepository`: Truy vấn và thao tác lưu/xóa bản ghi phim (`searchMovies`, `save`, `findSoftDeletedByTitle`, `autoUpdateUpcomingToNowShowing`, `autoDeactivateExpiredMovies`).
- *   + `MoviePersonSuggestionRepository`: Lưu danh sách gợi ý Đạo diễn, Diễn viên, Nhà sản xuất (`savePersonSuggestions`).
- *   + `TicketRepository`: Kiểm tra xem phim đã phát sinh vé được đặt bán thành công hay chưa (`hasBookedTicketsForMovie`) để chặn chỉnh sửa/xóa.
- *   + `BookingRepository`: Kiểm tra đơn đặt vé active cho phim (`hasActiveBookingsForMovie`).
- * 
- * Khởi tạo bởi: TrienLX (23/06/2026)
- */
 package com.group3.cinema.service.api;
+
+/**
+ * LUỒNG CHẠY SERVICE QUẢN LÝ PHIM (EXECUTION FLOW):
+ * MovieApiController / MovieController -> MovieService -> MovieRepository / TicketRepository -> Database
+ * 
+ * Các bước nghiệp vụ:
+ * 1. Thêm mới / Cập nhật phim: saveMovie() -> normalizeMovieTitle() -> check duplicate -> MovieRepository.save()
+ * 2. Xóa phim (Soft Delete): deleteMovie() -> TicketRepository.hasBookedTicketsForMovie() ? (chuyển deleted=true) : (MovieRepository.deleteById())
+ * 3. Lọc danh sách phim: searchMovies() -> MovieRepository.searchMovies()
+ */
 
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.MoviePersonSuggestion;

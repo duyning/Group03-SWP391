@@ -1,22 +1,14 @@
-/**
- * Service xử lý logic nghiệp vụ quản lý Suất chiếu phim (`ShowtimeService`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `ShowtimeApiController`, `CustomerBookingService`, `PublicContentInitializer`.
- * - Gọi tới các Repository:
- *   + `ShowtimeRepository`: Truy vấn và lưu bản ghi suất chiếu (`save`, `searchShowtimes`, `findByRoomIgnoreCaseAndShowDate`).
- *   + `MovieRepository`: Lấy thông tin thời lượng phim (`resolveDuration`).
- *   + `TicketRepository`: Kiểm tra ràng buộc và dọn dẹp vé chưa bán khi chỉnh sửa/xóa suất chiếu (`hasBookedTicketsForShowtime`, `deleteAllByShowtimeId`).
- *   + `BookingRepository`: Kiểm tra các đơn đặt vé active đang được xử lý (`hasActiveBookingsForShowtime`).
- * 
- * Logic nghiệp vụ chính:
- * - Tự động tính toán loại ngày (`determineDayType`: "Trong tuần", "Cuối tuần", "Ngày lễ").
- * - Kiểm tra trùng lặp lịch chiếu theo từng phòng chiếu (`validateRoomTimeOverlap`), tự động cộng thời gian giãn cách dọn dẹp phòng (30 phút).
- * - Hỗ trợ xếp lịch theo lô hàng loạt cho nhiều ngày và nhiều phòng (`saveShowtimeBatch`).
- * 
- * Khởi tạo bởi: Group 03 - SWP391, NinhDD - HE186113, TrienLX
- */
 package com.group3.cinema.service.api;
+
+/**
+ * LUỒNG CHẠY SERVICE SUẤT CHIẾU (EXECUTION FLOW):
+ * ShowtimeController -> ShowtimeService -> ShowtimeRepository / TicketRepository -> Database
+ * 
+ * Các bước nghiệp vụ:
+ * 1. Kiểm tra trùng phòng & giờ chiếu: validateRoomTimeOverlap() -> (lấy thời lượng phim + 15 phút dọn phòng) -> đối soát với ShowtimeRepository
+ * 2. Lưu suất chiếu theo dải ngày: saveShowtimeBatch() -> sinh danh sách suất chiếu -> ShowtimeRepository.saveAll()
+ * 3. Ghi đè ngày lẻ: overrideSingleDay() -> tạo bản ghi mới với cờ isOverride = true
+ */
 
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Showtime;

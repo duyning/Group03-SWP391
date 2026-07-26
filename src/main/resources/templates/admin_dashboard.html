@@ -1,7 +1,13 @@
 <!DOCTYPE html>
 <!--
-    Created on 2026-06-09: Admin dashboard for manager/admin after login.
-    Created by: NinhDD - HE186113
+LUỒNG CHẠY CHỨC NĂNG DASHBOARD FRONTEND (EXECUTION FLOW):
+Giao diện (admin_dashboard.html) -> Dropdown chọn năm -> submit GET /admin/dashboard?year=... -> Render biến Thymeleaf -> Chart.js vẽ biểu đồ 12 tháng & Top 5 phim
+
+Các bước tương tác:
+Bước 1: User chọn năm trên Dropdown `<select name="year">` -> Form tự động submit GET /admin/dashboard?year=YYYY.
+Bước 2: Thymeleaf render các thẻ thống kê tổng quan (Tổng phim, phòng, ghế, suất chiếu, doanh thu).
+Bước 3: Bảng Top 5 Phim: Click tiêu đề phim -> Chuyển hướng tới trang Hóa đơn `/admin/invoices?keyword=TênPhim`.
+Bước 4: Script Chart.js nhận mảng `monthlyRevenuesData` vẽ Biểu đồ đường 12 tháng và Biểu đồ cột Top 5 phim.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 

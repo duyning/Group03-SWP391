@@ -1,15 +1,15 @@
-/**
- * Interface Repository quản lý các bản ghi Vé xem phim đã được cấp (`tickets`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `TicketService`, `TicketManagementService`, `CustomerBookingService`, `TicketSeedInitializer`.
- * - Hỗ trợ các chức năng: Tra cứu vé theo người dùng (`findByAccountAccountIDOrderByBookingTimeDesc`), tính doanh thu suất chiếu (`calculateRevenueByShowtimeId`),
- *   tìm kiếm quản lý vé phía Admin (`searchTickets`), dọn dẹp vé chưa bán khi hủy suất chiếu (`deleteUnsoldTicketsByShowtimeId`),
- *   và kiểm tra ràng buộc không cho phép xóa suất chiếu/phim nếu đã có vé được bán out (`hasBookedTicketsForShowtime`, `hasBookedTicketsForMovie`).
- * 
- * Khởi tạo bởi: NinhDD - HE186113, TrienLX
- */
 package com.group3.cinema.repository;
+
+/**
+ * LUỒNG CHẠY REPOSITORY VÉ (EXECUTION FLOW):
+ * TicketService -> TicketRepository (SQL Queries) -> Bảng `tickets` trong CSDL SQL Server
+ * 
+ * Các câu lệnh SQL nòng cốt:
+ * 1. findByShowtimeIdAndDeletedFalse(): Lấy danh sách vé đã cấp của suất chiếu.
+ * 2. calculateRevenueByShowtimeId(): Tính tổng doanh thu theo suất chiếu.
+ * 3. hasBookedTicketsForShowtime() & hasBookedTicketsForMovie(): Kiểm tra vé bán ra để chặn xóa nhầm suất chiếu/phim.
+ * 4. searchTickets(): Tìm kiếm đa chỉ tiêu phục vụ quản lý vé tại quầy.
+ */
 
 import com.group3.cinema.entity.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;

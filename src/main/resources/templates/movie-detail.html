@@ -1,10 +1,11 @@
 <!doctype html>
 <!--
-  Updated on 2026-06-04: Movie detail page follows the provided Beta Cinemas UI style.
-  Updated on 2026-06-04: Header search form now submits to UC-G03 /search.
-  Updated on 2026-06-04: Removed English visible text from status, fallback labels, and image alt text.
-  Updated on 2026-06-21: Movie detail banner now renders as a clean image without overlay text.
-  Created by: HuyPB - HE191335
+LUỒNG FRONTEND CHI TIẾT PHIM & NÚT TRÁI TIM YÊU THÍCH (EXECUTION FLOW):
+Giao diện movie-detail.html -> AJAX GET /api/wishlist/check?movieId=ID -> Làm sáng icon Trái tim đỏ -> Click nút Trái tim -> AJAX POST /api/wishlist/toggle?movieId=ID -> Cập nhật icon không nạp lại trang
+
+Các bước tương tác:
+Bước 1: Khi tải trang chi tiết -> Gọi fetchCheckWishlist() kiểm tra phim đã được tim hay chưa.
+Bước 2: Click `#btnWishlist` -> Gọi fetchToggleWishlist(): Chưa đăng nhập (Báo lỗi HTTP 401) : Đã đăng nhập (Đảo icon tim đỏ/trắng).
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
