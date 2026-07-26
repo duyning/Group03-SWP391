@@ -14,6 +14,7 @@
 package com.group3.cinema.repository;
 
 import com.group3.cinema.entity.Movie;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,6 +51,27 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
      * Lấy top 5 phim mới nhất đang hoạt động hiển thị trên Trang chủ.
      */
     List<Movie> findTop5ByActiveTrueOrderByIdDesc();
+
+    /**
+     * Xếp hạng phim theo tổng tiền vé trong khoảng thời gian chỉ định.
+     * Không cộng combo/món lẻ; booking bị hủy hoặc hoàn tiền không được tính.
+     */
+    @Query("""
+            SELECT m
+            FROM Booking b
+            JOIN Showtime s ON s.id = b.showtimeId
+            JOIN s.movie m
+            WHERE b.status = com.group3.cinema.entity.Booking$Status.PAID
+              AND b.paidAt BETWEEN :fromDate AND :toDate
+              AND m.active = true
+              AND m.deleted = false
+              AND m.status <> com.group3.cinema.entity.Movie$MovieStatus.STOPPED
+            GROUP BY m
+            ORDER BY SUM(b.ticketSubtotal) DESC, MAX(b.paidAt) DESC, m.id DESC
+            """)
+    List<Movie> findHotMoviesByTicketRevenue(@Param("fromDate") LocalDateTime fromDate,
+                                             @Param("toDate") LocalDateTime toDate,
+                                             Pageable pageable);
 
     /**
      * Tìm chi tiết một bộ phim đang hoạt động phục vụ trang chi tiết phim (`movie-detail.html`).

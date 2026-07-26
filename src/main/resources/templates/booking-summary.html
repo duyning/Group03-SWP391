@@ -94,6 +94,10 @@
                     <a th:href="@{/vouchers/my-wallet}">Xem ví voucher</a>
                 </div>
                 <div class="voucher-inner">
+                    <!--
+                      Submit -> BookingController.applyVoucher -> CustomerBookingService
+                      tính lại điều kiện, phạm vi áp dụng và số tiền giảm của voucher.
+                    -->
                     <form method="post" th:action="@{/booking/voucher}">
                         <table class="wallet-voucher-table" th:if="${voucherOptions != null && !#lists.isEmpty(voucherOptions)}">
                             <thead>
@@ -183,6 +187,10 @@
         <p><b>Tổng:</b> <span th:text="${#numbers.formatDecimal(summary.total,0,'COMMA',0,'POINT')} + 'đ'">0đ</span></p>
         <div class="flow-actions">
             <button class="btn secondary" type="button" id="closeConfirm">Xem lại</button>
+            <!--
+              Submit -> BookingController.confirmBooking -> CustomerBookingService.savePendingBooking,
+              tạo snapshot booking PENDING rồi redirect sang PaymentController.
+            -->
             <form method="post" th:action="@{/booking/confirm}">
                 <button class="btn" type="submit">Đúng rồi, sang thanh toán</button>
             </form>

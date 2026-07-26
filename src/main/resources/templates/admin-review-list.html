@@ -419,7 +419,10 @@
                     lúc <span th:text="${#temporals.format(review.moderatedAt, 'dd/MM/yyyy HH:mm')}">10/07/2026</span>
                 </div>
 
-                <!-- Hai form gửi visible đối nghịch; backend ghi trạng thái cùng người/thời điểm kiểm duyệt. -->
+                <!--
+                  Hai form POST tới AdminReviewController.updateVisibility với visible đối nghịch.
+                  MovieReviewService.setReviewVisible ghi trạng thái cùng người/thời điểm kiểm duyệt.
+                -->
                 <form th:if="${review.moderationStatus.name() == 'APPROVED'}"
                       th:action="@{/admin/reviews/{id}/visibility(id=${review.id})}"
                       method="post">

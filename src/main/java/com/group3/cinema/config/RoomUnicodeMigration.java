@@ -579,6 +579,19 @@ public class RoomUnicodeMigration {
                 WHERE display_name IN (N'Gháº¿ thÆ°á»ng', N'Ghe thuong')
                 """);
         updateIfTableExists("seat_types", """
+                UPDATE seat_types SET display_name = N'Ghế VIP'
+                WHERE LOWER(code) = 'vip'
+                  AND display_name IN (N'Gháº¿ VIP', N'Ghe VIP', N'Gh? VIP')
+                """);
+        updateIfTableExists("seat_types", """
+                UPDATE seat_types SET display_name = N'Ghế đôi'
+                WHERE LOWER(code) = 'couple'
+                  AND display_name IN (
+                      N'Gháº¿ Ä‘Ã´i', N'Ghe doi', N'Gh? doi',
+                      N'Ghế Couple', N'Gháº¿ Couple', N'Ghe Couple'
+                  )
+                """);
+        updateIfTableExists("seat_types", """
                 UPDATE seat_types SET display_name = N'Ghế hỏng'
                 WHERE display_name IN (N'Gháº¿ há»ng', N'Ghe hong')
                 """);

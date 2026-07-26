@@ -2,7 +2,10 @@
  * Interface Repository thao tác bảng danh sách vị trí ghế trong phòng chiếu (`seats`).
  * 
  * Luồng gọi & Sử dụng:
- * - Được gọi bởi `RoomService`, `CustomerBookingService`, `CatalogInitializer` để hiển thị sơ đồ ma trận ghế và lưu sơ đồ phòng chiếu mới.
+ * - `BookingShowtimeService` đọc sơ đồ để tính tổng sức chứa còn bán.
+ * - `SeatHoldingService` đọc/kiểm tra ID ghế, tọa độ, loại ghế và dựng `BookingSeatView`.
+ * - `RoomService` và màn quản trị dùng để lưu/reset sơ đồ phòng.
+ * - `CatalogInitializer` dùng khi khởi tạo dữ liệu cấu hình ban đầu.
  * 
  * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
  */

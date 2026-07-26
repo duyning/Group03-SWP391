@@ -83,6 +83,7 @@ public class PostService {
      * @return Danh sách 3 bài viết mới nhất
      */
     public List<Post> getLatestPublishedPosts() {
+        // Chỉ lấy tối đa 3 bài PUBLISHED, ưu tiên publishedAt rồi createdAt mới nhất.
         return postRepository.findTop3ByStatusOrderByPublishedAtDescCreatedAtDesc("PUBLISHED");
     }
 

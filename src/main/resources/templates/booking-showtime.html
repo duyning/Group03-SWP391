@@ -135,6 +135,10 @@
                     </div>
 
                     <div class="time-grid">
+                        <!--
+                          Mỗi nút giờ POST tới BookingController.confirmShowtime. Controller gọi
+                          BookingShowtimeService.validateAndCreateSelection trước khi lưu selection vào session.
+                        -->
                         <form th:each="showtime : ${day.showtimes}"
                               method="post"
                               th:action="@{/booking/showtimes/select}">

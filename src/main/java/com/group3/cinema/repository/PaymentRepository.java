@@ -2,7 +2,8 @@
  * Interface Repository thao tác dữ liệu nhật ký giao dịch thanh toán (`payments`).
  * 
  * Luồng gọi & Sử dụng:
- * - Được gọi bởi `PayOSPaymentService`, `CustomerBookingService`, `TicketManagementService`.
+ * - Được gọi trực tiếp bởi `PaymentService` để tạo, đối soát và cập nhật vòng đời giao dịch;
+ *   `InvoiceService` dùng dữ liệu này khi dựng chi tiết/lịch sử hóa đơn.
  * 
  * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */

@@ -2,7 +2,11 @@
  * Interface Repository quản lý các bản ghi ghế giữ chỗ và ghế đã bán theo từng suất chiếu (`booking_tickets`).
  * 
  * Luồng gọi & Sử dụng:
- * - Được gọi bởi `CustomerBookingService` và các Scheduler tự động dọn ghế giữ chỗ quá hạn.
+ * - `BookingShowtimeService` đọc ghế đã chiếm để tính số chỗ còn lại.
+ * - `SeatHoldingService` tạo/xóa hold, phát hiện tranh chấp và dựng trạng thái sơ đồ ghế.
+ * - `CustomerBookingService` xác minh hold, gắn ghế vào booking PENDING và đọc chi tiết đơn.
+ * - `PaymentService` chuyển HOLDING thành BOOKED hoặc xóa ghế khi thanh toán hủy/hết hạn.
+ * - Scheduler dọn các bản ghi HOLDING quá hạn.
  * 
  * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
  */

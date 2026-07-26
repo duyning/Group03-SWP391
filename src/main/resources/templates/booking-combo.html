@@ -49,6 +49,10 @@
 
         <div class="notice error" th:if="${error}" th:text="${error}"></div>
 
+        <!--
+          Submit -> BookingController.saveCombos -> CustomerBookingService.validate*Quantities.
+          Chỉ ID/số lượng được gửi; backend đọc lại trạng thái và giá từ database.
+        -->
         <form method="post" th:action="@{/booking/combos}" id="comboForm">
             <div class="section-head"><h2>Combo ưu đãi</h2><p>Chọn các gói bắp nước có sẵn.</p></div>
             <div class="item-grid" th:if="${combos != null && !#lists.isEmpty(combos)}">

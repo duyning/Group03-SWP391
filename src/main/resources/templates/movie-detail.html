@@ -638,6 +638,10 @@
                 </div>
             </div>
 
+            <!--
+              Mua vé -> BookingController.selectShowtime; trailer chỉ chạy JavaScript tại trang;
+              Yêu thích -> WishlistController qua hai API /api/wishlist/check và /api/wishlist/toggle.
+            -->
             <div class="actions">
                 <a class="buy-btn"
                    th:if="${movie.status != null && movie.status.name() != 'COMING_SOON'}"
@@ -730,6 +734,10 @@
             <div class="review-alert success" th:if="${reviewSuccess != null}" th:text="${reviewSuccess}"></div>
             <div class="review-alert error" th:if="${reviewError != null}" th:text="${reviewError}"></div>
 
+            <!--
+              Submit -> MovieController.submitMovieReview -> MovieReviewService.submitReview.
+              Backend kiểm tra lại booking PAID và giờ chiếu đã qua, không chỉ dựa vào canReview trên UI.
+            -->
             <form class="review-form"
                   th:if="${canReview}"
                   th:action="@{/movies/{id}/reviews(id=${movie.id})}"
