@@ -64,6 +64,17 @@ public class PostController {
 
     /**
      * Xử lý lưu bài viết mới vào CSDL và tự động phát thông báo Broadcast tới khách hàng nếu bài viết được Xuất bản.
+     *
+     * LUỒNG FRONT-END -> BACK-END:
+     * - Form `create-post.html` submit POST `/admin/posts/save`, gửi các field của `Post` và file `thumbnailFile`.
+     * - Controller validate trùng tiêu đề qua `postService.existsByTitle(...)`.
+     * - Nếu hợp lệ, gọi `postService.createPost(post, file)` để lưu bài viết và upload thumbnail.
+     * - Nếu bài viết có status `PUBLISHED`, controller gọi `notificationBroadcastService.sendToActiveCustomers(...)`.
+     * - Notification được lưu với:
+     *   + type = NEWS,
+     *   + imageUrl = savedPost.thumbnail,
+     *   + actionUrl = `/posts/{id}`.
+     * - Khi khách bấm thông báo ở `/notifications`, NotificationController sẽ redirect tới actionUrl này.
      */
     @PostMapping("/save")
     public String savePost(

@@ -61,6 +61,23 @@ public class PromotionController {
         return "promotion-form";
     }
 
+    /**
+     * LUỒNG FRONT-END -> BACK-END: TẠO CHIẾN DỊCH KHUYẾN MÃI
+     *
+     * Front-end:
+     * - Form `promotion-form.html` submit POST `/admin/promotions/save`.
+     * - Gửi dữ liệu Promotion và file banner nếu admin upload.
+     *
+     * Controller/Service:
+     * - `promotionService.createPromotion(...)` validate tên, ngày bắt đầu/kết thúc,
+     *   điều kiện áp dụng và lưu banner.
+     * - Sau khi lưu thành công, controller gọi `sendNotificationToCustomers(...)`.
+     *
+     * Notification:
+     * - `sendNotificationToCustomers(...)` -> CustomerNotificationBroadcastService
+     *   -> NotificationService.sendNotification(...) cho từng CUSTOMER active.
+     * - Khách thấy thông báo mới ở icon chuông/header và trang `/notifications`.
+     */
     @PostMapping("/save")
     public String savePromotion(@ModelAttribute("promotion") Promotion promotion,
                                 @RequestParam(value = "bannerFile", required = false) MultipartFile bannerFile,
@@ -139,6 +156,12 @@ public class PromotionController {
     }
 
     // --- HÀM HỖ TRỢ GỬI THÔNG BÁO (THÊM MỚI) ---
+    /*
+     * Điểm gom logic phát thông báo khuyến mãi.
+     * Hiện tại actionUrl/imageUrl chưa truyền riêng ở đây, nên notification sẽ hiển thị icon PROMOTION.
+     * Nếu muốn click vào chi tiết khuyến mãi cụ thể, có thể mở rộng hàm này nhận promotionId/bannerUrl
+     * rồi gọi overload sendToActiveCustomers(title, content, type, imageUrl, "/promotions/" + promotionId).
+     */
     private void sendNotificationToCustomers(String title, String content) {
         notificationBroadcastService.sendToActiveCustomers(title, content, NotificationType.PROMOTION);
     }

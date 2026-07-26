@@ -1,4 +1,30 @@
 <!DOCTYPE html>
+<!--
+  LUỒNG FRONT-END: QUẢN LÝ HÓA ĐƠN THEO SUẤT CHIẾU
+
+  1. Admin mở sidebar "Quản lý hóa đơn" -> GET /admin/invoices.
+     Controller: InvoiceController.invoices(...)
+     Service: InvoiceService.searchInvoices(filter)
+     Kết quả: view nhận `page.showtimeGroups`, `page.stats`, `page.paymentMethodSummaries`.
+
+  2. Bộ lọc trên màn hình:
+     - Form `method="get"` action `/admin/invoices`.
+     - Nút "Lọc" submit query string: keyword, bookingStatus, paymentStatus, paymentMethod, fromDate, toDate.
+     - Controller build `InvoiceFilter`, service truy vấn lại database và trả view cùng bộ lọc đã chọn.
+
+  3. Nút "Xuất CSV":
+     - Link `/admin/invoices/export?...`.
+     - Controller gọi `invoiceService.exportInvoicesCsv(filter)`.
+     - Browser tải file CSV để đối soát ngoài hệ thống.
+
+  4. Danh sách hóa đơn không render dạng list tất cả.
+     View nhóm theo `showtimeGroups`; mỗi `<details>` là một suất chiếu.
+     Khi mở nhóm, bảng con hiển thị từng hóa đơn trong suất đó.
+
+  5. Nút thao tác từng hóa đơn:
+     - Icon mắt -> GET /admin/invoices/{bookingId} -> InvoiceController.invoiceDetails().
+     - Icon PDF -> GET /admin/invoices/{bookingId}/print -> InvoiceController.invoicePrint().
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -90,6 +116,12 @@
                     <p>Theo dõi hóa đơn từ đặt vé online và bán vé tại quầy.</p>
                 </div>
                 <div class="page-actions">
+                   <!--
+                     NÚT: "Xuất CSV"
+                     - Không dùng JavaScript.
+                     - Thymeleaf dựng URL `/admin/invoices/export` kèm bộ lọc hiện tại.
+                     - Backend trả file CSV qua InvoiceController.exportInvoices().
+                   -->
                    <a class="btn btn-success fw-bold"
                        th:href="@{/admin/invoices/export(keyword=${filter.keyword},bookingStatus=${filter.bookingStatus},paymentStatus=${filter.paymentStatus},paymentMethod=${filter.paymentMethod},fromDate=${filter.fromDate},toDate=${filter.toDate})}">
                         <i class="fa-solid fa-file-csv me-1"></i>Xuất CSV
@@ -132,6 +164,13 @@
             </section>
 
             <section class="filter-panel">
+                <!--
+                  FORM BỘ LỌC:
+                  - Submit GET tới `/admin/invoices`.
+                  - Mỗi trường name trùng tham số trong InvoiceController.invoices(...).
+                  - `page=1` để khi đổi điều kiện lọc luôn quay về trang đầu.
+                  - Nút reset là link sạch `/admin/invoices`, không giữ query cũ.
+                -->
                 <form class="filter-body" method="get" th:action="@{/admin/invoices}">
                     <input type="hidden" name="page" value="1">
                     <input type="hidden" name="size" th:value="${filter.size}">
@@ -184,6 +223,12 @@
                     <div class="empty-state" th:if="${#lists.isEmpty(page.showtimeGroups)}">
                         Chưa có suất chiếu nào có hóa đơn phù hợp với bộ lọc.
                     </div>
+                    <!--
+                      MỖI `details.showtime-card` LÀ MỘT NHÓM HÓA ĐƠN THEO SUẤT CHIẾU:
+                      - Dữ liệu nhóm được InvoiceService.groupByShowtime(...) tính ở backend.
+                      - `summary` hiển thị số hóa đơn, vé đã bán, doanh thu vé, combo, tổng thu, hoàn tiền.
+                      - Mở dropdown sẽ thấy bảng con `group.invoices`.
+                    -->
                     <details class="showtime-card" th:each="group : ${page.showtimeGroups}">
                         <summary>
                             <div class="showtime-title">
@@ -253,9 +298,19 @@
                                     </td>
                                     <td>
                                         <div class="mini-actions">
+                                            <!--
+                                              NÚT: Xem chi tiết hóa đơn
+                                              - GET /admin/invoices/{bookingId}
+                                              - InvoiceController.invoiceDetails() gọi InvoiceService.getInvoiceDetails().
+                                            -->
                                             <a class="btn btn-outline-primary action-btn" th:href="@{/admin/invoices/{id}(id=${row.bookingId})}" title="Xem chi tiết">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
+                                            <!--
+                                              NÚT: In / Xuất PDF
+                                              - GET /admin/invoices/{bookingId}/print.
+                                              - Mở tab mới để nhân viên in hóa đơn hoặc lưu PDF.
+                                            -->
                                             <a class="btn btn-outline-success action-btn" th:href="@{/admin/invoices/{id}/print(id=${row.bookingId})}" target="_blank" title="In / Xuất PDF">
                                                 <i class="fa-solid fa-file-pdf"></i>
                                             </a>
@@ -268,6 +323,11 @@
                     </details>
                 </div>
                 <div class="pagination-bar" th:if="${page.totalGroups > 0}">
+                    <!--
+                      PHÂN TRANG:
+                      - Phân trang theo nhóm suất chiếu, không theo từng hóa đơn.
+                      - Các link vẫn giữ nguyên bộ lọc hiện tại để chuyển trang không mất điều kiện tìm kiếm.
+                    -->
                     <div class="subtle" th:text="|Hiển thị ${#lists.size(page.showtimeGroups)} / ${page.totalGroups} suất chiếu (${page.totalRows} hóa đơn)|">Hiển thị</div>
                     <div class="pager">
                         <a th:classappend="${!page.hasPrevious()} ? ' disabled'"

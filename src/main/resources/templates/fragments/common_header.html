@@ -1,6 +1,21 @@
 <!doctype html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
+<!--
+  FRAGMENT: CUSTOMER HEADER DÙNG CHUNG CHO CÁC TRANG NGƯỜI DÙNG
+
+  LUỒNG THÔNG BÁO:
+  1. Mọi controller render trang customer đều đi qua GlobalHeaderAdvice.
+     GlobalHeaderAdvice đọc session `loggedInUser`, gọi NotificationService.getUnreadCount(accountId)
+     và đưa biến `unreadNotificationCount` vào Model.
+  2. Fragment này hiển thị icon chuông.
+     Nếu `unreadNotificationCount > 0`, badge đỏ sẽ hiện số lượng chưa đọc.
+  3. Khi user bấm icon chuông:
+     Browser gọi GET `/notifications`.
+     NotificationController.listNotifications() kiểm tra đăng nhập, gọi NotificationService.markAllAsRead(accountId),
+     rồi lấy Page<Notification> để render `notification-list.html`.
+  4. Vì danh sách đã mark all read khi mở trang, lần render header sau badge sẽ biến mất như ứng dụng thực tế.
+-->
 <th:block th:fragment="customerHeader(active, keyword)">
     <div class="top-bar">
         <div class="top-container">
@@ -10,6 +25,12 @@
             </div>
             <div class="top-actions top-actions-member" th:if="${user != null}">
                 <a th:href="@{/vouchers/my-wallet}" class="top-link top-quick-link">Ví voucher</a>
+                <!--
+                  NÚT/ICON: Chuông thông báo
+                  - Không dùng số fix cứng.
+                  - Badge lấy từ biến `unreadNotificationCount` do GlobalHeaderAdvice tính.
+                  - Click -> GET /notifications -> NotificationController.listNotifications().
+                -->
                 <a th:href="@{/notifications}" class="top-link notification-container" aria-label="Thông báo" title="Thông báo">
                     <span class="notification-bell" aria-hidden="true"></span>
                     <span class="badge"

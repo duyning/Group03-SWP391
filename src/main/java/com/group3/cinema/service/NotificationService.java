@@ -16,6 +16,21 @@ import org.springframework.transaction.annotation.Transactional;
  * Đảm nhận nhiệm vụ gửi thông báo tự động (đặt vé thành công, khuyến mãi...),
  * đếm số thông báo chưa đọc, đánh dấu đã đọc và kiểm tra an toàn đường dẫn chuyển hướng (URL Security).
  *
+ * LUỒNG DỮ LIỆU CHÍNH:
+ * - Tạo thông báo:
+ *   Controller/Service nghiệp vụ -> CustomerNotificationBroadcastService hoặc gọi trực tiếp sendNotification()
+ *   -> NotificationService.sendNotification(...) -> NotificationRepository.save(...).
+ * - Hiển thị badge chuông:
+ *   GlobalHeaderAdvice -> getUnreadCount(accountId) -> common_header.html render badge.
+ * - Xem danh sách:
+ *   NotificationController.listNotifications() -> markAllAsRead(accountId)
+ *   -> getUserNotifications(accountId, page, size) -> notification-list.html.
+ * - Click thông báo:
+ *   notification-list.html link `/notifications/read/{id}`
+ *   -> NotificationController.readNotification()
+ *   -> getActionUrl(id, accountId) để chống xem nhầm thông báo người khác
+ *   -> markAsRead(id) -> redirect tới actionUrl.
+ *
  * @author Group 3 - Cinema Management System
  */
 @Service
@@ -68,6 +83,12 @@ public class NotificationService {
     @Transactional
     public void sendNotification(int accountId, String title, String content, NotificationType type,
                                  String imageUrl, String actionUrl) {
+        /*
+         * Hàm này là điểm ghi dữ liệu notification xuống database.
+         * - accountId bắt buộc tồn tại, nếu không sẽ ném lỗi để caller biết gửi sai người nhận.
+         * - imageUrl có thể là poster phim/thumbnail tin/banner khuyến mãi.
+         * - actionUrl phải là URL nội bộ, ví dụ `/movies/10`; URL ngoài bị loại bỏ để tránh open redirect.
+         */
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản"));
 
