@@ -1,15 +1,19 @@
 /**
- * Service quản lý danh mục cấu hình hệ thống bao gồm: Loại phòng chiếu (`RoomType`), Công nghệ âm thanh (`AudioTechnology`), và Loại ghế (`SeatType`) (`CatalogService`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `CatalogController`, `RoomService`, `CatalogInitializer`.
- * - Tương tác với các Repository:
- *   + `RoomTypeRepository`: Thao tác dữ liệu loại phòng (`2D`, `3D`, `IMAX`).
- *   + `AudioTechnologyRepository`: Thao tác công nghệ âm thanh (`Dolby 7.1`, `Dolby Atmos`).
- *   + `SeatTypeRepository`: Thao tác loại ghế (`Ghế thường`, `VIP`, `Couple`).
- *   + `RoomRepository`: Duyệt phòng hiện tại để tự động khởi tạo danh mục ban đầu (`seedFromExistingRooms`).
- * 
- * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
+ * Service quản lý các danh mục cấu hình dùng chung cho phòng và ghế.
+ *
+ * Service này nằm trước luồng tạo phòng và thiết kế ghế:
+ * - Người quản lý tạo "Loại phòng" tại màn danh mục, ví dụ 2D, 3D, IMAX.
+ * - Người quản lý tạo "Công nghệ âm thanh", ví dụ Dolby 7.1, Dolby Atmos.
+ * - Người quản lý tạo "Loại ghế", ví dụ Ghế thường, Ghế VIP, Ghế đôi, Lối đi, Ghế hỏng.
+ * - `RoomController` lấy loại phòng/âm thanh active để render dropdown khi tạo phòng.
+ * - `RoomService` gọi lại repository danh mục để validate dữ liệu phòng trước khi lưu.
+ * - `SeatController` lấy loại ghế active để render công cụ chọn loại ghế trong sơ đồ.
+ * - `SeatService` dùng `SeatTypeRepository` để validate từng mã ghế và tính sức chứa.
+ *
+ * Ý nghĩa thiết kế:
+ * - Project không fix cứng 2D/3D/Dolby/std/vip/couple trong form.
+ * - Muốn chọn được loại phòng, âm thanh hoặc loại ghế thì admin phải tạo và bật active trước.
+ * - Khi doanh nghiệp thêm định dạng mới, ví dụ Premium hoặc ScreenX, chỉ cần thêm danh mục, không sửa code.
  */
 package com.group3.cinema.service;
 
@@ -54,37 +58,67 @@ public class CatalogService {
         this.roomRepository = roomRepository;
     }
 
-    /** Lấy toàn bộ danh sách loại phòng chiếu. */
+    /** Lấy toàn bộ loại phòng, bao gồm cả active/inactive, để màn quản trị danh mục có thể quản lý đầy đủ. */
     public List<RoomType> getAllRoomTypes() {
         return roomTypeRepository.findAllByOrderByNameAsc();
     }
 
-    /** Lấy danh sách loại phòng chiếu đang hoạt động (`active = true`). */
+    /**
+     * Lấy loại phòng đang hoạt động để đưa vào form tạo/sửa phòng.
+     *
+     * Luồng liên quan:
+     * - `RoomController.listRooms(...)` gọi hàm này.
+     * - View `manager_room.html` render dropdown/multi-select loại phòng.
+     * - Người quản lý có thể chọn nhiều loại cùng lúc, ví dụ phòng hỗ trợ cả 2D và 3D.
+     */
     public List<RoomType> getActiveRoomTypes() {
         return roomTypeRepository.findByActiveTrueOrderByNameAsc();
     }
 
-    /** Lấy tất cả danh sách công nghệ âm thanh. */
+    /** Lấy toàn bộ công nghệ âm thanh để màn quản trị danh mục có thể xem cả active/inactive. */
     public List<AudioTechnology> getAllAudioTechnologies() {
         return audioTechnologyRepository.findAllByOrderByNameAsc();
     }
 
-    /** Lấy danh sách công nghệ âm thanh đang active. */
+    /**
+     * Lấy công nghệ âm thanh active để đưa vào dropdown tạo/sửa phòng.
+     *
+     * Dữ liệu từ hàm này là nguồn chọn chính thức của UI.
+     * Sau đó `RoomService.validateAudioTech(...)` vẫn validate lại ở backend để tránh request giả.
+     */
     public List<AudioTechnology> getActiveAudioTechnologies() {
         return audioTechnologyRepository.findByActiveTrueOrderByNameAsc();
     }
 
-    /** Lấy tất cả danh sách loại ghế. */
+    /** Lấy toàn bộ loại ghế để admin quản lý danh mục loại ghế trong trang phòng/ghế. */
     public List<SeatType> getAllSeatTypes() {
         return seatTypeRepository.findAllByOrderByIdAsc();
     }
 
-    /** Lấy danh sách loại ghế đang active. */
+    /**
+     * Lấy loại ghế đang active để admin dùng khi thiết kế sơ đồ.
+     *
+     * Luồng liên quan:
+     * - `SeatController.seatDesignPage(...)` gọi hàm này.
+     * - View nhận list loại ghế và hiển thị palette màu.
+     * - Khi lưu, `SeatService.validateMatrix(...)` chỉ chấp nhận mã ghế active từ danh sách này.
+     */
     public List<SeatType> getActiveSeatTypes() {
         return seatTypeRepository.findByActiveTrueOrderByIdAsc();
     }
 
-    /** Chuyển đổi danh sách loại ghế sang mảng định dạng chuỗi JSON cho giao diện sơ đồ ghế. */
+    /**
+     * Chuyển danh sách `SeatType` sang JSON để JavaScript vẽ palette loại ghế.
+     *
+     * Mỗi object JSON gồm:
+     * - `code`: mã kỹ thuật lưu vào bảng `seats.seat_type`.
+     * - `displayName`: tên hiển thị tiếng Việt.
+     * - `color`: màu ô ghế trên sơ đồ.
+     * - `capacity`: sức chứa dùng để tính tổng ghế của phòng.
+     * - `sellable`: loại này có được bán vé hay chỉ là lối đi/hỏng.
+     *
+     * Hàm tự escape JSON vì project đang render trực tiếp sang Thymeleaf/JavaScript.
+     */
     public String seatTypesToJson(List<SeatType> seatTypes) {
         StringBuilder json = new StringBuilder("[");
         for (int i = 0; i < seatTypes.size(); i++) {
@@ -104,7 +138,14 @@ public class CatalogService {
         return json.toString();
     }
 
-    /** Thêm mới một loại phòng chiếu. */
+    /**
+     * Thêm mới một loại phòng chiếu.
+     *
+     * Sau khi thêm:
+     * - Bản ghi mặc định active = true.
+     * - `RoomController` sẽ lấy được loại phòng này trong dropdown tạo phòng.
+     * - `RoomService.validateRoomTypes(...)` sẽ cho phép lưu phòng sử dụng loại này.
+     */
     @Transactional
     public void addRoomType(String name, String description) {
         String cleanName = requireName(name, "Tên loại phòng không được để trống.");
@@ -119,7 +160,13 @@ public class CatalogService {
                 .build());
     }
 
-    /** Cập nhật thông tin loại phòng chiếu. */
+    /**
+     * Cập nhật loại phòng chiếu.
+     *
+     * Nếu `active = false`:
+     * - Loại phòng vẫn còn trong DB để giữ lịch sử/dữ liệu phòng cũ.
+     * - Nhưng form tạo/sửa phòng mới sẽ không còn hiển thị loại này.
+     */
     @Transactional
     public void updateRoomType(Long id, String name, String description, boolean active) {
         validateId(id, "ID loại phòng không hợp lệ.");
@@ -138,7 +185,13 @@ public class CatalogService {
         roomTypeRepository.save(roomType);
     }
 
-    /** Thêm mới một công nghệ âm thanh. */
+    /**
+     * Thêm mới công nghệ âm thanh.
+     *
+     * Sau khi thêm và active:
+     * - Dropdown âm thanh ở màn tạo/sửa phòng sẽ có thêm lựa chọn mới.
+     * - Phòng chỉ lưu được âm thanh đã tồn tại trong danh mục, tránh nhập tay sai chính tả.
+     */
     @Transactional
     public void addAudioTechnology(String name, String description) {
         String cleanName = requireName(name, "Tên công nghệ âm thanh không được để trống.");
@@ -153,7 +206,12 @@ public class CatalogService {
                 .build());
     }
 
-    /** Cập nhật thông tin công nghệ âm thanh. */
+    /**
+     * Cập nhật công nghệ âm thanh.
+     *
+     * Nếu tắt active, công nghệ đó không còn được chọn cho phòng mới,
+     * nhưng dữ liệu phòng cũ vẫn giữ nguyên để không làm mất thông tin lịch sử.
+     */
     @Transactional
     public void updateAudioTechnology(Long id, String name, String description, boolean active) {
         validateId(id, "ID công nghệ âm thanh không hợp lệ.");
@@ -172,7 +230,19 @@ public class CatalogService {
         audioTechnologyRepository.save(audioTechnology);
     }
 
-    /** Thêm mới một loại ghế xem phim. */
+    /**
+     * Thêm mới một loại ghế xem phim.
+     *
+     * Luồng sau khi thêm:
+     * - Service sinh `code` duy nhất từ tên ghế, ví dụ "Ghế Sofa" -> `ghe_sofa`.
+     * - Bản ghi lưu vào `seat_types` với màu, sức chứa và cờ bán được/không bán được.
+     * - `SeatController` đưa loại ghế này vào palette thiết kế sơ đồ.
+     * - `SeatService.saveMatrix(...)` có thể lưu mã ghế này vào từng ô của bảng `seats`.
+     *
+     * Ý nghĩa `capacity` và `sellable`:
+     * - Ghế bán được phải có capacity > 0.
+     * - Lối đi, khoảng trống hoặc ghế hỏng thường `sellable = false`, `capacity = 0`.
+     */
     @Transactional
     public void addSeatType(String displayName, String color, int capacity, boolean sellable) {
         String cleanName = requireName(displayName, "Tên loại ghế không được để trống.");
@@ -190,7 +260,16 @@ public class CatalogService {
                 .build());
     }
 
-    /** Cập nhật thuộc tính hiển thị, màu sắc, sức chứa của loại ghế. */
+    /**
+     * Cập nhật thuộc tính loại ghế.
+     *
+     * Project không cho sửa `displayName/code` ở hàm này để tránh làm lệch dữ liệu ghế đã lưu.
+     * Admin chỉ chỉnh màu, sức chứa, trạng thái bán được và trạng thái active.
+     *
+     * Nếu `active = false`:
+     * - Loại ghế cũ vẫn tồn tại trên các sơ đồ đã lưu.
+     * - Nhưng khi thiết kế sơ đồ mới, loại ghế đó không còn trong palette active.
+     */
     @Transactional
     public void updateSeatType(Long id, String color, int capacity, boolean sellable, boolean active) {
         validateId(id, "ID loại ghế không hợp lệ.");
@@ -203,13 +282,28 @@ public class CatalogService {
         seatTypeRepository.save(seatType);
     }
 
-    /** Tự động khởi tạo danh mục mẫu loại phòng, âm thanh và các loại ghế từ dữ liệu phòng sẵn có. */
+    /**
+     * Đồng bộ danh mục từ dữ liệu phòng sẵn có nhưng không tự thêm catalog mẫu.
+     *
+     * Hàm này giữ an toàn cho database thật:
+     * - Chỉ đọc các phòng hiện có để đảm bảo room type/audio technology tương ứng có trong danh mục.
+     * - Không tự insert các loại mẫu nếu không được bật bằng cấu hình riêng.
+     */
     @Transactional
     public void seedFromExistingRooms() {
         seedFromExistingRooms(false);
     }
 
-    /** Đồng bộ danh mục từ phòng hiện có; chỉ thêm dữ liệu mẫu khi được bật bằng cấu hình riêng. */
+    /**
+     * Đồng bộ danh mục từ phòng hiện có.
+     *
+     * `includeDefaultCatalogs = false`:
+     * - Chỉ đảm bảo room type/audio technology đang tồn tại trong các phòng cũ có bản ghi danh mục tương ứng.
+     *
+     * `includeDefaultCatalogs = true`:
+     * - Thêm dữ liệu mẫu 2D, Dolby 7.1, std, vip, couple, broken, empty nếu chưa tồn tại.
+     * - Chỉ nên bật khi cần seed dữ liệu demo, không nên bật mặc định với database thật.
+     */
     @Transactional
     public void seedFromExistingRooms(boolean includeDefaultCatalogs) {
         for (Room room : roomRepository.findAll()) {

@@ -37,6 +37,26 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Service dùng chung để tải sơ đồ ghế và giữ ghế tạm thời cho một suất chiếu.
+ *
+ * Service này được dùng trong cả flow đặt vé online và bán vé tại quầy:
+ * - Với khách online: `CustomerBookingService`/booking flow gọi để hiển thị ghế và giữ ghế khi khách chọn.
+ * - Với tại quầy: `CounterSaleService.getSeatMap(...)` và `CounterSaleService.holdSeats(...)` gọi service này.
+ *
+ * Vai trò trong bán vé tại quầy:
+ * 1. Nhân viên chọn suất chiếu.
+ * 2. `CounterSaleService` tạo `BookingSelection` gồm showtimeId, roomId, ngày giờ, tên phim/phòng.
+ * 3. `getSeatMap(...)` đọc sơ đồ ghế vật lý từ `seats` và trạng thái bán/giữ từ `booking_tickets`.
+ * 4. Khi nhân viên chọn ghế, `holdSeats(...)` tạo các bản ghi `booking_tickets` status HOLDING.
+ * 5. Nếu nhân viên thanh toán tiền mặt, `CounterSaleService.completeSale(...)` đổi HOLDING -> BOOKED.
+ * 6. Nếu nhân viên tạo payOS, các ghế vẫn HOLDING cho tới khi payment callback xác nhận.
+ *
+ * Cơ chế chống trùng:
+ * - Backend kiểm tra ghế đã BOOKED/HOLDING bởi token khác trước khi giữ.
+ * - Bảng `booking_tickets` có unique constraint trên `(showtime_id, seat_id)`.
+ * - Nếu hai máy POS cùng giữ một ghế trong cùng thời điểm, DB constraint là lớp bảo vệ cuối.
+ */
 @Service
 public class SeatHoldingService {
     // Thời gian này phải đồng nhất với bộ đếm trên giao diện booking.
@@ -69,6 +89,20 @@ public class SeatHoldingService {
         return seatTypeRepository.findByActiveTrueOrderByIdAsc();
     }
 
+    /**
+     * Tải sơ đồ ghế kèm trạng thái theo đúng suất chiếu.
+     *
+     * Luồng dữ liệu:
+     * - `selection.roomId()` cho biết phải đọc sơ đồ vật lý của phòng nào trong bảng `seats`.
+     * - `selection.showtimeId()` cho biết phải đọc trạng thái bán/giữ của suất nào trong `booking_tickets`.
+     * - `ownToken` là token của phiên hiện tại:
+     *   + Ghế HOLDING cùng token được trả trạng thái SELECTED.
+     *   + Ghế HOLDING token khác được trả trạng thái HOLDING.
+     *
+     * Kết quả:
+     * - Mỗi `BookingSeatView` chứa vị trí row/col, label, loại ghế, màu, capacity, status và giá vé.
+     * - Frontend dùng dữ liệu này để vẽ sơ đồ ghế đồng bộ với phần quản lý ghế.
+     */
     @Transactional
     public List<BookingSeatView> getSeatMap(BookingSelection selection, String ownToken) {
         /*
@@ -91,6 +125,25 @@ public class SeatHoldingService {
                 .toList();
     }
 
+    /**
+     * Giữ ghế tạm thời cho một phiên bán vé.
+     *
+     * Luồng xử lý:
+     * 1. Bắt buộc có danh sách ghế.
+     * 2. Loại ID trùng và giới hạn tối đa 8 chỗ mỗi lần bán; ghế đôi tính theo capacity.
+     * 3. Xóa các HOLDING đã hết hạn để trạng thái ghế sạch trước khi kiểm tra.
+     * 4. Nếu chưa có token, sinh token mới; nếu đã có token, đây là thao tác đổi ghế của cùng phiên.
+     * 5. Load các ghế từ DB và kiểm tra:
+     *    - Ghế phải thuộc đúng phòng của suất.
+     *    - Ghế phải active, sellable và capacity > 0 theo `seat_types`.
+     * 6. Kiểm tra trùng:
+     *    - Ghế đã BOOKED thì chặn.
+     *    - Ghế đã gắn bookingId thì chặn.
+     *    - Ghế HOLDING bởi token khác thì chặn.
+     * 7. Sinh các dòng `BookingTicket` status HOLDING, có holdToken và holdExpiresAt.
+     * 8. Xóa hold cũ của chính token rồi save danh sách mới.
+     * 9. Nếu DB báo unique constraint conflict, trả lỗi ghế vừa bị người khác giữ.
+     */
     @Transactional
     public HoldResult holdSeats(BookingSelection selection, Collection<Long> requestedIds, String currentToken) {
         /*
@@ -162,6 +215,13 @@ public class SeatHoldingService {
         return new HoldResult(token, expiresAt, holds);
     }
 
+    /**
+     * Xóa các ghế đang giữ bởi một token khi chưa chốt đơn.
+     *
+     * Hàm này phục vụ hành vi thực tế ở quầy:
+     * - Nhân viên bấm "Đổi ghế" thì ghế cũ phải được nhả ngay.
+     * - Một máy POS bấm back/quay lại không nên tiếp tục giữ ghế ảo.
+     */
     @Transactional
     public void releaseHold(String token) {
         if (token != null && !token.isBlank()) {
@@ -169,16 +229,38 @@ public class SeatHoldingService {
         }
     }
 
+    /**
+     * Dọn các hold đã quá hạn.
+     *
+     * Được gọi trước khi tải sơ đồ và trước khi giữ ghế mới,
+     * giúp ghế hết hạn trở lại AVAILABLE mà không cần chờ riêng scheduler.
+     */
     @Transactional
     public void releaseExpired() {
         ticketRepository.deleteByStatusAndHoldExpiresAtBefore(BookingTicket.Status.HOLDING, LocalDateTime.now());
     }
 
+    /**
+     * Tính giá vé cho một ghế trong một suất.
+     *
+     * Bán tại quầy dùng lại `TicketService.calculatePrice(...)` để đồng bộ với booking online:
+     * loại ghế, ngày lễ, loại khách và cấu hình giá đều đi qua cùng một nơi.
+     */
     public BigDecimal priceFor(Showtime showtime, Seat seat) {
         return BigDecimal.valueOf(ticketService.calculatePrice(showtime, seat, "ADULT"))
                 .setScale(0, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Ghép dữ liệu ghế vật lý và trạng thái bán thành object cho frontend.
+     *
+     * Quy đổi trạng thái:
+     * - Ghế không bán được -> UNAVAILABLE.
+     * - Chưa có booking ticket -> AVAILABLE.
+     * - Đã BOOKED -> BOOKED.
+     * - HOLDING cùng token hiện tại -> SELECTED.
+     * - HOLDING token khác -> HOLDING.
+     */
     private BookingSeatView toView(Seat seat,
                                    BookingTicket ticket,
                                    String ownToken,

@@ -67,7 +67,22 @@ public class SeatService {
     }
 
     /**
-     * Dựng mảng 2D String đại diện cho ma trận sơ đồ ghế (kích thước rows x cols) để render giao diện Thymeleaf/JS.
+     * Dựng mảng 2D String đại diện cho ma trận sơ đồ ghế để render lên `manager_seat.html`.
+     *
+     * Luồng gọi:
+     * - `SeatController.seatDesignPage(roomId, model)` gọi hàm này khi mở màn thiết kế ghế.
+     *
+     * Cách hoạt động:
+     * 1. Validate `roomId`.
+     * 2. Load `Room` từ bảng `rooms` để lấy kích thước lưới hiện tại: `rows`, `cols`.
+     * 3. Tạo mảng `String[rows][cols]`.
+     * 4. Fill mặc định toàn bộ ô là `std` để phòng chưa có sơ đồ vẫn có dữ liệu render.
+     * 5. Query `SeatRepository.findByRoomIdOrderByRowIndexAscColIndexAsc(roomId)`.
+     * 6. Với mỗi bản ghi `Seat` đã lưu trong DB, ghi đè `matrix[rowIndex][colIndex] = seatType`.
+     *
+     * Kết quả trả về:
+     * - Mỗi phần tử ma trận là mã loại ghế: std, vip, couple, broken, empty, skip hoặc loại ghế do admin tạo.
+     * - Controller chuyển tiếp ma trận này sang JSON để JavaScript vẽ giao diện kéo/chọn loại ghế.
      */
     public String[][] buildMatrix(Long roomId) {
         validateRoomId(roomId);
@@ -119,8 +134,43 @@ public class SeatService {
     // ————————————————————————————————————————————————————————————————————————————————
 
     /**
-     * Lưu lại toàn bộ ma trận sơ đồ ghế mới cho phòng chiếu (xóa sơ đồ cũ và sinh nhãn ghế tự động A1, A2... hoặc ghế đôi A1-A2).
-     * 
+     * Lưu lại toàn bộ ma trận sơ đồ ghế mới cho phòng chiếu.
+     *
+     * Luồng gọi:
+     * - `SeatController.saveMatrix(...)` nhận JSON từ `manager_seat.html`.
+     * - Controller parse thành `String[][]` rồi gọi hàm này.
+     *
+     * Luồng xử lý chi tiết:
+     * 1. Validate `roomId`, load `Room` hiện tại từ bảng `rooms`.
+     * 2. Gọi `validateMatrix(matrixJson)` để kiểm tra:
+     *    - Ma trận có ít nhất 1 hàng/cột.
+     *    - Số hàng/cột không vượt giới hạn vận hành.
+     *    - Từng mã loại ghế phải là loại active trong `seat_types` hoặc `skip`.
+     *    - Ghế couple phải có ô `skip` ngay bên phải để thể hiện ghế chiếm 2 cột.
+     *    - Không có ô `skip` lẻ không thuộc ghế couple.
+     *    - Tổng sức chứa phải > 0.
+     * 3. Gọi `validateLayoutChangeAllowed(...)`:
+     *    - Nếu số hàng/cột thay đổi và phòng đang có lịch chiếu hôm nay/tương lai thì chặn.
+     *    - Mục đích: không làm lệch vé/lịch chiếu đang vận hành.
+     * 4. Xóa toàn bộ sơ đồ cũ bằng `SeatRepository.deleteAllByRoomId(roomId)`.
+     * 5. Duyệt từng ô ma trận:
+     *    - Tính row letter: 0 -> A, 1 -> B...
+     *    - Gọi `buildLabel(...)` để sinh nhãn ghế:
+     *      + std/vip/custom sellable: A1, A2...
+     *      + couple: A1-A2.
+     *      + empty/broken/skip: nhãn rỗng.
+     *    - Tạo entity `Seat(roomId, rowIndex, colIndex, seatType, seatLabel)`.
+     * 6. Lưu toàn bộ ghế mới bằng `seatRepository.saveAll(newSeats)`.
+     * 7. Tính lại sức chứa thật:
+     *    - Dựa vào `seat_types.capacity`.
+     *    - Không tính ô `skip`.
+     *    - Loại không bán hoặc sức chứa 0 sẽ không làm tăng `totalSeats`.
+     * 8. Cập nhật ngược lại bảng `rooms`:
+     *    - `rows = matrix.length`.
+     *    - `cols = matrix[0].length`.
+     *    - `totalSeats = totalCapacity`.
+     *    - Chuẩn hóa lại status tiếng Việt nếu DB từng bị lỗi font.
+     *
      * @param roomId ID phòng chiếu.
      * @param matrixJson Mảng 2D biểu diễn từng vị trí loại ghế.
      */
@@ -135,7 +185,11 @@ public class SeatService {
         }
         validateLayoutChangeAllowed(room, matrixJson);
 
-        // Xóa sơ đồ cũ
+        /*
+         * Vì sơ đồ là một ma trận hoàn chỉnh, thao tác lưu được thiết kế theo kiểu replace-all:
+         * xóa toàn bộ ghế cũ của phòng rồi tạo lại từ ma trận mới. Cách này giúp DB luôn khớp 1-1
+         * với giao diện thiết kế, tránh còn sót ghế cũ khi admin giảm số hàng/cột.
+         */
         seatRepository.deleteAllByRoomId(roomId);
 
         int rows = matrixJson.length;
@@ -174,7 +228,20 @@ public class SeatService {
         roomRepository.save(room);
     }
 
-    /** Kiểm tra tính hợp lệ quy tắc vẽ ma trận sơ đồ ghế (kiểm tra ô lẻ, ghế đôi couple chiếm 2 ô...). */
+    /**
+     * Kiểm tra tính hợp lệ của ma trận sơ đồ ghế trước khi lưu.
+     *
+     * Hàm này là lớp bảo vệ chính cho dữ liệu ghế:
+     * - Giao diện JavaScript có thể validate sơ bộ, nhưng backend vẫn phải validate lại vì request có thể bị sửa.
+     * - Mọi lỗi được gom vào `List<String>` để controller/service trả thông báo đầy đủ.
+     *
+     * Quy tắc nghiệp vụ:
+     * - Mỗi hàng phải có cùng số cột để tạo được lưới vật lý ổn định.
+     * - Mã loại ghế phải nằm trong `seat_types` đang active hoặc là `skip`.
+     * - `couple` là ghế đôi, nên ô bên phải bắt buộc là `skip`.
+     * - `skip` chỉ hợp lệ khi đứng ngay sau `couple`; nếu đứng lẻ sẽ làm sơ đồ sai.
+     * - Tổng sức chứa phải lớn hơn 0 để phòng có thể bán vé.
+     */
     public List<String> validateMatrix(String[][] matrix) {
         List<String> errors = new ArrayList<>();
         if (matrix == null || matrix.length == 0) {
@@ -260,7 +327,14 @@ public class SeatService {
         return rowIndex < ALPHABET.length() ? String.valueOf(ALPHABET.charAt(rowIndex)) : "?";
     }
 
-    /** Sinh nhãn ghế dựa theo loại */
+    /**
+     * Sinh nhãn ghế theo loại và vị trí.
+     *
+     * Ví dụ:
+     * - std/vip/custom sellable tại hàng A cột 0 -> A1.
+     * - couple tại hàng A cột 0 -> A1-A2 vì ghế đôi chiếm 2 cột.
+     * - empty/skip/broken -> rỗng vì đây không phải vị trí bán vé bình thường.
+     */
     private String buildLabel(String type, String rowLetter, int c,
                                int totalCols, String[] rowTypes) {
         return switch (type) {
@@ -302,6 +376,18 @@ public class SeatService {
         }
     }
 
+    /**
+     * Kiểm tra quyền thay đổi kích thước lưới ghế.
+     *
+     * Nếu admin chỉ đổi loại ghế bên trong cùng kích thước rows/cols thì cho phép.
+     * Nếu admin đổi số hàng hoặc số cột:
+     * - Hệ thống kiểm tra `showtimes` theo tên phòng.
+     * - Nếu phòng có lịch chiếu hôm nay hoặc tương lai thì chặn.
+     *
+     * Lý do thực tế:
+     * - Lịch chiếu/booking đang dựa trên sơ đồ ghế hiện có.
+     * - Thay đổi kích thước khi đã mở bán có thể làm mất vị trí ghế, lệch vé, hoặc sai sơ đồ khách đã chọn.
+     */
     private void validateLayoutChangeAllowed(Room room, String[][] matrix) {
         boolean sizeChanged = room.getRows() != matrix.length
                 || room.getCols() != (matrix.length > 0 ? matrix[0].length : 0);

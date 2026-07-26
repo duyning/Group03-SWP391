@@ -1,13 +1,16 @@
 /**
- * Interface Repository quản lý danh mục Phòng chiếu phim trong rạp (`rooms`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `RoomService`, `ShowtimeService`, `CatalogInitializer`.
- * - Hỗ trợ các chức năng: Lọc danh sách phòng theo điều kiện (`filterRooms`), kiểm tra trùng tên phòng trong rạp (`existsByRoomNameIgnoreCaseAndCinemaIdAndIdNot`),
- *   tìm kiếm phòng theo tên (`findFirstByRoomNameIgnoreCaseAndCinemaId`).
- * 
- * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
- * Cập nhật bởi: TrienLX (25/06/2026)
+ * Repository thao tác bảng `rooms`.
+ *
+ * Nằm ở cuối luồng quản lý phòng:
+ * - `RoomController` nhận request từ UI.
+ * - `RoomService` validate nghiệp vụ.
+ * - `RoomRepository` thực hiện truy vấn/lưu/xóa dữ liệu phòng trong DB.
+ *
+ * Các nhóm truy vấn chính:
+ * - Lấy danh sách phòng theo rạp để render `/admin/rooms`.
+ * - Kiểm tra trùng tên phòng trong cùng rạp khi tạo/sửa.
+ * - Tìm phòng theo tên khi các module khác cần map lịch chiếu/phòng.
+ * - Lọc phòng theo nhiều tiêu chí phục vụ màn quản lý.
  */
 package com.group3.cinema.repository;
 
@@ -23,7 +26,7 @@ import java.util.Optional;
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
-    /** Tìm tất cả phòng theo ID rạp chiếu (`cinemaId`). */
+    /** Tìm tất cả phòng theo ID rạp chiếu (`cinemaId`) để render bảng danh sách phòng. */
     List<Room> findByCinemaId(Long cinemaId);
 
     /** Tìm bản ghi phòng chiếu đầu tiên khớp với tên phòng (không phân biệt hoa thường). */
@@ -32,10 +35,10 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     /** Kiểm tra tên phòng đã tồn tại trong rạp chiếu hay chưa. */
     boolean existsByRoomNameAndCinemaId(String roomName, Long cinemaId);
 
-    /** Kiểm tra tên phòng đã tồn tại trong rạp chiếu hay chưa (không phân biệt chữ hoa/thường). */
+    /** Kiểm tra tên phòng đã tồn tại trong rạp chiếu hay chưa, dùng khi tạo phòng mới. */
     boolean existsByRoomNameIgnoreCaseAndCinemaId(String roomName, Long cinemaId);
 
-    /** Kiểm tra tên phòng có trùng với phòng khác trong cùng rạp (bỏ qua ID hiện tại `id`) khi cập nhật. */
+    /** Kiểm tra tên phòng có trùng với phòng khác trong cùng rạp, bỏ qua chính phòng đang sửa. */
     boolean existsByRoomNameIgnoreCaseAndCinemaIdAndIdNot(String roomName, Long cinemaId, Long id);
 
     /** Tìm phòng chiếu đầu tiên theo tên phòng và ID rạp chiếu (phục vụ lấy RoomId khi map dữ liệu). */
@@ -45,8 +48,10 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     long countByCinemaIdAndStatus(Long cinemaId, String status);
 
     /**
-     * Lọc danh sách phòng chiếu đa tiêu chí dành cho quản lý phòng chiếu phía Admin.
-     * Các tham số là tùy chọn - nếu null sẽ tự động bỏ qua điều kiện tương ứng.
+     * Lọc danh sách phòng chiếu đa tiêu chí dành cho màn quản lý phòng.
+     *
+     * Tham số nào null thì bỏ qua điều kiện đó. Query này không xử lý audioTech,
+     * vì `RoomService.filterRooms(...)` hiện lọc audioTech ở tầng service để đồng bộ normalize tiếng Việt/trạng thái.
      */
     @Query("""
         SELECT r FROM Room r

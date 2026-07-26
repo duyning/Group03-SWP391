@@ -1,15 +1,21 @@
 /**
- * Entity đại diện cho Phòng chiếu (`rooms`) trong hệ thống rạp xem phim.
- * 
- * Chức năng:
- * - Lưu tên phòng (`roomName`: Phòng 01, IMAX Cinema 01).
- * - Loại phòng/Định dạng hỗ trợ (`roomType`: 2D, 3D, IMAX).
- * - Công nghệ âm thanh (`audioTech`: Dolby 7.1, Dolby Atmos, DTS:X).
- * - Kích thước lưới sơ đồ ghế (`rows`, `cols`) và tổng số ghế (`totalSeats`).
- * - Trạng thái hoạt động phòng ("Hoạt động", "Bảo trì", "Tạm ngưng").
- * 
- * Ngày cập nhật: 04/06/2026
- * Khởi tạo bởi: NinhDD - HE186113
+ * Entity đại diện cho phòng chiếu trong bảng `rooms`.
+ *
+ * Vai trò trong luồng tạo phòng và ghế:
+ * - `RoomController` nhận request tạo/sửa/xóa phòng từ giao diện.
+ * - `RoomService` validate dữ liệu rồi tạo/cập nhật entity này.
+ * - `RoomRepository` lưu entity xuống bảng `rooms`.
+ * - `SeatController` dùng `room.id` để mở màn thiết kế ghế `/admin/rooms/{roomId}/seats`.
+ * - `SeatService.saveMatrix(...)` cập nhật lại `rows`, `cols`, `totalSeats` sau khi lưu sơ đồ ghế.
+ *
+ * Ý nghĩa dữ liệu:
+ * - `roomName`: tên phòng dùng để hiển thị và liên kết với lịch chiếu.
+ * - `roomType`: danh sách định dạng phòng hỗ trợ, ví dụ "2D, 3D"; dữ liệu lấy từ danh mục `room_types`.
+ * - `audioTech`: công nghệ âm thanh; dữ liệu lấy từ danh mục `audio_technologies`.
+ * - `rows`, `cols`: kích thước lưới vật lý của sơ đồ ghế.
+ * - `totalSeats`: sức chứa bán vé thật, được tính từ bảng `seats` và `seat_types.capacity`,
+ *   không nhập tay ở form tạo phòng.
+ * - `status`: trạng thái vận hành. Phòng chỉ nên "Hoạt động" khi đã có sơ đồ ghế hợp lệ.
  */
 package com.group3.cinema.entity;
 

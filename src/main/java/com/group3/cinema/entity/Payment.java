@@ -3,6 +3,7 @@ package com.group3.cinema.entity;
 /*
  * Added on 2026-06-24: Stores payment transaction state for customer bookings.
  * Updated on 2026-06-26: payOS remains the active customer payment method.
+ * Updated on 2026-07-24: Documented counter-sale CASH/PAYOS payment flow.
  * Created by: HuyPB - HE191335
  */
 
@@ -13,7 +14,30 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "payments", uniqueConstraints = @UniqueConstraint(columnNames = "orderCode"))
 public class Payment {
+    /*
+     * Payment là nhật ký giao dịch thanh toán của một Booking.
+     *
+     * Trong flow bán vé tại quầy:
+     * - Tiền mặt:
+     *   + `CounterSaleService.completeSale(...)` tạo Payment method CASH, status SUCCESS.
+     *   + `orderCode` dạng POS... dùng làm mã hóa đơn/mã booking trên vé.
+     *   + Không cần redirect/payment gateway.
+     * - payOS:
+     *   + `CounterSaleService.createCounterPayment(...)` tạo Payment method PAYOS, status PENDING.
+     *   + `PaymentGatewayRouter` dùng payment này để sinh checkout URL.
+     *   + Khi payOS trả kết quả, flow payment chung cập nhật status SUCCESS/FAILED/CANCELLED.
+     *
+     * `orderCode` có unique constraint vì payment gateway và màn hóa đơn dùng mã này
+     * để đối soát một giao dịch duy nhất.
+     */
     public enum Status { PENDING, SUCCESS, FAILED, CANCELLED }
+
+    /*
+     * Project hiện dùng chính trong nghiệp vụ:
+     * - PAYOS: thanh toán QR/chuyển khoản.
+     * - CASH: thanh toán tiền mặt tại quầy.
+     * CARD/BANK_TRANSFER là enum dự phòng/legacy, không phải flow chính của counter-sales hiện tại.
+     */
     public enum Method { PAYOS, CASH, CARD, BANK_TRANSFER }
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @Column(nullable = false) private Long bookingId;

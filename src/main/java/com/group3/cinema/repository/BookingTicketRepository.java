@@ -1,10 +1,12 @@
 /**
- * Interface Repository quản lý các bản ghi ghế giữ chỗ và ghế đã bán theo từng suất chiếu (`booking_tickets`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `CustomerBookingService` và các Scheduler tự động dọn ghế giữ chỗ quá hạn.
- * 
- * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
+ * Repository quản lý ghế đang giữ/đã bán theo từng suất chiếu trong bảng `booking_tickets`.
+ *
+ * Nằm ở lõi chống trùng ghế của bán vé tại quầy:
+ * - `SeatHoldingService.getSeatMap(...)` đọc theo showtimeId để biết ghế AVAILABLE/HOLDING/BOOKED.
+ * - `SeatHoldingService.holdSeats(...)` đọc theo showtimeId + seatIds để chặn ghế đã bị giữ/bán.
+ * - `CounterSaleService.completeSale(...)` đọc theo holdToken để đổi các ghế HOLDING thành BOOKED.
+ * - `CounterSaleService.createCounterPayment(...)` đọc theo holdToken để gắn ghế HOLDING vào Booking PENDING.
+ * - Scheduler/flow dọn hạn dùng các hàm delete để giải phóng ghế HOLDING quá hạn.
  */
 package com.group3.cinema.repository;
 
@@ -19,13 +21,15 @@ import java.util.List;
 
 public interface BookingTicketRepository extends JpaRepository<BookingTicket, Long> {
 
-    /**
-     * Tìm danh sách tất cả ghế đang giữ/đã mua theo ID suất chiếu.
-     */
+    /** Tìm tất cả ghế đang HOLDING/BOOKED của một suất để render sơ đồ và tính số ghế còn bán. */
     List<BookingTicket> findByShowtimeId(Long showtimeId);
 
     /**
-     * Tìm danh sách ghế giữ tạm theo mã Token giữ chỗ (`holdToken`).
+     * Tìm ghế đang thuộc một phiên giữ chỗ.
+     *
+     * Counter sale dùng khi preview/chốt đơn:
+     * - Token từ bước chọn ghế được gửi sang checkout.
+     * - Service lấy lại các dòng HOLDING theo token để tính tiền và chuyển sang BOOKED/PENDING.
      */
     List<BookingTicket> findByHoldToken(String holdToken);
 
@@ -35,13 +39,14 @@ public interface BookingTicketRepository extends JpaRepository<BookingTicket, Lo
     List<BookingTicket> findByBookingId(Long bookingId);
 
     /**
-     * Tìm các bản ghi giữ chỗ theo suất chiếu và tập hợp ID ghế.
+     * Tìm các bản ghi của một tập ghế trong một suất.
+     *
+     * `SeatHoldingService.holdSeats(...)` dùng để phát hiện xung đột trước khi insert hold mới:
+     * ghế đã BOOKED, đã gắn bookingId hoặc đang HOLDING bởi token khác đều bị chặn.
      */
     List<BookingTicket> findByShowtimeIdAndSeatIdIn(Long showtimeId, Collection<Long> seatIds);
 
-    /**
-     * Xóa các bản ghi giữ ghế ở trạng thái chỉ định (HOLDING) mà thời hạn hết hạn nhỏ hơn thời điểm hiện tại (`now`).
-     */
+    /** Xóa các ghế HOLDING đã hết hạn để trả lại ghế về trạng thái có thể bán. */
     int deleteByStatusAndHoldExpiresAtBefore(BookingTicket.Status status, LocalDateTime now);
 
     /**
@@ -50,7 +55,10 @@ public interface BookingTicketRepository extends JpaRepository<BookingTicket, Lo
     int deleteByBookingId(Long bookingId);
 
     /**
-     * Xóa các giữ ghế theo token mà chưa hoàn tất gắn với đơn đặt vé (`bookingId IS NULL`).
+     * Xóa các ghế giữ tạm theo token khi chưa tạo booking thật.
+     *
+     * Dùng khi nhân viên đổi ghế/quay lại màn chọn ghế. Điều kiện `bookingId IS NULL`
+     * bảo vệ các ghế đã gắn với đơn PENDING/PAID khỏi bị xóa nhầm.
      */
     @Modifying
     @Query("DELETE FROM BookingTicket t WHERE t.holdToken = :token AND t.bookingId IS NULL")

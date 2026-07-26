@@ -1,10 +1,16 @@
 /**
- * Interface Repository thao tác bảng danh sách vị trí ghế trong phòng chiếu (`seats`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `RoomService`, `CustomerBookingService`, `CatalogInitializer` để hiển thị sơ đồ ma trận ghế và lưu sơ đồ phòng chiếu mới.
- * 
- * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
+ * Repository thao tác bảng `seats`, tức từng ô ghế/lối đi/hỏng trong sơ đồ phòng.
+ *
+ * Nằm ở cuối luồng thiết kế ghế:
+ * - `SeatController` nhận request mở/lưu sơ đồ ghế từ `manager_seat.html`.
+ * - `SeatService` validate ma trận, sinh nhãn ghế và tính tổng sức chứa.
+ * - `SeatRepository` đọc/xóa/lưu danh sách ghế thực tế trong DB.
+ *
+ * Vai trò chính trong nghiệp vụ:
+ * - Khi mở trang thiết kế, repository trả toàn bộ ghế theo row/col để dựng lại ma trận đúng vị trí.
+ * - Khi lưu sơ đồ mới, service xóa toàn bộ ghế cũ của phòng rồi save lại ma trận mới.
+ * - Khi tạo/sửa phòng, `RoomService` dùng `existsByRoomId(...)` để biết phòng đã có sơ đồ ghế hay chưa
+ *   trước khi cho bật trạng thái "Hoạt động".
  */
 package com.group3.cinema.repository;
 
@@ -22,12 +28,27 @@ import java.util.List;
 public interface SeatRepository extends JpaRepository<Seat, Long> {
 
     /**
-     * Lấy tất cả danh sách ghế của một phòng chiếu, sắp xếp tăng dần theo chỉ số hàng và cột (`rowIndex`, `colIndex`).
+     * Lấy toàn bộ ghế của một phòng, sắp xếp từ trên xuống dưới và từ trái sang phải.
+     *
+     * Luồng sử dụng:
+     * - `SeatService.buildMatrix(roomId)` gọi hàm này.
+     * - Service tạo mảng `String[rows][cols]`.
+     * - Từng bản ghi trả về sẽ được đặt vào đúng `matrix[rowIndex][colIndex]`.
+     * - View nhận matrix JSON và vẽ sơ đồ giống dữ liệu đã lưu trong DB.
      */
     List<Seat> findByRoomIdOrderByRowIndexAscColIndexAsc(Long roomId);
 
     /**
-     * Xóa toàn bộ sơ đồ ghế của phòng chiếu khi Admin lưu sơ đồ cấu hình ghế mới.
+     * Xóa toàn bộ sơ đồ ghế hiện tại của một phòng.
+     *
+     * Luồng sử dụng:
+     * - `SeatService.saveMatrix(roomId, matrix)` gọi trước khi insert ma trận mới.
+     * - `RoomService.deleteRoom(id)` gọi trước khi xóa phòng.
+     *
+     * Lý do thiết kế:
+     * - Sơ đồ ghế là một ma trận hoàn chỉnh, không phải từng ghế chỉnh riêng lẻ.
+     * - Khi admin giảm hàng/cột hoặc đổi nhiều loại ghế, xóa toàn bộ rồi tạo lại giúp DB không còn ghế dư.
+     * - Việc cho phép xóa/lưu đã được service kiểm tra trước bằng ràng buộc lịch chiếu.
      */
     @Modifying
     @Transactional
@@ -35,12 +56,18 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     void deleteAllByRoomId(@Param("roomId") Long roomId);
 
     /**
-     * Đếm số lượng ghế thuộc một loại cụ thể (std, vip, couple) trong phòng.
+     * Đếm số ô đang dùng một loại ghế cụ thể trong phòng.
+     *
+     * Chủ yếu phục vụ phần thống kê nhanh ở màn thiết kế ghế.
+     * Lưu ý: đây là số ô theo loại, không phải luôn là sức chứa; ví dụ ghế couple có thể tính 2 chỗ.
      */
     long countByRoomIdAndSeatType(Long roomId, String seatType);
 
     /**
-     * Kiểm tra xem phòng chiếu đã được tạo sơ đồ ghế hay chưa.
+     * Kiểm tra phòng đã có ít nhất một bản ghi ghế hay chưa.
+     *
+     * `RoomService.validateRoomCanBeActive(...)` dùng kết quả này để chặn phòng chuyển sang "Hoạt động"
+     * khi người quản lý mới tạo phòng nhưng chưa thiết kế sơ đồ ghế.
      */
     boolean existsByRoomId(Long roomId);
 }

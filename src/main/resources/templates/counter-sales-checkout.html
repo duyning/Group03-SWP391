@@ -1,4 +1,30 @@
 <!DOCTYPE html>
+<!--
+  LUỒNG FRONT-END: BƯỚC 2 CỦA CHỨC NĂNG BÁN VÉ TẠI QUẦY (/admin/counter-sales/checkout)
+  1. Nhân viên ở trang /admin/counter-sales bấm "Tiếp tục hóa đơn".
+     Hàm goCheckout() ở counter-sales.html lưu counterSaleDraft vào sessionStorage, gồm:
+     - showtime: phim, ngày, giờ, phòng, định dạng.
+     - seats: danh sách ghế đang chọn.
+     - holdToken: token giữ ghế đã được backend tạo từ POST /api/counter-sales/hold.
+  2. Controller CounterSaleController.counterSalesCheckoutPage() chỉ trả về template này.
+     Dữ liệu nghiệp vụ không truyền qua Model, vì trang tự đọc sessionStorage và gọi API.
+  3. DOMContentLoaded:
+     - readDraft(): lấy counterSaleDraft. Nếu không có draft thì chuyển về /admin/counter-sales.
+     - renderDraft(): hiển thị phim, suất chiếu, phòng, ghế đã giữ.
+     - loadCombos(): GET /api/counter-sales/combos.
+     - loadVouchers(): GET /api/counter-sales/vouchers.
+     - previewSale(): POST /api/counter-sales/preview để backend tính tiền vé, combo, voucher.
+  4. Khi hoàn tất:
+     - Nếu chọn Tiền mặt: completeSale() -> submitSale() -> POST /api/counter-sales/complete.
+       Backend CounterSaleApiController.completeSale() gọi CounterSaleService.completeSale()
+       để tạo Booking, BookingTicket, Payment CASH/SUCCESS và đánh dấu ghế đã bán.
+     - Nếu chọn payOS/VietQR: completeSale() -> createPaymentLink()
+       -> POST /api/counter-sales/payment-link.
+       Backend CounterSaleService.createCounterPayment() tạo booking pending và trả checkoutUrl.
+       Front-end chuyển thẳng sang checkoutUrl của payOS để khách thanh toán.
+  5. Nếu nhân viên bấm "Đổi ghế" hoặc rời trang checkout, releaseDraftHold()
+     gọi POST /api/counter-sales/release để nhả ghế, tránh giữ ghế ảo trên cùng một máy.
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -80,6 +106,15 @@
                         <p>Kiểm tra ghế đã giữ, chọn combo/voucher và hiển thị QR thanh toán khi cần.</p>
                     </div>
                 </div>
+                <!--
+                  NÚT: "Đổi ghế"
+                  - bindEvents() gắn click -> changeSeats(event).
+                  - changeSeats() lưu counterSaleReturnState để quay lại đúng ngày/phim/suất.
+                  - Sau đó gọi releaseDraftHold(false) -> POST /api/counter-sales/release.
+                  - Backend: CounterSaleApiController.releaseHold() -> CounterSaleService.releaseHold()
+                    -> SeatHoldingService.releaseByToken(), nhả ghế đang giữ.
+                  - Cuối cùng chuyển về /admin/counter-sales để chọn lại ghế từ đầu.
+                -->
                 <a class="step-link" href="/admin/counter-sales" id="btnChangeSeats"><i class="fa-solid fa-arrow-left me-1"></i>Đổi ghế</a>
             </section>
 
@@ -151,7 +186,16 @@
                             <div class="summary-line"><span>Giảm giá</span><strong id="discountAmount">0 đ</strong></div>
                             <div class="summary-line total"><span>Tổng thanh toán</span><strong id="totalAmount">0 đ</strong></div>
                         </div>
-        <button class="btn-pay" id="btnCompleteSale"><i class="fa-solid fa-check-circle me-2"></i>Hoàn tất bán vé</button>
+                        <!--
+                          NÚT: "Hoàn tất bán vé"
+                          - bindEvents() gắn click -> completeSale().
+                          - completeSale() luôn gọi previewSale() trước để backend validate lại voucher,
+                            combo, holdToken và tổng tiền mới nhất.
+                          - CASH: submitSale() -> POST /api/counter-sales/complete.
+                          - PAYOS: createPaymentLink() -> POST /api/counter-sales/payment-link
+                            rồi redirect trực tiếp sang checkoutUrl của payOS.
+                        -->
+                        <button class="btn-pay" id="btnCompleteSale"><i class="fa-solid fa-check-circle me-2"></i>Hoàn tất bán vé</button>
                     </div>
                 </aside>
             </section>
@@ -166,12 +210,14 @@
                 <h3>Mã thanh toán tại quầy</h3>
                 <p>Mã QR được tạo từ checkout URL của payOS/VietQR trong cấu hình local của project.</p>
             </div>
+            <!-- NÚT: đóng modal QR nếu modal được mở thủ công, không gọi controller. -->
             <button class="btn btn-sm btn-outline-light" id="btnClosePaymentCode" type="button"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="payment-code-body">
             <div class="payment-qr-box">
                 <img id="paymentQrImage" alt="Mã thanh toán">
                 <div class="payment-code-value" id="paymentCodeValue">POS-000000</div>
+                <!-- NÚT: copyPaymentCode(), chỉ sao chép checkoutUrl/payOS link, không ghi database. -->
                 <button class="btn btn-outline-primary btn-sm w-100" id="btnCopyPaymentCode" type="button"><i class="fa-regular fa-copy me-1"></i>Sao chép mã</button>
             </div>
             <div class="payment-code-detail">
@@ -188,13 +234,23 @@
             </div>
         </div>
         <div class="payment-code-actions">
+            <!-- NÚT: closePaymentCodeModal(), quay lại form checkout, không nhả ghế. -->
             <button class="btn btn-outline-secondary" id="btnCancelCodePayment" type="button">Quay lại sửa đơn</button>
+            <!-- NÚT: openPayOsGateway(), mở checkoutUrl đã nhận từ /api/counter-sales/payment-link. -->
             <button class="btn btn-primary" id="btnConfirmCodePayment" type="button"><i class="fa-solid fa-up-right-from-square me-1"></i>Mở cổng payOS</button>
         </div>
     </div>
 </div>
 
 <script>
+    /*
+     * STATE CỦA BƯỚC CHECKOUT:
+     * - draft: dữ liệu ghế đã giữ từ sessionStorage.counterSaleDraft.
+     * - combos: danh sách combo đang bán lấy từ /api/counter-sales/combos.
+     * - selectedCustomer: khách thành viên được chọn từ autocomplete.
+     * - pendingPayment: response từ /api/counter-sales/payment-link khi tạo thanh toán payOS.
+     * - leavingForPayment/saleCompleted/holdReleased: cờ kiểm soát việc nhả ghế khi rời trang.
+     */
     const state = {
         draft:null,
         combos:[],
@@ -224,6 +280,16 @@
         await previewSale();
     });
 
+    /*
+     * bindEvents()
+     * Nối từng thành phần giao diện với hành động nghiệp vụ:
+     * - customerType/customerName/customerPhone/customerEmail/voucher/combo -> previewSale().
+     * - customerSearch -> searchCustomers() -> GET /api/counter-sales/customers.
+     * - paymentMethod -> đổi nhãn nút, nếu PAYOS thì nút hoàn tất sẽ tạo link payOS.
+     * - btnCompleteSale -> completeSale().
+     * - btnChangeSeats -> changeSeats() -> POST /api/counter-sales/release.
+     * - pagehide -> releaseHoldWhenLeavingCheckout(), nhả ghế khi back/đóng tab.
+     */
     function bindEvents() {
         $('customerType').addEventListener('change', previewSale);
         $('paymentMethod').addEventListener('change', () => { state.pendingPayment = null; renderPaymentHint(); previewSale(); });
@@ -242,11 +308,21 @@
         renderPaymentHint();
     }
 
+    /*
+     * readDraft()
+     * Đọc dữ liệu từ sessionStorage do trang chọn ghế tạo ra.
+     * Nếu không có draft, trang không đủ dữ liệu để lập hóa đơn nên redirect về bước chọn ghế.
+     */
     function readDraft() {
         try { return JSON.parse(sessionStorage.getItem('counterSaleDraft') || 'null'); }
         catch (ignored) { return null; }
     }
 
+    /*
+     * renderDraft()
+     * Chỉ render lại dữ liệu đã chọn: phim, suất chiếu, phòng, ghế.
+     * Hàm này không gọi API vì holdToken đã được xác nhận ở bước 1.
+     */
     function renderDraft() {
         $('orderMovie').textContent = state.draft.showtime?.movieTitle || '--';
         $('orderShowtime').textContent = `${dateText(state.draft.showtime?.showDate)} • ${timeText(state.draft.showtime?.showTime)}`;
@@ -256,6 +332,11 @@
             : '<span style="background:#f1f5f9;color:#64748b">Chưa chọn ghế</span>';
     }
 
+    /*
+     * api()
+     * Wrapper fetch dùng chung cho các API counter-sales.
+     * Nếu backend trả HTTP lỗi, hàm ném message/error để toast hiển thị cho nhân viên.
+     */
     async function api(url, options = {}) {
         const response = await fetch(url, { headers:{'Content-Type':'application/json', ...(options.headers || {})}, ...options });
         const text = await response.text();
@@ -269,6 +350,12 @@
         state.debounceTimer = setTimeout(fn, delay);
     }
 
+    /*
+     * loadCombos()
+     * GET /api/counter-sales/combos
+     * Backend: CounterSaleApiController.combos() -> CounterSaleService.getAvailableCombos().
+     * Chỉ lấy combo đang bán để nhân viên gắn thêm vào hóa đơn.
+     */
     async function loadCombos() {
         try {
             state.combos = await api('/api/counter-sales/combos');
@@ -276,6 +363,14 @@
         } catch (error) { toast(error.message, 'error'); }
     }
 
+    /*
+     * renderCombos()
+     * Render mỗi combo thành card có:
+     * - Nút "-" gọi changeComboQty(comboId, -1).
+     * - Ô số lượng gọi onComboQtyInput()/onComboQtyChange().
+     * - Nút "+" gọi changeComboQty(comboId, 1).
+     * Mọi thay đổi số lượng đều gọi previewSale() để backend tính lại tổng tiền.
+     */
     function renderCombos() {
         if (!state.combos.length) {
             $('comboList').innerHTML = '<div class="text-muted small">Chưa có combo đang bán.</div>';
@@ -299,6 +394,11 @@
         `).join('');
     }
 
+    /*
+     * changeComboQty()
+     * Xử lý nút +/- của combo. Front-end giới hạn 0..20 để tránh nhập số bất thường,
+     * sau đó gọi onComboQtyChange() để cập nhật tạm tính và preview lại hóa đơn.
+     */
     function changeComboQty(id, delta) {
         const input = document.querySelector(`.combo-qty[data-id="${id}"]`);
         if (!input) return;
@@ -320,6 +420,12 @@
         if (totalEl) totalEl.textContent = `Tạm tính: ${money(Number(input.dataset.price || 0) * Number(input.value || 0))}`;
     }
 
+    /*
+     * loadVouchers()
+     * GET /api/counter-sales/vouchers
+     * Backend chỉ trả voucher còn hiệu lực/còn có thể dùng tại quầy.
+     * Datalist giúp nhân viên nhập mã nhanh, còn điều kiện áp dụng vẫn do previewSale() validate.
+     */
     async function loadVouchers() {
         try {
             const vouchers = await api('/api/counter-sales/vouchers');
@@ -327,6 +433,12 @@
         } catch (error) { toast(error.message, 'error'); }
     }
 
+    /*
+     * searchCustomers()
+     * GET /api/counter-sales/customers?keyword=...
+     * Backend: CounterSaleApiController.searchCustomers() -> CounterSaleService.searchCustomers().
+     * Tìm theo tên/email/số điện thoại để gắn hóa đơn với tài khoản thành viên nếu có.
+     */
     async function searchCustomers() {
         const keyword = $('customerSearch').value.trim();
         if (keyword.length < 2) {
@@ -345,6 +457,13 @@
         } catch (error) { toast(error.message, 'error'); }
     }
 
+    /*
+     * selectCustomer()
+     * Khi nhân viên bấm một dòng gợi ý khách hàng:
+     * - Đẩy name/phone/email vào form.
+     * - Lưu selectedCustomer.id để buildPayload() gửi customerAccountId.
+     * - Gọi previewSale() vì một số voucher có thể phụ thuộc nhóm khách.
+     */
     function selectCustomer(id) {
         const source = Array.from(document.querySelectorAll('#customerResults button')).find(item => item.getAttribute('onclick') === `selectCustomer(${id})`);
         if (!source) return;
@@ -356,6 +475,13 @@
         previewSale();
     }
 
+    /*
+     * previewSale()
+     * POST /api/counter-sales/preview
+     * Backend: CounterSaleApiController.previewSale() -> CounterSaleService.previewSale().
+     * Backend kiểm tra holdToken, ghế, voucher, combo và trả summary.
+     * Đây là bước tính thử, không tạo Booking/Payment và không trừ voucher.
+     */
     async function previewSale() {
         if (!state.draft?.holdToken) return null;
         try {
@@ -370,6 +496,13 @@
         }
     }
 
+    /*
+     * completeSale()
+     * Điểm vào chính của nút "Hoàn tất bán vé":
+     * - Gọi previewSale() để validate lần cuối.
+     * - CASH: gọi submitSale() để chốt luôn.
+     * - PAYOS/VietQR: gọi createPaymentLink() để tạo booking pending và redirect sang payOS.
+     */
     async function completeSale() {
         const summary = await previewSale();
         if (!summary) return;
@@ -380,6 +513,14 @@
         await submitSale();
     }
 
+    /*
+     * createPaymentLink()
+     * POST /api/counter-sales/payment-link
+     * Backend: CounterSaleApiController.createPaymentLink()
+     * -> CounterSaleService.createCounterPayment()
+     * -> PaymentGatewayRouter.createRedirectUrl().
+     * Kết quả trả checkoutUrl của payOS. Front-end set leavingForPayment=true rồi chuyển thẳng URL.
+     */
     async function createPaymentLink() {
         $('btnCompleteSale').disabled = true;
         try {
@@ -395,6 +536,16 @@
         finally { $('btnCompleteSale').disabled = false; }
     }
 
+    /*
+     * submitSale()
+     * POST /api/counter-sales/complete
+     * Backend chốt giao dịch tiền mặt:
+     * - Tạo Booking nguồn COUNTER.
+     * - Tạo BookingTicket cho từng ghế đã giữ.
+     * - Tạo Payment phương thức CASH, trạng thái SUCCESS.
+     * - Ghi nhận voucher/combo nếu có.
+     * - Nhả holdToken và đánh dấu ghế đã bán.
+     */
     async function submitSale() {
         $('btnCompleteSale').disabled = true;
         $('btnConfirmCodePayment').disabled = true;
@@ -412,6 +563,12 @@
         }
     }
 
+    /*
+     * changeSeats()
+     * Xử lý nút "Đổi ghế".
+     * Hàm này nhả ghế hiện tại trước khi quay lại bước chọn ghế,
+     * vì nghiệp vụ tại quầy không nên giữ ghế khi nhân viên back về chọn lại.
+     */
     async function changeSeats(event) {
         event.preventDefault();
         rememberSeatSelectionContext();
@@ -420,6 +577,11 @@
         window.location.href = '/admin/counter-sales';
     }
 
+    /*
+     * rememberSeatSelectionContext()
+     * Lưu ngày/phim/suất cũ để trang /admin/counter-sales mở lại đúng ngữ cảnh.
+     * Chỉ lưu ngữ cảnh, không lưu ghế cũ vì ghế phải được nhả khi đổi ghế/back.
+     */
     function rememberSeatSelectionContext() {
         if (!state.draft?.showtime) return;
         sessionStorage.setItem('counterSaleReturnState', JSON.stringify({
@@ -430,6 +592,12 @@
         }));
     }
 
+    /*
+     * releaseHoldWhenLeavingCheckout()
+     * Được gọi khi pagehide. Nếu nhân viên đóng tab/back/đổi trang mà chưa thanh toán,
+     * hệ thống nhả ghế để khách khác có thể mua. Nếu đang rời sang payOS hoặc đã chốt đơn
+     * thì không nhả vì booking/payment đang tiếp tục xử lý.
+     */
     function releaseHoldWhenLeavingCheckout() {
         if (state.leavingForPayment || state.saleCompleted || state.holdReleased) return;
         rememberSeatSelectionContext();
@@ -437,6 +605,11 @@
         sessionStorage.removeItem('counterSaleDraft');
     }
 
+    /*
+     * releaseDraftHold()
+     * POST /api/counter-sales/release với holdToken trong draft.
+     * keepalive=true dùng cho pagehide để trình duyệt vẫn cố gửi request khi rời trang.
+     */
     async function releaseDraftHold(keepalive) {
         if (!state.draft?.holdToken || state.holdReleased) return;
         state.holdReleased = true;
@@ -452,6 +625,16 @@
         }
     }
 
+    /*
+     * buildPayload()
+     * Gom dữ liệu từ UI thành CounterSaleService.CounterSaleRequest:
+     * - showtimeId/holdToken lấy từ draft.
+     * - customerAccountId lấy từ selectedCustomer nếu có.
+     * - customerName/phone/email/customerType lấy từ form.
+     * - voucherCode/paymentMethod lấy từ form.
+     * - comboItems lấy từ các input .combo-qty.
+     * Payload này dùng chung cho preview, complete và payment-link.
+     */
     function buildPayload() {
         return {
             showtimeId: state.draft?.showtime?.id,
@@ -470,6 +653,11 @@
         };
     }
 
+    /*
+     * renderSummary()
+     * Nhận kết quả từ /api/counter-sales/preview và cập nhật UI:
+     * tiền vé, tiền combo, giảm giá, tổng thanh toán và thông báo voucher.
+     */
     function renderSummary(summary) {
         $('ticketSubtotal').textContent = money(summary.ticketSubtotal);
         $('comboSubtotal').textContent = money(summary.comboSubtotal);
@@ -486,6 +674,12 @@
         }
     }
 
+    /*
+     * openPaymentCodeModal()
+     * Helper hiển thị modal QR nếu muốn dùng luồng mở modal.
+     * Với luồng hiện tại, createPaymentLink() redirect thẳng sang payOS,
+     * nhưng hàm vẫn giữ để hỗ trợ trường hợp nhân viên cần xem/copy checkoutUrl.
+     */
     function openPaymentCodeModal(payment) {
         const checkoutUrl = payment.checkoutUrl || payment.qrContent || '';
         $('paymentCodeMethod').textContent = paymentMethodLabel(payment.paymentMethod || $('paymentMethod').value);

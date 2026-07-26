@@ -1,6 +1,27 @@
 <!--
-  Updated on 2026-06-04: Added project file ownership metadata.
+  Updated on 2026-07-25: Added detailed frontend flow comments for seat-layout management.
   Created by: NinhDD - HE186113
+
+  LUỒNG FRONTEND TRANG /admin/rooms/{roomId}/seats:
+  1. Browser mở từ nút "Thiết kế ghế" ở manager_room.html.
+     - GET /admin/rooms/{roomId}/seats.
+     - SeatController.seatDesignPage(...) nhận roomId.
+     - Controller gọi RoomService.findById(...), SeatService.buildMatrix(...),
+       CatalogService.getActiveSeatTypes(), CatalogService.seatTypesToJson(...).
+     - Controller render manager_seat.html với room, matrixJson, seatTypesJson.
+  2. View inject SERVER_ROWS, SERVER_COLS, SERVER_ROOM_ID, SERVER_MATRIX, SERVER_SEAT_TYPES vào JavaScript.
+  3. JS initData() chuyển SERVER_MATRIX thành matrixData để render lưới ghế trên browser.
+  4. Người dùng chọn loại ghế ở palette, click/kéo trên lưới:
+     - tool button click đổi currentTool.
+     - seat mousedown/mouseenter gọi applyTool(r, c).
+     - Mọi thay đổi lúc này chỉ nằm trên frontend, chưa lưu DB.
+  5. Nút "Lưu sơ đồ" gọi saveMatrix():
+     - JS validateMatrixClient(...).
+     - fetch POST /admin/rooms/{roomId}/seats/save với JSON { matrix: [...] }.
+     - SeatController.saveMatrix(...) parse body và gọi SeatService.saveMatrix(...).
+     - Service validate lại ở backend, xóa seats cũ, lưu seats mới, cập nhật rows/cols/totalSeats ở Room.
+  6. Nút "Reset & Lưu vào DB" submit POST /admin/rooms/{roomId}/seats/reset.
+     - SeatController.resetDefault(...) tạo ma trận std mặc định và gọi SeatService.saveMatrix(...).
 -->
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
@@ -174,6 +195,15 @@
             <a th:href="@{/admin/rooms}" class="btn btn-outline">
                 <i class="fas fa-arrow-left"></i> Quay lại
             </a>
+            <!--
+              NÚT: "Lưu sơ đồ"
+              - onclick="saveMatrix()".
+              - Frontend gom matrixData thành mảng 2D string.
+              - Gọi fetch POST /admin/rooms/{ROOM_ID}/seats/save.
+              - SeatController.saveMatrix(roomId, body) nhận JSON.
+              - SeatController.parseMatrixBody(...) kiểm tra cấu trúc JSON.
+              - SeatService.saveMatrix(roomId, matrix) validate nghiệp vụ, lưu seats, cập nhật Room.
+            -->
             <button class="btn btn-primary" id="btnSave" onclick="saveMatrix()">
                 <i class="fas fa-save"></i> Lưu sơ đồ
             </button>
@@ -206,13 +236,27 @@
                         <input type="number" id="colInput" min="1" max="35" step="1" required th:value="${room.cols}">
                     </div>
                 </div>
+                <!--
+                  NÚT: "Áp dụng kích thước"
+                  - onclick="applyGridSize()".
+                  - Chỉ resize matrixData trên frontend, chưa gọi controller và chưa lưu DB.
+                  - Khi bấm "Lưu sơ đồ", rows/cols mới mới được gửi về SeatController.saveMatrix(...).
+                  - Backend SeatService.validateLayoutChangeAllowed(...) sẽ chặn đổi kích thước nếu phòng có lịch chiếu hiện tại/tương lai.
+                -->
                 <button type="button" class="btn btn-outline" style="width: 100%; justify-content: center;"
                         onclick="applyGridSize()">
                     <i class="fas fa-check"></i> Áp dụng kích thước
                 </button>
             </div>
 
-            <!-- Tool buttons -->
+            <!--
+              CÁC NÚT LOẠI GHẾ / PALETTE:
+              - Render từ seatTypes do SeatController đưa vào model.
+              - Nguồn dữ liệu là CatalogService.getActiveSeatTypes().
+              - Mỗi button có data-type = seatType.code.
+              - JS listener `.tool-btn` đổi currentTool khi click.
+              - Không gọi controller khi chọn tool; chỉ thay loại ghế sẽ vẽ trên lưới.
+            -->
             <button th:each="seatType, stat : ${seatTypes}"
                     class="tool-btn"
                     th:classappend="${stat.first} ? ' active'"
@@ -254,11 +298,25 @@
 
             <!-- Reset button -->
             <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+                <!--
+                  NÚT: "Trả về ghế thường"
+                  - onclick="resetGridLocal()".
+                  - Chỉ đổi toàn bộ matrixData trên frontend thành std.
+                  - Chưa lưu DB; nếu reload trang trước khi bấm "Lưu sơ đồ" thì DB không đổi.
+                -->
                 <button class="btn btn-outline" style="width: 100%; justify-content: center;"
                         onclick="resetGridLocal()">
-                    <i class="fas fa-redo"></i> Reset về ghế thường
+                    <i class="fas fa-redo"></i> Trả về ghế thường
                 </button>
-                <!-- Reset server-side (dùng form POST) -->
+                <!--
+                  FORM RESET SERVER-SIDE:
+                  - Nút "Reset & Lưu vào DB" submit POST /admin/rooms/{id}/seats/reset.
+                  - SeatController.resetDefault(roomId, redirectAttributes) nhận request.
+                  - Controller lấy Room, tạo ma trận rows x cols toàn "std".
+                  - Gọi SeatService.saveMatrix(roomId, defaultMatrix).
+                  - Service xóa seats cũ, lưu ghế thường mới, cập nhật totalSeats.
+                  - Sau đó redirect lại GET /admin/rooms/{id}/seats để tải matrix mới nhất từ DB.
+                -->
                 <form th:action="@{/admin/rooms/{id}/seats/reset(id=${room.id})}" method="POST"
                       onsubmit="return confirm('Reset toàn bộ ghế về mặc định và lưu ngay vào DB?')">
                     <button type="submit" class="btn btn-danger" style="width: 100%; justify-content: center;">
@@ -314,7 +372,15 @@
 </div>
 
 <!-- ===== SERVER DATA ===== -->
-<!-- Inject dữ liệu từ server vào JS -->
+<!--
+  SERVER DATA INJECTION:
+  Các biến dưới đây được Thymeleaf render từ model của SeatController.seatDesignPage(...).
+  - SERVER_ROWS/SERVER_COLS: kích thước hiện tại của phòng trong bảng rooms.
+  - SERVER_ROOM_ID: room.id, dùng để build URL POST save/reset.
+  - SERVER_MATRIX: matrixJson do SeatService.matrixToJson(...) sinh từ bảng seats.
+  - SERVER_SEAT_TYPES: danh sách loại ghế active do CatalogService.seatTypesToJson(...) sinh.
+  Frontend chỉ dùng dữ liệu này làm state ban đầu; dữ liệu chính thức vẫn được lưu khi gọi POST save/reset.
+-->
 <script th:inline="javascript">
     /*<![CDATA[*/
     const SERVER_ROWS   = /*[[${room.rows}]]*/ 10;
@@ -330,6 +396,15 @@
     // ═══════════════════════════════════════════════════════════════
     //  CONFIG
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * CONFIG / STATE FRONTEND:
+     * - ROWS/COLS: kích thước lưới đang chỉnh trên browser.
+     * - ROOM_ID: id phòng đang thiết kế, dùng cho endpoint /admin/rooms/{ROOM_ID}/seats/save.
+     * - currentTool: loại ghế đang được chọn ở palette.
+     * - isDrawing: true khi người dùng đang giữ chuột để vẽ nhiều ghế liên tục.
+     * - matrixData: ma trận ghế đang chỉnh trên frontend, dạng Array<Array<{type,id}>>.
+     *   Dữ liệu này chưa lưu DB cho tới khi saveMatrix() chạy thành công.
+     */
     let ROWS       = SERVER_ROWS;
     let COLS       = SERVER_COLS;
     const ROOM_ID  = SERVER_ROOM_ID;
@@ -354,6 +429,14 @@
     const seatTypeByCode = new Map(seatTypeList.map(type => [type.code, type]));
     const VALID_SEAT_TYPES = new Set([...seatTypeByCode.keys(), 'skip']);
 
+    /*
+     * parseSeatTypes()
+     * Nhận SERVER_SEAT_TYPES từ Thymeleaf.
+     * Kết quả là danh sách loại ghế active để:
+     * - Render màu/metadata cho ghế.
+     * - Validate frontend xem type có được phép dùng không.
+     * Backend SeatService.validateMatrix(...) vẫn validate lại lần cuối.
+     */
     function parseSeatTypes() {
         if (!SERVER_SEAT_TYPES) return [];
         if (Array.isArray(SERVER_SEAT_TYPES)) return SERVER_SEAT_TYPES;
@@ -367,6 +450,13 @@
         return [];
     }
 
+    /*
+     * getSeatTypeMeta(type)
+     * Lấy metadata của loại ghế:
+     * - color: màu hiển thị trên sơ đồ.
+     * - capacity: sức chứa dùng để tính tổng sức chứa realtime.
+     * - sellable: xác định loại ghế có thể bán hay chỉ là lối đi/ghế hỏng.
+     */
     function getSeatTypeMeta(type) {
         return seatTypeByCode.get(type) || seatTypeByCode.get('std') || {
             code: 'std',
@@ -377,10 +467,20 @@
         };
     }
 
+    /*
+     * normalizeSeatType(type)
+     * Nếu dữ liệu cũ trong DB có type không còn active/không tồn tại, frontend fallback về std
+     * để màn hình vẫn render được. Khi lưu, backend vẫn kiểm tra chặt bằng seat_types active.
+     */
     function normalizeSeatType(type) {
         return VALID_SEAT_TYPES.has(type) ? type : 'std';
     }
 
+    /*
+     * parseServerMatrix()
+     * Chuyển SERVER_MATRIX do backend đưa xuống thành mảng 2D.
+     * SERVER_MATRIX có thể là object array hoặc string JSON tùy cách Thymeleaf render.
+     */
     function parseServerMatrix() {
         if (!SERVER_MATRIX) return null;
         if (Array.isArray(SERVER_MATRIX)) return SERVER_MATRIX;
@@ -397,6 +497,15 @@
     // ═══════════════════════════════════════════════════════════════
     //  INIT DATA
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * initData()
+     * Chạy khi window.onload.
+     * Luồng:
+     * - Parse SERVER_MATRIX từ DB.
+     * - Nếu DB đã có seats thì dùng đúng type từng ô.
+     * - Nếu phòng chưa có seats thì tạo ma trận mặc định toàn "std".
+     * - Gọi updateGridLabels() để đồng bộ text kích thước.
+     */
     function initData() {
         matrixData = [];
         // Parse từ server JSON nếu có, nếu không thì tạo mặc định "std"
@@ -415,10 +524,21 @@
         updateGridLabels();
     }
 
+    /*
+     * createSeatData(r, c, type)
+     * Tạo object cell chuẩn cho matrixData.
+     * id ở frontend là nhãn tạm kiểu A1, B2 để hiển thị; backend sẽ sinh lại label thật
+     * trong SeatService.buildLabel(...) khi lưu.
+     */
     function createSeatData(r, c, type = 'std') {
         return { type: normalizeSeatType(type), id: ALPHABET[r] + (c + 1) };
     }
 
+    /*
+     * updateGridLabels()
+     * Đồng bộ text "Lưới", info phòng và input số hàng/cột sau khi init hoặc resize.
+     * Không gọi backend.
+     */
     function updateGridLabels() {
         const label = `${ROWS} Hàng × ${COLS} Cột`;
         gridSizeText.textContent = label;
@@ -427,6 +547,19 @@
         colInput.value = COLS;
     }
 
+    /*
+     * applyGridSize()
+     * Gọi bởi nút "Áp dụng kích thước".
+     * Luồng frontend:
+     * - Đọc rowInput/colInput.
+     * - validateGridSize(...) theo giới hạn UI.
+     * - Resize matrixData, giữ lại loại ghế cũ ở các ô còn tồn tại.
+     * - Ô mới được tạo mặc định std.
+     * - repairCoupleSeats() sửa các ghế couple/skip bị lệch sau resize.
+     * - renderMatrix(...) vẽ lại.
+     *
+     * Lưu ý: chưa gọi controller. Controller chỉ nhận rows/cols mới khi saveMatrix() POST JSON.
+     */
     function applyGridSize() {
         const nextRows = parseInt(rowInput.value, 10);
         const nextCols = parseInt(colInput.value, 10);
@@ -458,6 +591,14 @@
         renderMatrix({ resetScroll: true });
     }
 
+    /*
+     * repairCoupleSeats()
+     * Sau khi resize hoặc đọc dữ liệu cũ, cần sửa các trường hợp:
+     * - couple nằm ở cột cuối không còn ô bên phải -> đổi về std.
+     * - skip đứng lẻ không có couple bên trái -> đổi về std.
+     * - couple hợp lệ thì ép ô bên phải thành skip.
+     * Backend cũng có validateMatrix(...) để không cho lưu dữ liệu sai.
+     */
     function repairCoupleSeats() {
         for (let r = 0; r < ROWS; r++) {
             for (let c = 0; c < COLS; c++) {
@@ -482,6 +623,11 @@
     // ═══════════════════════════════════════════════════════════════
     //  RENDER GRID
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * alignMatrix()
+     * Canh giữa lưới ghế trong canvas nếu lưới nhỏ hơn vùng nhìn.
+     * Chỉ xử lý UI, không ảnh hưởng dữ liệu matrixData.
+     */
     function alignMatrix() {
         const canvasBody = document.getElementById('canvasBody');
         if (!canvasBody || !matrixEl) return;
@@ -490,6 +636,10 @@
         matrixEl.style.marginRight = extraSpace > 0 ? `${Math.floor(extraSpace / 2)}px` : '0';
     }
 
+    /*
+     * resetCanvasScroll()
+     * Đưa vùng canvas về góc trên/trái sau khi đổi kích thước lưới.
+     */
     function resetCanvasScroll() {
         const canvasBody = document.getElementById('canvasBody');
         if (!canvasBody) return;
@@ -497,6 +647,17 @@
         canvasBody.scrollTop = 0;
     }
 
+    /*
+     * renderMatrix(options)
+     * Vẽ lại toàn bộ lưới ghế từ matrixData.
+     * Mỗi cell hợp lệ tạo ra một div.seat.
+     * Cell type skip không render riêng vì đó là nửa còn lại của ghế couple.
+     *
+     * Quan trọng:
+     * - renderMatrix() cũng gắn event mousedown/mouseenter cho từng ghế.
+     * - Khi click/kéo trên ghế, event gọi applyTool(r,c).
+     * - Sau khi render xong gọi updateStats() để tính realtime số ghế/sức chứa.
+     */
     function renderMatrix(options = {}) {
         matrixEl.innerHTML = '';
         for (let r = 0; r < ROWS; r++) {
@@ -529,7 +690,12 @@
                     div.textContent = c + 1;
                 }
 
-                // Mouse events để vẽ
+                /*
+                 * Mouse events để vẽ:
+                 * - mousedown: bắt đầu thao tác vẽ, applyTool(r,c) ngay ô đang bấm.
+                 * - mouseenter: nếu đang giữ chuột, tiếp tục applyTool(r,c) cho ô đi qua.
+                 * Các thao tác này chỉ sửa matrixData ở frontend; chưa lưu DB.
+                 */
                 div.addEventListener('mousedown', () => { isDrawing = true; applyTool(r, c); });
                 div.addEventListener('mouseenter', () => { if (isDrawing) applyTool(r, c); });
 
@@ -553,6 +719,11 @@
         updateStats();
     }
 
+    /*
+     * applySeatStyle(el, type)
+     * Áp màu ghế theo metadata seat type đang active.
+     * Nếu type empty thì hiển thị dạng ô trống/lối đi.
+     */
     function applySeatStyle(el, type) {
         const meta = getSeatTypeMeta(type);
         if (type === 'empty') {
@@ -564,6 +735,13 @@
         }
     }
 
+    /*
+     * canBecomeCouplePart(type)
+     * Quy tắc ghế couple:
+     * - Couple chiếm 2 cột: ô trái là couple, ô phải là skip.
+     * - Chỉ được ghép từ hai ghế đơn bán được, capacity = 1.
+     * - Không cho ghép từ broken/empty/skip/couple hoặc loại không bán.
+     */
     function canBecomeCouplePart(type) {
         const meta = getSeatTypeMeta(type);
         return type !== 'couple'
@@ -583,6 +761,23 @@
     // ═══════════════════════════════════════════════════════════════
     //  APPLY TOOL
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * applyTool(r, c)
+     * Gọi khi người dùng click/kéo lên một ô ghế.
+     * Luồng xử lý:
+     * - Kiểm tra currentTool có thuộc danh sách loại ghế active không.
+     * - Nếu currentTool là couple:
+     *   + Chặn nếu đang ở cột cuối.
+     *   + Chặn nếu ô hiện tại hoặc ô bên phải không phải ghế đơn có thể ghép.
+     *   + Set ô hiện tại = couple, ô bên phải = skip.
+     * - Nếu currentTool là loại khác:
+     *   + Nếu đang đè lên couple thì giải phóng ô skip bên phải.
+     *   + Nếu đang đè lên skip thì tìm couple bên trái và tách thành ghế thường/loại hiện tại.
+     *   + Set ô hiện tại theo currentTool.
+     * - Cuối cùng renderMatrix() để cập nhật giao diện và thống kê.
+     *
+     * Không gọi controller. Dữ liệu chỉ lưu DB khi saveMatrix() được gọi.
+     */
     function applyTool(r, c) {
         if (!VALID_SEAT_TYPES.has(currentTool) || currentTool === 'skip') {
             showToast('error', '<i class="fas fa-times-circle"></i> Loại ghế đang chọn không hợp lệ.');
@@ -629,6 +824,15 @@
     // ═══════════════════════════════════════════════════════════════
     //  STATS
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * updateStats()
+     * Tính realtime số lượng theo một số loại phổ biến và tổng sức chứa.
+     * Tổng sức chứa dựa trên seatType.capacity:
+     * - std/vip thường capacity 1.
+     * - couple capacity 2.
+     * - empty/broken/skip capacity 0.
+     * Số này chỉ là preview frontend; khi lưu, SeatService.saveMatrix(...) sẽ tính lại và cập nhật rooms.totalSeats.
+     */
     function updateStats() {
         let std = 0, vip = 0, couple = 0, broken = 0, total = 0;
         for (let r = 0; r < ROWS; r++) {
@@ -653,6 +857,12 @@
     // ═══════════════════════════════════════════════════════════════
     //  TOOL SELECTION
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * Event chọn loại ghế:
+     * - Gắn cho toàn bộ button `.tool-btn` render từ seatTypes.
+     * - Khi click, bỏ active ở tool cũ, active tool mới và cập nhật currentTool = data-type.
+     * - Không gọi controller; đây chỉ là chọn "cọ vẽ" hiện tại.
+     */
     document.querySelectorAll('.tool-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
@@ -669,6 +879,13 @@
     // ═══════════════════════════════════════════════════════════════
     //  RESET (local only)
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * resetGridLocal()
+     * Gọi bởi nút "Trả về ghế thường".
+     * Chỉ set toàn bộ matrixData thành std rồi render lại.
+     * Không gọi controller, không lưu DB.
+     * Nếu muốn lưu kết quả này, người dùng phải bấm tiếp "Lưu sơ đồ".
+     */
     function resetGridLocal() {
         if (confirm('Đặt lại toàn bộ lưới về ghế thường? (Chưa lưu vào DB)')) {
             for (let r = 0; r < ROWS; r++)
@@ -681,6 +898,27 @@
     // ═══════════════════════════════════════════════════════════════
     //  SAVE (POST JSON → server)
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * saveMatrix()
+     * Gọi bởi nút "Lưu sơ đồ".
+     *
+     * Luồng frontend -> backend:
+     * 1. Chuyển matrixData từ object cell thành typeMatrix dạng String[][]:
+     *    ví dụ [["std","vip"],["couple","skip"]].
+     * 2. validateMatrixClient(typeMatrix) bắt lỗi nhanh ở browser.
+     * 3. fetch POST /admin/rooms/{ROOM_ID}/seats/save
+     *    body JSON: { "matrix": typeMatrix }.
+     * 4. SeatController.saveMatrix(roomId, body):
+     *    - parseMatrixBody(...) chuyển JSON thành String[][].
+     *    - gọi SeatService.saveMatrix(roomId, matrix).
+     * 5. SeatService.saveMatrix(...):
+     *    - validate room và matrix.
+     *    - chặn đổi kích thước nếu phòng có lịch chiếu hiện tại/tương lai.
+     *    - SeatRepository.deleteAllByRoomId(roomId).
+     *    - tạo lại từng Seat theo rowIndex/colIndex/seatType/seatLabel.
+     *    - tính totalSeats và RoomRepository.save(room).
+     * 6. Controller trả JSON success/message để showToast(...) hiển thị kết quả.
+     */
     async function saveMatrix() {
         // Chuyển matrixData thành mảng 2D string để gửi lên
         const typeMatrix = matrixData.map(row => row.map(cell => cell.type));
@@ -728,6 +966,12 @@
         }
     }
 
+    /*
+     * validateGridSize(rows, cols)
+     * Validate kích thước khi bấm "Áp dụng kích thước".
+     * Đây là giới hạn UI để tránh lưới quá lớn gây khó thao tác.
+     * Backend vẫn validate lại bằng SeatService.validateMatrix(...).
+     */
     function validateGridSize(rows, cols) {
         if (!Number.isInteger(rows) || rows < 1 || rows > MAX_EDIT_ROWS) {
             return `Số hàng ghế phải là số nguyên từ 1 đến ${MAX_EDIT_ROWS}.`;
@@ -738,6 +982,11 @@
         return '';
     }
 
+    /*
+     * validateMatrixSize(rows, cols)
+     * Validate kích thước ma trận trước khi gửi server.
+     * Cho phép giới hạn lớn hơn MAX_EDIT để vẫn tương thích dữ liệu cũ nếu DB đã có sơ đồ lớn.
+     */
     function validateMatrixSize(rows, cols) {
         if (!Number.isInteger(rows) || rows < 1 || rows > MAX_MATRIX_ROWS) {
             return `Sơ đồ ghế phải có từ 1 đến ${MAX_MATRIX_ROWS} hàng.`;
@@ -748,6 +997,19 @@
         return '';
     }
 
+    /*
+     * validateMatrixClient(typeMatrix)
+     * Lớp validate frontend trước khi POST save:
+     * - Có ít nhất 1 hàng/cột.
+     * - Các hàng cùng số cột.
+     * - Mã loại ghế đúng định dạng và thuộc VALID_SEAT_TYPES.
+     * - couple không nằm cột cuối và phải có skip bên phải.
+     * - skip không được đứng lẻ.
+     * - Tổng sức chứa > 0.
+     *
+     * Lưu ý: frontend validate để UX nhanh hơn, nhưng không thay thế backend.
+     * SeatService.validateMatrix(...) vẫn là lớp validate chính trước khi ghi DB.
+     */
     function validateMatrixClient(typeMatrix) {
         if (!Array.isArray(typeMatrix) || typeMatrix.length === 0) {
             return 'Sơ đồ ghế phải có ít nhất 1 hàng.';
@@ -794,6 +1056,14 @@
     // ═══════════════════════════════════════════════════════════════
     //  BOOTSTRAP
     // ═══════════════════════════════════════════════════════════════
+    /*
+     * window.onload
+     * Điểm khởi động của trang thiết kế ghế.
+     * - Nếu không có seatType active thì khóa nút Lưu vì không có dữ liệu hợp lệ để thiết kế.
+     * - Lấy tool active đầu tiên làm currentTool mặc định.
+     * - initData() dựng matrixData từ dữ liệu backend.
+     * - renderMatrix() vẽ lưới lần đầu.
+     */
     window.onload = () => {
         if (seatTypeList.length === 0) {
             showToast('error', '<i class="fas fa-times-circle"></i> Chưa có loại ghế đang hoạt động. Vui lòng cấu hình loại ghế trước.');

@@ -7,19 +7,25 @@ package com.group3.cinema.entity;
 import jakarta.persistence.*;
 
 /**
- * Entity đại diện cho một ô ghế (`seats`) trong sơ đồ lưới của phòng chiếu.
- * 
- * Mỗi ghế gắn liền với một Room (`roomId`) và vị trí tọa độ (`rowIndex`, `colIndex`).
- * Phân loại ghế (`seatType`):
- * - "std"    : Ghế thường
- * - "vip"    : Ghế VIP
- * - "couple" : Ghế đôi (chiếm 2 cột liền kề)
- * - "broken" : Ghế hỏng / bảo trì
- * - "empty"  : Lối đi / Ô trống
- * - "skip"   : Ô bị chiếm bởi phần bên phải của ghế đôi (bỏ qua không render riêng)
- * 
- * Ngày cập nhật: 04/06/2026
- * Khởi tạo bởi: NinhDD - HE186113
+ * Entity đại diện cho một ô/vị trí ghế trong bảng `seats`.
+ *
+ * Vai trò trong luồng thiết kế ghế:
+ * - `SeatController.saveMatrix(...)` nhận ma trận ghế từ giao diện.
+ * - `SeatService.saveMatrix(...)` duyệt từng ô trong ma trận và tạo một entity `Seat`.
+ * - `SeatRepository.saveAll(...)` lưu danh sách entity này xuống bảng `seats`.
+ * - Khi khách đặt vé hoặc nhân viên bán vé tại quầy, hệ thống đọc lại bảng `seats`
+ *   để dựng đúng sơ đồ ghế của phòng.
+ *
+ * Mô hình tọa độ:
+ * - `roomId`: phòng sở hữu ghế.
+ * - `rowIndex`: chỉ số hàng, bắt đầu từ 0. 0 tương ứng hàng A, 1 tương ứng hàng B.
+ * - `colIndex`: chỉ số cột, bắt đầu từ 0. 0 tương ứng cột 1.
+ * - Unique constraint `(room_id, row_index, col_index)` đảm bảo mỗi ô trong một phòng chỉ có một bản ghi.
+ *
+ * Mô hình loại ghế:
+ * - `seatType` lưu mã loại ghế, ví dụ std, vip, couple hoặc mã loại ghế do admin tạo trong `seat_types`.
+ * - `seatLabel` là nhãn hiển thị được sinh tự động, ví dụ A1, B12, C3-C4.
+ * - `skip` là ô kỹ thuật nằm bên phải ghế couple; không bán vé riêng cho ô này.
  */
 @Entity
 @Table(name = "seats",

@@ -1,0 +1,9 @@
+payment:
+  payos:
+    enabled: true
+    endpoint: https://api-merchant.payos.vn/v2/payment-requests
+    client-id: eafd556b-8a5f-4e8b-88ed-d0c5ac070909
+    api-key: 73d03919-8ca8-4b1d-8218-cf1720155a97
+    checksum-key: c57a27e579321ab8cb7d4df2d1428b8efcac33d20eac91a8c1a18fd67960ee36
+    return-url: http://localhost:8080/payment/payos/return
+    cancel-url: http://localhost:8080/payment/payos/cancel

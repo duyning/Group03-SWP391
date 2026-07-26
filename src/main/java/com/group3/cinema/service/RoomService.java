@@ -154,7 +154,37 @@ public class RoomService {
     }
 
     /**
-     * Khởi tạo phòng chiếu mới trong rạp (chặn đặt trạng thái Hoạt động khi chưa kẻ sơ đồ ghế).
+     * Tạo mới một phòng chiếu.
+     *
+     * Luồng gọi:
+     * - `RoomController.addRoom(...)` nhận form từ `/admin/rooms/add`.
+     * - Controller truyền nguyên dữ liệu form vào đây.
+     * - Service chịu trách nhiệm chuẩn hóa, validate và lưu DB.
+     *
+     * Các bước nghiệp vụ:
+     * 1. `validateRoomName(roomName)`:
+     *    - Bắt buộc có tên.
+     *    - Trim khoảng trắng thừa.
+     *    - Giới hạn độ dài.
+     *    - Chặn ký tự lạ.
+     * 2. `validateRoomTypes(roomTypes)`:
+     *    - Phòng có thể hỗ trợ nhiều định dạng cùng lúc, ví dụ "2D, 3D".
+     *    - Mỗi loại phòng phải tồn tại trong bảng `room_types` và đang active.
+     *    - Danh sách hợp lệ được join bằng dấu phẩy để lưu vào `rooms.room_type`.
+     * 3. `validateAudioTech(audioTech)`:
+     *    - Âm thanh phải có trong bảng `audio_technologies` và đang active.
+     * 4. `validateStatus(status)`:
+     *    - Chỉ cho phép "Hoạt động", "Bảo trì", "Tạm ngưng".
+     * 5. `validateDuplicateRoomName(...)`:
+     *    - Tên phòng không được trùng trong cùng rạp.
+     * 6. Nếu người dùng chọn "Hoạt động" khi tạo mới:
+     *    - Chặn lại vì phòng mới chưa có sơ đồ ghế.
+     *    - Trạng thái hoạt động chỉ được bật sau khi `SeatService.saveMatrix(...)` lưu ghế
+     *      và `rooms.total_seats > 0`.
+     * 7. Tạo entity `Room`:
+     *    - `totalSeats = 0` vì sức chứa lấy từ sơ đồ ghế chứ không nhập tay.
+     *    - `rows/cols` tạm dùng default của entity, sẽ cập nhật chính xác khi lưu sơ đồ ghế.
+     * 8. Gọi `roomRepository.save(room)` để insert vào bảng `rooms`.
      */
     @Transactional
     public Room addRoom(Long cinemaId, String roomName, List<String> roomTypes,
@@ -180,7 +210,24 @@ public class RoomService {
         return roomRepository.save(room);
     }
 
-    /** Cập nhật thông tin phòng chiếu (kiểm tra không cho phép đổi tên nếu vướng lịch chiếu hiện tại/tương lai). */
+    /**
+     * Cập nhật thông tin phòng chiếu.
+     *
+     * Luồng gọi:
+     * - `RoomController.editRoom(...)` nhận form từ `/admin/rooms/edit`.
+     * - Service load bản ghi hiện tại từ `rooms` bằng `id`.
+     *
+     * Các ràng buộc quan trọng:
+     * - Tên phòng vẫn phải unique trong cùng rạp, nhưng được bỏ qua chính phòng hiện tại.
+     * - Nếu phòng đã có lịch chiếu từ hôm nay trở đi, không cho đổi tên phòng vì lịch chiếu trong project
+     *   đang đối chiếu theo tên phòng (`showtimes.room`).
+     * - Nếu chuyển trạng thái sang "Hoạt động", phòng phải có sơ đồ ghế và tổng sức chứa > 0.
+     * - Loại phòng và âm thanh vẫn phải là danh mục active, tránh nhập dữ liệu tự do không quản lý được.
+     *
+     * Kết quả:
+     * - Ghi đè các field mô tả phòng: roomName, roomType, audioTech, status.
+     * - Không sửa rows/cols/totalSeats ở đây; các field đó thuộc luồng thiết kế ghế `SeatService`.
+     */
     @Transactional
     public Room updateRoom(Long id, String roomName, List<String> roomTypes,
                            String audioTech, String status) {
@@ -205,7 +252,24 @@ public class RoomService {
         return roomRepository.save(room);
     }
 
-    /** Xóa phòng chiếu và xóa toàn bộ danh sách ghế thuộc phòng chiếu đó. */
+    /**
+     * Xóa phòng chiếu.
+     *
+     * Luồng gọi:
+     * - `RoomController.deleteRoom(...)` nhận `id` từ form xóa.
+     *
+     * Các bước:
+     * 1. Kiểm tra ID hợp lệ và phòng tồn tại.
+     * 2. Load phòng để biết `roomName`.
+     * 3. Gọi `hasUpcomingShowtimes(room.getRoomName())`:
+     *    - Nếu phòng còn lịch chiếu hôm nay hoặc tương lai thì không xóa vật lý.
+     *    - Nghiệp vụ thực tế: phòng đang dùng trong vận hành nên chỉ nên chuyển "Tạm ngưng"/"Bảo trì".
+     * 4. Nếu không vướng lịch:
+     *    - Xóa toàn bộ ghế thuộc phòng bằng `SeatRepository.deleteAllByRoomId(id)`.
+     *    - Xóa phòng bằng `RoomRepository.deleteById(id)`.
+     *
+     * Lưu ý: project chưa dùng soft delete cho phòng, nên thao tác này là xóa vật lý.
+     */
     @Transactional
     public void deleteRoom(Long id) {
         if (id == null || id <= 0) {
@@ -260,6 +324,17 @@ public class RoomService {
         return cleanRoomName;
     }
 
+    /**
+     * Validate danh sách loại phòng được chọn từ multi-select.
+     *
+     * Dữ liệu vào là list do form gửi lên, ví dụ ["2D", "3D"].
+     * Dữ liệu ra là chuỗi lưu DB, ví dụ "2D, 3D".
+     *
+     * Lý do không lưu fix cứng:
+     * - Loại phòng được quản lý trong bảng `room_types`.
+     * - Người quản lý phải tạo/active loại phòng trước thì màn tạo phòng mới chọn được.
+     * - Như vậy hệ thống có thể mở rộng thêm IMAX, Premium, ScreenX... mà không sửa code.
+     */
     private String validateRoomTypes(List<String> roomTypes) {
         if (roomTypes == null || roomTypes.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một loại phòng.");
@@ -291,6 +366,13 @@ public class RoomService {
         return joinedRoomTypes;
     }
 
+    /**
+     * Validate công nghệ âm thanh.
+     *
+     * Dữ liệu vào là tên công nghệ từ dropdown, ví dụ "Dolby Atmos".
+     * Service kiểm tra tên đó tồn tại và active trong `audio_technologies`.
+     * Nếu danh mục bị tắt hoặc chưa tạo, phòng không được lưu với dữ liệu đó.
+     */
     private String validateAudioTech(String audioTech) {
         if (!StringUtils.hasText(audioTech)) {
             throw new IllegalArgumentException("Công nghệ âm thanh không được để trống.");
@@ -328,6 +410,14 @@ public class RoomService {
         }
     }
 
+    /**
+     * Chặn bật trạng thái "Hoạt động" khi phòng chưa có sơ đồ ghế hợp lệ.
+     *
+     * Luồng liên quan:
+     * - Tạo/sửa phòng chỉ quản lý thông tin phòng.
+     * - Sức chứa thật được sinh ở `SeatService.saveMatrix(...)`.
+     * - Do đó muốn một phòng đi vào vận hành, phòng phải có ít nhất một ghế bán được.
+     */
     private void validateRoomCanBeActive(Room room, String status) {
         if (!"Hoạt động".equals(status)) {
             return;

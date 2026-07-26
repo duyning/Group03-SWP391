@@ -1,11 +1,20 @@
 /**
- * Entity lưu trữ Cấu hình Loại Ghế (`seat_types`).
- * 
- * Mã loại ghế (`code`): std, vip, couple, broken, empty, skip.
- * Các thuộc tính: Tên hiển thị (`displayName`), Mã màu CSS render sơ đồ ghế (`color`),
- * Sức chứa (`capacity`: Ghế đôi = 2, Thường = 1), Cờ mở bán (`sellable`).
- * 
- * Khởi tạo bởi: NinhDD - HE186113 (04/06/2026)
+ * Entity cấu hình loại ghế trong bảng `seat_types`.
+ *
+ * Vai trò trong luồng tạo ghế:
+ * - Admin tạo/cập nhật loại ghế ở màn danh mục phòng qua `CatalogController`/`CatalogService`.
+ * - `SeatService.validateMatrix(...)` dùng danh sách `SeatType.active = true` để biết loại ghế nào được phép vẽ.
+ * - `SeatService.saveMatrix(...)` dùng `capacity` để tính `rooms.total_seats`.
+ * - `SeatHoldingService` và màn booking dùng `displayName`, `color`, `capacity`, `sellable`
+ *   để render sơ đồ cho khách chọn vé.
+ *
+ * Ý nghĩa field:
+ * - `code`: mã kỹ thuật lưu trong `seats.seat_type`, ví dụ std, vip, couple hoặc mã tự sinh từ tên loại ghế.
+ * - `displayName`: tên tiếng Việt hiển thị trên UI, ví dụ "Ghế VIP".
+ * - `color`: màu ghế trên sơ đồ.
+ * - `capacity`: sức chứa của một ghế. Ghế thường = 1, ghế đôi = 2, lối đi/hỏng thường = 0.
+ * - `sellable`: true nếu khách/nhân viên được bán vé cho loại ghế này.
+ * - `active`: true nếu loại ghế còn được phép dùng khi thiết kế sơ đồ mới.
  */
 package com.group3.cinema.entity;
 

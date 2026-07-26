@@ -1,13 +1,22 @@
 /**
- * Entity lưu trữ đơn hàng tổng hợp khi khách hàng đặt vé trực tuyến (Booking / `customer_bookings`).
- * 
- * Chức năng:
- * - Lưu giữ tổng tiền vé (`ticketSubtotal`), tổng tiền combo bắp nước (`comboSubtotal`),
- *   số tiền chiết khấu voucher (`discountAmount`) và tổng tiền thực tế phải thanh toán (`totalAmount`).
- * - Theo dõi thời gian hết hạn đơn hàng (`expiresAt`) để tự động giải phóng giữ ghế nếu chưa thanh toán (Scheduler job).
- * - Quản lý các trạng thái đơn hàng (Status: PENDING - Chờ thanh toán, PAID - Đã thanh toán, CANCELLED - Hủy, EXPIRED - Hết hạn).
- * 
- * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
+ * Entity lưu hóa đơn/đơn đặt vé tổng trong bảng `customer_bookings`.
+ *
+ * Vai trò trong flow bán vé tại quầy:
+ * - Tiền mặt:
+ *   + `CounterSaleService.completeSale(...)` tạo Booking status PAID ngay.
+ *   + `paidAt` được set ngay thời điểm nhân viên nhận tiền.
+ *   + Các ghế trong `booking_tickets` chuyển BOOKED.
+ * - payOS:
+ *   + `CounterSaleService.createCounterPayment(...)` tạo Booking status PENDING.
+ *   + `expiresAt` theo thời hạn giữ ghế để nếu khách không thanh toán thì hệ thống có thể giải phóng.
+ *   + Khi payment callback thành công, flow payment chung đổi Booking sang PAID.
+ *
+ * Booking là nơi gom tổng tiền:
+ * - `ticketSubtotal`: tổng tiền vé.
+ * - `comboSubtotal`: tổng tiền combo bắp nước.
+ * - `discountAmount`: số tiền voucher giảm.
+ * - `totalAmount`: số tiền cuối cùng phải thu.
+ * - `voucherCode`: mã voucher đã áp dụng nếu có.
  */
 package com.group3.cinema.entity;
 
@@ -20,11 +29,11 @@ import java.time.LocalDateTime;
 public class Booking {
     
     /**
-     * Enum các trạng thái đơn đặt vé:
-     * - PENDING: Mới tạo, chờ người dùng thanh toán qua cổng thanh toán.
-     * - PAID: Đã giao dịch thanh toán thành công.
-     * - CANCELLED: Đã bị hủy bởi người dùng hoặc hệ thống.
-     * - EXPIRED: Quá thời gian chờ thanh toán (expiresAt).
+     * Trạng thái đơn:
+     * - PENDING: Đã tạo đơn nhưng chưa thanh toán, thường dùng cho payOS.
+     * - PAID: Đã thanh toán thành công, dùng cho tiền mặt tại quầy và payOS callback thành công.
+     * - CANCELLED: Đã bị hủy.
+     * - EXPIRED: Quá thời gian chờ thanh toán/giữ ghế.
      */
     public enum Status { PENDING, PAID, CANCELLED, EXPIRED }
 

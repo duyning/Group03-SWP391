@@ -1,12 +1,23 @@
 /**
- * Entity lưu giữ vị trí ghế đang được giữ tạm thời hoặc đã bán thành công theo từng suất chiếu (`booking_tickets`).
- * 
- * Đảm bảo tính nhất quán (Concurreny Control):
- * - Đặt ràng buộc uniqueConstraint trên cặp `(showtime_id, seat_id)` để ngăn hai người cùng đặt 1 ghế.
- * - `holdToken` và `holdExpiresAt`: Giữ ghế tạm trong N phút (thường 5-10 phút) cho người dùng thanh toán.
- * - Trạng thái (`Status`): HOLDING (Đang giữ tạm), BOOKED (Đã bán thành công).
- * 
- * Khởi tạo bởi: HuyPB - HE191335 (24/06/2026)
+ * Entity lưu trạng thái một ghế trong một suất chiếu.
+ *
+ * Vai trò trong flow bán vé tại quầy:
+ * - Khi nhân viên chọn ghế ở `/admin/counter-sales`, `SeatHoldingService.holdSeats(...)`
+ *   tạo các bản ghi `BookingTicket` status HOLDING.
+ * - Khi nhân viên chốt tiền mặt, `CounterSaleService.completeSale(...)`
+ *   gắn `bookingId`, đổi status HOLDING -> BOOKED, xóa holdToken/holdExpiresAt.
+ * - Khi nhân viên tạo payOS, `CounterSaleService.createCounterPayment(...)`
+ *   gắn `bookingId` nhưng giữ status HOLDING cho tới khi callback thanh toán xác nhận.
+ *
+ * Cơ chế chống bán trùng ghế:
+ * - Unique constraint `(showtime_id, seat_id)` chặn hai bản ghi cho cùng một ghế trong cùng một suất.
+ * - Trước khi insert, service vẫn kiểm tra BOOKED/HOLDING để trả thông báo nghiệp vụ dễ hiểu.
+ * - Nếu hai request đồng thời vượt qua kiểm tra, DB constraint là lớp bảo vệ cuối.
+ *
+ * Ý nghĩa field giữ ghế:
+ * - `holdToken`: mã phiên giữ ghế của một máy/trình duyệt.
+ * - `holdExpiresAt`: thời điểm hết hạn giữ ghế, thường 5 phút.
+ * - `bookingId`: null khi chỉ giữ ghế nháp; có giá trị khi đã tạo booking thật.
  */
 package com.group3.cinema.entity;
 
@@ -19,9 +30,9 @@ import java.time.LocalDateTime;
 public class BookingTicket {
 
     /**
-     * Enum trạng thái ghế đặt trong suất chiếu:
-     * - HOLDING: Đang giữ tạm thời chờ thanh toán.
-     * - BOOKED: Đã thanh toán và xuất vé thành công.
+     * Trạng thái ghế trong một suất chiếu:
+     * - HOLDING: Ghế đang được giữ tạm để checkout hoặc chờ payOS.
+     * - BOOKED: Ghế đã thanh toán thành công, không được bán lại.
      */
     public enum Status { HOLDING, BOOKED }
 

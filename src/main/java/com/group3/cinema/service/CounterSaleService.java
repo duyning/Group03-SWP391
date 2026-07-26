@@ -1,15 +1,36 @@
 /**
- * Service bán vé và dịch vụ bắp nước trực tiếp tại quầy vé POS cho nhân viên rạp (`CounterSaleService`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `CounterSaleController` (POS Terminal bán vé tại rạp).
- * - Tương tác với:
- *   + `ShowtimeRepository`: Tra cứu suất chiếu bán vé hợp lệ (`getSellableShowtimes`).
- *   + `AccountRepository`: Tra cứu khách hàng thành viên theo SĐT/Email hoặc tự động tạo tài khoản vãng lai `WALK_IN_EMAIL`.
- *   + `ComboRepository`: Bán sản phẩm bắp nước đính kèm.
- *   + `VoucherRepository`: Áp dụng mã giảm giá và tính toán chiết khấu.
- *   + `BookingRepository`, `BookingTicketRepository`, `BookingComboRepository`, `PaymentRepository`: Lưu phiếu đặt vé, giữ ghế, giao dịch thanh toán Tiền mặt / VietQR payOS.
- *   + `SeatHoldingService`, `TicketService`, `PaymentGatewayRouter`, `LoyaltyService`: Giữ vị trí ghế tạm thời, tính đơn giá vé, sinh QR code, cộng điểm thưởng thăng hạng thành viên.
+ * Service nghiệp vụ bán vé tại quầy POS.
+ *
+ * Đây là service trung tâm của flow `/admin/counter-sales`.
+ *
+ * Luồng tổng quan theo màn hình:
+ * 1. Bước chọn suất/ghế (`counter-sales.html`):
+ *    - Frontend gọi `getSellableShowtimes(...)` để lấy suất còn bán.
+ *    - Nhân viên chọn một suất, frontend gọi `getSeatMap(...)`.
+ *    - `getSeatMap(...)` gọi `SeatHoldingService` để ghép sơ đồ ghế vật lý với trạng thái BOOKED/HOLDING.
+ *    - Khi nhân viên chọn ghế, frontend gọi `holdSeats(...)`.
+ *    - `holdSeats(...)` ghi bản ghi `booking_tickets` status HOLDING trong 5 phút.
+ * 2. Bước hóa đơn/thanh toán (`counter-sales-checkout.html`):
+ *    - Frontend gọi `getActiveCombos(...)`, `getActiveVouchers(...)`, `searchCustomers(...)`.
+ *    - Mỗi lần thay đổi combo/voucher/loại khách, frontend gọi `previewSale(...)`.
+ *    - `previewSale(...)` dựng hóa đơn nháp từ ghế đang HOLDING, combo và voucher.
+ * 3. Chốt tiền mặt:
+ *    - Frontend gọi `completeSale(...)` với paymentMethod CASH.
+ *    - Service tạo `Booking` PAID, đổi ghế HOLDING -> BOOKED, tạo `Payment` SUCCESS,
+ *      tạo các bản ghi `Ticket` để in/hiển thị, tăng used quantity voucher và cộng điểm thành viên.
+ * 4. Chốt payOS:
+ *    - Frontend gọi `createCounterPayment(...)` với paymentMethod PAYOS.
+ *    - Service tạo `Booking` PENDING, giữ ghế vẫn HOLDING, tạo `Payment` PENDING,
+ *      rồi gọi `PaymentGatewayRouter` sinh checkout URL payOS.
+ *    - Khi payOS callback thành công, flow thanh toán chung của project sẽ cập nhật booking/payment.
+ *
+ * Các bảng chính bị tác động:
+ * - `showtimes`, `rooms`, `seats`: đọc để xác định suất/phòng/sơ đồ.
+ * - `booking_tickets`: giữ ghế và chống trùng ghế.
+ * - `customer_bookings`: hóa đơn tổng.
+ * - `booking_combos`: combo bán kèm.
+ * - `payments`: giao dịch CASH/PAYOS.
+ * - `ticket`: vé hiển thị/in sau khi thanh toán thành công.
  */
 package com.group3.cinema.service;
 
@@ -120,7 +141,17 @@ public class CounterSaleService {
         this.loyaltyService = loyaltyService;
     }
 
-    /** Lấy danh sách các suất chiếu còn khả dụng để bán vé tại quầy POS. */
+    /**
+     * Lấy danh sách suất chiếu còn bán tại quầy.
+     *
+     * Luồng gọi:
+     * - `CounterSaleApiController.showtimes(...)` nhận date/movieId từ frontend.
+     * - Service gọi `ShowtimeRepository.searchShowtimes(...)`.
+     * - Chỉ giữ lại suất chưa bắt đầu:
+     *   + Ngày chiếu sau hôm nay.
+     *   + Hoặc ngày chiếu là hôm nay nhưng giờ chiếu lớn hơn giờ hiện tại.
+     * - Mỗi suất được chuyển thành `ShowtimeOption`, gồm sức chứa, số ghế đã bán và số ghế còn lại.
+     */
     @Transactional(readOnly = true)
     public List<ShowtimeOption> getSellableShowtimes(LocalDate date, Integer movieId) {
         LocalDate targetDate = date == null ? LocalDate.now() : date;
@@ -134,7 +165,14 @@ public class CounterSaleService {
                 .toList();
     }
 
-    /** Tìm kiếm tài khoản khách hàng thành viên tại quầy theo số điện thoại hoặc email. */
+    /**
+     * Tìm khách hàng thành viên tại quầy.
+     *
+     * Luồng gọi:
+     * - Checkout page gọi khi nhân viên gõ tên/email/số điện thoại.
+     * - Repository chỉ tìm account role CUSTOMER.
+     * - Trả tối đa 12 gợi ý để dropdown nhẹ và dễ chọn.
+     */
     @Transactional(readOnly = true)
     public List<CustomerOption> searchCustomers(String keyword) {
         String normalized = keyword == null ? "" : keyword.trim();
@@ -150,7 +188,11 @@ public class CounterSaleService {
                 .toList();
     }
 
-    /** Lấy danh sách các combo bắp nước đang mở bán tại quầy. */
+    /**
+     * Lấy combo đang mở bán để bán kèm hóa đơn tại quầy.
+     *
+     * Chỉ lấy status ACTIVE hoặc NEW, không lấy món lẻ/đồ đã ngừng bán.
+     */
     @Transactional(readOnly = true)
     public List<ComboOption> getActiveCombos() {
         return comboRepository.findByStatusInOrderByNameAsc(List.copyOf(ACTIVE_COMBO_STATUSES)).stream()
@@ -165,7 +207,17 @@ public class CounterSaleService {
                 .toList();
     }
 
-    /** Lấy danh sách các mã Voucher giảm giá active có thể dùng trực tiếp tại quầy. */
+    /**
+     * Lấy voucher có thể dùng tại quầy.
+     *
+     * Điều kiện lọc ban đầu:
+     * - Voucher đang trong thời gian active theo repository.
+     * - Chưa bị xóa mềm.
+     * - Chưa dùng hết tổng số lượng phát hành.
+     *
+     * Các điều kiện sâu hơn như ngày áp dụng, ngày lễ, min order, loại dịch vụ/loại ghế
+     * được kiểm tra ở `evaluateVoucher(...)` khi có hóa đơn cụ thể.
+     */
     @Transactional(readOnly = true)
     public List<VoucherOption> getActiveVouchers() {
         LocalDateTime now = LocalDateTime.now();
@@ -185,7 +237,17 @@ public class CounterSaleService {
                 .toList();
     }
 
-    /** Tải sơ đồ ma trận vị trí ghế tại quầy. */
+    /**
+     * Tải sơ đồ ghế cho một suất chiếu tại quầy.
+     *
+     * Luồng gọi:
+     * - Frontend gửi `showtimeId` sau khi nhân viên chọn suất.
+     * - `selectionFor(showtimeId)` map suất chiếu sang `BookingSelection` gồm movie, room, ngày giờ.
+     * - Gọi `SeatHoldingService.getSeatMap(selection, holdToken)`.
+     * - Service con đọc `seats` của phòng và `booking_tickets` của suất để xác định từng ô:
+     *   AVAILABLE, SELECTED, HOLDING, BOOKED hoặc UNAVAILABLE.
+     * - Trả rows/cols để giao diện vẽ sơ đồ full theo đúng cấu hình phòng.
+     */
     @Transactional
     public SeatMapResponse getSeatMap(Long showtimeId, String holdToken) {
         BookingSelection selection = selectionFor(showtimeId);
@@ -198,7 +260,19 @@ public class CounterSaleService {
         return new SeatMapResponse(selection, seats, rows, cols);
     }
 
-    /** Giữ vị trí ghế trực tiếp tại quầy POS trong 5 phút. */
+    /**
+     * Giữ ghế tại quầy trong 5 phút.
+     *
+     * Luồng gọi:
+     * - Frontend gọi sau mỗi lần nhân viên xác nhận danh sách ghế ở bước 1.
+     * - Service kiểm tra suất còn bán bằng `ensureShowtimeStillSellable(...)`.
+     * - Gọi `SeatHoldingService.holdSeats(...)` để:
+     *   + Validate ghế thuộc đúng phòng và là ghế bán được.
+     *   + Chặn quá 8 chỗ, ghế đôi tính theo capacity.
+     *   + Chặn ghế đã BOOKED hoặc đang HOLDING bởi token khác.
+     *   + Ghi `booking_tickets` status HOLDING kèm holdToken/holdExpiresAt.
+     * - Trả lại token và danh sách vé tạm để bước checkout tính tiền.
+     */
     @Transactional
     public HoldResponse holdSeats(HoldRequest request) {
         if (request == null) {
@@ -216,20 +290,52 @@ public class CounterSaleService {
                 .toList());
     }
 
-    /** Giải phóng token giữ ghế tại quầy. */
+    /**
+     * Giải phóng ghế đang giữ theo token.
+     *
+     * Dùng khi nhân viên bấm đổi ghế, quay lại bước chọn ghế hoặc đóng màn checkout.
+     * Chỉ xóa ghế HOLDING chưa gắn booking; ghế đã BOOKED không bị ảnh hưởng.
+     */
     @Transactional
     public void releaseHold(String holdToken) {
         seatHoldingService.releaseHold(holdToken);
     }
 
-    /** Xem trước tổng chi phí đơn hàng tại quầy (bao gồm vé, combo bắp nước và voucher giảm giá). */
+    /**
+     * Xem trước hóa đơn tại quầy.
+     *
+     * `strict = false` nghĩa là voucher không hợp lệ sẽ không làm hỏng toàn bộ preview.
+     * Service vẫn trả tổng tiền và `voucherMessage` để frontend báo lý do cho nhân viên.
+     */
     @Transactional(readOnly = true)
     public CounterSaleSummary previewSale(CounterSaleRequest request) {
         return buildDraft(request, false).toSummary();
     }
 
     /**
-     * Hoàn tất đơn bán vé trực tiếp bằng Tiền mặt (CASH) tại quầy và xuất vé.
+     * Hoàn tất đơn bán vé trực tiếp bằng tiền mặt.
+     *
+     * Luồng xử lý chi tiết:
+     * 1. `buildDraft(request, true)` dựng hóa đơn ở chế độ strict:
+     *    - Ghế phải còn HOLDING và chưa hết hạn.
+     *    - Combo phải còn bán.
+     *    - Voucher nếu nhập phải thỏa toàn bộ điều kiện.
+     * 2. Chỉ cho phép CASH ở endpoint này.
+     *    - PAYOS phải đi qua `createCounterPayment(...)` để sinh link thanh toán.
+     * 3. `resolveCustomerAccount(...)`:
+     *    - Nếu chọn khách thành viên thì dùng account đó.
+     *    - Nếu chỉ nhập phone/email trùng khách cũ thì dùng khách cũ.
+     *    - Nếu không có khách, dùng account khách vãng lai tại quầy.
+     * 4. Tạo `Booking` status PAID trong bảng `customer_bookings`.
+     * 5. Lấy các dòng `booking_tickets` theo holdToken:
+     *    - Gắn `bookingId`.
+     *    - Đổi status HOLDING -> BOOKED.
+     *    - Xóa holdToken/holdExpiresAt vì ghế đã bán thành công.
+     * 6. Lưu combo đã chọn vào `booking_combos`.
+     * 7. Tăng `vouchers.used_quantity` nếu có áp voucher.
+     * 8. Tạo `Payment` SUCCESS, method CASH, orderCode dạng POS...
+     * 9. Tạo các bản ghi `Ticket` dùng cho trang vé/QR/in vé.
+     * 10. Nếu là khách thành viên thật, cộng điểm loyalty.
      */
     @Transactional
     public CounterSaleResult completeSale(CounterSaleRequest request) {
@@ -313,7 +419,23 @@ public class CounterSaleService {
     }
 
     /**
-     * Tạo mã chuyển khoản VietQR/payOS hiển thị trên màn hình phụ tại quầy bán vé.
+     * Tạo link thanh toán payOS cho đơn tại quầy.
+     *
+     * Luồng xử lý:
+     * 1. Dựng hóa đơn strict giống chốt tiền mặt.
+     * 2. Chỉ chấp nhận paymentMethod PAYOS; CASH không cần QR/link.
+     * 3. Tạo `Booking` status PENDING:
+     *    - Booking này đã có tổng tiền, voucher, combo.
+     *    - Chưa `paidAt` vì khách chưa thanh toán trên payOS.
+     *    - `expiresAt` bám theo thời hạn giữ ghế 5 phút.
+     * 4. Gắn các ghế HOLDING vào booking nhưng vẫn giữ status HOLDING.
+     *    - Mục đích: giữ ghế cho khách trong khi đang thanh toán QR.
+     * 5. Lưu combo vào `booking_combos`.
+     * 6. Tạo `Payment` status PENDING, method PAYOS, orderCode dạng số phù hợp payOS.
+     * 7. Gọi `PaymentGatewayRouter.createRedirectUrl(...)`.
+     * 8. Trả checkoutUrl để frontend chuyển thẳng sang trang payOS.
+     *
+     * Sau bước này, việc đổi `Payment` sang SUCCESS và `Booking` sang PAID thuộc flow callback/return payment chung.
      */
     @Transactional
     public CounterPaymentResult createCounterPayment(CounterSaleRequest request, HttpServletRequest httpRequest) {
@@ -395,6 +517,19 @@ public class CounterSaleService {
         return base + url;
     }
 
+    /**
+     * Dựng hóa đơn nội bộ từ request hiện tại.
+     *
+     * Đây là hàm dùng chung cho preview, chốt tiền mặt và tạo payOS:
+     * - `selectionFor(...)`: xác định suất/phòng/phim.
+     * - `heldTicketLines(...)`: lấy các ghế đang HOLDING theo token và tính lại giá vé.
+     * - `comboLines(...)`: gom số lượng combo, validate combo còn bán.
+     * - `evaluateVoucher(...)`: tính chiết khấu theo voucher.
+     * - Trả `SaleDraft` gồm ticketSubtotal, comboSubtotal, discount, total.
+     *
+     * `strict = false`: dùng cho preview, voucher không hợp lệ chỉ trả message.
+     * `strict = true`: dùng khi tạo đơn thật, mọi lỗi nghiệp vụ đều throw để không lưu đơn sai.
+     */
     private SaleDraft buildDraft(CounterSaleRequest request, boolean strict) {
         if (request == null) {
             throw new IllegalArgumentException("Dữ liệu đơn bán vé không hợp lệ.");
@@ -414,6 +549,15 @@ public class CounterSaleService {
                 voucherDiscount.discount(), total, voucherDiscount.code(), voucherDiscount.reason());
     }
 
+    /**
+     * Lấy danh sách ghế đang giữ và tính lại giá vé tại thời điểm thanh toán.
+     *
+     * Lý do không tin hoàn toàn giá gửi từ frontend:
+     * - Người dùng có thể sửa request.
+     * - Giá vé phụ thuộc suất chiếu, loại ghế, loại khách, ngày lễ...
+     * - Vì vậy backend luôn đọc `booking_tickets`, `seats`, `showtime`
+     *   rồi gọi `TicketService.calculatePrice(...)` để tính lại.
+     */
     private List<TicketLine> heldTicketLines(BookingSelection selection, String holdToken,
                                              String customerType, Showtime showtime) {
         if (holdToken == null || holdToken.isBlank()) {
@@ -447,6 +591,14 @@ public class CounterSaleService {
                 .toList();
     }
 
+    /**
+     * Chuẩn hóa danh sách combo chọn thêm.
+     *
+     * - Gộp các dòng trùng comboId.
+     * - Bỏ qua dòng null/số lượng <= 0.
+     * - Chặn số lượng mỗi loại quá 20 để tránh thao tác sai tại quầy.
+     * - Đọc lại giá combo từ DB, không lấy giá từ frontend.
+     */
     private List<ComboLine> comboLines(List<ComboSelection> selections) {
         if (selections == null || selections.isEmpty()) {
             return List.of();
@@ -479,6 +631,16 @@ public class CounterSaleService {
         return lines;
     }
 
+    /**
+     * Kiểm tra và tính chiết khấu voucher cho hóa đơn tại quầy.
+     *
+     * Các điều kiện được xét theo đúng đơn hiện tại:
+     * - Voucher còn thời gian, chưa xóa, chưa hết số lượng phát hành.
+     * - Đơn đạt min order.
+     * - Ngày chiếu phù hợp applicableDays và ngày lễ.
+     * - Dịch vụ áp dụng đúng: vé, combo hoặc cả hai.
+     * - Nếu voucher chỉ áp dụng loại ghế cụ thể thì chỉ tính phần tiền ghế đó.
+     */
     private VoucherDiscount evaluateVoucher(String code, BookingSelection selection, List<TicketLine> tickets,
                                             BigDecimal ticketSubtotal, BigDecimal comboSubtotal,
                                             BigDecimal beforeDiscount, boolean strict) {
@@ -577,6 +739,15 @@ public class CounterSaleService {
         return discount.min(eligibleAmount).max(BigDecimal.ZERO);
     }
 
+    /**
+     * Xác định account gắn với hóa đơn tại quầy.
+     *
+     * Thứ tự ưu tiên:
+     * 1. Nếu nhân viên chọn khách thành viên từ autocomplete, dùng `customerAccountId`.
+     * 2. Nếu nhập số điện thoại/email trùng account có sẵn, dùng account đó.
+     * 3. Nếu không có thông tin hoặc không tìm thấy, dùng account kỹ thuật `walkin@counter.local`
+     *    đại diện cho khách vãng lai tại quầy.
+     */
     private Account resolveCustomerAccount(CounterSaleRequest request) {
         if (request.customerAccountId() != null) {
             return accountRepository.findById(request.customerAccountId())
@@ -629,6 +800,12 @@ public class CounterSaleService {
         return "09" + String.valueOf(System.currentTimeMillis()).substring(5, 13);
     }
 
+    /**
+     * Tăng số lượng voucher đã dùng sau khi đơn thật được chốt.
+     *
+     * Repository dùng update có điều kiện để tránh vượt tổng số lượng phát hành
+     * nếu nhiều quầy cùng dùng voucher ở cùng thời điểm.
+     */
     private void markVoucherAsUsed(String voucherCode) {
         String normalized = normalizeVoucherCode(voucherCode);
         if (normalized == null) {
@@ -640,6 +817,13 @@ public class CounterSaleService {
         }
     }
 
+    /**
+     * Tạo bản ghi vé hiển thị/in cho từng ghế đã bán.
+     *
+     * `booking_tickets` là bảng chống trùng ghế theo suất.
+     * `ticket` là bảng phục vụ nghiệp vụ sau bán: my-tickets, QR, in vé, lịch sử vé.
+     * Vì vậy sau khi thanh toán thành công, mỗi ghế BOOKED cần một bản ghi `Ticket`.
+     */
     private void createDisplayTickets(Account customer, SaleDraft draft, List<BookingTicket> bookingTickets,
                                       Booking booking, Payment payment, CounterSaleRequest request) {
         Showtime showtime = showtimeRepository.findById(draft.selection().showtimeId())
@@ -673,6 +857,12 @@ public class CounterSaleService {
         }
     }
 
+    /**
+     * Chuyển `showtimeId` thành context bán vé đầy đủ.
+     *
+     * Showtime trong project lưu tên phòng dạng text, nên service phải map ngược sang `Room`
+     * qua `RoomRepository.findFirstByRoomName...` để lấy roomId và sơ đồ ghế đã cấu hình.
+     */
     private BookingSelection selectionFor(Long showtimeId) {
         Showtime showtime = showtimeRepository.findById(showtimeId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
@@ -695,6 +885,7 @@ public class CounterSaleService {
         );
     }
 
+    /** Chặn bán vé tại quầy cho suất đã qua giờ bắt đầu. */
     private void ensureShowtimeStillSellable(BookingSelection selection) {
         if (selection.showDate().isBefore(LocalDate.now())
                 || (selection.showDate().isEqual(LocalDate.now()) && !selection.startTime().isAfter(LocalTime.now()))) {
@@ -702,6 +893,15 @@ public class CounterSaleService {
         }
     }
 
+    /**
+     * Chuyển entity `Showtime` sang dữ liệu card suất chiếu trên màn POS.
+     *
+     * Hàm này tính nhanh:
+     * - Sức chứa phòng từ `rooms.total_seats`.
+     * - Ghế đã bán từ `booking_tickets` BOOKED.
+     * - Ghế đang giữ còn hạn từ `booking_tickets` HOLDING.
+     * - Ghế còn bán = capacity - booked - holding.
+     */
     private ShowtimeOption toShowtimeOption(Showtime showtime) {
         Room room = roomRepository.findFirstByRoomNameIgnoreCaseAndCinemaId(showtime.getRoom(), DEFAULT_CINEMA_ID)
                 .orElseGet(() -> roomRepository.findFirstByRoomNameIgnoreCase(showtime.getRoom()).orElse(null));
@@ -727,6 +927,13 @@ public class CounterSaleService {
         );
     }
 
+    /**
+     * Chuẩn hóa phương thức thanh toán từ frontend.
+     *
+     * Với bán tại quầy hiện tại, nghiệp vụ thực tế chỉ dùng:
+     * - CASH: khách trả tiền mặt tại quầy.
+     * - PAYOS: khách quét/chuyển khoản qua payOS/VietQR.
+     */
     private Payment.Method resolvePaymentMethod(String method) {
         String normalized = method == null || method.isBlank() ? "CASH" : method.trim().toUpperCase(Locale.ROOT);
         try {

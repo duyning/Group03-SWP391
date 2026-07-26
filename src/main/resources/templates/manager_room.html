@@ -1,6 +1,27 @@
 <!--
-  Updated on 2026-06-04: Added project file ownership metadata.
+  Updated on 2026-07-25: Added detailed frontend flow comments for room creation/edit/delete and seat-design navigation.
   Created by: NinhDD - HE186113
+
+  LUỒNG FRONTEND TRANG /admin/rooms:
+  1. Browser mở GET /admin/rooms.
+     - RoomController.listRooms(...) nhận request.
+     - RoomService.filterRooms(...) lấy danh sách phòng.
+     - CatalogService.getActiveRoomTypes()/getActiveAudioTechnologies() lấy dropdown danh mục.
+     - Controller trả view manager_room.html kèm rooms, thống kê và filter hiện tại.
+  2. Nút "Thêm phòng mới" không gọi server ngay.
+     - onclick="openAddModal()" chỉ mở modal addRoomModal.
+     - Khi bấm "Tạo phòng chiếu", form addRoomForm POST /admin/rooms/add.
+     - RoomController.addRoom(...) gọi RoomService.addRoom(...).
+  3. Nút "Sửa" không gọi server ngay.
+     - JS đọc data-* của từng row và gọi openEditModal(...).
+     - Khi bấm "Cập nhật", form editRoomForm POST /admin/rooms/edit.
+     - RoomController.editRoom(...) gọi RoomService.updateRoom(...).
+  4. Nút "Xóa" submit form POST /admin/rooms/delete.
+     - RoomController.deleteRoom(...) gọi RoomService.deleteRoom(...).
+     - Service kiểm tra lịch chiếu tương lai, xóa seats rồi xóa rooms nếu hợp lệ.
+  5. Nút "Thiết kế ghế" chuyển sang GET /admin/rooms/{id}/seats.
+     - SeatController.seatDesignPage(...) load room + matrix + seat types.
+     - View manager_seat.html xử lý phần thiết kế sơ đồ ghế.
 -->
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
@@ -154,9 +175,21 @@
             <p class="breadcrumb">Rạp &amp; Phòng <i class="fas fa-chevron-right"></i> <strong>Beta Cinemas Thái Nguyên</strong></p>
         </div>
         <div style="display:flex; gap:10px;">
+            <!--
+              NÚT: "Thêm phòng mới"
+              - Chỉ chạy frontend openAddModal().
+              - Không gọi controller tại thời điểm click.
+              - Controller chỉ được gọi khi submit form addRoomForm ở modal:
+                POST /admin/rooms/add -> RoomController.addRoom(...) -> RoomService.addRoom(...).
+            -->
             <button class="btn btn-primary" onclick="openAddModal()">
                 <i class="fas fa-plus"></i> Thêm phòng mới
             </button>
+            <!--
+              NÚT: "Danh mục"
+              - Điều hướng sang /admin/catalogs để quản lý loại phòng, công nghệ âm thanh, loại ghế.
+              - Các danh mục active ở đó là nguồn dữ liệu cho checkbox/dropdown ở form tạo/sửa phòng.
+            -->
             <a th:href="@{/admin/catalogs}" class="btn btn-secondary">
                 <i class="fas fa-list"></i> Danh mục
             </a>
@@ -198,7 +231,15 @@
     <!-- Table Card -->
     <div class="table-card">
 
-        <!-- Filter Form -->
+        <!--
+          FORM FILTER: Bộ lọc danh sách phòng
+          - Submit bằng method GET tới /admin/rooms.
+          - RoomController.listRooms(...) nhận các query params:
+            roomName, roomType, audioTech, minSeats, status.
+          - Controller gọi RoomService.filterRooms(...) và render lại bảng.
+          - Nút "Lọc" là submit form này.
+          - Nút "Reset" là link GET /admin/rooms không kèm query param.
+        -->
         <form id="filterForm" th:action="@{/admin/rooms}" method="GET" class="table-filter">
             <div class="filter-group">
                 <label>Tên phòng</label>
@@ -244,7 +285,9 @@
                 </select>
             </div>
             <div style="display: flex; gap: 10px;">
+                <!-- NÚT: "Lọc" -> submit GET /admin/rooms, xử lý ở RoomController.listRooms(...). -->
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Lọc</button>
+                <!-- NÚT: "Reset" -> điều hướng GET /admin/rooms để bỏ toàn bộ filter hiện tại. -->
                 <a th:href="@{/admin/rooms}" class="btn btn-reset">Reset</a>
             </div>
         </form>
@@ -292,10 +335,28 @@
                 </td>
                 <td style="text-align: right;">
                     <div class="action-buttons">
+                        <!--
+                          NÚT: "Thiết kế ghế"
+                          - Điều hướng GET /admin/rooms/{id}/seats.
+                          - SeatController.seatDesignPage(roomId, model) xử lý.
+                          - Controller gọi:
+                            + RoomService.findById(roomId) lấy thông tin phòng.
+                            + SeatService.buildMatrix(roomId) dựng ma trận ghế từ bảng seats.
+                            + CatalogService.getActiveSeatTypes() lấy loại ghế active để vẽ palette.
+                          - Kết quả render sang manager_seat.html.
+                        -->
                         <a th:href="@{/admin/rooms/{id}/seats(id=${room.id})}"
                            class="btn btn-action btn-seat" title="Thiết kế sơ đồ ghế">
                             <i class="fas fa-th"></i> Thiết kế ghế
                         </a>
+                        <!--
+                          NÚT: "Sửa"
+                          - Không submit server ngay.
+                          - JS listener `.edit-room-btn` đọc data-id, data-room-name, data-room-type,
+                            data-audio-tech, data-status rồi gọi openEditModal(...).
+                          - Modal được fill dữ liệu hiện tại.
+                          - Server chỉ được gọi khi bấm nút "Cập nhật" trong editRoomForm.
+                        -->
                         <button type="button" class="btn btn-action edit-room-btn"
                                 th:attr="data-id=${room.id},
                                          data-room-name=${room.roomName},
@@ -304,7 +365,16 @@
                                          data-status=${room.status}">
                             <i class="fas fa-edit"></i> Sửa
                         </button>
-                        <!-- Delete form -->
+                        <!--
+                          FORM XÓA PHÒNG:
+                          - Nút "Xóa" submit POST /admin/rooms/delete kèm hidden id.
+                          - onsubmit confirm ở frontend để tránh bấm nhầm.
+                          - RoomController.deleteRoom(id, redirectAttributes) nhận request.
+                          - RoomService.deleteRoom(id) kiểm tra:
+                            + id hợp lệ và room tồn tại.
+                            + phòng không có lịch chiếu hiện tại/tương lai.
+                            + nếu hợp lệ: SeatRepository.deleteAllByRoomId(id) rồi RoomRepository.deleteById(id).
+                        -->
                         <form th:action="@{/admin/rooms/delete}" method="POST" style="display:inline;"
                               onsubmit="return confirm('Chỉ xóa được phòng chưa có lịch chiếu hiện tại/tương lai. Nếu xóa, toàn bộ sơ đồ ghế của phòng cũng sẽ bị xóa. Tiếp tục?')">
                             <input type="hidden" name="id" th:value="${room.id}">
@@ -331,7 +401,12 @@
     <option th:each="audio : ${audioTechOptions}" th:value="${audio.name}"></option>
 </datalist>
 
-<!-- ===== MODAL THÊM PHÒNG ===== -->
+<!--
+  MODAL THÊM PHÒNG:
+  - Được mở bởi nút "Thêm phòng mới" -> openAddModal().
+  - Không nhập số hàng/số cột/số ghế tại đây.
+  - Sức chứa thật được sinh sau ở màn thiết kế ghế khi SeatService.saveMatrix(...) lưu seats.
+-->
 <div class="modal-overlay" id="addRoomModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -342,9 +417,22 @@
                     <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Thiết lập thông tin cơ bản của phòng chiếu</p>
                 </div>
             </div>
+            <!-- NÚT: dấu X -> closeModal('addRoomModal'), chỉ đóng modal, không gọi controller. -->
             <button class="btn-close" onclick="closeModal('addRoomModal')"><i class="fas fa-times"></i></button>
         </div>
 
+        <!--
+          FORM addRoomForm:
+          - Submit POST /admin/rooms/add.
+          - RoomController.addRoom(...) nhận roomName, roomTypes[], audioTech, status.
+          - RoomService.addRoom(...) validate:
+            + tên phòng không trùng trong cùng rạp.
+            + roomTypes phải tồn tại/active trong room_types.
+            + audioTech phải tồn tại/active trong audio_technologies.
+            + status hợp lệ.
+            + không cho tạo phòng Hoạt động khi chưa có sơ đồ ghế.
+          - Sau khi lưu rooms, controller redirect về /admin/rooms.
+        -->
         <form th:action="@{/admin/rooms/add}" method="POST" id="addRoomForm">
             <div class="modal-body">
 
@@ -395,14 +483,21 @@
 
             </div>
             <div class="modal-footer">
+                <!-- NÚT: "Hủy bỏ" -> closeModal('addRoomModal'), chỉ đóng modal và giữ nguyên DB. -->
                 <button type="button" class="btn" style="background: white; border: 1px solid #e2e8f0; color: #475569;" onclick="closeModal('addRoomModal')">Hủy bỏ</button>
+                <!-- NÚT: "Tạo phòng chiếu" -> submit addRoomForm -> POST /admin/rooms/add. -->
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Tạo phòng chiếu</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ===== MODAL SỬA PHÒNG ===== -->
+<!--
+  MODAL SỬA PHÒNG:
+  - Được mở bởi nút "Sửa" ở từng dòng bảng.
+  - JS openEditModal(...) fill id/tên/loại phòng/âm thanh/trạng thái vào form.
+  - Không sửa rows/cols/totalSeats ở đây; phần đó thuộc manager_seat.html.
+-->
 <div class="modal-overlay" id="editRoomModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -413,9 +508,22 @@
                     <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Cập nhật thông tin cơ bản của phòng chiếu</p>
                 </div>
             </div>
+            <!-- NÚT: dấu X -> closeModal('editRoomModal'), chỉ đóng modal, không gọi controller. -->
             <button class="btn-close" onclick="closeModal('editRoomModal')"><i class="fas fa-times"></i></button>
         </div>
 
+        <!--
+          FORM editRoomForm:
+          - Submit POST /admin/rooms/edit.
+          - RoomController.editRoom(...) nhận id, roomName, roomTypes[], audioTech, status.
+          - RoomService.updateRoom(...) validate:
+            + room tồn tại.
+            + tên mới không trùng phòng khác.
+            + nếu phòng có lịch chiếu hiện tại/tương lai thì không cho đổi tên.
+            + status Hoạt động chỉ được bật nếu phòng đã có seats và totalSeats > 0.
+            + roomTypes/audioTech phải là danh mục active.
+          - Sau khi lưu, controller redirect về /admin/rooms.
+        -->
         <form th:action="@{/admin/rooms/edit}" method="POST" id="editRoomForm">
             <input type="hidden" name="id" id="editRoomId">
             <div class="modal-body">
@@ -467,7 +575,9 @@
 
             </div>
             <div class="modal-footer">
+                <!-- NÚT: "Hủy bỏ" -> closeModal('editRoomModal'), không gọi controller. -->
                 <button type="button" class="btn" style="background: white; border: 1px solid #e2e8f0; color: #475569;" onclick="closeModal('editRoomModal')">Hủy bỏ</button>
+                <!-- NÚT: "Cập nhật" -> submit editRoomForm -> POST /admin/rooms/edit. -->
                 <button type="submit" class="btn" style="background: var(--warning); color: white;"><i class="fas fa-save"></i> Cập nhật</button>
             </div>
         </form>
@@ -476,16 +586,39 @@
 
 <script>
     // ─── Modal helpers ────────────────────────────────────────────────────────
+
+    /*
+     * openAddModal()
+     * Gọi bởi nút "Thêm phòng mới".
+     * Nhiệm vụ frontend:
+     * - Reset addRoomForm để tránh giữ dữ liệu lần mở trước.
+     * - Hiển thị addRoomModal.
+     * Không gọi API/controller. Controller chỉ chạy khi form submit POST /admin/rooms/add.
+     */
     function openAddModal() {
         const form = document.getElementById('addRoomForm');
         if (form) form.reset();
         document.getElementById('addRoomModal').style.display = 'flex';
     }
 
+    /*
+     * closeModal(id)
+     * Gọi bởi nút Hủy, nút X, hoặc click nền tối.
+     * Chỉ ẩn modal ở frontend, không lưu dữ liệu và không gọi controller.
+     */
     function closeModal(id) {
         document.getElementById(id).style.display = 'none';
     }
 
+    /*
+     * openEditModal(id, roomName, roomType, audioTech, status)
+     * Gọi bởi event click của từng nút "Sửa".
+     * Nhiệm vụ:
+     * - Đưa id vào hidden input để POST /admin/rooms/edit biết đang sửa phòng nào.
+     * - Fill tên phòng, âm thanh, trạng thái hiện tại.
+     * - Tách chuỗi roomType dạng "2D, 3D" để tick đúng các checkbox.
+     * - Mở editRoomModal.
+     */
     function openEditModal(id, roomName, roomType, audioTech, status) {
         document.getElementById('editRoomId').value    = id;
         document.getElementById('editRoomName').value  = roomName;
@@ -495,6 +628,11 @@
         document.getElementById('editRoomModal').style.display = 'flex';
     }
 
+    /*
+     * Gắn click handler cho tất cả nút `.edit-room-btn`.
+     * Dữ liệu mỗi phòng được Thymeleaf render vào data-* ngay tại row bảng,
+     * nên không cần gọi thêm API để lấy chi tiết phòng trước khi mở modal.
+     */
     document.querySelectorAll('.edit-room-btn').forEach(function (button) {
         button.addEventListener('click', function () {
             openEditModal(
@@ -507,6 +645,10 @@
         });
     });
 
+    /*
+     * setSelectValue(selectId, value)
+     * Dùng khi mở modal sửa để chọn lại option âm thanh/trạng thái đúng với dữ liệu DB.
+     */
     function setSelectValue(selectId, value) {
         const sel = document.getElementById(selectId);
         for (let i = 0; i < sel.options.length; i++) {
@@ -517,6 +659,11 @@
         }
     }
 
+    /*
+     * setRoomTypeCheckboxes(roomTypeText)
+     * Dữ liệu room.roomType trong DB là chuỗi nhiều loại phòng được join bằng dấu phẩy.
+     * Hàm này chuyển chuỗi đó thành list rồi tick các checkbox tương ứng trong modal sửa.
+     */
     function setRoomTypeCheckboxes(roomTypeText) {
         const selectedTypes = (roomTypeText || '')
             .split(',')
@@ -532,6 +679,13 @@
         return document.querySelectorAll(selector + ':checked').length > 0;
     }
 
+    /*
+     * validateRoomTypeSelection(formId, selector)
+     * Validate nhẹ ở frontend cho addRoomForm/editRoomForm:
+     * - Bắt buộc chọn ít nhất một loại phòng.
+     * - Nếu thiếu thì preventDefault và hiện alert.
+     * Backend RoomService.validateRoomTypes(...) vẫn validate lại để chống request giả.
+     */
     function validateRoomTypeSelection(formId, selector) {
         const form = document.getElementById(formId);
         if (!form) return;
