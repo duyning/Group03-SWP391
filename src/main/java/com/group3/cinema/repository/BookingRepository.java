@@ -20,6 +20,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByIdAndAccountId(Long id, Integer accountId);
     List<Booking> findByStatusAndExpiresAtBefore(Booking.Status status, LocalDateTime expiresAt);
     long countByAccountIdAndVoucherCodeAndStatusIn(Integer accountId, String voucherCode, List<Booking.Status> statuses);
+    // Booking History: lay booking cua account va sap xep createdAt moi nhat truoc.
     List<Booking> findByAccountIdOrderByCreatedAtDesc(Integer accountId);
 
     @Query("""

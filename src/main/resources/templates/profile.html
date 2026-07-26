@@ -456,15 +456,18 @@
 </head>
 <body class="customer-header-page">
 
+<!-- Chen fragment header dung chung cua customer vao trang profile. -->
 <div th:replace="~{fragments/common_header :: customerHeader('', '')}"></div>
 
 <div class="profile-card">
+    <!-- ADMIN/MANAGER quay ve dashboard; CUSTOMER quay ve home. -->
     <a th:href="${account.role != null && (account.role.name() == 'ADMIN' || account.role.name() == 'MANAGER')} ? @{/admin/dashboard} : @{/home}"
        class="btn-action btn-back btn-back-top">
         <i class="fas fa-arrow-left"></i> Quay lại
     </a>
 
     <div class="profile-header">
+        <!-- Lay chu cai dau cua account.name lam avatar; dung U neu ten rong. -->
         <div class="profile-avatar" th:text="${account.name != null && !account.name.isEmpty() ? account.name.substring(0,1).toUpperCase() : 'U'}">U</div>
     </div>
 
@@ -474,6 +477,7 @@
             <div class="info-icon"><i class="fas fa-user"></i></div>
             <div class="info-content">
                 <div class="info-label">Họ và tên</div>
+                <!-- th:text thay text mau bang account.name; class empty danh dau gia tri rong. -->
                 <div class="info-value" th:text="${account.name}" th:classappend="${account.name == null || account.name.isEmpty()} ? 'empty' : ''">Chưa cập nhật</div>
             </div>
         </div>
@@ -483,6 +487,7 @@
             <div class="info-icon"><i class="fas fa-envelope"></i></div>
             <div class="info-content">
                 <div class="info-label">Email</div>
+                <!-- Email duoc doc tu model attribute account. -->
                 <div class="info-value" th:text="${account.email}" th:classappend="${account.email == null || account.email.isEmpty()} ? 'empty' : ''">Chưa cập nhật</div>
             </div>
         </div>
@@ -492,7 +497,9 @@
             <div class="info-icon"><i class="fas fa-phone"></i></div>
             <div class="info-content">
                 <div class="info-label">Số điện thoại</div>
+                <!-- Chi hien so dien thoai khi account.phoneNum co gia tri. -->
                 <div class="info-value" th:if="${account.phoneNum != null && !account.phoneNum.isEmpty()}" th:text="${account.phoneNum}">0123456789</div>
+                <!-- Hien fallback khi so dien thoai null hoac rong. -->
                 <div class="info-value empty" th:if="${account.phoneNum == null || account.phoneNum.isEmpty()}">Chưa cập nhật</div>
             </div>
         </div>
@@ -502,7 +509,9 @@
             <div class="info-icon"><i class="fas fa-birthday-cake"></i></div>
             <div class="info-content">
                 <div class="info-label">Ngày sinh</div>
+                <!-- #temporals format LocalDate dob thanh dd/MM/yyyy. -->
                 <div class="info-value" th:if="${account.dob != null}" th:text="${#temporals.format(account.dob, 'dd/MM/yyyy')}">01/01/2000</div>
+                <!-- Hien fallback khi chua co ngay sinh. -->
                 <div class="info-value empty" th:if="${account.dob == null}">Chưa cập nhật</div>
             </div>
         </div>
@@ -512,7 +521,9 @@
             <div class="info-icon"><i class="fas fa-venus-mars"></i></div>
             <div class="info-content">
                 <div class="info-label">Giới tính</div>
+                <!-- Hien gender khi co du lieu. -->
                 <div class="info-value" th:if="${account.gender != null && !account.gender.isEmpty()}" th:text="${account.gender}">Nam</div>
+                <!-- Hien fallback khi gender null hoac rong. -->
                 <div class="info-value empty" th:if="${account.gender == null || account.gender.isEmpty()}">Chưa cập nhật</div>
             </div>
         </div>
@@ -523,6 +534,7 @@
             <div class="info-content">
                 <div class="info-label">Vai trò</div>
                 <div class="info-value">
+                    <!-- Doi enum role thanh ten tieng Viet de hien tren UI. -->
                     <span th:if="${account.role != null}" th:text="${account.role.name() == 'ADMIN' ? 'Quản trị viên' : (account.role.name() == 'MANAGER' ? 'Quản lý' : 'Khách hàng')}">Khách hàng</span>
                     <span th:if="${account.role == null}" class="empty">Chưa cập nhật</span>
                 </div>
@@ -534,6 +546,7 @@
             <div class="info-icon"><i class="fas fa-star"></i></div>
             <div class="info-content">
                 <div class="info-label">Điểm tích lũy</div>
+                <!-- Noi loyaltyPoint voi don vi diem. -->
                 <div class="info-value" th:text="${account.loyaltyPoint} + ' điểm'">0 điểm</div>
             </div>
         </div>
@@ -543,6 +556,7 @@
             <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
             <div class="info-content">
                 <div class="info-label">Địa chỉ</div>
+                <!-- Hien address khi co du lieu; dong sau la fallback. -->
                 <div class="info-value" th:if="${account.address != null && !account.address.isEmpty()}" th:text="${account.address}">Hà Nội</div>
                 <div class="info-value empty" th:if="${account.address == null || account.address.isEmpty()}">Chưa cập nhật</div>
             </div>
@@ -560,23 +574,27 @@
             <div class="loyalty-stats">
                 <div>
                     <span class="loyalty-muted small d-block mb-1">Hạng thành viên</span>
+                    <!-- Them CSS tier-* theo enum membershipLevel va hien tierName controller da tinh. -->
                     <span class="tier-badge" 
                           th:classappend="${account.membershipLevel != null ? 'tier-' + account.membershipLevel.name().toLowerCase() : 'tier-bronze'}"
                           th:text="${tierName}">Đồng</span>
                 </div>
                 <div class="text-end">
                     <span class="loyalty-muted small d-block mb-1">Điểm tích lũy hiện tại</span>
+                    <!-- Hien diem tich luy hien tai. -->
                     <span class="points-display"><span class="points-num" th:text="${account.loyaltyPoint}">0</span> điểm</span>
                 </div>
             </div>
 
             <!-- Thanh tiến độ thăng hạng -->
+            <!-- Chi hien tien do len hang khi user chua dat hang Vang. -->
             <div class="progress-bar-section" th:if="${tierName != 'Vàng'}">
                 <div class="progress-label">
                     <span>Tiến độ thăng hạng <b th:text="${nextTierName}">Bạc</b></span>
                     <span th:text="${account.loyaltyPoint} + '/' + ${threshold} + ' điểm'">0/1000 điểm</span>
                 </div>
                 <div class="progress-bar-bg">
+                    <!-- progressPercent tu controller quyet dinh do rong thanh tien do. -->
                     <div class="progress-bar-fill" th:style="'width: ' + ${progressPercent} + '%'"></div>
                 </div>
                 <div class="loyalty-muted small mt-2">
@@ -584,6 +602,7 @@
                 </div>
             </div>
             
+            <!-- Hang Vang thay thanh tien do bang thong bao da dat cap toi da. -->
             <div class="progress-bar-section text-center py-2" th:if="${tierName == 'Vàng'}">
                 <div class="text-warning font-weight-bold">
                     <i class="fas fa-medal"></i> Chúc mừng! Bạn đã đạt hạng thành viên <b>Vàng</b> cao nhất!
@@ -648,6 +667,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Lap qua cac Map voucher ma ProfileController da format. -->
                         <tr th:each="v : ${formattedVouchers}">
                             <td class="font-monospace text-warning" th:text="${v.code}">CODE</td>
                             <td th:text="${v.title}">Voucher thăng hạng</td>
@@ -657,11 +677,13 @@
                             </td>
                             <td th:text="${v.expiryText}">01/01/2026</td>
                             <td>
+                                <!-- statusClass to mau badge; statusText la nhan Chua dung/Da dung/Het han. -->
                                 <span class="voucher-badge" 
                                       th:classappend="${v.statusClass}"
                                       th:text="${v.statusText}">Chưa dùng</span>
                             </td>
                         </tr>
+                        <!-- Hien empty state khi vi voucher khong co dong nao. -->
                         <tr th:if="${#lists.isEmpty(formattedVouchers)}">
                             <td colspan="5" class="text-center loyalty-muted py-4">Bạn chưa nhận được phần thưởng voucher nào. Hãy tích lũy điểm ngay nhé!</td>
                         </tr>
@@ -672,18 +694,23 @@
     </div>
 
     <div class="profile-actions">
+        <!-- Mo GET /profile/edit. -->
         <a th:href="@{/profile/edit}" class="btn-action btn-edit">
             <i class="fas fa-user-edit"></i> Chỉnh sửa hồ sơ
         </a>
+        <!-- Mo GET /my-tickets. -->
         <a th:href="@{/my-tickets}" class="btn-action btn-ticket">
             <i class="fas fa-ticket-alt"></i> Vé của tôi
         </a>
+        <!-- Mo GET /my-tickets/booking-history. -->
         <a th:href="@{/my-tickets/booking-history}" class="btn-action btn-edit" style="background: linear-gradient(135deg, #16a6df, #0054a6);">
             <i class="fas fa-file-invoice-dollar"></i> Lịch sử giao dịch
         </a>
+        <!-- Mo GET /profile/activity-log. -->
         <a th:href="@{/profile/activity-log}" class="btn-action btn-edit" style="background: linear-gradient(135deg, #10b981, #059669);">
             <i class="fas fa-history"></i> Nhật ký hoạt động
         </a>
+        <!-- Mo trang Secure Settings tai GET /reset-password. -->
         <a th:href="@{/reset-password}" class="btn-action btn-back">
             <i class="fas fa-key"></i> Đổi mật khẩu
         </a>

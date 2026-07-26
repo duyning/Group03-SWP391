@@ -333,50 +333,74 @@ public class PaymentService {
             System.err.println("Warning: Failed to clean wishlist for checkout: " + ex.getMessage());
         }
     }
+    /**
+     * Tong hop Booking, Payment, Showtime va BookingTicket thanh lich su giao dich
+     * danh rieng cho mot account.
+     */
     public List<BookingHistoryDto> getBookingHistory(Integer accountId) {
+        // Lay booking cua account va sap xep giao dich moi nhat truoc.
         List<Booking> bookings = bookingRepository.findByAccountIdOrderByCreatedAtDesc(accountId);
+        // DTO tach du lieu hien thi khoi cac JPA Entity.
         List<BookingHistoryDto> dtos = new ArrayList<>();
         
+        // Moi Booking se tao ra mot dong/card lich su.
         for (Booking booking : bookings) {
+            // Khoi tao DTO rong cho booking hien tai.
             BookingHistoryDto dto = new BookingHistoryDto();
+            // Thoi gian giao dich lay tu thoi diem tao Booking.
             dto.setBookingTime(booking.getCreatedAt());
+            // Tong tien lay tu Booking.
             dto.setTotalAmount(booking.getTotalAmount());
             
+            // Lay lan Payment moi nhat; co the null neu booking chua thanh toan.
             Payment payment = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(booking.getId()).orElse(null);
             
+            // Khi co Payment, uu tien ma/phuong thuc/trang thai tu Payment.
             if (payment != null) {
+                // orderCode null se duoc thay bang ma noi bo CF-{bookingId}.
                 dto.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
+                // paymentMethod null se hien gia tri mac dinh tren UI.
                 dto.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "Thẻ/Ví");
                 
+                // Doi enum Payment.Status thanh nhan va CSS class cho UI.
                 switch (payment.getStatus()) {
+                    // Thanh toan thanh cong.
                     case SUCCESS:
                         dto.setStatus("Thành công");
                         dto.setStatusClass("status-success");
                         break;
+                    // Thanh toan that bai.
                     case FAILED:
                         dto.setStatus("Thất bại");
                         dto.setStatusClass("status-failed");
                         break;
+                    // Thanh toan da bi huy.
                     case CANCELLED:
                         dto.setStatus("Đã hủy");
                         dto.setStatusClass("status-cancelled");
                         break;
+                    // PENDING va cac gia tri con lai deu hien dang xu ly.
                     case PENDING:
                     default:
                         dto.setStatus("Đang xử lý");
                         dto.setStatusClass("status-pending");
                         break;
                 }
+            // Chua co Payment: suy ra thong tin tam tu chinh Booking.
             } else {
+                // Tao ma giao dich tam tu booking ID.
                 dto.setBookingCode("CF-" + booking.getId());
                 dto.setPaymentMethod("Chưa chọn");
                 
+                // Doi Booking.Status thanh nhan hien thi.
                 switch (booking.getStatus()) {
+                    // CANCELLED va EXPIRED deu coi la da huy.
                     case CANCELLED:
                     case EXPIRED:
                         dto.setStatus("Đã hủy");
                         dto.setStatusClass("status-cancelled");
                         break;
+                    // PENDING va cac gia tri con lai dang cho thanh toan.
                     case PENDING:
                     default:
                         dto.setStatus("Đang chờ thanh toán");
@@ -385,20 +409,27 @@ public class PaymentService {
                 }
             }
             
+            // Tai suat chieu de lay ten phim cho dong mo ta.
             Showtime showtime = showtimeRepository.findById(booking.getShowtimeId()).orElse(null);
+            // Neu suat chieu hoac phim khong con thi dung chuoi thay the.
             String movieTitle = (showtime != null && showtime.getMovie() != null) ? showtime.getMovie().getTitle() : "Phim không xác định";
+            // Lay cac ve/ghe cua booking hien tai.
             List<BookingTicket> tickets = ticketRepository.findByBookingId(booking.getId());
             
+            // Neu co ve thi ghep nhan tat ca ghe vao mot chuoi.
             if (!tickets.isEmpty()) {
+                // Vi du ket qua: A1, A2, A3.
                 String seats = tickets.stream().map(BookingTicket::getSeatLabel).collect(Collectors.joining(", "));
                 dto.setSummary(String.format("Thanh toán %d vé xem phim \"%s\" (Ghế %s)", tickets.size(), movieTitle, seats));
             } else {
                 dto.setSummary("Không có thông tin vé");
             }
             
+            // Them DTO da hoan chinh vao danh sach ket qua.
             dtos.add(dto);
         }
         
+        // Controller se phan trang danh sach nay.
         return dtos;
     }
 }

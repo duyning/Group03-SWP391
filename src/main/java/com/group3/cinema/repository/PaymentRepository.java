@@ -14,6 +14,7 @@ import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderCode(String orderCode);
+    // Booking History: lay lan thanh toan moi nhat cua mot booking.
     Optional<Payment> findTopByBookingIdOrderByCreatedAtDesc(Long bookingId);
     List<Payment> findByBookingIdIn(Collection<Long> bookingIds);
     List<Payment> findByBookingIdOrderByCreatedAtDesc(Long bookingId);

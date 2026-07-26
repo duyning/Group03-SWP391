@@ -123,22 +123,28 @@ public class LoyaltyService {
      */
     @Transactional
     public void checkAndGrantGoldMonthlyVoucher(Account account) {
+        // Chi xu ly account ton tai va dang o hang GOLD.
         if (account == null || account.getMembershipLevel() != MembershipLevel.GOLD) {
             return;
         }
 
+        // Loi cap voucher khong duoc lam trang profile loi theo.
         try {
             // Lấy danh sách ví voucher để kiểm tra xem đã nhận voucher Vàng trong vòng 30 ngày qua chưa
             List<Voucher> wallet = voucherRepository.findWalletVouchers(account.getAccountID());
+            // Stream tim voucher co prefix cua account va duoc tao trong 30 ngay.
             boolean receivedRecently = wallet.stream()
                     .anyMatch(v -> v.getCode().startsWith("GV-" + account.getAccountID())
                             && v.getCreatedAt() != null
                             && v.getCreatedAt().isAfter(LocalDateTime.now().minusDays(30)));
 
+            // Chi cap khi khong tim thay voucher Vang gan day.
             if (!receivedRecently) {
+                // Tao voucher rieng cho account: 25%, toi da 60k, don 250k, han 15 ngay.
                 Voucher monthlyVoucher = createCustomerVoucher(
                         account, "GV", "Voucher Thành Viên Vàng Hàng Tháng", 25, 60000, 250000, 15
                 );
+                // Gui thong bao de user biet vi vua co voucher moi.
                 notificationService.sendNotification(
                         account.getAccountID(),
                         "Voucher Vàng Hàng Tháng! 🎁",
@@ -146,6 +152,7 @@ public class LoyaltyService {
                         NotificationType.VOUCHER
                 );
             }
+        // Ghi canh bao va cho phep ProfileController tiep tuc render.
         } catch (Exception ex) {
             System.err.println("Warning: Failed to check or grant monthly Gold voucher for account " + account.getAccountID() + ": " + ex.getMessage());
         }

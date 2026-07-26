@@ -29,21 +29,28 @@
     </style>
 </head>
 <body class="customer-header-page">
+<!-- Chen header customer dung chung. -->
 <div th:replace="~{fragments/common_header :: customerHeader('', '')}"></div>
+<!-- ticket duoc controller bao dam thuoc account hien tai; chi render khi khac null. -->
 <main class="panel ticket-card" th:if="${ticket != null}">
     <div class="poster-row">
+        <!-- Hien poster khi quan he ticket.movie co posterUrl. -->
         <img th:if="${ticket.movie.posterUrl != null && !ticket.movie.posterUrl.isEmpty()}"
              th:src="${ticket.movie.posterUrl}" th:alt="${ticket.movie.title}">
         <div>
+            <!-- statusDisplayName duoc Ticket entity doi tu status ky thuat. -->
             <span class="badge" th:text="${ticket.statusDisplayName}">Đã xác nhận</span>
+            <!-- Hien ten phim cua ve. -->
             <h1 th:text="${ticket.movie.title}">Tên phim</h1>
             <p th:if="${ticket.movie.genre != null}" th:text="${ticket.movie.genre}">Thể loại</p>
             <p th:if="${ticket.movie.duration != null}" th:text="${ticket.movie.duration + ' phút'}">120 phút</p>
         </div>
     </div>
 
+    <!-- Tao qrData: uu tien bookingCode, fallback TICKET-{id}. -->
     <div class="ticket-qr" th:with="qrData=${!#strings.isEmpty(ticket.bookingCode) ? ticket.bookingCode : 'TICKET-' + ticket.id}">
         <div class="ticket-qr-box">
+            <!-- Tao URL anh QR tu qrData. -->
             <img th:src="${'https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=6&data=' + qrData}"
                  th:alt="${'QR vé ' + qrData}">
         </div>
@@ -61,43 +68,63 @@
 
     <dl>
         <dt>Ngày chiếu</dt>
+        <!-- Format ngay chieu. -->
         <dd th:text="${#temporals.format(ticket.showDate, 'dd/MM/yyyy')}">01/01/2026</dd>
         <dt>Giờ chiếu</dt>
+        <!-- Format gio chieu. -->
         <dd th:text="${#temporals.format(ticket.showTime, 'HH:mm')}">19:30</dd>
         <dt>Phòng</dt>
+        <!-- Hien ten phong luu trong Ticket. -->
         <dd th:text="${ticket.roomName}">Phòng 01</dd>
         <dt>Ghế</dt>
+        <!-- Hien nhan ghe va loai ghe. -->
         <dd th:text="${ticket.seatLabel + ' (' + ticket.seatTypeDisplayName + ')'}">A5 (Thường)</dd>
         <dt>Thanh toán</dt>
+        <!-- Dung fallback khi paymentMethod null. -->
         <dd th:text="${ticket.paymentMethod != null ? ticket.paymentMethod : 'Chưa xác định'}">PAYOS</dd>
         <dt>Thời gian đặt</dt>
+        <!-- Format thoi diem dat ve. -->
         <dd th:text="${#temporals.format(ticket.bookingTime, 'dd/MM/yyyy HH:mm')}">25/06/2026 15:30</dd>
         <dt>Tổng tiền</dt>
+        <!-- Format tong tien voi dau phan cach hang nghin. -->
         <dd th:text="${#numbers.formatDecimal(ticket.price, 0, 'COMMA', 0, 'POINT')} + 'đ'">85,000đ</dd>
     </dl>
 
     <p>Vui lòng xuất trình mã QR này tại quầy soát vé.</p>
     <div class="ticket-actions">
+        <!-- Quay lai GET /my-tickets. -->
         <a class="btn secondary" th:href="@{/my-tickets}">Quay lại danh sách vé</a>
         <a class="btn" th:href="@{/}">Trang chủ</a>
     </div>
 </main>
 
 <!-- Thư viện tạo QR Code -->
+<!-- Tai qrcodejs de tao QR truc tiep trong browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- th:inline cho phep Thymeleaf chen gia tri Java vao JavaScript. -->
 <script th:inline="javascript">
     // Lấy mã booking từ Thymeleaf
+    // Khi Thymeleaf render, bieu thuc trong comment se thay gia tri fallback.
     var code = /*[[${ticket.bookingCode}]]*/ 'CF-DEFAULT';
 
     // Khởi tạo QR Code
+    // Tim div dich se chua canvas/img QR.
     var qrEl = document.getElementById("qrcode");
+    // Chi khoi tao neu element ton tai.
     if (qrEl) {
+        // Tao QRCode moi trong qrEl.
         new QRCode(qrEl, {
+            // Noi dung ma hoa la bookingCode.
             text: code,
+            // Chieu rong QR.
             width: 150,
+            // Chieu cao QR.
             height: 150,
+            // Mau diem QR.
             colorDark: "#0054a6",
+            // Mau nen QR.
             colorLight: "#ffffff",
+            // Muc sua loi cao de ma van quet duoc khi anh bi che mot phan.
             correctLevel: QRCode.CorrectLevel.H
         });
     }

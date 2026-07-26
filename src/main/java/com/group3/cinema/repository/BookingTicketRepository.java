@@ -16,6 +16,7 @@ import java.util.List;
 public interface BookingTicketRepository extends JpaRepository<BookingTicket, Long> {
     List<BookingTicket> findByShowtimeId(Long showtimeId);
     List<BookingTicket> findByHoldToken(String holdToken);
+    // Booking History: lay cac ve/ghe thuoc mot booking de tao cau tom tat.
     List<BookingTicket> findByBookingId(Long bookingId);
     List<BookingTicket> findByShowtimeIdAndSeatIdIn(Long showtimeId, Collection<Long> seatIds);
     int deleteByStatusAndHoldExpiresAtBefore(BookingTicket.Status status, LocalDateTime now);

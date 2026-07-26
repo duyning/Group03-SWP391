@@ -283,8 +283,10 @@
 <body class="admin-page">
 
 <div class="admin-layout">
+    <!-- Chen sidebar va danh dau menu create-manager dang active. -->
     <aside th:replace="~{fragments/admin_sidebar :: adminSidebar('create-manager')}"></aside>
     <main class="admin-main create-manager-main">
+<!-- Chen topbar quan tri dung chung. -->
 <header th:replace="~{fragments/admin_sidebar :: adminTopbar}"></header>
 <div class="register-wrapper">
     <!-- Decorative background elements -->
@@ -303,12 +305,14 @@
         </div>
 
         <!-- Registration Form -->
+        <!-- Bind form vao model account va submit POST /admin/create-manager. -->
         <form th:action="@{/admin/create-manager}" th:object="${account}" method="POST" class="register-form" novalidate>
 
             <!-- Name -->
             <div class="form-floating-group">
                 <div class="input-icon-wrapper">
                     <i class="fas fa-user input-icon"></i>
+                    <!-- th:field tao name/value cho Account.name va giu du lieu khi validation loi. -->
                     <input type="text" th:field="*{name}"
                            class="form-input"
                            th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
@@ -316,6 +320,7 @@
                            id="name" required>
                     <label for="name">Họ và tên <span class="required">*</span></label>
                 </div>
+                <!-- Hien BindingResult error cua field name. -->
                 <div th:if="${#fields.hasErrors('name')}" class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     <span th:errors="*{name}"></span>
@@ -326,6 +331,7 @@
             <div class="form-floating-group">
                 <div class="input-icon-wrapper">
                     <i class="fas fa-envelope input-icon"></i>
+                    <!-- Bind vao Account.email. -->
                     <input type="email" th:field="*{email}"
                            class="form-input"
                            th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
@@ -333,6 +339,7 @@
                            id="email" required>
                     <label for="email">Thư điện tử <span class="required">*</span></label>
                 </div>
+                <!-- Hien loi dinh dang/trung email. -->
                 <div th:if="${#fields.hasErrors('email')}" class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     <span th:errors="*{email}"></span>
@@ -343,6 +350,7 @@
             <div class="form-floating-group">
                 <div class="input-icon-wrapper">
                     <i class="fas fa-lock input-icon"></i>
+                    <!-- Bind vao Account.password. -->
                     <input type="password" th:field="*{password}"
                            class="form-input"
                            th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
@@ -353,6 +361,7 @@
                         <i class="fas fa-eye" id="toggleIcon"></i>
                     </button>
                 </div>
+                <!-- Hien loi bat buoc/do dai password. -->
                 <div th:if="${#fields.hasErrors('password')}" class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     <span th:errors="*{password}"></span>
@@ -363,6 +372,7 @@
             <div class="form-floating-group">
                 <div class="input-icon-wrapper">
                     <i class="fas fa-phone input-icon"></i>
+                    <!-- Bind vao Account.phoneNum. -->
                     <input type="tel" th:field="*{phoneNum}"
                            class="form-input"
                            th:classappend="${#fields.hasErrors('phoneNum')} ? 'is-invalid' : ''"
@@ -370,6 +380,7 @@
                            id="phoneNum" required>
                     <label for="phoneNum">Số điện thoại <span class="required">*</span></label>
                 </div>
+                <!-- Hien loi dinh dang/trung so dien thoai. -->
                 <div th:if="${#fields.hasErrors('phoneNum')}" class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     <span th:errors="*{phoneNum}"></span>
@@ -380,7 +391,9 @@
                 <div class="form-floating-group">
                     <div class="input-icon-wrapper">
                         <i class="fas fa-calendar input-icon"></i>
+                        <!-- Hidden input gui dob theo yyyy-MM-dd cho Spring binding. -->
                         <input type="hidden" name="dob" th:value="*{dob}" id="dobHidden">
+                        <!-- Input hien thi dung dd/MM/yyyy va duoc datepicker dieu khien. -->
                         <input type="text"
                                class="form-input"
                                th:classappend="${#fields.hasErrors('dob')} ? 'is-invalid' : ''"
@@ -388,6 +401,7 @@
                                id="dobDisplay" required>
                         <label for="dobDisplay">Ngày sinh <span class="required">*</span></label>
                     </div>
+                    <!-- Hien loi dob/tuoi manager. -->
                     <div th:if="${#fields.hasErrors('dob')}" class="error-message">
                         <i class="fas fa-exclamation-circle"></i>
                         <span th:errors="*{dob}"></span>
@@ -397,6 +411,7 @@
                 <div class="form-floating-group">
                     <div class="input-icon-wrapper">
                         <i class="fas fa-venus-mars input-icon"></i>
+                        <!-- Bind option da chon vao Account.gender. -->
                         <select th:field="*{gender}" class="form-input select-input" id="gender">
                             <option value="" disabled selected>Chọn giới tính</option>
                             <option value="Nam">Nam</option>
@@ -412,6 +427,7 @@
             <div class="form-floating-group manager-address-group">
                 <div class="input-icon-wrapper textarea-wrapper">
                     <i class="fas fa-map-marker-alt input-icon"></i>
+                    <!-- Bind textarea vao Account.address. -->
                     <textarea th:field="*{address}"
                               class="form-input textarea-input"
                               placeholder="Địa chỉ"
@@ -421,6 +437,7 @@
             </div>
 
             <!-- Submit Button -->
+            <!-- Submit form de controller validate va tao MANAGER. -->
             <button type="submit" class="btn-register" id="btnRegister">
                 <span class="btn-text">Tạo tài khoản</span>
                 <span class="btn-loader" style="display: none;">
@@ -438,7 +455,9 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script>
+    // Cho DOM san sang truoc khi khoi tao datepicker.
     document.addEventListener("DOMContentLoaded", function() {
+        // Khai bao bo ngon ngu Viet cho jQuery UI Datepicker.
         $.datepicker.regional['vi'] = {
             closeText: 'Đóng',
             prevText: 'Trước',
@@ -457,38 +476,59 @@
             isRTL: false,
             showMonthAfterYear: false,
             yearSuffix: ''};
+        // Dung cau hinh Viet lam mac dinh.
         $.datepicker.setDefaults($.datepicker.regional['vi']);
 
+        // Gan datepicker vao input ngay sinh hien thi.
         $("#dobDisplay").datepicker({
+            // Cho phep chon thang.
             changeMonth: true,
+            // Cho phep chon nam.
             changeYear: true,
+            // Manager hop le trong khoang 18-100 tuoi.
             yearRange: "-100:-18",
+            // Mac dinh mo lich tai 20 nam truoc.
             defaultDate: "-20y",
+            // Ghi gia tri submit vao hidden input.
             altField: "#dobHidden",
+            // Spring bind LocalDate theo yyyy-MM-dd.
             altFormat: "yy-mm-dd",
+            // Ngay lon nhat dam bao du 18 tuoi.
             maxDate: "-18y",
+            // Ngay nho nhat gioi han 100 tuoi.
             minDate: "-100y"
         });
 
         // Preserve date format in UI if backend validation fails and reloads the page
+        // Doc gia tri dob ma backend bind lai khi form co loi.
         const hiddenVal = $("#dobHidden").val();
+        // Chi format khi co ngay.
         if (hiddenVal) {
+            // Tach yyyy-MM-dd.
             const parts = hiddenVal.split('-');
+            // Bao dam chuoi co du ba thanh phan.
             if (parts.length === 3) {
+                // Doi thanh dd/MM/yyyy.
                 const formatted = parts[2] + '/' + parts[1] + '/' + parts[0];
+                // Hien ngay da doi cho user.
                 $("#dobDisplay").val(formatted);
             }
         }
     });
 
     // Toggle password visibility
+    // Doi kieu input va icon mat khi user bam nut xem password.
     function togglePassword() {
+        // Tim input password.
         const passwordInput = document.getElementById('password');
+        // Tim icon tren nut.
         const toggleIcon = document.getElementById('toggleIcon');
+        // Dang an thi chuyen sang text.
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
             toggleIcon.classList.remove('fa-eye');
             toggleIcon.classList.add('fa-eye-slash');
+        // Dang hien thi thi chuyen lai password.
         } else {
             passwordInput.type = 'password';
             toggleIcon.classList.remove('fa-eye-slash');
@@ -497,7 +537,9 @@
     }
 
     // Form submit animation
+    // Khi submit, an nhan/icon va hien spinner.
     document.querySelector('.register-form').addEventListener('submit', function () {
+        // Tim nut submit.
         const btn = document.getElementById('btnRegister');
         btn.querySelector('.btn-text').style.display = 'none';
         btn.querySelector('.btn-arrow').style.display = 'none';
@@ -505,10 +547,13 @@
     });
 
     // Input focus animation
+    // Lap qua cac input de gan class focused.
     document.querySelectorAll('.form-input').forEach(input => {
+        // Them class khi focus.
         input.addEventListener('focus', function () {
             this.closest('.input-icon-wrapper').classList.add('focused');
         });
+        // Bo class khi blur.
         input.addEventListener('blur', function () {
             this.closest('.input-icon-wrapper').classList.remove('focused');
         });

@@ -64,10 +64,12 @@ public class TicketService {
     }
 
     public List<Ticket> getTicketsByAccount(int accountId) {
+        // Derived query loc theo account.accountID va sap xep bookingTime moi nhat truoc.
         return ticketRepository.findByAccountAccountIDOrderByBookingTimeDesc(accountId);
     }
 
     public Optional<Ticket> getTicketDetail(Long ticketId, int accountId) {
+        // Query ca ticketId lan accountId la lop bao ve chong xem ve cua user khac.
         return ticketRepository.findByIdAndAccountAccountID(ticketId, accountId);
     }
 

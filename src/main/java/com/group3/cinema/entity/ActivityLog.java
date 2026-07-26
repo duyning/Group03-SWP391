@@ -11,12 +11,14 @@ import java.time.LocalDateTime;
  * Tạo bởi: DuongND_HE186619
  */
 @Entity
+// Map entity nay vao bang activity_logs va tao index cho cac cot hay truy van.
 @Table(name = "activity_logs", indexes = {
     @Index(name = "idx_activity_log_account", columnList = "accountId"),
     @Index(name = "idx_activity_log_created_at", columnList = "createdAt")
 })
 public class ActivityLog {
 
+    // Danh sach cac loai hanh dong ma he thong co the ghi lai.
     public enum ActionType {
         LOGIN, LOGOUT,
         PROFILE_UPDATE, PASSWORD_CHANGE,
@@ -30,38 +32,53 @@ public class ActivityLog {
         OTHER
     }
 
+    // Primary key tu tang cua ban ghi log.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // ID tai khoan thuc hien hanh dong.
     @Column(nullable = false)
     private Integer accountId;
 
+    // Luu ten enum thanh chuoi de DB va code de doc.
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private ActionType action;
 
+    // Noi dung mo ta chi tiet, toi da 500 ky tu Unicode.
     @Column(length = 500, columnDefinition = "NVARCHAR(500)")
     private String description;
 
+    // IP cua client neu noi goi co cung cap HttpServletRequest.
     @Column(length = 255)
     private String ipAddress;
 
+    // Thoi diem hanh dong duoc ghi.
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    // Constructor rong bat buoc cho JPA.
     public ActivityLog() {
     }
 
+    // Constructor dung cho log khong can IP.
     public ActivityLog(Integer accountId, ActionType action, String description) {
+        // Ghi ID tai khoan.
         this.accountId = accountId;
+        // Ghi loai hanh dong.
         this.action = action;
+        // Ghi noi dung mo ta.
         this.description = description;
+        // Lay thoi diem tao log ngay tai service.
         this.createdAt = LocalDateTime.now();
     }
 
+    // Constructor dung cho log co IP; tai su dung constructor ba tham so.
     public ActivityLog(Integer accountId, ActionType action, String description, String ipAddress) {
+        // Khoi tao cac field chung va createdAt.
         this(accountId, action, description);
+        // Gan them IP.
         this.ipAddress = ipAddress;
     }
 
@@ -84,6 +101,7 @@ public class ActivityLog {
 
     /** Trả về tên hiển thị của hành động để dùng trên UI */
     public String getActionDisplayName() {
+        // Switch expression doi enum ky thuat thanh nhan de user doc.
         return switch (action) {
             case LOGIN -> "Đăng nhập";
             case LOGOUT -> "Đăng xuất";
@@ -110,6 +128,7 @@ public class ActivityLog {
 
     /** Trả về CSS class cho icon theo loại hành động */
     public String getActionIconClass() {
+        // Moi ActionType duoc map thanh icon Font Awesome va CSS class mau.
         return switch (action) {
             case LOGIN -> "fa-sign-in-alt log-icon--login";
             case LOGOUT -> "fa-sign-out-alt log-icon--logout";

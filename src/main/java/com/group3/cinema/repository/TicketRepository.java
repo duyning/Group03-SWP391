@@ -18,10 +18,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+// JpaRepository cung cap CRUD cho Ticket voi primary key Long.
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
+    // Lay ve cua mot account qua quan he Ticket.account va sap xep moi nhat truoc.
     List<Ticket> findByAccountAccountIDOrderByBookingTimeDesc(int accountId);
 
+    // Tim ve theo ca id va accountID; dieu kien accountID bao ve quyen so huu ve.
     Optional<Ticket> findByIdAndAccountAccountID(Long id, int accountId);
 
     List<Ticket> findByShowtimeId(Long showtimeId);

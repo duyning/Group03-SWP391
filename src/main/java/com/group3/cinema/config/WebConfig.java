@@ -18,6 +18,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // Interceptor chung yeu cau dang nhap cho moi URL khong nam trong exclude.
+        // Vi /profile va /my-tickets khong bi exclude, hai nhom URL nay duoc bao ve.
         registry.addInterceptor(new AuthInterceptor())
                 .addPathPatterns("/**")
                 .excludePathPatterns(
@@ -29,6 +31,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/register/resend-otp",
                         "/forgot-password",
                         "/forgot-password/**",
+                        // Controller ResetPassword van tu kiem tra loggedInUser trong session.
                         "/reset-password",
                         "/reset-password/**",
                         "/access-denied",
@@ -73,6 +76,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/error"
                 );
 
+        // Bao ve toan bo khu vuc quan tri cho ADMIN hoac MANAGER.
         registry.addInterceptor(new AuthInterceptor(Role.ADMIN, Role.MANAGER))
                 .addPathPatterns(
                         "/admin/**",
@@ -88,13 +92,16 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/suggestions/persons/**"
                 );
 
+        // Lop quyen hep hon: chi ADMIN duoc Manage Account va Manage Manager.
         registry.addInterceptor(new AuthInterceptor(
                         "/admin/dashboard",
                         "Chức năng này chỉ dành cho Admin.",
                         Role.ADMIN
                 ))
                 .addPathPatterns(
+                        // URL GET/POST tao tai khoan MANAGER.
                         "/admin/create-manager",
+                        // URL danh sach va toggle trang thai account.
                         "/admin/accounts",
                         "/admin/accounts/**"
                 );

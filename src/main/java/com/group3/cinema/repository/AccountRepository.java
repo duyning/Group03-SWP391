@@ -18,10 +18,13 @@ import java.util.Optional;
  * Tạo bởi: DuongND_HE186619
  */
 @Repository
+// JpaRepository cung cap san findById, findAll, save va cac CRUD co ban.
 public interface AccountRepository extends JpaRepository<Account, Integer> {
 
+    // Spring Data tu sinh query SELECT Account theo email.
     Account findByEmail(String email);
 
+    // Tim account dau tien co so dien thoai tuong ung.
     Optional<Account> findFirstByPhoneNum(String phoneNum);
 
     /**
@@ -31,12 +34,16 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
     @Query("SELECT DISTINCT a FROM Account a LEFT JOIN FETCH a.savedVouchers WHERE a.email = :email")
     Account findByEmailWithVouchers(@Param("email") String email);
 
+    // Kiem tra email da ton tai; dung khi tao manager va dang ky.
     boolean existsByEmail(String email);
 
+    // Kiem tra so dien thoai da ton tai.
     boolean existsByPhoneNum(String phoneNum);
 
+    // Kiem tra trung so dien thoai nhung loai tru account dang sua profile.
     boolean existsByPhoneNumAndAccountIDNot(String phoneNum, Integer accountID);
 
+    // Lay account theo role va chi lay account dang active.
     List<Account> findByRoleAndStatusTrue(Role role);
 
     @Query("""
