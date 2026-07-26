@@ -1,4 +1,30 @@
 <!DOCTYPE html>
+<!--
+  LUỒNG FRONT-END: CHI TIẾT HÓA ĐƠN
+
+  1. Từ `invoice-list.html`, admin bấm icon mắt.
+     Browser gọi GET `/admin/invoices/{bookingId}`.
+     Controller: InvoiceController.invoiceDetails(bookingId)
+     Service: InvoiceService.getInvoiceDetails(bookingId)
+     View nhận `details`, gồm row hiển thị, Booking gốc, Account, Showtime, tickets, combos, foodItems, payments.
+
+  2. Nút "Danh sách":
+     Link về GET `/admin/invoices`, không xử lý nghiệp vụ.
+
+  3. Nút "Xem bản in" và "In / Xuất PDF":
+     Link tới GET `/admin/invoices/{bookingId}/print`.
+     Controller dùng cùng `InvoiceService.getInvoiceDetails()` để bản in khớp bản chi tiết.
+
+  4. Form "Hủy hóa đơn chờ thanh toán":
+     POST `/admin/invoices/{bookingId}/cancel`.
+     Controller gọi `invoiceService.cancelPendingInvoice(...)`.
+     Chỉ áp dụng Booking PENDING, sau đó hủy Payment pending và giải phóng ghế giữ tạm.
+
+  5. Form "Hoàn tiền hóa đơn đã thanh toán":
+     POST `/admin/invoices/{bookingId}/refund`.
+     Controller gọi `invoiceService.refundPaidInvoice(...)`.
+     Chỉ áp dụng Booking PAID có Payment SUCCESS, sau đó đánh dấu REFUNDED để đối soát.
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -67,10 +93,13 @@
             <div class="page-head">
                 <h1><i class="fa-solid fa-file-invoice me-2"></i>Chi tiết hóa đơn</h1>
                 <div class="toolbar">
+                    <!-- NÚT: quay lại danh sách hóa đơn, GET /admin/invoices. -->
                     <a class="btn btn-outline-secondary" th:href="@{/admin/invoices}"><i class="fa-solid fa-arrow-left me-1"></i>Danh sách</a>
+                    <!-- NÚT: mở bản in nhưng không tự gọi hộp thoại in, GET /admin/invoices/{id}/print?autoPrint=false. -->
                     <a class="btn btn-outline-primary" th:href="@{/admin/invoices/{id}/print(id=${details.row.bookingId},autoPrint='false')}" target="_blank">
                         <i class="fa-solid fa-up-right-from-square me-1"></i>Xem bản in
                     </a>
+                    <!-- NÚT: mở bản in/PDF ở tab mới, view `invoice-print.html` có thể kích hoạt in theo trình duyệt. -->
                     <a class="btn btn-primary" th:href="@{/admin/invoices/{id}/print(id=${details.row.bookingId})}" target="_blank">
                         <i class="fa-solid fa-file-pdf me-1"></i>In / Xuất PDF
                     </a>
@@ -89,6 +118,14 @@
                     <span class="badge-soft" th:unless="${details.row.refunded}" th:classappend="' status-' + ${details.row.bookingStatus}" th:text="${details.row.bookingStatusText()}">Trạng thái</span>
                 </div>
                 <div class="operation-body" th:if="${details.row.bookingStatus.name() == 'PENDING' || details.row.bookingStatus.name() == 'PAID'}">
+                    <!--
+                      FORM: Hủy hóa đơn chờ thanh toán
+                      - Chỉ render khi Booking.Status = PENDING.
+                      - Submit POST /admin/invoices/{bookingId}/cancel.
+                      - Controller: InvoiceController.cancelInvoice().
+                      - Service: InvoiceService.cancelPendingInvoice().
+                      - `onsubmit confirm(...)` chỉ là xác nhận phía trình duyệt, backend vẫn validate lại trạng thái.
+                    -->
                     <form class="operation-card" th:if="${details.row.bookingStatus.name() == 'PENDING'}"
                           th:action="@{/admin/invoices/{id}/cancel(id=${details.row.bookingId})}" method="post"
                           onsubmit="return confirm('Xác nhận hủy hóa đơn chờ thanh toán này? Ghế giữ tạm sẽ được giải phóng.');">
@@ -97,6 +134,14 @@
                         <textarea class="form-control mb-3" name="reason" maxlength="300" placeholder="Lý do hủy hóa đơn..."></textarea>
                         <button class="btn btn-outline-danger" type="submit"><i class="fa-solid fa-ban me-1"></i>Hủy hóa đơn</button>
                     </form>
+                    <!--
+                      FORM: Ghi nhận hoàn tiền
+                      - Chỉ render khi Booking.Status = PAID.
+                      - Submit POST /admin/invoices/{bookingId}/refund.
+                      - Controller: InvoiceController.refundInvoice().
+                      - Service: InvoiceService.refundPaidInvoice().
+                      - Backend yêu cầu Payment mới nhất phải SUCCESS, tránh hoàn tiền cho giao dịch chưa thu tiền.
+                    -->
                     <form class="operation-card" th:if="${details.row.bookingStatus.name() == 'PAID'}"
                           th:action="@{/admin/invoices/{id}/refund(id=${details.row.bookingId})}" method="post"
                           onsubmit="return confirm('Xác nhận ghi nhận hoàn tiền hóa đơn này?');">

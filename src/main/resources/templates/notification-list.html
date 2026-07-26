@@ -1,4 +1,26 @@
 <!DOCTYPE html>
+<!--
+  LUỒNG FRONT-END: TRUNG TÂM THÔNG BÁO CỦA KHÁCH HÀNG
+
+  1. User bấm icon chuông trong `fragments/common_header.html`.
+     Browser gọi GET `/notifications`.
+     Controller: NotificationController.listNotifications().
+
+  2. Controller kiểm tra session `loggedInUser`.
+     Nếu chưa đăng nhập -> redirect `/login`.
+     Nếu đã đăng nhập -> NotificationService.markAllAsRead(accountId),
+     rồi NotificationService.getUserNotifications(accountId, page, 10).
+
+  3. View nhận `notifications` dạng Page<Notification>.
+     - Nếu notification có `imageUrl`, view hiển thị ảnh phim/tin/ưu đãi.
+     - Nếu không có ảnh, view hiển thị icon theo NotificationType.
+
+  4. User bấm một thông báo:
+     Link gọi GET `/notifications/read/{id}`.
+     Controller kiểm tra thông báo có thuộc account hiện tại không qua NotificationService.getActionUrl(id, accountId),
+     mark thông báo đó đã đọc, rồi redirect tới `actionUrl` nếu hợp lệ.
+     Ví dụ actionUrl: `/movies/{id}`, `/posts/{id}`, `/promotions/{id}`, `/vouchers/my-wallet`.
+-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -62,6 +84,12 @@
             <div>
                 <h1>Thông báo <span th:if="${unreadCount > 0}" class="badge-count" th:text="${unreadCount} + ' mới'"></span></h1>
             </div>
+            <!--
+              NÚT: "Đánh dấu đã đọc tất cả"
+              - GET /notifications/read-all.
+              - NotificationController.readAllNotifications() gọi NotificationService.markAllAsRead(accountId).
+              - Sau đó redirect lại `/notifications`.
+            -->
             <a th:if="${unreadCount > 0}" th:href="@{/notifications/read-all}" class="btn-mark-read">
                 <i class="fa-solid fa-check-double me-1"></i> Đánh dấu đã đọc tất cả
             </a>
@@ -75,14 +103,22 @@
                 <p>Khi có hoạt động mới, thông báo sẽ hiển thị tại đây.</p>
             </div>
 
+            <!--
+              ITEM THÔNG BÁO:
+              - Mỗi item là link GET /notifications/read/{notificationId}.
+              - Controller sẽ mark read và redirect tới noti.actionUrl nếu actionUrl là URL nội bộ hợp lệ.
+              - Class `noti-unread`/`noti-read` phụ thuộc field `isRead` trong bảng Notification.
+            -->
             <a th:each="noti : ${notifications.content}"
                th:href="@{/notifications/read/{id}(id=${noti.id})}"
                th:classappend="${!noti.isRead} ? 'noti-item noti-unread' : 'noti-item noti-read'">
 
+                <!-- Ảnh thông báo: lấy từ Notification.imageUrl, thường là poster phim, thumbnail tin tức hoặc banner ưu đãi. -->
                 <div class="noti-media" th:if="${noti.imageUrl != null && !#strings.isEmpty(noti.imageUrl)}">
                     <img th:src="${noti.imageUrl}" th:alt="${noti.title}">
                 </div>
 
+                <!-- Nếu không có ảnh thì fallback sang icon theo NotificationType. -->
                 <div class="noti-icon-box" th:unless="${noti.imageUrl != null && !#strings.isEmpty(noti.imageUrl)}">
                     <i th:if="${noti.type.name() == 'BOOKING'}" class="fa-solid fa-ticket"></i>
                     <i th:if="${noti.type.name() == 'PAYMENT'}" class="fa-solid fa-credit-card"></i>
@@ -110,6 +146,11 @@
     </div>
 
     <nav class="mt-4" th:if="${notifications.totalPages > 1}">
+        <!--
+          PHÂN TRANG:
+          - Link chỉ truyền page.
+          - Controller luôn lấy thông báo của account đang đăng nhập, không cho user truyền accountId để tránh xem dữ liệu người khác.
+        -->
         <ul class="pagination justify-content-center">
             <li class="page-item" th:classappend="${notifications.first} ? 'disabled'">
                 <a class="page-link" th:href="@{/notifications(page=0)}">&laquo;</a>

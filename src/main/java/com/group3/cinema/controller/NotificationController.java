@@ -12,6 +12,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * Controller quản lý Trung tâm thông báo (Notification Center) dành cho Khách hàng/Người dùng.
  * Cung cấp các chức năng: Xem danh sách thông báo phân trang, đánh dấu đã đọc và điều hướng theo tác vụ.
  *
+ * LUỒNG TỪ FRONT-END TỚI BACK-END:
+ * 1. Header customer (`common_header.html`) hiển thị icon chuông và badge chưa đọc.
+ *    Badge do `GlobalHeaderAdvice` gọi `NotificationService.getUnreadCount(...)` và đưa vào Model.
+ * 2. User bấm chuông -> GET `/notifications` -> `listNotifications(...)`.
+ *    Controller lấy `loggedInUser` trong session, gọi service mark all read rồi trả `notification-list.html`.
+ * 3. User bấm một item thông báo -> GET `/notifications/read/{id}` -> `readNotification(...)`.
+ *    Controller lấy actionUrl an toàn từ service, mark read, rồi redirect tới detail phim/tin/khuyến mãi nếu có.
+ * 4. Nút "Đánh dấu đã đọc tất cả" -> GET `/notifications/read-all` -> `readAllNotifications(...)`.
+ *
  * @author Group 3 - Cinema Management System
  */
 @Controller
@@ -48,7 +57,7 @@ public class NotificationController {
 
         int accountId = sessionAccount.getAccountID();
 
-        // 2. Nghiệp vụ: Tự động đánh dấu tất cả thông báo là 'Đã đọc' khi người dùng mở trung tâm thông báo
+        // 2. Nghiệp vụ: mở trung tâm thông báo thì coi như user đã nhìn thấy toàn bộ thông báo chưa đọc.
         notificationService.markAllAsRead(accountId);
 
         // 3. Lấy danh sách thông báo phân trang (mỗi trang 10 bản ghi) để hiển thị lên View
@@ -77,7 +86,7 @@ public class NotificationController {
             return "redirect:/login";
         }
 
-        // Lấy đường dẫn hành động (Deep-link) đính kèm trong thông báo (nếu có)
+        // Lấy đường dẫn hành động (deep-link) đính kèm. Service sẽ kiểm tra thông báo thuộc đúng account hiện tại.
         String actionUrl = notificationService.getActionUrl(id, sessionAccount.getAccountID());
 
         // Cập nhật trạng thái thông báo này thành 'Đã đọc'

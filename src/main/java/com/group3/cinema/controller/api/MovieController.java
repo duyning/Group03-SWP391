@@ -88,6 +88,17 @@ public class MovieController {
 
     // Endpoint: POST /api/movies
     // Thêm một bộ phim mới vào cơ sở dữ liệu. Dữ liệu phim được gửi trong thân Request (Request Body) ở dạng JSON
+    /*
+     * LUỒNG FRONT-END -> BACK-END: THÊM PHIM MỚI
+     * - Front-end quản lý phim submit dữ liệu phim bằng fetch POST `/api/movies`.
+     * - Controller nhận JSON `Movie`, gọi `movieService.saveMovie(movie)` để validate và lưu database.
+     * - Nếu lưu thành công, `notifyCustomersAboutNewMovie(savedMovie)` phát thông báo tới khách hàng active.
+     * - Thông báo dùng:
+     *   + title: "Phim mới: {tên phim}"
+     *   + imageUrl: posterUrl hoặc bannerUrl
+     *   + actionUrl: `/movies/{id}` để khi khách click thông báo sẽ vào chi tiết phim.
+     * - Nếu gửi thông báo lỗi, phim vẫn đã lưu; lỗi chỉ ghi log warn để không làm thất bại thao tác thêm phim.
+     */
     @PostMapping
     public ResponseEntity<?> createMovie(@RequestBody Movie movie) {
         try {
@@ -104,6 +115,13 @@ public class MovieController {
     }
 
     private void notifyCustomersAboutNewMovie(Movie savedMovie) {
+        /*
+         * Chỉ broadcast khi phim:
+         * - đã lưu thành công,
+         * - đang active,
+         * - không ở trạng thái STOPPED.
+         * Đây là lớp bảo vệ để admin lưu nháp/phim ngừng chiếu không làm phiền khách hàng.
+         */
         if (savedMovie == null || !savedMovie.isActive() || savedMovie.getStatus() == Movie.MovieStatus.STOPPED) {
             return;
         }
