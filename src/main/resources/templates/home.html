@@ -370,7 +370,12 @@
             <span class="active">PHIM ĐANG HOT</span>
         </div>
 
-        <!-- Phim sắp chiếu chỉ có nút chi tiết; các trạng thái còn lại được phép đi thẳng tới chọn suất. -->
+        <!--
+          Luồng nút:
+          - Poster/Chi tiết gửi GET /movies/{id} -> MovieController.showMovieDetail.
+          - Mua vé gửi GET /booking/showtimes -> BookingController.selectShowtime.
+          Phim sắp chiếu chỉ có nút chi tiết; các trạng thái còn lại được phép đi thẳng tới chọn suất.
+        -->
         <section class="movies" th:if="${hotMovies != null && !#lists.isEmpty(hotMovies)}">
             <article class="movie-card" th:each="movie : ${hotMovies}">
                 <a th:href="@{/movies/{id}(id=${movie.id})}">

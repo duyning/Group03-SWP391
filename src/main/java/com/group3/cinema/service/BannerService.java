@@ -55,6 +55,7 @@ public class BannerService {
      * Lấy danh sách banner đang hoạt động (`active = true`) cho vị trí trang hiển thị công khai.
      */
     public List<Banner> getActiveBanners(Banner.BannerPage page) {
+        // Derived query lọc đúng vị trí trang + active=true và ưu tiên banner ID mới nhất.
         return bannerRepository.findByPageAndActiveTrueOrderByIdDesc(page);
     }
 

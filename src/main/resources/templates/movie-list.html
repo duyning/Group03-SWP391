@@ -396,7 +396,11 @@
             <div class="empty-state" th:if="${#lists.isEmpty(movies)}">Không tìm thấy phim phù hợp.</div>
         </th:block>
 
-        <!-- Chế độ danh sách mặc định: ba nút đổi panel tại trình duyệt mà không rời /movies. -->
+        <!--
+          Ba nút tab chỉ đổi panel tại trình duyệt, không rời /movies.
+          Link poster gọi MovieController.showMovieDetail; nút Mua vé gọi
+          BookingController.selectShowtime qua GET /booking/showtimes?movieId=...
+        -->
         <th:block th:if="${movies == null}">
             <div class="movie-tabs">
                 <button type="button" class="movie-tab" data-tab="coming-soon">PHIM SẮP CHIẾU</button>

@@ -486,7 +486,10 @@
         <div class="content-container">
             <h1 class="search-title">Tìm phim</h1>
 
-            <!-- Nút pill không phải input; JavaScript sẽ chuyển pill active thành hidden input khi submit. -->
+            <!--
+              Submit GET /search -> MovieController.searchMovies -> MovieService.searchMovies.
+              Nút pill không phải input; JavaScript sẽ chuyển pill active thành hidden input khi submit.
+            -->
             <form class="guest-search-form" id="guestSearchForm" th:action="@{/search}" method="get">
                 <div class="search-input-wrap">
                     <input class="main-search-input"

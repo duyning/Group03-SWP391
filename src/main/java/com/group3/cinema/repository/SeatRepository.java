@@ -1,10 +1,13 @@
 /**
  * Repository thao tác bảng `seats`, tức từng ô ghế/lối đi/hỏng trong sơ đồ phòng.
  *
- * Nằm ở cuối luồng thiết kế ghế:
+ * Luồng gọi & sử dụng:
  * - `SeatController` nhận request mở/lưu sơ đồ ghế từ `manager_seat.html`.
  * - `SeatService` validate ma trận, sinh nhãn ghế và tính tổng sức chứa.
- * - `SeatRepository` đọc/xóa/lưu danh sách ghế thực tế trong DB.
+ * - `RoomService` và màn quản trị dùng để lưu/reset sơ đồ phòng.
+ * - `BookingShowtimeService` đọc sơ đồ để tính tổng sức chứa còn bán.
+ * - `SeatHoldingService` đọc/kiểm tra ID ghế, tọa độ, loại ghế và dựng `BookingSeatView`.
+ * - `CatalogInitializer` dùng khi khởi tạo dữ liệu cấu hình ban đầu.
  *
  * Vai trò chính trong nghiệp vụ:
  * - Khi mở trang thiết kế, repository trả toàn bộ ghế theo row/col để dựng lại ma trận đúng vị trí.

@@ -317,7 +317,7 @@ public class CatalogService {
         ensureAudioTechnology("Dolby 7.1");
         ensureSeatType("std", "Ghế thường", "#e2e8f0", 1, true);
         ensureSeatType("vip", "Ghế VIP", "#fef08a", 1, true);
-        ensureSeatType("couple", "Ghế Couple", "#fbcfe8", 2, true);
+        ensureSeatType("couple", "Ghế đôi", "#fbcfe8", 2, true);
         ensureSeatType("broken", "Ghế hỏng", "#fca5a5", 0, false);
         ensureSeatType("empty", "Lối đi / Trống", "#ffffff", 0, false);
     }

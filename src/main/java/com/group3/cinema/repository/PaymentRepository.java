@@ -1,12 +1,13 @@
 /**
- * Repository thao tác bảng `payments`.
+ * Repository thao tác dữ liệu nhật ký giao dịch thanh toán trong bảng `payments`.
  *
- * Vai trò trong bán vé tại quầy:
+ * Luồng gọi & sử dụng:
+ * - `PaymentService` tạo, đối soát và cập nhật vòng đời giao dịch online/payOS.
  * - `CounterSaleService.completeSale(...)` lưu giao dịch CASH thành công ngay tại quầy.
  * - `CounterSaleService.createCounterPayment(...)` lưu giao dịch PAYOS ở trạng thái PENDING
  *   trước khi chuyển nhân viên/khách sang trang thanh toán payOS.
  * - Flow callback/return của payment gateway tìm payment theo `orderCode` để cập nhật kết quả.
- * - Màn quản lý hóa đơn/báo cáo tìm payment theo bookingId để hiển thị phương thức thanh toán và đối soát.
+ * - `InvoiceService` và báo cáo dùng dữ liệu này khi dựng chi tiết/lịch sử hóa đơn và đối soát.
  */
 package com.group3.cinema.repository;
 

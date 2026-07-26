@@ -30,6 +30,10 @@
         <dt>Ghế</dt><dd th:text="${#strings.listJoin(details.tickets.![seatLabel], ', ')}"></dd>
     </dl>
     <div class="flow-actions">
+        <!--
+          Các CTA dưới đây chỉ điều hướng sau khi PaymentController.result đã đối soát trạng thái.
+          Thanh toán lại mở PaymentController.payment; đặt lại vé quay về BookingController.selectShowtime.
+        -->
         <a class="btn secondary" th:href="@{/movies}">Về danh sách phim</a>
         <a class="btn" th:if="${displayPaymentStatus == 'SUCCESS'}" th:href="@{/my-tickets}">Xem vé của tôi</a>
         <a class="btn" th:if="${displayPaymentStatus == 'PENDING'}" th:href="@{/payment(bookingId=${details.booking.id})}">Thanh toán lại</a>

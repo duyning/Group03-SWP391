@@ -1,11 +1,14 @@
 /**
  * Repository quản lý ghế đang giữ/đã bán theo từng suất chiếu trong bảng `booking_tickets`.
  *
- * Nằm ở lõi chống trùng ghế của bán vé tại quầy:
+ * Luồng gọi & sử dụng:
+ * - `BookingShowtimeService` đọc ghế đã chiếm để tính số chỗ còn lại.
  * - `SeatHoldingService.getSeatMap(...)` đọc theo showtimeId để biết ghế AVAILABLE/HOLDING/BOOKED.
  * - `SeatHoldingService.holdSeats(...)` đọc theo showtimeId + seatIds để chặn ghế đã bị giữ/bán.
- * - `CounterSaleService.completeSale(...)` đọc theo holdToken để đổi các ghế HOLDING thành BOOKED.
+ * - `CustomerBookingService` xác minh hold, gắn ghế vào booking PENDING và đọc chi tiết đơn.
+ * - `CounterSaleService.completeSale(...)` đọc theo holdToken để đổi ghế HOLDING thành BOOKED.
  * - `CounterSaleService.createCounterPayment(...)` đọc theo holdToken để gắn ghế HOLDING vào Booking PENDING.
+ * - `PaymentService` chuyển HOLDING thành BOOKED hoặc xóa ghế khi thanh toán hủy/hết hạn.
  * - Scheduler/flow dọn hạn dùng các hàm delete để giải phóng ghế HOLDING quá hạn.
  */
 package com.group3.cinema.repository;

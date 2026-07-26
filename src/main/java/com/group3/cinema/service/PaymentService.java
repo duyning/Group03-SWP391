@@ -56,6 +56,7 @@ public class PaymentService {
                           WishlistRepository wishlistRepository,
                           LoyaltyService loyaltyService,
                           PaymentGatewayRouter gatewayRouter) {
+        // Lưu các dependency do Spring inject; mọi cập nhật chính chạy trong transaction của service.
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.ticketRepository = ticketRepository;
@@ -72,136 +73,204 @@ public class PaymentService {
 
     @Transactional
     public Payment createPayment(Long bookingId, Integer accountId, String method) {
-        /*
-         * Khóa nghiệp vụ trước khi tạo giao dịch: đơn phải thuộc tài khoản, còn hạn,
-         * đang PENDING và voucher vẫn còn lượt. Giao dịch PENDING cũ được tái sử dụng
-         * để thao tác double-click không tạo nhiều orderCode.
-         */
+        // Hệ thống hiện chỉ tích hợp PAYOS; mọi chuỗi method khác bị từ chối.
         if (method == null || !Payment.Method.PAYOS.name().equalsIgnoreCase(method.trim())) {
             throw new IllegalArgumentException("Chỉ hỗ trợ thanh toán qua payOS.");
         }
 
+        // Kiểm tra owner, trạng thái PENDING và hạn booking.
         Booking booking = requirePayableBooking(bookingId, accountId);
+
+        // Voucher có thể vừa hết số lượng từ lúc summary nên cần kiểm tra lại.
         ensureVoucherStillAvailable(booking);
+
+        // Tìm lần thanh toán mới nhất của booking và chỉ tái sử dụng nếu vẫn PENDING.
         Payment existingPending = paymentRepository.findTopByBookingIdOrderByCreatedAtDesc(bookingId)
                 .filter(payment -> payment.getStatus() == Payment.Status.PENDING)
                 .orElse(null);
+
+        // Chống double-click/tải lại tạo nhiều orderCode cho cùng booking.
         if (existingPending != null) {
             return existingPending;
         }
 
+        // Tạo entity Payment mới.
         Payment payment = new Payment();
+
+        // Gắn booking và gateway.
         payment.setBookingId(bookingId);
         payment.setPaymentMethod(Payment.Method.PAYOS);
+
+        // orderCode dạng số để đáp ứng payOS.
         payment.setOrderCode(generatePayOsOrderCode());
+
+        // Amount lấy từ totalAmount snapshot của booking, không lấy từ request.
         payment.setAmount(booking.getTotalAmount());
+
+        // Chưa có callback nên trạng thái ban đầu PENDING.
         payment.setStatus(Payment.Status.PENDING);
         payment.setCreatedAt(LocalDateTime.now());
+
+        // INSERT và trả Payment đã có ID.
         return paymentRepository.save(payment);
     }
 
     @Transactional
     public Payment processGatewayResult(String orderCode, boolean success, String responseCode,
                                         String transactionId, String message) {
-        /*
-         * Đây là điểm hội tụ kết quả từ payOS. Chỉ giao dịch PENDING mới được
-         * chuyển trạng thái, giúp callback return và webhook gọi lặp vẫn an toàn.
-         * Thành công sẽ chốt voucher, đổi ghế HOLDING thành BOOKED và phát hành Ticket.
-         */
+        // Tìm Payment bằng orderCode do hệ thống đã tạo.
         Payment payment = paymentRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch thanh toán."));
+
+        // Lấy Booking liên quan để cập nhật trạng thái và ghế.
         Booking booking = bookingRepository.findById(payment.getBookingId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt vé."));
+
+        // Idempotency: webhook/return gọi lại sau lần đầu chỉ nhận kết quả đã chốt.
         if (payment.getStatus() != Payment.Status.PENDING) {
             return payment;
         }
 
+        // Nhánh gateway xác nhận đã thanh toán.
         if (success) {
+            // Đọc các dòng ghế đã gắn booking PENDING.
             List<BookingTicket> tickets = ticketRepository.findByBookingId(booking.getId());
-            // Kết quả PAID từ API/webhook là nguồn xác thực. Nếu các dòng ghế vẫn còn,
-            // cho phép hoàn tất dù callback đến chậm hơn expiresAt vài giây/phút.
+
+            // Booking phải còn PENDING và còn dòng ghế để phát hành vé.
             if (booking.getStatus() != Booking.Status.PENDING || tickets.isEmpty()) {
+                // Đánh dấu booking hết hạn và dọn ghế còn sót.
                 expireBooking(booking);
+
+                // Không thể phát hành vé dù tiền phía gateway báo thành công nên ghi FAILED để cần xử lý.
                 payment.setStatus(Payment.Status.FAILED);
                 payment.setResponseCode("EXPIRED");
                 payment.setErrorMessage("Đơn đặt vé không còn ghế để phát hành sau khi thanh toán hoàn tất.");
                 return paymentRepository.save(payment);
             }
+
+            // Tăng used_quantity bằng update có điều kiện trước khi chốt giao dịch.
             markVoucherAsUsed(booking);
+
+            // Ghi dữ liệu thành công từ gateway.
             payment.setStatus(Payment.Status.SUCCESS);
             payment.setResponseCode(responseCode);
             payment.setTransactionId(transactionId);
             payment.setPaidAt(LocalDateTime.now());
+
+            // Booking chuyển trạng thái PAID và ghi paidAt.
             booking.setStatus(Booking.Status.PAID);
             booking.setPaidAt(LocalDateTime.now());
+
+            // Chuyển từng ghế HOLDING thành BOOKED và xóa thông tin giữ tạm.
             tickets.forEach(ticket -> {
                 ticket.setStatus(BookingTicket.Status.BOOKED);
                 ticket.setHoldToken(null);
                 ticket.setHoldExpiresAt(null);
             });
+
+            // Batch persist trạng thái ghế.
             ticketRepository.saveAll(tickets);
+
+            // Tạo vé điện tử thật trong bảng tickets và cộng điểm thành viên.
             saveRealTickets(booking, tickets, payment);
         } else if ("CANCELLED".equalsIgnoreCase(responseCode)) {
+            // Nhánh khách hủy tại payOS.
             payment.setStatus(Payment.Status.CANCELLED);
             payment.setResponseCode(responseCode);
+
+            // Hủy booking và xóa dòng ghế để trả chỗ.
             cancelBookingAndReleaseSeats(booking);
+
+            // Dùng message gateway nếu có, ngược lại dùng thông báo mặc định.
             payment.setErrorMessage(message == null || message.isBlank() ? "Khách hàng hủy thanh toán." : message);
         } else if ("PENDING".equalsIgnoreCase(responseCode)) {
+            // Gateway vẫn xử lý: giữ nguyên Payment/Booking PENDING.
             payment.setResponseCode(responseCode);
             payment.setErrorMessage(message);
         } else {
+            // Mọi kết quả không success/cancel/pending được coi là FAILED.
             payment.setStatus(Payment.Status.FAILED);
             payment.setResponseCode(responseCode);
             payment.setErrorMessage(message == null || message.isBlank() ? "Giao dịch không thành công." : message);
+
+            // Booking thất bại bị hủy và ghế được giải phóng.
             booking.setStatus(Booking.Status.CANCELLED);
             ticketRepository.deleteByBookingId(booking.getId());
         }
+
+        // Persist Booking cho mọi nhánh đã thay đổi.
         bookingRepository.save(booking);
+
+        // Persist Payment và giữ bản đã save để trả về.
         Payment savedPayment = paymentRepository.save(payment);
+
+        // Chỉ SUCCESS mới kích hoạt gửi email.
         sendEmailIfPaid(savedPayment);
+
+        // Trả trạng thái cuối cho controller/webhook.
         return savedPayment;
     }
 
     @Transactional
     public Payment getPayment(String orderCode, Integer accountId) {
+        // Tìm giao dịch theo mã công khai.
         Payment payment = paymentRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch."));
+
+        // Xác minh booking của Payment thuộc đúng account.
         Booking booking = bookingRepository.findByIdAndAccountId(payment.getBookingId(), accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Bạn không có quyền xem giao dịch này."));
+
+        // Đồng bộ lỗi hết hạn/hủy nếu Payment vẫn PENDING.
         return synchronizePendingPayment(payment, booking);
     }
 
     @Transactional
     public Payment getPaymentPublic(String orderCode) {
+        // Public return chỉ được phép tra theo orderCode khó đoán do hệ thống tạo.
         Payment payment = paymentRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch."));
+
+        // Bảo đảm booking tham chiếu vẫn tồn tại.
         bookingRepository.findById(payment.getBookingId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt vé."));
-        // Đây là đường đọc dự phòng khi payOS tạm thời không đối soát được. Không tự đánh dấu
-        // hết hạn ở đây vì giao dịch có thể đã PAID nhưng webhook/response API đang đến chậm.
+
+        // Không tự expire: payOS có thể đã PAID nhưng webhook/API đang đến chậm.
         return payment;
     }
 
     @Transactional(noRollbackFor = IllegalArgumentException.class)
     public Payment reconcilePayOsPayment(String orderCode) {
+        // Đọc Payment nội bộ trước khi gọi gateway.
         Payment payment = paymentRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch."));
+
+        // Booking cần cho kiểm tra hết hạn và xử lý kết quả.
         Booking booking = bookingRepository.findById(payment.getBookingId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt vé."));
+
+        // Trạng thái đã chốt không cần gọi API lại.
         if (payment.getStatus() != Payment.Status.PENDING) {
             return payment;
         }
 
+        // Router lấy PayOsGatewayService và gọi GET trạng thái trực tiếp tới payOS.
         PaymentGatewayService.GatewayPaymentStatus gatewayStatus = gatewayRouter
                 .gateway(Payment.Method.PAYOS)
                 .queryPayment(payment.getOrderCode());
+
+        // Phản hồi phải có và đúng orderCode request.
         if (gatewayStatus == null || !payment.getOrderCode().equals(gatewayStatus.orderCode())) {
             throw new IllegalArgumentException("Mã giao dịch đối soát không khớp.");
         }
+
+        // Amount gateway phải bằng amount snapshot nội bộ để chống nhầm/sửa giao dịch.
         if (gatewayStatus.amount() == null || payment.getAmount() == null
                 || payment.getAmount().compareTo(gatewayStatus.amount()) != 0) {
             throw new IllegalArgumentException("Số tiền giao dịch đối soát không khớp.");
         }
+
+        // Dùng cùng điểm hội tụ với webhook để cập nhật idempotent.
         Payment reconciled = processGatewayResult(
                 gatewayStatus.orderCode(),
                 gatewayStatus.success(),
@@ -209,6 +278,8 @@ public class PaymentService {
                 gatewayStatus.transactionId(),
                 gatewayStatus.message()
         );
+
+        // Nếu gateway vẫn PENDING thì kiểm tra booking nội bộ có hết hạn/hủy chưa.
         return reconciled.getStatus() == Payment.Status.PENDING
                 ? synchronizePendingPayment(reconciled, booking)
                 : reconciled;
@@ -216,64 +287,94 @@ public class PaymentService {
 
     @Transactional
     public Booking requirePayableBooking(Long id, Integer accountId) {
-        // Việc kiểm tra quyền sở hữu được thực hiện cùng truy vấn để không lộ booking của tài khoản khác.
+        // Query bằng cả ID và owner để không phân biệt "không tồn tại" với "không thuộc bạn".
         Booking booking = bookingRepository.findByIdAndAccountId(id, accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt vé."));
+
+        // Chỉ PENDING mới được bắt đầu/thử lại thanh toán.
         if (booking.getStatus() != Booking.Status.PENDING) {
             throw new IllegalArgumentException("Đơn này không thể thanh toán.");
         }
+
+        // Booking quá hạn được cập nhật EXPIRED và trả ghế ngay trong request.
         if (booking.getExpiresAt().isBefore(LocalDateTime.now())) {
             expireBooking(booking);
             throw new IllegalArgumentException("Đơn đặt vé đã hết hạn.");
         }
+
+        // Trả booking đã xác minh cho createPayment/controller.
         return booking;
     }
 
     private void expireBooking(Booking booking) {
+        // Đánh dấu trạng thái header.
         booking.setStatus(Booking.Status.EXPIRED);
         bookingRepository.save(booking);
+
+        // Xóa các BookingTicket để ghế trở lại AVAILABLE.
         ticketRepository.deleteByBookingId(booking.getId());
     }
 
     private Payment synchronizePendingPayment(Payment payment, Booking booking) {
+        // Payment đã chốt không cần đồng bộ nữa.
         if (payment.getStatus() != Payment.Status.PENDING) {
             return payment;
         }
+
+        // Booking bị hủy nhưng Payment còn pending phải chuyển Payment CANCELLED.
         if (booking.getStatus() == Booking.Status.CANCELLED) {
             payment.setStatus(Payment.Status.CANCELLED);
             payment.setResponseCode("BOOKING_CANCELLED");
             payment.setErrorMessage("Đơn đặt vé đã bị hủy nên không phát hành vé.");
             return paymentRepository.save(payment);
         }
+
+        // Xác định hết hạn từ status hoặc timestamp PENDING.
         boolean expired = booking.getStatus() == Booking.Status.EXPIRED
                 || (booking.getStatus() == Booking.Status.PENDING
                 && booking.getExpiresAt() != null
                 && booking.getExpiresAt().isBefore(LocalDateTime.now()));
+
+        // Đồng bộ booking/payment khi hết hạn.
         if (expired) {
+            // Nếu scheduler chưa đánh dấu, thực hiện ngay tại đây.
             if (booking.getStatus() == Booking.Status.PENDING) {
                 expireBooking(booking);
             }
+
+            // Payment không thể tiếp tục vì ghế đã được trả.
             payment.setStatus(Payment.Status.FAILED);
             payment.setResponseCode("EXPIRED");
             payment.setErrorMessage("Đơn đặt vé đã hết hạn do quá thời gian thanh toán nên không phát hành vé.");
             return paymentRepository.save(payment);
         }
+
+        // Chưa có thay đổi trạng thái.
         return payment;
     }
 
     private void cancelBookingAndReleaseSeats(Booking booking) {
+        // Đánh dấu booking hủy.
         booking.setStatus(Booking.Status.CANCELLED);
+
+        // Xóa dòng ghế để khách khác chọn.
         ticketRepository.deleteByBookingId(booking.getId());
     }
 
     private void ensureVoucherStillAvailable(Booking booking) {
+        // Chuẩn hóa snapshot code; null nghĩa là booking không dùng voucher.
         String voucherCode = normalizeVoucherCode(booking.getVoucherCode());
         if (voucherCode == null) {
             return;
         }
+
+        // Voucher legacy không tồn tại trong repository được bỏ qua; voucher managed phải còn quantity.
         voucherRepository.findByCodeIgnoreCase(voucherCode).ifPresent(voucher -> {
+            // null usedQuantity được xem là 0.
             int usedQuantity = voucher.getUsedQuantity() == null ? 0 : voucher.getUsedQuantity();
             Integer totalQuantity = voucher.getTotalQuantity();
+
+            // Chặn tạo payment link khi voucher đã hết.
             if (totalQuantity != null && usedQuantity >= totalQuantity) {
                 throw new IllegalArgumentException("Voucher " + voucher.getCode()
                         + " đã hết số lượng phát hành. Vui lòng quay lại chọn voucher khác.");
@@ -282,16 +383,22 @@ public class PaymentService {
     }
 
     private void markVoucherAsUsed(Booking booking) {
-        // Câu lệnh increment có điều kiện ngăn hai giao dịch cuối cùng cùng dùng một lượt voucher.
+        // Booking không dùng voucher không cần cập nhật.
         String voucherCode = normalizeVoucherCode(booking.getVoucherCode());
         if (voucherCode == null) {
             return;
         }
+
+        // Chỉ voucher được quản lý bởi bảng vouchers mới có used_quantity.
         boolean managedVoucher = voucherRepository.findByCodeIgnoreCase(voucherCode).isPresent();
         if (!managedVoucher) {
             return;
         }
+
+        // Atomic UPDATE chỉ tăng khi used_quantity < total_quantity.
         int updatedRows = voucherRepository.incrementUsedQuantityIfAvailable(voucherCode);
+
+        // 0 row nghĩa là transaction khác đã lấy lượt cuối hoặc voucher không còn hợp lệ.
         if (updatedRows == 0) {
             throw new IllegalArgumentException("Voucher " + voucherCode
                     + " đã hết số lượng phát hành. Vui lòng quay lại chọn voucher khác.");
@@ -306,35 +413,49 @@ public class PaymentService {
     }
 
     private String generatePayOsOrderCode() {
+        // Epoch seconds tạo phần thời gian tăng dần.
         long epochSeconds = System.currentTimeMillis() / 1000;
+
+        // Hai chữ số ngẫu nhiên giảm khả năng hai request cùng giây trùng mã.
         int suffix = ThreadLocalRandom.current().nextInt(10, 99);
+
+        // payOS yêu cầu orderCode dạng số nên ghép bằng phép nhân/cộng rồi đổi chuỗi.
         return String.valueOf(epochSeconds * 100 + suffix);
     }
 
     private void sendEmailIfPaid(Payment payment) {
+        // Chỉ gửi email khi transaction đã chuyển Payment SUCCESS.
         if (payment.getStatus() == Payment.Status.SUCCESS) {
             bookingEmailService.sendTicketEmail(payment.getBookingId());
         }
     }
 
     private void saveRealTickets(Booking booking, List<BookingTicket> bookingTickets, Payment payment) {
-        /*
-         * booking_tickets quản lý khóa/giữ ghế, còn tickets là dữ liệu vé điện tử
-         * hiển thị ở "Vé của tôi". Sau khi sao chép thành công, hệ thống cộng điểm thành viên.
-         */
+        // Không thể hoàn tất thanh toán nếu không còn ghế để phát hành.
         if (bookingTickets == null || bookingTickets.isEmpty()) {
             throw new IllegalStateException("Cannot complete payment without booking tickets.");
         }
+
+        // Tải Account đầy đủ để gắn quan hệ cho Ticket.
         var account = accountRepository.findById(booking.getAccountId())
                 .orElseThrow(() -> new IllegalStateException("Cannot find booking account."));
+
+        // Tải Showtime để snapshot phim, phòng, ngày và giờ.
         var showtime = showtimeRepository.findById(booking.getShowtimeId())
                 .orElseThrow(() -> new IllegalStateException("Cannot find booking showtime."));
+
+        // Movie đã nằm trong quan hệ của Showtime.
         var movie = showtime.getMovie();
 
+        // Mỗi BookingTicket (dòng giữ ghế) tạo một Ticket điện tử.
         for (BookingTicket bt : bookingTickets) {
             Ticket t = new Ticket();
+
+            // Gắn owner và phim.
             t.setAccount(account);
             t.setMovie(movie);
+
+            // Sao chép thông tin suất/ghế để vé không đổi khi catalog thay đổi.
             t.setRoomName(showtime.getRoom());
             t.setSeatLabel(bt.getSeatLabel());
             t.setSeatType(bt.getSeatType());
@@ -342,39 +463,56 @@ public class PaymentService {
             t.setShowTime(showtime.getShowTime());
             t.setPrice(bt.getPrice());
             t.setBookingTime(booking.getCreatedAt());
+
+            // Ticket phát hành sau thanh toán luôn CONFIRMED.
             t.setStatus("CONFIRMED");
+
+            // Lưu phương thức và mã booking để tra cứu/hiển thị.
             t.setPaymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "PAYOS");
             t.setBookingCode(payment.getOrderCode() != null ? payment.getOrderCode() : "CF-" + booking.getId());
+
+            // INSERT vé thật.
             realTicketRepository.save(t);
         }
 
-        // Any failure propagates and rolls back payment, booking, seats, voucher, tickets and points together.
+        // Cộng điểm nghiêm ngặt; lỗi sẽ propagate để rollback toàn transaction thanh toán.
         loyaltyService.addLoyaltyPointsStrict(booking.getAccountId(), booking.getTotalAmount());
     }
 
     public void cleanWishlistIfFromWishlist(jakarta.servlet.http.HttpSession session, Payment payment) {
+        // Hậu xử lý chỉ chạy khi có đủ session và Payment.
         if (session == null || payment == null) {
             return;
         }
         try {
+            // Tìm booking liên quan, nếu không còn thì bỏ qua.
             bookingRepository.findById(payment.getBookingId()).ifPresent(booking -> {
+                // Từ showtime xác định phim vừa mua.
                 showtimeRepository.findById(booking.getShowtimeId()).ifPresent(showtime -> {
                     var movie = showtime.getMovie();
                     if (movie != null) {
+                        // Cờ session được BookingController tạo khi URL có from=wishlist.
                         String attrName = "from_wishlist_movie_" + movie.getId();
                         Boolean fromWishlist = (Boolean) session.getAttribute(attrName);
+
+                        // Chỉ dọn wishlist khi đúng cờ của phim này.
                         if (fromWishlist != null && fromWishlist) {
+                            // Tìm item theo owner + movie.
                             wishlistRepository.findByAccountAccountIDAndMovieId(booking.getAccountId(), movie.getId())
                                     .ifPresent(item -> {
+                                        // Xóa item wishlist sau khi mua thành công.
                                         wishlistRepository.delete(item);
                                         System.out.println("Success: Auto-removed movie " + movie.getTitle() + " from wishlist for account " + booking.getAccountId());
                                     });
+
+                            // Xóa cờ để callback/tải lại không lặp thao tác.
                             session.removeAttribute(attrName);
                         }
                     }
                 });
             });
         } catch (Exception ex) {
+            // Wishlist là hậu xử lý; lỗi không được rollback/che khuất thanh toán đã thành công.
             System.err.println("Warning: Failed to clean wishlist for checkout: " + ex.getMessage());
         }
     }

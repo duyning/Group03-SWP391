@@ -40,7 +40,10 @@
                 <b th:text="${#numbers.formatDecimal(details.booking.totalAmount,0,'COMMA',0,'POINT')} + 'đ'">0đ</b>
             </p>
 
-            <!-- POST /payment/start tạo hoặc tái sử dụng giao dịch PENDING rồi chuyển tới gateway. -->
+            <!--
+              POST /payment/start -> PaymentController.start -> PaymentService.createPayment
+              -> PaymentGatewayRouter -> PayOsGatewayService; sau đó redirect tới checkoutUrl của payOS.
+            -->
             <form method="post" th:action="@{/payment/start}">
                 <input type="hidden" name="bookingId" th:value="${details.booking.id}">
                 <label class="pay-method">

@@ -44,6 +44,8 @@ class SeatHoldingServiceTest {
 
     private SeatHoldingService service;
     private BookingSelection selection;
+    private SeatType standard;
+    private SeatType couple;
 
     @BeforeEach
     void setUp() {
@@ -52,14 +54,13 @@ class SeatHoldingServiceTest {
         selection = new BookingSelection(12L, 7, 3L, "Phim", "Phòng 03",
                 LocalDate.now().plusDays(1), LocalTime.of(19, 0), LocalTime.of(21, 0), "2D");
 
-        SeatType standard = new SeatType(1L, "std", "Ghế thường", "#e2e8f0", 1, true, true);
-        SeatType couple = new SeatType(2L, "couple", "Ghế đôi", "#fbcfe8", 2, true, true);
-        when(seatTypeRepository.findAllByOrderByIdAsc()).thenReturn(List.of(standard, couple));
-        when(showtimeRepository.findById(12L)).thenReturn(Optional.of(new Showtime()));
+        standard = new SeatType(1L, "std", "Ghế thường", "#e2e8f0", 1, true, true);
+        couple = new SeatType(2L, "couple", "Ghế đôi", "#fbcfe8", 2, true, true);
     }
 
     @Test
     void countsOneCoupleSeatAsTwoWhenEnforcingBookingLimit() {
+        stubSeatTypesForHold();
         List<Seat> seats = new ArrayList<>();
         seats.add(seat(1L, "couple"));
         for (long id = 2; id <= 8; id++) {
@@ -76,6 +77,7 @@ class SeatHoldingServiceTest {
 
     @Test
     void allowsFourCoupleSeatsBecauseTheyRepresentEightSeats() {
+        stubSeatTypesForHold();
         List<Seat> seats = List.of(
                 seat(1L, "couple"), seat(2L, "couple"),
                 seat(3L, "couple"), seat(4L, "couple")
@@ -87,6 +89,27 @@ class SeatHoldingServiceTest {
                 seats.stream().map(Seat::getId).toList(), null);
 
         assertThat(result.tickets()).hasSize(4);
+    }
+
+    @Test
+    void normalizesBrokenLegacyVipAndCoupleLabelsForSeatPage() {
+        SeatType brokenVipLabel = new SeatType(
+                2L, "vip", "Gháº¿ VIP", "#fef08a", 1, true, true);
+        SeatType brokenCoupleLabel = new SeatType(
+                3L, "couple", "Gháº¿ Ä‘Ã´i", "#fbcfe8", 2, true, true);
+        when(seatTypeRepository.findByActiveTrueOrderByIdAsc())
+                .thenReturn(List.of(brokenVipLabel, brokenCoupleLabel));
+
+        List<SeatType> displayTypes = service.getActiveSeatTypes();
+
+        assertThat(displayTypes)
+                .extracting(SeatType::getDisplayName)
+                .containsExactly("Ghế VIP", "Ghế đôi");
+    }
+
+    private void stubSeatTypesForHold() {
+        when(seatTypeRepository.findAllByOrderByIdAsc()).thenReturn(List.of(standard, couple));
+        when(showtimeRepository.findById(12L)).thenReturn(Optional.of(new Showtime()));
     }
 
     private Seat seat(Long id, String type) {
