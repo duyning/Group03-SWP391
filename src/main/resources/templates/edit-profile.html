@@ -87,6 +87,7 @@
         </div>
 
         <!-- Success message -->
+        <!-- Chi render alert khi controller/redirect co successMessage. -->
         <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show animate-slide-in" role="alert" data-auto-dismiss="5000">
             <i class="fas fa-check-circle me-2"></i>
             <span th:text="${successMessage}">Cập nhật thành công!</span>
@@ -94,12 +95,15 @@
         </div>
 
         <!-- Edit Form -->
+        <!-- Submit bang POST den ProfileController.processEditProfile; novalidate de backend tu validate. -->
         <form th:action="@{/profile/edit}" method="POST" class="register-form" novalidate>
 
             <!-- Name -->
             <div class="form-floating-group">
+                <!-- Them class is-invalid khi Model co nameError. -->
                 <div class="input-icon-wrapper" th:classappend="${nameError != null} ? 'is-invalid' : ''">
                     <i class="fas fa-user input-icon"></i>
+                    <!-- name khop voi @RequestParam("name"); th:value dien ten hien tai/ten vua submit loi. -->
                     <input type="text" name="name"
                            class="form-input"
                            th:value="${account.name}"
@@ -107,6 +111,7 @@
                            id="name" required>
                     <label for="name">Họ và tên <span class="required">*</span></label>
                 </div>
+                <!-- Hien loi validate rieng cua field name. -->
                 <div th:if="${nameError != null}" class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     <span th:text="${nameError}"></span>
@@ -118,13 +123,16 @@
                 <div class="form-floating-group">
                     <div class="input-icon-wrapper" th:classappend="${dobError != null} ? 'is-invalid' : ''">
                         <i class="fas fa-calendar input-icon"></i>
+                        <!-- Hidden field gui LocalDate theo yyyy-MM-dd de @DateTimeFormat parse duoc. -->
                         <input type="hidden" name="dob" th:value="${account.dob != null ? account.dob.toString() : ''}" id="dobHidden">
+                        <!-- Input text chi dung de user xem/chon dinh dang dd/MM/yyyy. -->
                         <input type="text"
                                class="form-input"
                                placeholder="dd/MM/yyyy"
                                id="dobDisplay" required>
                         <label for="dobDisplay">Ngày sinh <span class="required">*</span></label>
                     </div>
+                    <!-- Hien loi bat buoc/tuoi/ngay tuong lai cua dob. -->
                     <div th:if="${dobError != null}" class="error-message">
                         <i class="fas fa-exclamation-circle"></i>
                         <span th:text="${dobError}"></span>
@@ -135,6 +143,7 @@
                 <div class="form-floating-group">
                     <div class="input-icon-wrapper">
                         <i class="fas fa-venus-mars input-icon"></i>
+                        <!-- name="gender" khop @RequestParam; th:selected giu lua chon hien tai. -->
                         <select name="gender" class="form-input select-input" id="gender">
                             <option value="" disabled>Chọn giới tính</option>
                             <option value="Nam" th:selected="${account.gender == 'Nam'}">Nam</option>
@@ -148,8 +157,10 @@
 
             <!-- Phone Number -->
             <div class="form-floating-group">
+                <!-- Them class loi khi phoneError ton tai. -->
                 <div class="input-icon-wrapper" th:classappend="${phoneError != null} ? 'is-invalid' : ''">
                     <i class="fas fa-phone input-icon"></i>
+                    <!-- phoneNum khop @RequestParam va lay gia tri tu account. -->
                     <input type="text" name="phoneNum"
                            class="form-input"
                            th:value="${account.phoneNum}"
@@ -157,6 +168,7 @@
                            id="phoneNum">
                     <label for="phoneNum">Số điện thoại</label>
                 </div>
+                <!-- Hien loi sai dinh dang hoac trung so dien thoai. -->
                 <div th:if="${phoneError != null}" class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     <span th:text="${phoneError}"></span>
@@ -167,6 +179,7 @@
             <div class="form-floating-group">
                 <div class="input-icon-wrapper textarea-wrapper">
                     <i class="fas fa-map-marker-alt input-icon"></i>
+                    <!-- th:text dat noi dung hien tai vao trong textarea address. -->
                     <textarea name="address"
                               class="form-input textarea-input"
                               placeholder="Địa chỉ"
@@ -176,6 +189,7 @@
             </div>
 
             <!-- Submit Button -->
+            <!-- type=submit kich hoat POST /profile/edit. -->
             <button type="submit" class="btn-register" id="btnRegister">
                 <span class="btn-text">Lưu thay đổi</span>
                 <span class="btn-loader" style="display: none;">
@@ -187,6 +201,7 @@
 
         <!-- Footer -->
         <div class="register-footer">
+            <!-- Huy/chuyen ve GET /profile ma khong submit form. -->
             <a th:href="@{/profile}" class="login-link"><i class="fas fa-arrow-left"></i> Quay lại hồ sơ</a>
         </div>
     </div>
@@ -197,7 +212,9 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script>
+    // Cho den khi DOM san sang moi gan datepicker va event listener.
     document.addEventListener("DOMContentLoaded", function() {
+        // Khai bao bo chu tieng Viet cho jQuery UI Datepicker.
         $.datepicker.regional['vi'] = {
             closeText: 'Đóng',
             prevText: 'Trước',
@@ -216,32 +233,50 @@
             isRTL: false,
             showMonthAfterYear: false,
             yearSuffix: ''};
+        // Dat bo ngon ngu vua khai bao lam mac dinh.
         $.datepicker.setDefaults($.datepicker.regional['vi']);
 
+        // Gan datepicker vao input ma user nhin thay.
         $("#dobDisplay").datepicker({
+            // Cho phep user chon nhanh thang.
             changeMonth: true,
+            // Cho phep user chon nhanh nam.
             changeYear: true,
+            // Gioi han danh sach nam theo tuoi 13-100.
             yearRange: "-100:-13",
+            // Mac dinh lich mo tai moc 20 nam truoc.
             defaultDate: "-20y",
+            // Gia tri submit duoc ghi vao hidden input.
             altField: "#dobHidden",
+            // Backend nhan dinh dang ISO yyyy-MM-dd.
             altFormat: "yy-mm-dd",
+            // Ngay lon nhat dam bao user du 13 tuoi.
             maxDate: "-13y",
+            // Ngay nho nhat gioi han tuoi 100.
             minDate: "-100y"
         });
 
         // Form submit animation
+        // Khi submit, an text/icon va hien spinner trong luc server xu ly.
         document.querySelector('.register-form').addEventListener('submit', function () {
+            // Tim nut submit mot lan.
             const btn = document.getElementById('btnRegister');
+            // An nhan nut.
             btn.querySelector('.btn-text').style.display = 'none';
+            // An icon save.
             btn.querySelector('.btn-arrow').style.display = 'none';
+            // Hien icon loading.
             btn.querySelector('.btn-loader').style.display = 'inline-block';
         });
 
         // Input focus animation
+        // Lap qua moi input cua form.
         document.querySelectorAll('.form-input').forEach(input => {
+            // Them class focused khi input nhan focus.
             input.addEventListener('focus', function () {
                 this.closest('.input-icon-wrapper').classList.add('focused');
             });
+            // Bo class focused khi input mat focus.
             input.addEventListener('blur', function () {
                 this.closest('.input-icon-wrapper').classList.remove('focused');
             });
@@ -249,11 +284,17 @@
         });
 
         // Initialize display date from hidden value
+        // Doc ngay ISO ma Thymeleaf da dien vao hidden input.
         const hiddenVal = $("#dobHidden").val();
+        // Chi format khi co gia tri.
         if (hiddenVal) {
+            // Tach yyyy-MM-dd thanh ba phan.
             const parts = hiddenVal.split('-');
+            // Bao dam chuoi co du nam, thang, ngay.
             if (parts.length === 3) {
+                // Doi thanh dd/MM/yyyy cho input hien thi.
                 const formatted = parts[2] + '/' + parts[1] + '/' + parts[0];
+                // Dien chuoi da format vao dobDisplay.
                 $("#dobDisplay").val(formatted);
             }
         }

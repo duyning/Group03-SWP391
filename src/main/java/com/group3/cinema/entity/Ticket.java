@@ -31,33 +31,42 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
+// Map entity vao bang tickets.
 @Table(name = "tickets")
 public class Ticket {
 
+    // Primary key tu tang cua ve.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Account so huu ve; EAGER de trang My Tickets doc duoc ngay.
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "account_id")
     private Account account;
 
+    // Phim cua ve.
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "movie_id")
     private Movie movie;
 
+    // Suat chieu cua ve.
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "showtime_id")
+    // Giu thong tin Showtime nhung tranh serialize lai cac quan he khong can.
     @JsonIgnoreProperties({"movie", "room", "dayType", "note", "override", "active"})
     private Showtime showtime;
 
+    // Ghe da dat.
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "seat_id")
     private Seat seat;
 
+    // Ten phong duoc luu truc tiep de ve van co snapshot khi du lieu phong thay doi.
     @Column(name = "room_name", columnDefinition = "NVARCHAR(100)")
     private String roomName;
 
+    // Nhan ghe, vi du A5.
     @Column(name = "seat_label", columnDefinition = "NVARCHAR(20)")
     private String seatLabel;
 
@@ -67,15 +76,18 @@ public class Ticket {
     @Column(name = "seat_type", columnDefinition = "NVARCHAR(30)")
     private String seatType = "std";
 
+    // Ngay chieu hien tren danh sach va chi tiet ve.
     @Column(name = "show_date")
     private LocalDate showDate;
 
+    // Gio chieu hien tren danh sach va chi tiet ve.
     @Column(name = "show_time")
     private LocalTime showTime;
 
     @Column(name = "base_price", nullable = false)
     private Double basePrice = 0.0;
 
+    // Gia cuoi cung user da thanh toan.
     @Column(name = "price", nullable = false)
     private Double price = 0.0;
 
@@ -91,12 +103,14 @@ public class Ticket {
     @Column(name = "final_price", nullable = false)
     private Double finalPrice = 0.0;
 
+    // Thoi diem dat ve, dung de sap xep ve moi nhat.
     @Column(name = "booking_time")
     private LocalDateTime bookingTime;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // Trang thai luu trong DB; getter co the suy ra USED theo thoi gian chieu.
     @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
     private String status = "CONFIRMED";
 
@@ -109,9 +123,11 @@ public class Ticket {
     @Column(name = "customer_phone", columnDefinition = "NVARCHAR(20)")
     private String customerPhone;
 
+    // Phuong thuc thanh toan hien tren trang chi tiet.
     @Column(name = "payment_method", columnDefinition = "NVARCHAR(50)")
     private String paymentMethod;
 
+    // Ma booking la du lieu chinh de tao QR check-in.
     @Column(name = "booking_code", columnDefinition = "NVARCHAR(50)")
     private String bookingCode;
 
@@ -312,12 +328,16 @@ public class Ticket {
      * @return Trạng thái vé hiện tại.
      */
     public String getStatus() {
+        // Ve CONFIRMED tu dong hien USED khi suat chieu da qua.
         if ("CONFIRMED".equals(status) && showDate != null && showTime != null) {
+            // Ghep ngay va gio thanh mot moc LocalDateTime.
             LocalDateTime showDateTime = LocalDateTime.of(showDate, showTime);
+            // So sanh voi thoi diem hien tai.
             if (LocalDateTime.now().isAfter(showDateTime)) {
                 return "USED";
             }
         }
+        // Cac truong hop khac giu nguyen status trong DB.
         return status;
     }
 
@@ -358,6 +378,7 @@ public class Ticket {
     }
 
     public String getBookingCode() {
+        // Thymeleaf dung gia tri nay de tao QR.
         return bookingCode;
     }
 
@@ -379,10 +400,13 @@ public class Ticket {
      * @return Chuỗi tên trạng thái tiếng Việt (Đã xác nhận, Đã sử dụng, Đã hủy, v.v.).
      */
     public String getStatusDisplayName() {
+        // Goi getStatus de ap dung quy tac tu CONFIRMED thanh USED.
         String currentStatus = getStatus();
+        // Bao ve truong hop du lieu cu khong co status.
         if (currentStatus == null) {
             return "Không xác định";
         }
+        // Doi ma status ky thuat thanh nhan tieng Viet.
         return switch (currentStatus) {
             case "CONFIRMED" -> "Đã xác nhận";
             case "USED" -> "Đã sử dụng";
@@ -402,10 +426,13 @@ public class Ticket {
      * @return Tên hiển thị (VIP, Ghế đôi, Thường, v.v.).
      */
     public String getSeatTypeDisplayName() {
+        // Loai ghe rong duoc coi la ghe Thuong.
         if (seatType == null || seatType.isBlank()) {
             return "Thường";
         }
+        // Chuan hoa de so sanh khong phan biet hoa/thuong va khoang trang.
         String normalized = seatType.trim().toLowerCase();
+        // Map cac gia tri ky thuat/du lieu cu thanh nhan tren UI.
         return switch (normalized) {
             case "vip" -> "VIP";
             case "couple", "đôi", "doi" -> "Ghế đôi";

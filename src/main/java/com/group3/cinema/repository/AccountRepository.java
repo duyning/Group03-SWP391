@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+// JpaRepository cung cap san findById, findAll, save va cac CRUD co ban.
 public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     /**

@@ -494,6 +494,7 @@
 </head>
 <body class="customer-header-page">
 
+<!-- Chen header customer dung chung. -->
 <div th:replace="~{fragments/common_header :: customerHeader('', '')}"></div>
 
 <div class="page-container">
@@ -501,8 +502,10 @@
     <div class="page-header">
         <div>
             <div class="page-title"><i class="fas fa-ticket-alt"></i> Vé của tôi</div>
+            <!-- totalTickets do TicketController dem truoc khi phan trang. -->
             <div class="ticket-count" th:text="'Tổng cộng ' + ${totalTickets} + ' vé'">Tổng cộng 0 vé</div>
         </div>
+        <!-- Quay ve GET /profile. -->
         <a th:href="@{/profile}" class="btn-back-home">
             <i class="fas fa-arrow-left"></i> Hồ sơ của tôi
         </a>
@@ -510,13 +513,16 @@
 
     <!-- Filter tabs -->
     <div class="filter-tabs">
+        <!-- Cac tab goi JavaScript loc card da co tren trang theo data-status. -->
         <div class="filter-tab active" onclick="filterTickets('all')">Tất cả</div>
         <div class="filter-tab" onclick="filterTickets('CONFIRMED')">Đã xác nhận</div>
         <div class="filter-tab" onclick="filterTickets('USED')">Đã sử dụng</div>
     </div>
 
     <!-- Ticket list -->
+    <!-- Chi render danh sach khi trang hien tai co ve. -->
     <div class="ticket-list" th:if="${!tickets.isEmpty()}">
+        <!-- Moi Ticket tao link den /my-tickets/{id}; qrData uu tien bookingCode, neu rong dung TICKET-{id}. -->
         <a th:each="ticket : ${tickets}"
            th:href="@{/my-tickets/{id}(id=${ticket.id})}"
            class="ticket-card"
@@ -524,10 +530,12 @@
            th:attr="data-status=${ticket.status}">
 
             <!-- Movie poster -->
+            <!-- Co posterUrl thi render anh phim. -->
             <img th:if="${ticket.movie.posterUrl != null && !ticket.movie.posterUrl.isEmpty()}"
                  th:src="${ticket.movie.posterUrl}"
                  th:alt="${ticket.movie.title}"
                  class="ticket-poster">
+            <!-- Khong co poster thi render placeholder. -->
             <div th:if="${ticket.movie.posterUrl == null || ticket.movie.posterUrl.isEmpty()}"
                  class="ticket-poster-placeholder">
                 <i class="fas fa-film"></i>
@@ -536,29 +544,36 @@
             <!-- Ticket info -->
             <div class="ticket-info">
                 <div>
+                    <!-- Doc title tu quan he Ticket.movie. -->
                     <div class="ticket-movie-title" th:text="${ticket.movie.title}">Tên phim</div>
                     <div class="ticket-meta">
                         <div class="ticket-meta-item">
                             <i class="fas fa-calendar"></i>
+                            <!-- Format ngay chieu theo dd/MM/yyyy. -->
                             <span th:text="${#temporals.format(ticket.showDate, 'dd/MM/yyyy')}">01/01/2026</span>
                         </div>
                         <div class="ticket-meta-item">
                             <i class="fas fa-clock"></i>
+                            <!-- Format gio chieu theo HH:mm. -->
                             <span th:text="${#temporals.format(ticket.showTime, 'HH:mm')}">19:30</span>
                         </div>
                         <div class="ticket-meta-item">
                             <i class="fas fa-door-open"></i>
+                            <!-- Hien snapshot ten phong trong Ticket. -->
                             <span th:text="${ticket.roomName}">Phòng 01</span>
                         </div>
                         <div class="ticket-meta-item">
                             <i class="fas fa-chair"></i>
+                            <!-- Noi nhan ghe voi ten loai ghe do entity tinh. -->
                             <span th:text="${ticket.seatLabel + ' (' + ticket.seatTypeDisplayName + ')'}">A5 (Thường)</span>
                         </div>
                     </div>
                 </div>
                 <div class="ticket-bottom">
+                    <!-- Dat qrData vao tooltip va URL tao anh QR. -->
                     <div class="ticket-qr-wrap" th:title="${qrData}">
                         <div class="ticket-qr-card">
+                            <!-- Dich vu QR nhan qrData qua query param data. -->
                             <img th:src="${'https://api.qrserver.com/v1/create-qr-code/?size=92x92&margin=4&data=' + qrData}"
                                  th:alt="${'QR vé ' + qrData}">
                         </div>
@@ -568,7 +583,9 @@
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
+                        <!-- Format gia ve voi dau phan cach hang nghin va don vi tien. -->
                         <span class="ticket-price" th:text="${#numbers.formatDecimal(ticket.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">85,000 ₫</span>
+                        <!-- Chon CSS badge theo status; statusDisplayName do Ticket entity cung cap. -->
                         <span class="status-badge"
                               th:classappend="${ticket.status == 'CONFIRMED'} ? 'status-confirmed' : (${ticket.status == 'USED'} ? 'status-used' : 'status-cancelled')"
                               th:text="${ticket.statusDisplayName}">Đã xác nhận</span>
@@ -584,22 +601,26 @@
     </div>
 
     <!-- Pagination -->
+    <!-- Chi hien phan trang khi co tu hai trang tro len. -->
     <div class="pagination-wrap" th:if="${totalPages > 1}">
         <div class="pagination-info">
             <span th:text="'Trang ' + ${currentPage} + '/' + ${totalPages}">Trang 1/1</span>
             <span th:text="' · Hiển thị tối đa ' + ${pageSize} + ' vé mỗi trang'"> · Hiển thị tối đa 5 vé mỗi trang</span>
         </div>
         <div class="pagination-nav">
+            <!-- Link trang truoc; them disabled o trang dau. -->
             <a class="page-link-custom"
                th:classappend="${currentPage == 1} ? ' disabled'"
                th:href="@{/my-tickets(page=${currentPage - 1})}">
                 <i class="fas fa-chevron-left"></i>
             </a>
+            <!-- Tao mot link cho moi so trang. -->
             <a th:each="pageNumber : ${#numbers.sequence(1, totalPages)}"
                class="page-link-custom"
                th:classappend="${pageNumber == currentPage} ? ' active'"
                th:href="@{/my-tickets(page=${pageNumber})}"
                th:text="${pageNumber}">1</a>
+            <!-- Link trang sau; them disabled o trang cuoi. -->
             <a class="page-link-custom"
                th:classappend="${currentPage == totalPages} ? ' disabled'"
                th:href="@{/my-tickets(page=${currentPage + 1})}">
@@ -609,6 +630,7 @@
     </div>
 
     <!-- Empty state -->
+    <!-- Empty state cua server khi account/trang hien tai khong co ve. -->
     <div class="empty-state" th:if="${tickets.isEmpty()}" id="emptyState">
         <i class="fas fa-ticket-alt"></i>
         <h3>Chưa có vé nào</h3>
@@ -616,6 +638,7 @@
     </div>
 
     <!-- Empty state for filter (hidden by default) -->
+    <!-- Empty state cua bo loc client; ban dau bi an. -->
     <div class="empty-state" id="filterEmptyState" style="display: none;">
         <i class="fas fa-filter"></i>
         <h3>Không tìm thấy vé</h3>
@@ -624,31 +647,44 @@
 </div>
 
 <script>
+    // Loc cac card ve dang co tren trang theo status.
     function filterTickets(status) {
         // Update active tab
+        // Bo class active khoi tat ca tab.
         document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+        // Danh dau tab vua click.
         event.target.classList.add('active');
 
+        // Lay tat ca card ve Thymeleaf da render.
         const cards = document.querySelectorAll('.ticket-card');
+        // Dem so card con hien sau khi loc.
         let visibleCount = 0;
 
+        // Kiem tra tung card.
         cards.forEach(card => {
+            // Doc data-status duoc gan tu ticket.status.
             const cardStatus = card.getAttribute('data-status');
+            // all hien tat ca; cac tab khac chi hien status trung.
             if (status === 'all' || cardStatus === status) {
                 card.style.display = '';
                 visibleCount++;
+            // An card khong phu hop.
             } else {
                 card.style.display = 'none';
             }
         });
 
         // Show/hide empty states
+        // Empty state khi bo loc khong co ket qua.
         const filterEmpty = document.getElementById('filterEmptyState');
+        // Empty state khi server khong tra ve ve nao.
         const mainEmpty = document.getElementById('emptyState');
 
+        // Chi hien filterEmpty neu co card tren DOM nhung tat ca bi loc an.
         if (filterEmpty) {
             filterEmpty.style.display = (visibleCount === 0 && cards.length > 0) ? '' : 'none';
         }
+        // mainEmpty chi hien khi DOM khong co card nao.
         if (mainEmpty) {
             mainEmpty.style.display = (cards.length === 0) ? '' : 'none';
         }

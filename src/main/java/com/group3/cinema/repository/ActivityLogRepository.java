@@ -17,6 +17,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
+// Long la kieu cua primary key ActivityLog.id.
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> {
 
     /**
@@ -35,7 +36,9 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
      * @return Danh sách nhật ký trang chỉ định.
      */
     @Query("SELECT a FROM ActivityLog a WHERE a.accountId = :accountId ORDER BY a.createdAt DESC")
+    // :accountId trong JPQL nhan gia tri tu tham so @Param.
     List<ActivityLog> findTopByAccountId(@Param("accountId") Integer accountId,
+                                         // Pageable quy dinh page, size va co the ca sort.
                                          org.springframework.data.domain.Pageable pageable);
 }
 

@@ -21,18 +21,29 @@ import com.group3.cinema.entity.MembershipLevel;
 import com.group3.cinema.entity.Role;
 import com.group3.cinema.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.List;
 
 @Service
 public class AccountService {
+
+    private static final SecureRandom OTP_RANDOM = new SecureRandom();
 
     @Autowired
     private AccountRepository accountRepository;
 
     @Autowired
     private org.springframework.mail.javamail.JavaMailSender mailSender;
+
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
 
     /**
      * Đăng ký tài khoản khách hàng mới.
@@ -56,10 +67,15 @@ public class AccountService {
      * @return Account vừa tạo.
      */
     public Account createManagerAccount(Account account) {
+        // Bat buoc role la MANAGER, khong tin role gui tu form.
         account.setRole(Role.MANAGER);
+        // Manager moi duoc kich hoat de co the dang nhap ngay.
         account.setStatus(true);
+        // Manager khong tham gia chuong trinh hang thanh vien customer.
         account.setMembershipLevel(null);
+        // Khoi tao diem ve 0.
         account.setLoyaltyPoint(0);
+        // INSERT Account va tra ve entity da duoc gan ID.
         return accountRepository.save(account);
     }
 
@@ -106,6 +122,7 @@ public class AccountService {
      * Tìm tài khoản theo ID.
      */
     public Account findById(int id) {
+        // JpaRepository tra Optional; orElse(null) giup controller kiem tra bang null.
         return accountRepository.findById(id).orElse(null);
     }
 
@@ -113,6 +130,7 @@ public class AccountService {
      * Lấy danh sách tất cả tài khoản sắp xếp theo Tên cho Admin quản lý.
      */
     public java.util.List<Account> getAllAccounts() {
+        // Sort.by("name") yeu cau database sap xep tang dan theo name.
         return accountRepository.findAll(org.springframework.data.domain.Sort.by("name"));
     }
 
@@ -125,17 +143,22 @@ public class AccountService {
      * @return Account sau khi chuyển trạng thái.
      */
     public Account toggleAccountStatus(int targetId, int adminId) {
+        // Ngan admin tu khoa chinh tai khoan dang dang nhap.
         if (targetId == adminId) {
             throw new IllegalArgumentException("Bạn không thể vô hiệu hóa chính tài khoản của mình.");
         }
+        // Tim tai khoan muc tieu theo primary key.
         Account account = accountRepository.findById(targetId).orElse(null);
+        // Bao loi nghiep vu neu URL chua ID khong ton tai.
         if (account == null) {
             throw new IllegalArgumentException("Không tìm thấy tài khoản.");
         }
         if (account.getRole() == Role.ADMIN) {
             throw new IllegalArgumentException("Không thể thay đổi trạng thái tài khoản Admin khác.");
         }
+        // Dao true thanh false hoac false thanh true.
         account.setStatus(!account.isStatus());
+        // UPDATE account va tra ve trang thai sau cap nhat.
         return accountRepository.save(account);
     }
 
@@ -143,13 +166,20 @@ public class AccountService {
      * Cập nhật thông tin chi tiết hồ sơ cá nhân của người dùng.
      */
     public void updateProfile(Account account, String name, java.time.LocalDate dob, String gender, String address, String phoneNum) {
+        // Ghi ten da duoc controller validate vao entity.
         account.setName(name);
+        // Ghi ngay sinh.
         account.setDob(dob);
+        // Ghi gioi tinh.
         account.setGender(gender);
+        // Ghi dia chi.
         account.setAddress(address);
+        // Khong ghi de so dien thoai cu neu field moi null/rong.
         if (phoneNum != null && !phoneNum.trim().isEmpty()) {
+            // trim bo khoang trang hai dau truoc khi luu.
             account.setPhoneNum(phoneNum.trim());
         }
+        // UPDATE ban ghi account trong database.
         accountRepository.save(account);
     }
 
@@ -157,6 +187,7 @@ public class AccountService {
      * Kiểm tra số điện thoại có bị trùng với tài khoản khác hay không khi chỉnh sửa thông tin.
      */
     public boolean isPhoneNumTakenByOther(String phoneNum, Integer accountId) {
+        // Tim so dien thoai trung nhung loai tru accountID hien tai.
         return accountRepository.existsByPhoneNumAndAccountIDNot(phoneNum, accountId);
     }
 
@@ -170,6 +201,9 @@ public class AccountService {
      * @param confirmPassword Nhập lại mật khẩu mới.
      */
     public void resetPassword(Account account, String oldPassword, String newPassword, String confirmPassword) {
+
+        // Case 5: Empty / null fields
+        // Kiem tra tung field rieng de controller gan loi vao dung input.
         if (oldPassword == null || oldPassword.isBlank()) {
             throw new IllegalArgumentException("Mật khẩu cũ không được để trống");
         }
@@ -180,23 +214,34 @@ public class AccountService {
             throw new IllegalArgumentException("Xác nhận mật khẩu không được để trống");
         }
 
+        // Case 1: Old password incorrect
+        // So sanh mat khau hien tai trong Entity voi gia tri user nhap.
         if (!account.getPassword().equals(oldPassword)) {
             throw new IllegalArgumentException("Old password is incorrect");
         }
 
+        // Case 4: New password same as old
+        // Mat khau moi phai khac mat khau dang su dung.
         if (oldPassword.equals(newPassword)) {
             throw new IllegalArgumentException("New password must be different from old password");
         }
 
+        // Case 2: New password length invalid (must be 8-20 characters)
+        // Gioi han do dai mat khau moi tu 8 den 20 ky tu.
         if (newPassword.length() < 8 || newPassword.length() > 20) {
             throw new IllegalArgumentException("New password must be 8-20 characters");
         }
 
+        // Case 3: Confirm password mismatch
+        // Confirm phai trung chinh xac voi mat khau moi.
         if (!newPassword.equals(confirmPassword)) {
             throw new IllegalArgumentException("Confirm password does not match");
         }
 
+        // Case 5: All validations passed — update password
+        // Sau khi tat ca quy tac dat, thay password tren entity.
         account.setPassword(newPassword);
+        // UPDATE password xuong database.
         accountRepository.save(account);
     }
 
@@ -247,19 +292,25 @@ public class AccountService {
      * Hàm dùng chung gửi Email OTP qua JavaMailSender.
      */
     private String generateAndSendOTP(String email, String subject, String textTemplate) {
-        String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", OTP_RANDOM.nextInt(1_000_000));
+
+        if (mailUsername == null || mailUsername.isBlank() || mailPassword == null || mailPassword.isBlank()) {
+            throw new IllegalStateException("Chưa cấu hình email gửi OTP. Vui lòng kiểm tra MAIL_USERNAME và MAIL_PASSWORD.");
+        }
         
         try {
             org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
+            message.setFrom(mailUsername);
             message.setTo(email);
             message.setSubject(subject);
             message.setText(String.format(textTemplate, otp));
             
             mailSender.send(message);
             System.out.println("Đã gửi OTP " + otp + " tới email " + email);
-        } catch (Exception e) {
+        } catch (MailException e) {
             System.err.println("Lỗi khi gửi email: " + e.getMessage());
-            System.out.println("FALLBACK OTP (do lỗi gửi email): " + otp);
+            throw new IllegalStateException("Không gửi được OTP qua email. Vui lòng kiểm tra cấu hình SMTP hoặc thử lại sau.");
         }
 
         return otp;

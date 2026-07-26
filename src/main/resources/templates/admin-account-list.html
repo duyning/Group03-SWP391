@@ -377,13 +377,16 @@
         .modal-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; }
         .modal-desc  { font-size: 0.9rem;  color: #64748b; margin-bottom: 24px; }
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .accounts-main .admin-topbar-actions {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <!-- Sidebar -->
     <div th:replace="~{fragments/admin_sidebar :: adminSidebar('accounts')}"></div>
 
-    <main class="main">
+    <main class="main accounts-main">
         <header th:replace="~{fragments/admin_sidebar :: adminTopbar}"></header>
 
         <!-- Page header -->
@@ -420,6 +423,7 @@
             <div class="stat-pill active">
                 <i class="fas fa-user-check" style="color:var(--success);font-size:1.3rem;"></i>
                 <div>
+                    <!-- activeCount do controller dem tren danh sach sau loc. -->
                     <div class="num" th:text="${activeCount}">0</div>
                     <div style="font-size:0.75rem;color:#64748b;">Đang hoạt động</div>
                 </div>
@@ -427,6 +431,7 @@
             <div class="stat-pill inactive">
                 <i class="fas fa-user-slash" style="color:var(--danger);font-size:1.3rem;"></i>
                 <div>
+                    <!-- inactiveCount do controller dem tren danh sach sau loc. -->
                     <div class="num" th:text="${inactiveCount}">0</div>
                     <div style="font-size:0.75rem;color:#64748b;">Đã vô hiệu hóa</div>
                 </div>
@@ -441,64 +446,69 @@
                         <i class="fas fa-filter" style="color:var(--primary);"></i>
                         Bộ lọc tài khoản
                     </div>
-                    <div class="filter-subtitle">
-                        Rule tìm kiếm: email bắt đầu bằng từ khóa, không phân biệt chữ hoa thường.
-                    </div>
+
                 </div>
-                <div class="filter-rules">
-                    <span class="rule-chip"><i class="fas fa-envelope"></i> Email bắt đầu bằng từ khóa</span>
-                </div>
+               
             </div>
+            <!-- GET form dua bo loc len query string cua /admin/accounts. -->
             <form th:action="@{/admin/accounts}" method="get" class="filter-row">
                 <div class="filter-group" style="flex:3;min-width:220px;">
                     <label>Tìm kiếm theo email</label>
                     <div class="search-field">
                         <i class="fas fa-search"></i>
+                        <!-- name=search khop @RequestParam; th:value giu tu khoa sau submit. -->
                         <input type="text" name="search" th:value="${search}"
                                autocomplete="off"
                                placeholder="Ví dụ: admin@group03.com, minh@gmail.com">
                     </div>
-                    <div class="field-hint">Nhập các ký tự đầu của email tài khoản.</div>
+
                 </div>
                 <div class="filter-group">
                     <label>Vai trò</label>
+                    <!-- name=role khop roleFilter trong controller. -->
                     <select name="role">
                         <option value="">Tất cả vai trò</option>
                         <option value="ADMIN"    th:selected="${roleFilter == 'ADMIN'}">Admin</option>
                         <option value="MANAGER"  th:selected="${roleFilter == 'MANAGER'}">Quản lý</option>
                         <option value="CUSTOMER" th:selected="${roleFilter == 'CUSTOMER'}">Khách hàng</option>
                     </select>
-                    <div class="field-hint">Lọc theo quyền của tài khoản.</div>
+
                 </div>
                 <div class="filter-group">
                     <label>Trạng thái</label>
+                    <!-- name=status khop statusFilter trong controller. -->
                     <select name="status">
                         <option value="">Tất cả trạng thái</option>
                         <option value="active"   th:selected="${statusFilter == 'active'}">Đang hoạt động</option>
                         <option value="inactive" th:selected="${statusFilter == 'inactive'}">Đã vô hiệu hóa</option>
                     </select>
-                    <div class="field-hint">Active: được đăng nhập. Inactive: bị khóa đăng nhập.</div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px;">
+                    <!-- Submit GET de ap dung bo loc. -->
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search"></i> Áp dụng
                     </button>
+                    <!-- Mo URL khong query param de dat lai bo loc. -->
                     <a th:href="@{/admin/accounts}" class="btn btn-outline">
                         <i class="fas fa-redo"></i> Đặt lại
                     </a>
                 </div>
             </form>
+            <!-- Chi hien tom tat khi co it nhat mot bo loc khac rong. -->
             <div class="active-filter-summary"
                  th:if="${(search != null && !search.isBlank()) || (roleFilter != null && !roleFilter.isBlank()) || (statusFilter != null && !statusFilter.isBlank())}">
                 <span>Đang áp dụng:</span>
+                <!-- Chip tu khoa. -->
                 <span class="active-filter-chip" th:if="${search != null && !search.isBlank()}">
                     <i class="fas fa-keyboard"></i>
                     <span th:text="'Từ khóa: ' + ${search}">Từ khóa</span>
                 </span>
+                <!-- Chip role. -->
                 <span class="active-filter-chip" th:if="${roleFilter != null && !roleFilter.isBlank()}">
                     <i class="fas fa-user-tag"></i>
                     <span th:text="${roleFilter == 'ADMIN'} ? 'Vai trò: Admin' : (${roleFilter == 'MANAGER'} ? 'Vai trò: Quản lý' : 'Vai trò: Khách hàng')">Vai trò</span>
                 </span>
+                <!-- Chip status. -->
                 <span class="active-filter-chip" th:if="${statusFilter != null && !statusFilter.isBlank()}">
                     <i class="fas fa-toggle-on"></i>
                     <span th:text="${statusFilter == 'active'} ? 'Trạng thái: Đang hoạt động' : 'Trạng thái: Đã vô hiệu hóa'">Trạng thái</span>
@@ -510,10 +520,12 @@
         <div class="table-card">
             <div class="table-header">
                 <span>Danh sách tài khoản</span>
+                <!-- Tong so account sau khi loc. -->
                 <span class="result-count" th:text="${totalCount} + ' kết quả'">0 kết quả</span>
             </div>
 
             <!-- Has results -->
+            <!-- Co ket qua thi render bang. -->
             <div th:if="${!accounts.isEmpty()}">
                 <table>
                     <thead>
@@ -527,12 +539,14 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- acc la Account hien tai; stat cung cap index cua vong lap. -->
                         <tr th:each="acc, stat : ${accounts}">
                             <td style="color:#94a3b8;font-size:0.82rem;" th:text="${stat.index + 1}">1</td>
 
                             <!-- Avatar + name + email -->
                             <td>
                                 <div class="user-cell">
+                                    <!-- Avatar lay chu cai dau; mau xam neu account inactive. -->
                                     <div class="avatar-initial"
                                          th:style="${acc.isStatus()} ? 'background:linear-gradient(135deg,#0054a6,#16a6df)' : 'background:#94a3b8'"
                                          th:text="${acc.name != null && !acc.name.isEmpty()} ? ${acc.name.substring(0,1).toUpperCase()} : 'U'">U</div>
@@ -543,10 +557,12 @@
                                 </div>
                             </td>
 
+                            <!-- Hien so dien thoai hoac dau gach khi rong. -->
                             <td th:text="${acc.phoneNum != null && !acc.phoneNum.isEmpty()} ? ${acc.phoneNum} : '—'" style="color:#64748b;"></td>
 
                             <!-- Role badge -->
                             <td>
+                                <!-- Chon class va nhan badge theo enum Role. -->
                                 <span class="badge"
                                       th:classappend="${acc.role != null && acc.role.name() == 'ADMIN'} ? 'badge-admin' : (${acc.role != null && acc.role.name() == 'MANAGER'} ? 'badge-manager' : 'badge-customer')"
                                       th:text="${acc.role != null} ? (${acc.role.name() == 'ADMIN'} ? 'Admin' : (${acc.role.name() == 'MANAGER'} ? 'Quản lý' : 'Khách hàng')) : '—'">
@@ -556,6 +572,7 @@
 
                             <!-- Status badge -->
                             <td>
+                                <!-- Chon class/icon/nhan theo acc.status. -->
                                 <span class="badge"
                                       th:classappend="${acc.isStatus()} ? 'badge-active' : 'badge-inactive'">
                                     <i class="fas" th:classappend="${acc.isStatus()} ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
@@ -566,8 +583,10 @@
                             <!-- Action -->
                             <td style="text-align:center;">
                                 <!-- Cannot act on ADMIN accounts or your own account -->
+                                <!-- Khong tao nut toggle cho bat ky account ADMIN nao. -->
                                 <span th:if="${acc.role != null && acc.role.name() == 'ADMIN'}"
                                       style="color:#94a3b8;font-size:0.78rem;font-style:italic;">Không thể thay đổi</span>
+                                <!-- data-* mang ID/ten/hanh dong sang JavaScript confirm modal. -->
                                 <button th:unless="${acc.role != null && acc.role.name() == 'ADMIN'}"
                                         class="btn-toggle"
                                         th:classappend="${acc.isStatus()} ? 'btn-deactivate' : 'btn-activate'"
@@ -585,6 +604,7 @@
             </div>
 
             <!-- No results -->
+            <!-- Khong co ket qua thi hien empty state thay bang. -->
             <div th:if="${accounts.isEmpty()}" class="no-results">
                 <i class="fas fa-users-slash"></i>
                 <div style="font-weight:600;">Không tìm thấy tài khoản nào</div>
@@ -603,6 +623,7 @@
                 <button class="btn btn-outline" onclick="closeConfirm()">
                     <i class="fas fa-times"></i> Hủy
                 </button>
+                <!-- JavaScript se gan action /admin/accounts/{id}/toggle truoc khi submit. -->
                 <form id="confirmForm" method="post">
                     <button type="submit" class="btn" id="confirmBtn">
                         <i class="fas fa-check"></i> Xác nhận
@@ -613,34 +634,50 @@
     </div>
 
     <script th:inline="javascript">
+        // Mo modal xac nhan dua tren account cua nut vua click.
         function openConfirm(btn) {
+            // Doc accountID tu data-id.
             const id     = btn.getAttribute('data-id');
+            // Doc ten user de dua vao cau hoi xac nhan.
             const name   = btn.getAttribute('data-name');
+            // Doc hanh dong kich hoat/vo hieu hoa.
             const action = btn.getAttribute('data-action');
+            // true khi thao tac sap lam la vo hieu hoa.
             const isDeactivate = action === 'vô hiệu hóa';
 
+            // Chon icon modal theo loai thao tac.
             document.getElementById('modalIcon').textContent  = isDeactivate ? '🚫' : '✅';
+            // Chon tieu de modal.
             document.getElementById('modalTitle').textContent = isDeactivate ? 'Vô hiệu hóa tài khoản' : 'Kích hoạt tài khoản';
+            // Tao noi dung xac nhan co ten account va canh bao khi vo hieu hoa.
             document.getElementById('modalDesc').innerHTML    =
                 `Bạn có chắc chắn muốn <strong>${action}</strong> tài khoản của <strong>${name}</strong> không?`
                 + (isDeactivate ? '<br><small style="color:#ef4444;margin-top:6px;display:block;">Người dùng sẽ không thể đăng nhập sau thao tác này.</small>' : '');
 
+            // Lay nut xac nhan de doi mau/noi dung.
             const confirmBtn = document.getElementById('confirmBtn');
+            // Mau do cho vo hieu hoa, xanh cho kich hoat.
             confirmBtn.style.background = isDeactivate ? '#ef4444' : '#10b981';
+            // Dat lai icon va nhan nut.
             confirmBtn.innerHTML = isDeactivate
                 ? '<i class="fas fa-user-slash"></i> Vô hiệu hóa'
                 : '<i class="fas fa-user-check"></i> Kích hoạt';
 
+            // Tao URL POST khop @PostMapping("/{id}/toggle").
             document.getElementById('confirmForm').action = '/admin/accounts/' + id + '/toggle';
+            // Them class show de hien modal.
             document.getElementById('confirmModal').classList.add('show');
         }
 
+        // An modal khi user bam Huy hoac click ra ngoai.
         function closeConfirm() {
             document.getElementById('confirmModal').classList.remove('show');
         }
 
         // Close when clicking outside the modal box
+        // Gan event click cho lop overlay.
         document.getElementById('confirmModal').addEventListener('click', function(e) {
+            // Chi dong khi click dung overlay, khong dong khi click modal-box.
             if (e.target === this) closeConfirm();
         });
     </script>

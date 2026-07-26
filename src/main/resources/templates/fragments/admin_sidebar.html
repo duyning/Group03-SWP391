@@ -71,13 +71,17 @@
         </li>
 
         <li class="sidebar-section">
+            <!-- Mo nhom Tai khoan khi mot trong ba trang con dang active. -->
             <details th:attr="open=${active == 'profile' || active == 'create-manager' || active == 'accounts'} ? 'open' : null">
                 <summary><span><i class="fas fa-user-circle"></i> Tài khoản</span><b></b></summary>
                 <div class="sidebar-subnav">
+                    <!-- Moi role da dang nhap deu co the xem profile cua minh. -->
                     <a th:href="@{/profile}"><span th:classappend="${active == 'profile'} ? 'active' : ''">Thông tin cá nhân</span></a>
+                    <!-- Chi ADMIN thay link Manage Manager. -->
                     <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/create-manager}">
                         <span th:classappend="${active == 'create-manager'} ? 'active' : ''">Tạo tài khoản Quản lý</span>
                     </a>
+                    <!-- Chi ADMIN thay link Manage Account. -->
                     <a th:if="${session.loggedInUser != null && session.loggedInUser.role.name() == 'ADMIN'}" th:href="@{/admin/accounts}">
                         <span th:classappend="${active == 'accounts'} ? 'active' : ''">Quản lý tài khoản</span>
                     </a>

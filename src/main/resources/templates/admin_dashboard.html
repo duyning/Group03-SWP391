@@ -570,8 +570,10 @@
                 <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" th:href="@{/admin/catalogs}"><i class="fas fa-list"></i> Danh mục phòng</a>
                 <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" th:href="@{/admin/combos}"><i class="fas fa-utensils"></i> Quản lý Combo</a>
                 <a class="quick-link" th:if="${user != null && user.role.name() == 'MANAGER'}" th:href="@{/admin/posts}"><i class="fas fa-newspaper"></i> Quản lý tin tức</a>
+                <!-- Chi ADMIN thay shortcut den Manage Manager. -->
                 <a class="quick-link" th:if="${user != null && user.role.name() == 'ADMIN'}" th:href="@{/admin/create-manager}"><i class="fas fa-user-shield"></i> Tạo tài
                     khoản Quản lý</a>
+                <!-- Chi ADMIN thay shortcut den Manage Account. -->
                 <a class="quick-link" th:if="${user != null && user.role.name() == 'ADMIN'}" th:href="@{/admin/accounts}"><i class="fas fa-users-cog"></i> Quản lý tài khoản</a>
             </div>
         </section>

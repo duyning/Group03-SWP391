@@ -75,11 +75,13 @@ public class TicketService {
 
     /** Lấy danh sách vé đã đặt của tài khoản cá nhân. */
     public List<Ticket> getTicketsByAccount(int accountId) {
+        // Derived query loc theo account.accountID va sap xep bookingTime moi nhat truoc.
         return ticketRepository.findByAccountAccountIDOrderByBookingTimeDesc(accountId);
     }
 
     /** Lấy thông tin chi tiết một tấm vé theo ID. */
     public Optional<Ticket> getTicketDetail(Long ticketId, int accountId) {
+        // Query ca ticketId lan accountId la lop bao ve chong xem ve cua user khac.
         return ticketRepository.findByIdAndAccountAccountID(ticketId, accountId);
     }
 

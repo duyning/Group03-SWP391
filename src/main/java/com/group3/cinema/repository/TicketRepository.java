@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+// JpaRepository cung cap CRUD cho Ticket voi primary key Long.
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     /** Lấy lịch sử vé của tài khoản người dùng, sắp xếp mới nhất lên đầu. */

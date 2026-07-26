@@ -288,6 +288,7 @@
 </head>
 <body class="customer-header-page">
 
+<!-- Chen header customer dung chung. -->
 <div th:replace="~{fragments/common_header :: customerHeader('', '')}"></div>
 
 <div class="page-container">
@@ -297,15 +298,19 @@
             <i class="fas fa-history"></i>
             Nhật ký hoạt động
         </div>
+        <!-- Quay ve GET /profile. -->
         <a th:href="@{/profile}" class="btn-back">
             <i class="fas fa-arrow-left"></i> Hồ sơ của tôi
         </a>
     </div>
 
     <!-- Timeline -->
+    <!-- Chi render timeline khi danh sach logs trong Model co du lieu. -->
     <div class="timeline" th:if="${!logs.isEmpty()}">
+        <!-- Lap qua tung ActivityLog theo thu tu moi nhat truoc. -->
         <div class="timeline-item" th:each="log : ${logs}">
             <!-- Dot on the line -->
+            <!-- actionIconClass do entity tinh, gom icon Font Awesome va class mau. -->
             <div class="timeline-dot fas" th:classappend="${log.actionIconClass}"></div>
 
             <!-- Card -->
@@ -313,14 +318,19 @@
                 <!-- Left: badge + info -->
                 <div class="log-info">
                     <div class="log-action-name">
+                        <!-- Badge dung cung class icon/mau voi timeline dot. -->
                         <span class="log-badge" th:classappend="${log.actionIconClass}">
+                            <!-- split lay class Font Awesome dau tien, vi du fa-sign-in-alt. -->
                             <i class="fas" th:classappend="${log.actionIconClass.split(' ')[0]}"></i>
+                            <!-- Getter getActionDisplayName doi enum thanh nhan tieng Viet. -->
                             <span th:text="${log.actionDisplayName}">Hành động</span>
                         </span>
                     </div>
+                    <!-- Chi hien description khi log co noi dung mo ta. -->
                     <div class="log-description" th:text="${log.description}" th:if="${log.description != null and !log.description.isEmpty()}">
                         Mô tả hành động
                     </div>
+                    <!-- IP la optional, chi render khi service da ghi lai. -->
                     <div class="log-ip" th:if="${log.ipAddress != null and !log.ipAddress.isEmpty()}">
                         <i class="fas fa-network-wired"></i>
                         <span th:text="${log.ipAddress}">127.0.0.1</span>
@@ -329,6 +339,7 @@
 
                 <!-- Right: time -->
                 <div class="log-time">
+                    <!-- Tach createdAt thanh gio va ngay de hien tren hai dong. -->
                     <div th:text="${#temporals.format(log.createdAt, 'HH:mm')}">14:30</div>
                     <div style="color: #64748b; margin-top: 2px;"
                          th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy')}">01/07/2026</div>
@@ -338,6 +349,7 @@
     </div>
 
     <!-- Empty state -->
+    <!-- Empty state thay timeline khi logs rong. -->
     <div class="empty-state" th:if="${logs.isEmpty()}">
         <i class="fas fa-clipboard-list"></i>
         <h3>Chưa có hoạt động nào được ghi lại</h3>

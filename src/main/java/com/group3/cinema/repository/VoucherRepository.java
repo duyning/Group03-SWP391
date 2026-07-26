@@ -133,6 +133,7 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
             WHERE av.account_id = :accountId
             ORDER BY v.end_date ASC, v.id DESC
             """, nativeQuery = true)
+    // @Param gan accountId cua method vao :accountId trong native SQL.
     List<Voucher> findWalletVouchers(@Param("accountId") int accountId);
 
     /**
