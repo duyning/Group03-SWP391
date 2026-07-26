@@ -3,6 +3,14 @@
   Màn danh sách phim, nhận ba nhóm nowShowingMovies/comingSoonMovies/specialScreeningMovies
   và recommendedMovies từ MovieController. JavaScript cuối trang chỉ đổi tab hiển thị,
   không gọi lại server nên dữ liệu ba nhóm phải được nạp sẵn trong model.
+
+  LUỒNG FRONTEND DANH SÁCH PHIM:
+  1. Khách truy cập GET /movies.
+  2. MovieController nạp nowShowingMovies, comingSoonMovies, specialScreeningMovies và recommendedMovies.
+  3. movie-list.html render sẵn dữ liệu; JS tab chỉ bật/tắt class active, không gọi lại server.
+  4. Click tab "PHIM SẮP CHIẾU", "PHIM ĐANG CHIẾU", "SUẤT CHIẾU ĐẶC BIỆT" -> đổi danh sách đang hiển thị.
+  5. Click "Mua vé" -> /booking/showtimes?movieId=ID.
+  6. Click poster/chi tiết -> /movies/ID.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 

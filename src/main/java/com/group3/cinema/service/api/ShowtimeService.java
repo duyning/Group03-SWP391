@@ -1,22 +1,14 @@
-/**
- * Service xử lý logic nghiệp vụ quản lý Suất chiếu phim (`ShowtimeService`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `ShowtimeApiController`, `CustomerBookingService`, `PublicContentInitializer`.
- * - Gọi tới các Repository:
- *   + `ShowtimeRepository`: Truy vấn và lưu bản ghi suất chiếu (`save`, `searchShowtimes`, `findByRoomIgnoreCaseAndShowDate`).
- *   + `MovieRepository`: Lấy thông tin thời lượng phim (`resolveDuration`).
- *   + `TicketRepository`: Kiểm tra ràng buộc và dọn dẹp vé chưa bán khi chỉnh sửa/xóa suất chiếu (`hasBookedTicketsForShowtime`, `deleteAllByShowtimeId`).
- *   + `BookingRepository`: Kiểm tra các đơn đặt vé active đang được xử lý (`hasActiveBookingsForShowtime`).
- * 
- * Logic nghiệp vụ chính:
- * - Tự động tính toán loại ngày (`determineDayType`: "Trong tuần", "Cuối tuần", "Ngày lễ").
- * - Kiểm tra trùng lặp lịch chiếu theo từng phòng chiếu (`validateRoomTimeOverlap`), tự động cộng thời gian giãn cách dọn dẹp phòng (30 phút).
- * - Hỗ trợ xếp lịch theo lô hàng loạt cho nhiều ngày và nhiều phòng (`saveShowtimeBatch`).
- * 
- * Khởi tạo bởi: Group 03 - SWP391, NinhDD - HE186113, TrienLX
- */
 package com.group3.cinema.service.api;
+
+/**
+ * LUỒNG CHẠY SERVICE SUẤT CHIẾU (EXECUTION FLOW):
+ * ShowtimeController -> ShowtimeService -> ShowtimeRepository / TicketRepository -> Database
+ * 
+ * Các bước nghiệp vụ:
+ * 1. Kiểm tra trùng phòng & giờ chiếu: validateRoomTimeOverlap() -> (lấy thời lượng phim + 15 phút dọn phòng) -> đối soát với ShowtimeRepository
+ * 2. Lưu suất chiếu theo dải ngày: saveShowtimeBatch() -> sinh danh sách suất chiếu -> ShowtimeRepository.saveAll()
+ * 3. Ghi đè ngày lẻ: overrideSingleDay() -> tạo bản ghi mới với cờ isOverride = true
+ */
 
 import com.group3.cinema.entity.Movie;
 import com.group3.cinema.entity.Showtime;
@@ -319,6 +311,7 @@ public class ShowtimeService {
         }
         validateShowtimeEditable(id);
 
+        bookingTicketRepository.deleteByShowtimeId(id);
         ticketRepository.deleteAllByShowtimeId(id);
         showtimeRepository.deleteById(id);
         return false;
@@ -388,23 +381,34 @@ public class ShowtimeService {
         }
     }
 
-    /** Kiểm tra xem khung giờ dự định chiếu có bị trùng đè lên suất chiếu khác trong cùng phòng hay không. */
+    /**
+     * BƯỚC NGHỆP VỤ VÀ LUỒNG XỬ LÝ: Kiểm tra trùng đè lịch chiếu trong cùng phòng (Room Overlap Check).
+     * Quy tắc BR-25/BR-26: Một phòng chiếu trong khoảng [Giờ bắt đầu -> Giờ kết thúc + 15 phút dọn dẹp] không thể xếp 2 suất chiếu đè lên nhau.
+     * 
+     * @param candidate Suất chiếu đang tạo mới hoặc cập nhật.
+     * @param editingId ID của suất chiếu hiện tại (nếu là chỉnh sửa) để tránh tự so sánh trùng với chính nó.
+     */
     private void validateRoomTimeOverlap(Showtime candidate, Long editingId) {
         int candidateStart = toMinutes(candidate.getShowTime());
+        // Thời gian kết thúc = Giờ chiếu + Thời lượng phim + 15 phút dọn dẹp phòng
         int candidateEnd = candidateStart + resolveDuration(candidate.getMovie()) + ROOM_TURNOVER_MINUTES;
 
+        // Tra cứu tất cả các suất chiếu đã có tại phòng này trong cùng ngày
         List<Showtime> sameRoomShowtimes = showtimeRepository.findByRoomIgnoreCaseAndShowDate(
                 candidate.getRoom(),
                 candidate.getShowDate()
         );
 
         for (Showtime existing : sameRoomShowtimes) {
+            // Bỏ qua chính suất chiếu đang được sửa
             if (editingId != null && editingId.equals(existing.getId())) {
                 continue;
             }
 
             int existingStart = toMinutes(existing.getShowTime());
             int existingEnd = existingStart + resolveDuration(existing.getMovie()) + ROOM_TURNOVER_MINUTES;
+
+            // Thuật toán kiểm tra 2 khoảng thời gian giao nhau: [candidateStart, candidateEnd] vs [existingStart, existingEnd]
             if (candidateStart < existingEnd && candidateEnd > existingStart) {
                 String movieTitle = existing.getMovie() != null ? existing.getMovie().getTitle() : "suất chiếu khác";
                 LocalTime existingEndTime = existing.getShowTime().plusMinutes(resolveDuration(existing.getMovie()) + ROOM_TURNOVER_MINUTES);

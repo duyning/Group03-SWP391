@@ -1,15 +1,13 @@
-/**
- * Service xử lý Danh sách phim yêu thích (Wishlist) của Khách hàng (`WishlistService`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `WishlistController` và `CustomerMovieController`.
- * - Tương tác với:
- *   + `WishlistRepository`: Thêm/Xóa phim khỏi danh sách yêu thích (`findByAccountAccountIDAndMovieId`, `save`, `delete`), kiểm tra tồn tại (`existsByAccountAccountIDAndMovieId`).
- *   + `MovieRepository`: Lấy thông tin phim (`findById`).
- * 
- * Khởi tạo bởi: 13/07/2026
- */
 package com.group3.cinema.service;
+
+/**
+ * LUỒNG CHẠY SERVICE PHIM YÊU THÍCH (EXECUTION FLOW):
+ * WishlistController -> WishlistService -> WishlistRepository -> Database
+ * 
+ * Các bước xử lý nghiệp vụ:
+ * 1. Đảo trạng thái thả tim (toggleWishlist): Kiểm tra tồn tại trong CSDL -> Đã có (Delete bản ghi, trả false) : Chưa có (Save bản ghi mới, trả true).
+ * 2. Lấy danh sách phim yêu thích (getWishlistMovies): Lấy danh sách theo accountId -> Lọc các phim active=true và deleted=false.
+ */
 
 import com.group3.cinema.entity.Account;
 import com.group3.cinema.entity.Movie;

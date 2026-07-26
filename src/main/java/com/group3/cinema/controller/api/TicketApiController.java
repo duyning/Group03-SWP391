@@ -1,9 +1,15 @@
-/*
- * Dự án: Cinema 2026 — SWP391 Group 03
- * File: TicketApiController.java
- * Người sửa: TrienLX
- */
 package com.group3.cinema.controller.api;
+
+/**
+ * LUỒNG CHẠY REST API BÁN VÉ & CẤU HÌNH GIÁ VÉ (EXECUTION FLOW):
+ * AJAX Frontend / Quầy bán vé -> TicketApiController -> TicketService -> TicketRepository / TicketPriceConfigRepository -> Database
+ * 
+ * Các endpoint chính:
+ * 1. Lấy trạng thái ghế: GET /api/tickets/seat-status/{showtimeId} -> TicketService gộp vé bán trực tiếp + ghế giữ online
+ * 2. Bán vé trực tiếp tại rạp: POST /api/tickets/sell -> TicketService.sellTicket() (tính giá gốc + phụ thu ghế VIP + phụ thu 3D/IMAX - giảm giá đối tượng)
+ * 3. Giữ chỗ 5 phút: POST /api/tickets/hold -> TicketService.holdSeat()
+ * 4. Quản lý cấu hình giá vé: GET/POST/DELETE /api/tickets/configs/base -> TicketPriceConfigRepository (chặn xóa/sửa nếu đã có vé bán)
+ */
 
 import com.group3.cinema.entity.*;
 import com.group3.cinema.service.TicketService;

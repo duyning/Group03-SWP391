@@ -4783,6 +4783,16 @@ async function savePricingConfig() {
     }
 }
 
+/**
+ * BƯỚC NGHỆP VỤ FRONTEND: Xóa 1 cấu hình giá vé (Xóa đơn lẻ).
+ * Luồng gọi: Admin/Manager click nút Trash (Xóa) trên tab Cấu hình giá (/manage_ticket.html) -> gọi deletePricingConfig(type, id)
+ * 
+ * các bước xử lý:
+ * 1. Hiển thị hộp thoại Modal xác nhận xóa custom (showConfirm). Nếu hủy -> dừng luồng.
+ * 2. Xác định endpoint REST API cần gọi tùy theo loại cấu hình (base, seats, formats, discounts).
+ * 3. Gửi AJAX HTTP DELETE request tới Backend Spring RestController (/api/tickets/configs/...).
+ * 4. Nhận phản hồi thành công -> Hiển thị Toast thông báo xanh và tự động gọi loadPricingDashboard() nạp lại bảng dữ liệu.
+ */
 async function deletePricingConfig(type, id) {
     const confirmed = await showConfirm(
         'Xác nhận xóa',
@@ -4804,7 +4814,7 @@ async function deletePricingConfig(type, id) {
             throw new Error(data.error || 'Không thể xóa cấu hình.');
         }
         showToast('success', 'Xóa thành công', 'Cấu hình giá vé đã được xóa.');
-        loadPricingDashboard(); // Refresh
+        loadPricingDashboard(); // Nạp lại danh sách cấu hình giá vé trên giao diện
     } catch (e) {
         showToast('error', 'Lỗi', e.getMessage ? e.getMessage() : e.message);
     }

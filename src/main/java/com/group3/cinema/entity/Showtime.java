@@ -1,15 +1,15 @@
-/**
- * Entity đại diện cho Lịch chiếu / Suất chiếu phim (`showtimes`).
- * 
- * Chức năng:
- * - Liên kết Phim (`Movie`), ngày chiếu (`showDate`), giờ bắt đầu (`showTime`) và phòng chiếu (`room`).
- * - Phân loại loại ngày chiếu (`dayType`: "Trong tuần", "Cuối tuần", "Ngày lễ") dùng để tra cứu bảng giá vé.
- * - Đánh dấu các suất chiếu bị điều chỉnh riêng lẻ (`isOverride`, `note`) không thuộc dải lịch sinh tự động.
- * 
- * Ngày sửa: 23/06/2026
- * Người tạo/sửa: TrienLX
- */
 package com.group3.cinema.entity;
+
+/**
+ * LUỒNG THỰC THỂ SUẤT CHIẾU (ENTITY SHOWTIME):
+ * CSDL (Bảng `showtimes`) <-> JPA ORM <-> Showtime Entity <-> ShowtimeRepository <-> ShowtimeService
+ * 
+ * Các thuộc tính chính:
+ * 1. Khóa ngoại: movie (Movie Entity), room (Phòng chiếu).
+ * 2. Ngày giờ chiếu: showDate (LocalDate), showTime (LocalTime).
+ * 3. Phân loại giá vé: dayType ("Trong tuần", "Cuối tuần", "Ngày lễ").
+ * 4. Cờ điều chỉnh: isOverride (true nếu tách sửa ngày chiếu lẻ).
+ */
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,19 +1,21 @@
-/**
- * Service tính toán giá vé nâng cao, Phụ thu phòng/ghế, Chiết khấu đối tượng khách và Bán vé tại quầy/Online (`TicketService`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `AdminTicketController` (Bán vé tại quầy, Đổi vị trí ghế, Chiết khấu vé), `CounterSaleService`, `CustomerBookingService`, `SeatHoldingService`.
- * - Tương tác với:
- *   + `TicketRepository`: Lưu thông báo vé (`save`), thống kê vé theo suất chiếu (`countByShowtimeIdAndStatusAndDeletedFalse`), tìm kiếm vé (`searchTickets`).
- *   + `TicketPriceConfigRepository`: Lấy giá vé gốc cấu hình theo khung giờ (Suất sớm, Giờ vàng, Suất khuya) và loại ngày (Trong tuần, Cuối tuần, Ngày lễ).
- *   + `SeatTypeSurchargeRepository`: Lấy phụ thu loại ghế (VIP, Sweetbox Couple).
- *   + `FormatSurchargeRepository`: Lấy phụ thu công nghệ định dạng phòng chiếu (3D, IMAX...).
- *   + `CustomerDiscountRepository`: Lấy mức giảm giá cho Học sinh/Sinh viên/Trẻ em/Người cao tuổi.
- *   + `ShowtimeRepository`, `RoomRepository`, `SeatRepository`: Lấy suất chiếu, phòng và vị trí ghế.
- * 
- * Khởi tạo bởi: NinhDD - HE186113, TrienLX
- */
 package com.group3.cinema.service;
+
+/**
+ * LUỒNG CHẠY SERVICE VÉ & CÔNG THỨC TÍNH GIÁ (EXECUTION FLOW):
+ * TicketApiController -> TicketService.populateTicketPriceDetails() -> Repositories cấu hình giá -> TicketRepository -> Database
+ * 
+ * Công thức tính đơn giá vé tự động:
+ * Giá vé cuối cùng (finalPrice) = Giá gốc khung giờ (basePrice) 
+ *                                 + Phụ thu ghế VIP / Sweetbox (seatSurcharge)
+ *                                 + Phụ thu 3D / IMAX (formatSurcharge)
+ *                                 - Chiết khấu HSSV / Trẻ em / Người cao tuổi (discountAmount)
+ * 
+ * Quản lý vòng đời vé:
+ * 1. Bán vé: sellTicket() -> status = "BOOKED"
+ * 2. Giữ ghế: holdSeat() -> status = "PENDING" (hủy sau 5p với releaseSeat())
+ * 3. Đổi ghế: changeSeat() -> cập nhật seat_id và tính lại giá vé
+ * 4. Hủy vé: cancelTicket() -> status = "REFUNDED", deleted = true
+ */
 
 import com.group3.cinema.entity.CustomerDiscount;
 import com.group3.cinema.entity.FormatSurcharge;

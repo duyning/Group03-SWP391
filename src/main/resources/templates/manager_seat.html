@@ -22,6 +22,12 @@
      - Service validate lại ở backend, xóa seats cũ, lưu seats mới, cập nhật rows/cols/totalSeats ở Room.
   6. Nút "Reset & Lưu vào DB" submit POST /admin/rooms/{roomId}/seats/reset.
      - SeatController.resetDefault(...) tạo ma trận std mặc định và gọi SeatService.saveMatrix(...).
+
+
+  Tóm tắt thao tác UI:
+  - renderMatrix() vẽ sơ đồ từ SERVER_MATRIX.
+  - Chọn loại ghế ở palette rồi click/rê chuột trên lưới để đổi từng ô.
+  - Click "Lưu sơ đồ" -> saveMatrix() gửi JSON sang backend cập nhật CSDL.
 -->
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">

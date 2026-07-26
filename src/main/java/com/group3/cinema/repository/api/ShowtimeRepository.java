@@ -1,19 +1,18 @@
-/**
- * Interface Repository quản lý thông tin Suất chiếu phim (`showtimes`).
- * 
- * Luồng gọi & Sử dụng:
- * - Được gọi bởi `ShowtimeService`, `CustomerBookingService`, `TicketManagementService`, `PublicContentInitializer`, `MovieService`.
- * - Hỗ trợ các chức năng: Tìm kiếm suất chiếu quản lý phía Admin (`searchShowtimes`), tìm suất chiếu khả dụng phía Khách hàng (`searchShowtimesForCustomer`),
- *   kiểm tra trùng lịch suất chiếu theo phòng và ngày chiếu (`findByRoomIgnoreCaseAndShowDate`),
- *   lấy danh sách suất chiếu của một phim theo ngày (`findByMovieIdAndShowDate`),
- *   thống kê số lượng suất chiếu hiện tại và tương lai của bộ phim (`countAllShowtimesByMovieId`, `countFutureShowtimesByMovieId`).
- * 
- * Khởi tạo bởi: TrienLX - HE182285, NinhDD - HE186113
- */
 package com.group3.cinema.repository.api;
+
+/**
+ * LUỒNG CHẠY REPOSITORY SUẤT CHIẾU (EXECUTION FLOW):
+ * ShowtimeService -> ShowtimeRepository (SQL Queries) -> Bảng `showtimes` trong CSDL SQL Server
+ * 
+ * Các câu lệnh SQL nòng cốt:
+ * 1. searchShowtimes(): Tìm suất chiếu theo phim, phòng, khoảng ngày chiếu.
+ * 2. findByRoomIgnoreCaseAndShowDate(): Quét toàn bộ suất chiếu cùng phòng trong 1 ngày để đối soát trùng giờ.
+ * 3. countFutureShowtimesByMovieId(): Đếm các suất chiếu tương lai của phim.
+ */
 
 import com.group3.cinema.entity.Showtime;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -127,5 +126,14 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
     /** Đếm các suất chiếu từ ngày hôm nay trở đi (`>= today`) của bộ phim. */
     @Query("SELECT COUNT(s) FROM Showtime s WHERE s.movie.id = :movieId AND s.showDate >= :today AND s.active = true")
     long countFutureShowtimesByMovieId(@Param("movieId") int movieId, @Param("today") LocalDate today);
+
+    /** Lấy tất cả suất chiếu thuộc về một phim. */
+    @Query("SELECT s FROM Showtime s WHERE s.movie.id = :movieId")
+    List<Showtime> findByMovieId(@Param("movieId") int movieId);
+
+    /** Xóa tất cả suất chiếu thuộc về một phim. */
+    @Modifying
+    @Query("DELETE FROM Showtime s WHERE s.movie.id = :movieId")
+    void deleteByMovieId(@Param("movieId") int movieId);
 }
 

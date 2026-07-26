@@ -1,18 +1,14 @@
-/**
- * Entity quản lý vé xem phim chi tiết (`tickets`).
- * 
- * Chức năng:
- * - Lưu giữ thông tin từng chiếc vé: Tài khoản người mua (`Account`), Phim (`Movie`), Suất chiếu (`Showtime`),
- *   Ghế ngồi (`Seat`), Tên phòng, Nhãn ghế, Loại ghế, Ngày/Giờ chiếu.
- * - Lưu chi tiết thành phần giá: Giá gốc (`basePrice`), Phụ thu ghế (`seatSurcharge`), Phụ thu định dạng (`formatSurcharge`),
- *   Số tiền giảm giá (`discountAmount`), Giá thực tế (`finalPrice`).
- * - Quản lý thông tin khách hàng nhận vé (`customerName`, `customerPhone`, `customerType`) và mã đơn (`bookingCode`).
- * - Tự động tính toán chuyển đổi trạng thái CONFIRMED -> USED khi thời gian chiếu trôi qua.
- * 
- * Khởi tạo bởi: NinhDD - HE186113
- * Cập nhật bởi: TrienLX (Bổ sung base_price và đồng bộ trạng thái vé)
- */
 package com.group3.cinema.entity;
+
+/**
+ * LUỒNG THỰC THỂ VÉ (ENTITY TICKET):
+ * CSDL (Bảng `tickets`) <-> JPA ORM <-> Ticket Entity <-> TicketRepository <-> TicketService
+ * 
+ * Các thuộc tính nòng cốt:
+ * 1. Khóa ngoại liên kết: account (Account), movie (Movie), showtime (Showtime), seat (Seat).
+ * 2. Thành phần đơn giá: basePrice, seatSurcharge, formatSurcharge, discountAmount, finalPrice.
+ * 3. Trạng thái: status ("CONFIRMED", "BOOKED", "PENDING", "REFUNDED", "USED"). Tự chuyển CONFIRMED -> USED khi qua giờ chiếu.
+ */
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;

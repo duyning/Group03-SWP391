@@ -3,6 +3,13 @@
   Bước 1 của booking. schedule đã được service loại suất quá giờ/hết ghế và gom theo ngày.
   Mỗi giờ chiếu là một form POST riêng để server xác thực lại movieId, date và showtimeId
   trước khi tạo BookingSelection trong session.
+
+  LUỒNG FRONTEND CHỌN SUẤT CHIẾU:
+  1. Khách mở GET /booking/showtimes?movieId=ID.
+  2. BookingController gọi BookingShowtimeService để nạp lịch chiếu đã được lọc theo nghiệp vụ.
+  3. Click `.date-tab` chọn ngày -> JS đổi class active và mở panel suất chiếu của ngày đó.
+  4. Click nút `.time-card` -> submit form POST /booking/showtimes/select mang movieId/date/showtimeId.
+  5. Controller xác thực lại showtime, tạo BookingSelection trong session và chuyển sang seat-selection.html.
 -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
