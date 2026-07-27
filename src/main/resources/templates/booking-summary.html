@@ -136,7 +136,8 @@
                                     <div class="voucher-meta">
                                         <span th:text="'Đơn tối thiểu: ' + ${#numbers.formatDecimal(option.voucher.minOrderValue,0,'COMMA',0,'POINT')} + 'đ'">Đơn tối thiểu</span>
                                         <span th:text="'Áp dụng: ' + ${option.voucher.serviceScope.displayName}">Áp dụng</span>
-                                        <span th:text="'HSD: ' + ${#temporals.format(option.voucher.endDate,'dd/MM/yyyy HH:mm')}">HSD</span>
+                                        <span th:text="${'Bắt đầu: ' + (option.voucher.startDate != null ? #temporals.format(option.voucher.startDate,'dd/MM/yyyy HH:mm') : 'Không giới hạn')}">Bắt đầu</span>
+                                        <span th:text="${'Kết thúc: ' + (option.voucher.endDate != null ? #temporals.format(option.voucher.endDate,'dd/MM/yyyy HH:mm') : 'Không giới hạn')}">Kết thúc</span>
                                     </div>
                                 </td>
                                 <td class="voucher-discount"

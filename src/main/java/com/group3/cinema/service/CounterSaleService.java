@@ -686,8 +686,18 @@ public class CounterSaleService {
         if (!matchesApplicableDay(voucher.getApplicableDays(), selection.showDate())) {
             return "Voucher không áp dụng cho ngày chiếu đã chọn.";
         }
-        if (Boolean.FALSE.equals(voucher.getIsHolidayApplicable()) && holidayRepository.existsByHolidayDate(selection.showDate())) {
-            return "Voucher không áp dụng vào ngày lễ/ngày cao điểm.";
+        boolean exactHolidayShowDate = selection.showDate() != null
+                && holidayRepository.existsByHolidayDate(selection.showDate());
+        boolean holidayCampaignShowDate = selection.showDate() != null
+                && !holidayRepository.findByHolidayDateBetween(
+                        selection.showDate().minusDays(7),
+                        selection.showDate().plusDays(7)
+                ).isEmpty();
+        if (Boolean.TRUE.equals(voucher.getIsHolidayApplicable()) && !holidayCampaignShowDate) {
+            return "Voucher chỉ áp dụng trong khoảng 7 ngày quanh ngày Lễ/Tết đã cấu hình.";
+        }
+        if (Boolean.FALSE.equals(voucher.getIsHolidayApplicable()) && exactHolidayShowDate) {
+            return "Voucher không áp dụng vào ngày Lễ/Tết.";
         }
         if (eligibleVoucherAmount(voucher, tickets, ticketSubtotal, comboSubtotal).compareTo(BigDecimal.ZERO) <= 0) {
             return "Đơn hàng không có dịch vụ phù hợp với voucher.";

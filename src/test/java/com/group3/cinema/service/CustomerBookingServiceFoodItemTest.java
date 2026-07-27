@@ -9,6 +9,7 @@ import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.ComboRepository;
 import com.group3.cinema.repository.FoodItemRepository;
+import com.group3.cinema.repository.HolidayRepository;
 import com.group3.cinema.repository.VoucherRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,7 @@ class CustomerBookingServiceFoodItemTest {
                 mock(BookingFoodItemRepository.class),
                 mock(ShowtimeRepository.class),
                 mock(VoucherRepository.class),
+                mock(HolidayRepository.class),
                 mock(JdbcTemplate.class)
         );
     }

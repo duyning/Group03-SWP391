@@ -444,7 +444,7 @@
                             <div class="scope-item"><i class="fa-solid fa-layer-group text-info"></i><span class="text-dark fw-semibold" th:text="${voucher.serviceScope.displayName}">Tất cả</span></div>
                             <div class="scope-item"><i class="fa-solid fa-calendar-day text-secondary"></i><span th:text="${voucher.applicableDays.displayName}">Mọi ngày</span></div>
                             <div>
-                                <span th:if="${voucher.isHolidayApplicable}" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Áp dụng Lễ/Tết</span>
+                                <span th:if="${voucher.isHolidayApplicable}" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Giai đoạn Lễ/Tết</span>
                                 <span th:unless="${voucher.isHolidayApplicable}" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Không dùng ngày Lễ</span>
                             </div>
                             <div class="schedule-box">

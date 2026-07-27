@@ -507,10 +507,17 @@
                         </span>
                     </p>
 
+                    <p class="voucher-info">
+                        <i class="fa-regular fa-calendar-check"></i>
+                        <span><b>Bắt đầu:</b>
+                            <span th:text="${v.startDate != null ? #temporals.format(v.startDate, 'dd/MM/yyyy HH:mm') : 'Không giới hạn'}">20/06/2026 00:00</span>
+                        </span>
+                    </p>
+
                     <p class="voucher-info date-red">
-                        <i class="fa-solid fa-clock"></i>
-                        <span><b>HSD:</b>
-                            <span th:text="${v.endDate != null ? #temporals.format(v.endDate, 'dd/MM/yyyy HH:mm') : 'Vô thời hạn'}">25/06/2026 23:59</span>
+                        <i class="fa-regular fa-calendar-xmark"></i>
+                        <span><b>Kết thúc:</b>
+                            <span th:text="${v.endDate != null ? #temporals.format(v.endDate, 'dd/MM/yyyy HH:mm') : 'Không giới hạn'}">25/06/2026 23:59</span>
                         </span>
                     </p>
                 </div>

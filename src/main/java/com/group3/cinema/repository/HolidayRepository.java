@@ -10,6 +10,7 @@ import com.group3.cinema.entity.Holiday;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 public interface HolidayRepository extends JpaRepository<Holiday, Long> {
@@ -21,4 +22,9 @@ public interface HolidayRepository extends JpaRepository<Holiday, Long> {
      * @return true nếu ngày đó là ngày lễ.
      */
     boolean existsByHolidayDate(LocalDate holidayDate);
-}
+
+    /**
+     * Lấy các ngày lễ trong một khoảng ngày để kiểm tra chiến dịch voucher Lễ/Tết.
+     */
+    List<Holiday> findByHolidayDateBetween(LocalDate startDate, LocalDate endDate);
+}

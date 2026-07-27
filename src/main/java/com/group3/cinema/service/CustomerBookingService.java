@@ -21,6 +21,7 @@ import com.group3.cinema.repository.BookingRepository;
 import com.group3.cinema.repository.BookingTicketRepository;
 import com.group3.cinema.repository.ComboRepository;
 import com.group3.cinema.repository.FoodItemRepository;
+import com.group3.cinema.repository.HolidayRepository;
 import com.group3.cinema.repository.VoucherRepository;
 import com.group3.cinema.repository.api.ShowtimeRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -57,6 +58,7 @@ public class CustomerBookingService {
     private final BookingFoodItemRepository bookingFoodItemRepository;
     private final ShowtimeRepository showtimeRepository;
     private final VoucherRepository voucherRepository;
+    private final HolidayRepository holidayRepository;
     private final JdbcTemplate jdbcTemplate;
 
     public CustomerBookingService(ComboRepository comboRepository,
@@ -67,6 +69,7 @@ public class CustomerBookingService {
                                   BookingFoodItemRepository bookingFoodItemRepository,
                                   ShowtimeRepository showtimeRepository,
                                   VoucherRepository voucherRepository,
+                                  HolidayRepository holidayRepository,
                                   JdbcTemplate jdbcTemplate) {
         // Lưu repository/helper do Spring inject; service không tự khởi tạo dependency.
         this.comboRepository = comboRepository;
@@ -77,6 +80,7 @@ public class CustomerBookingService {
         this.bookingFoodItemRepository = bookingFoodItemRepository;
         this.showtimeRepository = showtimeRepository;
         this.voucherRepository = voucherRepository;
+        this.holidayRepository = holidayRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -563,9 +567,16 @@ public class CustomerBookingService {
             return "Voucher không áp dụng cho ngày chiếu đã chọn.";
         }
 
-        // Voucher cấm ngày lễ được so với danh sách ngày lễ hệ thống biết.
-        if (Boolean.FALSE.equals(voucher.getIsHolidayApplicable()) && isKnownHoliday(base.selection().showDate())) {
-            return "Voucher không áp dụng vào ngày lễ.";
+        // Ngày lễ phải lấy từ cấu hình `admin/holidays`, không dùng danh sách hard-code.
+        // - isHolidayApplicable = true: voucher chiến dịch Lễ/Tết, chỉ dùng được trong vùng 7 ngày quanh ngày lễ đã cấu hình.
+        // - isHolidayApplicable = false: voucher thường, không dùng vào ngày lễ.
+        boolean exactHolidayShowDate = isConfiguredHoliday(base.selection().showDate());
+        boolean holidayCampaignShowDate = isWithinHolidayCampaignWindow(base.selection().showDate());
+        if (Boolean.TRUE.equals(voucher.getIsHolidayApplicable()) && !holidayCampaignShowDate) {
+            return "Voucher chỉ áp dụng trong khoảng 7 ngày quanh ngày Lễ/Tết đã cấu hình.";
+        }
+        if (Boolean.FALSE.equals(voucher.getIsHolidayApplicable()) && exactHolidayShowDate) {
+            return "Voucher không áp dụng vào ngày Lễ/Tết.";
         }
 
         // Phạm vi voucher phải có ít nhất một đồng eligible.
@@ -679,12 +690,16 @@ public class CustomerBookingService {
         return applicableDay == Voucher.ApplicableDay.WEEKEND ? weekend : !weekend;
     }
 
-    private boolean isKnownHoliday(LocalDate date) {
+    private boolean isConfiguredHoliday(LocalDate date) {
         if (date == null) return false;
-        return (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
-                || (date.getMonthValue() == 4 && date.getDayOfMonth() == 30)
-                || (date.getMonthValue() == 5 && date.getDayOfMonth() == 1)
-                || (date.getMonthValue() == 9 && date.getDayOfMonth() == 2);
+        return holidayRepository.existsByHolidayDate(date);
+    }
+
+    private boolean isWithinHolidayCampaignWindow(LocalDate date) {
+        if (date == null) return false;
+        return !holidayRepository
+                .findByHolidayDateBetween(date.minusDays(7), date.plusDays(7))
+                .isEmpty();
     }
 
     private BigDecimal safeMoney(BigDecimal value) {

@@ -1,14 +1,17 @@
 package com.group3.cinema.service;
 
 import com.group3.cinema.entity.Account;
+import com.group3.cinema.entity.Holiday;
 import com.group3.cinema.entity.Voucher;
 import com.group3.cinema.repository.AccountRepository;
+import com.group3.cinema.repository.HolidayRepository;
 import com.group3.cinema.repository.VoucherRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,6 +34,9 @@ public class VoucherService {
     /** Repository thao tác dữ liệu với bảng Account trong CSDL */
     private final AccountRepository accountRepository;
 
+    /** Repository đọc cấu hình ngày lễ để validate voucher Lễ/Tết */
+    private final HolidayRepository holidayRepository;
+
     /**
      * Constructor Injection tiêm các phụ thuộc Repository cần thiết.
      *
@@ -38,9 +44,12 @@ public class VoucherService {
      * @param accountRepository Repository quản lý tài khoản
      */
     @Autowired
-    public VoucherService(VoucherRepository voucherRepository, AccountRepository accountRepository) {
+    public VoucherService(VoucherRepository voucherRepository,
+                          AccountRepository accountRepository,
+                          HolidayRepository holidayRepository) {
         this.voucherRepository = voucherRepository;
         this.accountRepository = accountRepository;
+        this.holidayRepository = holidayRepository;
     }
 
     // ==========================================
@@ -230,9 +239,42 @@ public class VoucherService {
             }
         }
 
+        validateHolidayVoucherWindow(voucher);
+
         if ("WATER".equalsIgnoreCase(String.valueOf(voucher.getServiceScope()))) {
             voucher.setApplicableSeats("");
         }
+    }
+
+    private void validateHolidayVoucherWindow(Voucher voucher) {
+        if (!Boolean.TRUE.equals(voucher.getIsHolidayApplicable())) {
+            return;
+        }
+
+        LocalDate campaignStart = voucher.getStartDate().toLocalDate();
+        LocalDate campaignEnd = voucher.getEndDate().toLocalDate();
+
+        LocalDate lookupStart = campaignStart.minusDays(7);
+        LocalDate lookupEnd = campaignEnd.plusDays(7);
+        List<Holiday> holidaysNearCampaign = holidayRepository.findByHolidayDateBetween(lookupStart, lookupEnd);
+
+        boolean overlapsHolidayCampaignWindow = holidaysNearCampaign.stream()
+                .anyMatch(holiday -> overlaps(
+                        campaignStart,
+                        campaignEnd,
+                        holiday.getHolidayDate().minusDays(7),
+                        holiday.getHolidayDate().plusDays(7)
+                ));
+
+        if (!overlapsHolidayCampaignWindow) {
+            throw new IllegalArgumentException(
+                    "Voucher Lễ/Tết phải có thời gian áp dụng nằm trong khoảng 7 ngày trước hoặc sau một ngày lễ đã cấu hình."
+            );
+        }
+    }
+
+    private boolean overlaps(LocalDate leftStart, LocalDate leftEnd, LocalDate rightStart, LocalDate rightEnd) {
+        return !leftStart.isAfter(rightEnd) && !leftEnd.isBefore(rightStart);
     }
 
     // Trong file com.group3.cinema.service.VoucherService.java (hoặc
